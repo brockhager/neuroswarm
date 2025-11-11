@@ -108,11 +108,3 @@ Purpose
 - Use the suggested documentation flow above when adding major new docs.
 - Keep docs modular: short pages that link to related pages.
 
----
-
-If you want, I can now:
-- Add `docs/getting-started.md` with a runnable toy node and submission example,
-- Scaffold a small `contracts/` folder with minimal Solidity ABIs for governance primitives,
-- Create a `docs/REFERENCE.md` listing all command-line examples and developer APIs.
-
-Tell me which to create next and I'll add it to the todo and implement it.
