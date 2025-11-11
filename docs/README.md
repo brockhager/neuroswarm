@@ -14,6 +14,7 @@ Jump directly to the main documentation pages in this folder:
 - [Personal AI Economy](./personal-ai-economy.md)
 - [Terms & Metaphors (glossary)](./TERMS.md)
 - [Tokenomics (NST)](./TOKENOMICS.md)
+- [Economics](./ECONOMICS.md)
 - [This index (README)](./README.md)
 
 
