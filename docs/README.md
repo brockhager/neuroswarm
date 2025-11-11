@@ -2,6 +2,21 @@
 
 Welcome to the documentation hub for the neuroswarm project. This `docs/README.md` is the canonical starting place for project-level documentation. Use this file to link to module docs, architecture notes, user guides, and developer HOWTOs.
 
+## Quick links
+
+Jump directly to the main documentation pages in this folder:
+
+- [Architecture](./architecture.md)
+- [Decentralized Chatbot System](./decentralized-chatbot-system.md)
+- [Global Brain Design](./global-brain-design.md)
+- [Governance](./governance.md)
+- [Master Documentation Outline](./master-documentation-outline.md)
+- [Personal AI Economy](./personal-ai-economy.md)
+- [Terms & Metaphors (glossary)](./TERMS.md)
+- [Tokenomics (NST)](./TOKENOMICS.md)
+- [This index (README)](./README.md)
+
+
 ## Purpose
 
 This folder is where we collect all design documentation, architecture diagrams, usage guides, and contribution notes for the neuroswarm system. Keep docs in Markdown and prefer short, focused pages that link together.
@@ -45,3 +60,9 @@ This folder is where we collect all design documentation, architecture diagrams,
 ---
 
 If you want a specific page created next (for example `getting-started.md`), tell me which one and I can add it now.
+
+## Master documentation
+
+This repo now includes a master documentation outline that centralizes the entire design and suggested documentation flow.
+
+- [Master Documentation Outline](./master-documentation-outline.md)
