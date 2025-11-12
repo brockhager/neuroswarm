@@ -48,11 +48,46 @@
 - [ ] Package services into Docker images with config toggles  
 - [ ] Write operator/developer guides and quickstarts  
 
-### Integration & Release
-- [ ] Build integration pipeline in `neuro-infra` (e2e tests across repos)  
-- [ ] Run chaos/failure drills (RPC outages, IPFS misses, index divergence)  
-- [ ] Optimize fees, compute, cache hit rates  
-- [ ] Tag v0.0.1 release with reproducible deployment instructions  
+```markdown
+# 📝 NeuroSwarm Centralized Kanban
+
+## Backlog
+- [ ] Define objectives, roles, and success criteria  
+- [ ] Write ADRs for on‑chain/off‑chain split  
+- [ ] Document user stories  
+
+### On‑Chain Core (neuro-program)
+- [ ] Design Solana account schemas  
+- [ ] Implement Anchor instructions  
+- [ ] Emit structured events/logs  
+- [ ] Write unit + integration tests  
+
+### Shared Contracts (neuro-shared)
+- [ ] Build schemas + codegen  
+- [ ] Implement PDA seed rules  
+- [ ] Publish npm package  
+- [ ] Add CI check for generated files  
+
+### Services Layer (neuro-services)
+- [ ] Add CI pipeline  
+- [ ] Write Dockerfile(s)  
+- [ ] Deployment scripts (docker-compose, k8s)  
+- [ ] Gateway API implementation  
+- [ ] Indexer event ingestion  
+- [ ] Documentation (README, operator guide)  
+
+### Web NS Node (neuro-web)
+- [ ] Build React UI (chat + provenance panel)  
+- [ ] Integrate Gateway APIs  
+- [ ] Surface on‑chain provenance  
+- [ ] Add local cache/index  
+- [ ] Write UI integration tests  
+
+### Infra (neuro-infra)
+- [ ] Bootstrap script for local dev  
+- [ ] Integration pipeline (e2e tests across repos)  
+- [ ] Monitoring dashboards  
+- [ ] CI/CD templates  
 
 ---
 
@@ -62,4 +97,6 @@
 ---
 
 ## Done
-- [x] Create 5 repositories (`neuro-shared`, `neuro-program`, `neuro-services`, `neuro-web`, `neuro-infra`)  
+- [x] Create 5 repositories (`neuro-shared`, `neuro-program`, `neuro-services`, `neuro-web`, `neuro-infra`)
+
+``` 
