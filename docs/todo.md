@@ -1,5 +1,8 @@
 # 📝 NeuroSwarm Project Kanban
 
+## In Progress
+- [ ] Define node spec (roles, modes, RPC surface, config schema, message types)
+
 ## Backlog (to be done)
 - [ ] Define objectives, roles (NS Node, Gateway, Indexer, Validators), and success criteria  
 - [ ] Write Architecture Decision Records (ADRs) for on‑chain/off‑chain split, trust boundaries, and failure modes  
@@ -42,61 +45,16 @@
 - [ ] Add governance flags (pause, thresholds, weighting model)  
 - [ ] Document threat model and run security tests  
 
-### Observability & Ops
-- [ ] Add structured logs, metrics, tracing IDs  
-- [ ] Build dashboards (Prometheus/Grafana)  
-- [ ] Package services into Docker images with config toggles  
-- [ ] Write operator/developer guides and quickstarts  
-
-```markdown
-# 📝 NeuroSwarm Centralized Kanban
-
-## Backlog
-- [ ] Define objectives, roles, and success criteria  
-- [ ] Write ADRs for on‑chain/off‑chain split  
-- [ ] Document user stories  
-
-### On‑Chain Core (neuro-program)
-- [ ] Design Solana account schemas  
-- [ ] Implement Anchor instructions  
-- [ ] Emit structured events/logs  
-- [ ] Write unit + integration tests  
-
-### Shared Contracts (neuro-shared)
-- [ ] Build schemas + codegen  
-- [ ] Implement PDA seed rules  
-- [ ] Publish npm package  
-- [ ] Add CI check for generated files  
-
-### Services Layer (neuro-services)
-- [ ] Add CI pipeline  
-- [ ] Write Dockerfile(s)  
-- [ ] Deployment scripts (docker-compose, k8s)  
-- [ ] Gateway API implementation  
-- [ ] Indexer event ingestion  
-- [ ] Documentation (README, operator guide)  
-
-### Web NS Node (neuro-web)
-- [ ] Build React UI (chat + provenance panel)  
-- [ ] Integrate Gateway APIs  
-- [ ] Surface on‑chain provenance  
-- [ ] Add local cache/index  
-- [ ] Write UI integration tests  
-
-### Infra (neuro-infra)
-- [ ] Bootstrap script for local dev  
-- [ ] Integration pipeline (e2e tests across repos)  
-- [ ] Monitoring dashboards  
-- [ ] CI/CD templates  
-
----
-
-## In Progress
-*(move items here as you start them)*
-
----
-
-## Done
-- [x] Create 5 repositories (`neuro-shared`, `neuro-program`, `neuro-services`, `neuro-web`, `neuro-infra`)
-
-``` 
+### NS Node (Binary/Daemon)
+- [ ] Initialize daemon skeleton, CLI, and config loader
+- [ ] Implement peer networking MVP (DNS seeds, static peers, QUIC transport, handshake)
+- [ ] Build local storage + index (catalog DB, artifact cache, IPFS pin/unpin)
+- [ ] Develop sync engine (initial sync, resumable, incremental updates)
+- [ ] Integrate Solana anchoring (verify manifests/attests, cache provenance)
+- [ ] Implement Gateway API (local HTTP/GraphQL endpoints, auth, audit logs)
+- [ ] Add Indexer integration (event ingestion, faceted search, lineage graphs)
+- [ ] Complete CLI commands (`nsd start/stop/status`, `ns peer add/list/ban`, `ns prune`, `ns snapshot`)
+- [ ] Add GUI (optional desktop UI for sync progress, provenance, search, settings)
+- [ ] Implement operating modes (standalone offline, peer-only, anchored, light client, validator node)
+- [ ] Set up distribution & install (binaries for Linux/macOS/Windows, packages, Docker, first run wizard)
+- [ ] Enhance security & trust (Ed25519 keys, TLS/Noise transport, verification, hardening) 
