@@ -1,7 +1,7 @@
 # 📝 NeuroSwarm Project Kanban
 
 ## In Progress
-- [ ] [neuro-infra] Add observability (logs, metrics, Prometheus exporter, tracing IDs)
+- [ ] [neuro-infra] Create installers and Docker (cross-compiled binaries, packages, Docker image)
 
 ## Backlog (to be done)
 
@@ -89,4 +89,5 @@
 - [x] [neuro-infra] Build local storage + index (catalog DB, artifact cache, IPFS pin/unpin)
 - [x] [neuro-infra] Set up distribution & install (binaries for Linux/macOS/Windows, packages, Docker, first run wizard)
 - [x] [neuro-program + neuro-infra] Integrate Solana anchoring (verify manifests/attests, cache provenance)
-- [x] [neuro-infra] Enhance security & trust (Ed25519 keys, TLS/Noise transport, verification, hardening)  
+- [x] [neuro-infra] Enhance security & trust (Ed25519 keys, TLS/Noise transport, verification, hardening)
+- [x] [neuro-services] Add observability (Prometheus metrics, Grafana dashboards, monitoring stack)  
