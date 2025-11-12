@@ -15,6 +15,7 @@ Jump directly to the main documentation pages in this folder:
 - [Terms & Metaphors (glossary)](./TERMS.md)
 - [Tokenomics (NST)](./TOKENOMICS.md)
 - [Economics](./ECONOMICS.md)
+- [GitHub Structure](./github-structure.md)
 - [This index (README)](./README.md)
 
 
