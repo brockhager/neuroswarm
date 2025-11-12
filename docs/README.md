@@ -6,6 +6,7 @@ Welcome to the documentation hub for the neuroswarm project. This `docs/README.m
 
 Jump directly to the main documentation pages in this folder:
 
+- [Overview](./overview.md) — What is NeuroSwarm and why it matters
 - [Getting Started](./getting-started.md) — Setup and quickstart guide
 - [Development Guide](./development.md) — Developer workflow and coding standards
 - [Architecture](./architecture.md)
@@ -28,7 +29,9 @@ Jump directly to the main documentation pages in this folder:
 ### Community & Governance
 - [Contributor Recognition & Governance](./governance/contributor-recognition.md) — Recognition system, governance processes, and community scaling
 - [Governance Charter & Decision Framework](./governance/governance-charter.md) — Formal governance structure, decision-making rules, and conflict resolution
+- [Voting System](./governance/voting.md) — Comprehensive voting processes, badge-weighted participation, and decision thresholds
 - [Living Documentation Processes](./governance/living-documentation.md) — Automated documentation generation, validation, and maintenance
+- [Contributor Portal](./governance/contributor-portal.md) — Unified knowledge base, learning paths, and community hub
 - [Workshop Template](./governance/workshop-template.md) — Complete guide for running NeuroSwarm contributor workshops
 - [Code of Conduct](./governance/code-of-conduct.md) — Community standards and enforcement guidelines
 
@@ -41,7 +44,7 @@ Jump directly to the main documentation pages in this folder:
 ### Project Management
 - [Objectives](./governance/objectives.md)
 - [Kanban Board](./governance/kanban.md)
-- [Todo List](./governance/todo.md)
+- [Todo List](./todo.md)
 
 ### Research & Concepts
 - [Definition of Trusted Data](./Definition%20of%20Trusted%20Data%20and%20the%20Fight%20Against%20Misinformation.md)
