@@ -227,10 +227,88 @@ cd neuro-infra && cargo run
 
 ## Contributing
 
-1. **Read the docs** - Start with [getting-started.md](./getting-started.md)
-2. **Choose an issue** - Check the [kanban board](./kanban.md)
-3. **Follow the workflow** - Branch, develop, test, PR
-4. **Ask for help** - Use issues and discussions for questions
+### How to Contribute: Complete Workflow
+
+Contributing to NeuroSwarm follows a structured workflow that integrates planning, development, testing, and deployment. Here's the complete journey:
+
+#### 1. **Discover & Plan** 📋
+- **Check the Kanban:** Review [current tasks](../kanban.md) and [objectives](../objectives.md)
+- **Find your role:** Choose based on your skills:
+  - **Gateway/API:** Focus on services layer and external interfaces
+  - **Indexer:** Work on search, lineage, and data indexing
+  - **Validator:** Handle consensus, security, and blockchain integration
+  - **Infrastructure:** Core networking, storage, and deployment
+
+#### 2. **Setup Development Environment** 🛠️
+- **Follow [Getting Started](../getting-started.md)** to set up all repositories
+- **Configure your IDE** with recommended extensions (Rust Analyzer, ESLint, etc.)
+- **Run the test suite** to ensure your environment is working
+
+#### 3. **Choose & Claim a Task** 🎯
+- **Pick from Kanban:** Select a task that matches your skill level
+- **Create feature branch:** `git checkout -b feature/add-user-auth`
+- **Update Kanban:** Move task to "In Progress" if you have access
+
+#### 4. **Develop & Code** 💻
+- **Follow coding standards:** Use TypeScript strict mode, Rust clippy, conventional commits
+- **Write tests first:** Aim for TDD - write tests before implementation
+- **Document as you go:** Update relevant docs for any API changes
+- **Security first:** Consider security implications of every change
+
+#### 5. **Test Thoroughly** ✅
+- **Unit tests:** Cover all new functions and edge cases
+- **Integration tests:** Test component interactions
+- **API tests:** Verify endpoints work with authentication
+- **Security tests:** Test auth failures, input validation
+- **Performance tests:** Check resource usage and response times
+
+#### 6. **Code Review & Feedback** 👥
+- **Self-review:** Run all checks locally before pushing
+- **Create PR:** Write clear description linking to Kanban task
+- **Address feedback:** Iterate on reviewer comments
+- **Merge when approved:** Squash commits, update Kanban
+
+#### 7. **Deploy & Monitor** 🚀
+- **CI/CD:** Automated tests run on every push
+- **Staging deployment:** Test in staging environment
+- **Production rollout:** Use blue-green deployment for zero downtime
+- **Monitor metrics:** Watch dashboards for any issues post-deployment
+
+### Contributor Levels
+
+#### **Beginner Contributors** 🌱
+- Start with documentation improvements
+- Fix small bugs or add test cases
+- Work on UI/UX enhancements
+- Focus on getting familiar with the codebase
+
+#### **Intermediate Contributors** 📈
+- Implement new API endpoints
+- Add features to existing services
+- Improve testing infrastructure
+- Work on performance optimizations
+
+#### **Advanced Contributors** 🏆
+- Design new system components
+- Lead architectural decisions
+- Mentor other contributors
+- Handle security-critical features
+
+### Recognition & Rewards
+
+- **GitHub contributions** are tracked and celebrated
+- **Code review participation** earns contributor badges
+- **Documentation improvements** are highly valued
+- **Security contributions** receive special recognition
+- **Community leadership** roles for consistent contributors
+
+### Getting Help
+
+- **Documentation:** Start with [Getting Started](../getting-started.md)
+- **Issues:** Open GitHub issues for bugs or questions
+- **Discussions:** Use GitHub Discussions for design questions
+- **Discord/Telegram:** Join community chat for real-time help
+- **Mentorship:** Request a mentor for complex contributions
 
 ## Code Review Checklist
 
