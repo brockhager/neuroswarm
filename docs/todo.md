@@ -4,67 +4,86 @@
 - [ ] [neuro-infra] Initialize daemon skeleton, CLI, and config loader
 
 ## Backlog (to be done)
+
 - [ ] [neuro-infra] Define objectives, roles (NS Node, Gateway, Indexer, Validators), and success criteria  
 - [ ] [neuro-infra] Write Architecture Decision Records (ADRs) for on‑chain/off‑chain split, trust boundaries, and failure modes  
 - [ ] [neuro-infra] Document user stories (operator, validator, contributor, reader)  
 
-### On‑Chain Core
-- [ ] [neuro-program] Design Solana program account schemas (Manifest, Attestation, Validator, Governance)  
-- [ ] [neuro-program] Implement Anchor program instructions (init, attest, finalize, reject, update_validator, update_governance)  
-- [ ] [neuro-program] Emit structured events/logs for off‑chain ingestion  
-- [ ] [neuro-program] Write unit + integration tests on devnet/localnet  
+---
 
-### Shared Contracts
-- [ ] [neuro-shared] Build schemas (TS + Rust codegen)  
-- [ ] [neuro-shared] Implement PDA seed rules and constants  
-- [ ] [neuro-shared] Publish npm package for shared types  
-- [ ] [neuro-shared] Add CI check to ensure generated files are up to date  
+### 1. Shared Contracts (foundation)
+1. [neuro-shared] Build schemas (TS + Rust codegen)  
+2. [neuro-shared] Implement PDA seed rules and constants  
+3. [neuro-shared] Publish npm package for shared types  
+4. [neuro-shared] Add CI check to ensure generated files are up to date  
 
-### Services Layer
-- [ ] [neuro-services] Scaffold Gateway service (API, cache, rate limiting, audit logs)  
-- [ ] [neuro-services] Scaffold Indexer service (event ingestion, catalog builder, search APIs)  
-- [ ] [neuro-services] Implement storage adapters (IPFS client, SQLite/LevelDB)  
-- [ ] [neuro-services] Add metrics/logging and role toggles (gateway-only, indexer-only)  
-- [ ] [neuro-services] Write service unit tests  
+---
 
-### Web NS Node
-- [ ] [neuro-web] Build React UI (chat, provenance panel, role toggles, peer connect)  
-- [ ] [neuro-web] Integrate with Gateway APIs and Indexer search  
-- [ ] [neuro-web] Surface on‑chain provenance (CID, tx signature, slot, confidence)  
-- [ ] [neuro-web] Add local cache/index (browser storage or lightweight backend)  
-- [ ] [neuro-web] Write UI integration tests  
+### 2. On‑Chain Core (depends on Shared Contracts)
+1. [neuro-program] Design Solana program account schemas (Manifest, Attestation, Validator, Governance)  
+2. [neuro-program] Implement Anchor program instructions (init, attest, finalize, reject, update_validator, update_governance)  
+3. [neuro-program] Emit structured events/logs for off‑chain ingestion  
+4. [neuro-program] Write unit + integration tests on devnet/localnet  
 
-### Networking & Sync
-- [ ] [neuro-infra] Implement NS Node peer sync (WebRTC/WebSockets)  
-- [ ] [neuro-infra] Add reconcile loops for Gateway/Indexer vs Solana state  
-- [ ] [neuro-infra] Handle stale state markers, retries, reorgs  
+---
 
-### Security & Governance
-- [ ] [neuro-program] Implement validator registry workflow (activation/suspension)  
-- [ ] [neuro-services] Add API auth (keys/signatures), RBAC, rate limits  
-- [ ] [neuro-program] Add governance flags (pause, thresholds, weighting model)  
-- [ ] [neuro-infra] Document threat model and run security tests  
+### 3. Services Layer
+1. [neuro-services] Scaffold Gateway service (API, cache, rate limiting, audit logs)  
+2. [neuro-services] Scaffold Indexer service (event ingestion, catalog builder, search APIs)  
+3. [neuro-services] Implement storage adapters (IPFS client, SQLite/LevelDB)  
+4. [neuro-services] Add metrics/logging and role toggles (gateway-only, indexer-only)  
+5. [neuro-services] Write service unit tests  
 
-### NS Node (Binary/Daemon)
-- [ ] [neuro-infra] Initialize daemon skeleton, CLI, and config loader  
-- [ ] [neuro-infra] Implement peer networking MVP (DNS seeds, static peers, QUIC transport, handshake)  
-- [ ] [neuro-infra] Build local storage + index (catalog DB, artifact cache, IPFS pin/unpin)  
-- [ ] [neuro-infra] Develop sync engine (initial sync, resumable, incremental updates)  
-- [ ] [neuro-program] Integrate Solana anchoring (verify manifests/attests, cache provenance)  
-- [ ] [neuro-services] Implement Gateway API (local HTTP/GraphQL endpoints, auth, audit logs)  
-- [ ] [neuro-services] Add Indexer integration (event ingestion, faceted search, lineage graphs)  
-- [ ] [neuro-infra] Complete CLI commands (`nsd start/stop/status`, `ns peer add/list/ban`, `ns prune`, `ns snapshot`)  
-- [ ] [neuro-web] Add GUI (optional desktop UI for sync progress, provenance, search, settings)  
-- [ ] [neuro-infra] Implement operating modes (standalone offline, peer-only, anchored, light client, validator node)  
-- [ ] [neuro-infra] Set up distribution & install (binaries for Linux/macOS/Windows, packages, Docker, first run wizard)  
-- [ ] [neuro-infra] Enhance security & trust (Ed25519 keys, TLS/Noise transport, verification, hardening)  
-- [ ] [neuro-web] Add GUI (optional first-pass: sync progress, peers list, provenance viewer)  
-- [ ] [neuro-infra] Implement operating modes (config flags for standalone/light/anchored)  
-- [ ] [neuro-infra] Add observability (logs, metrics, Prometheus exporter, tracing IDs)  
-- [ ] [neuro-infra] Create installers and Docker (cross-compiled binaries, packages, Docker image)  
-- [ ] [neuro-infra] Implement snapshots and bootstrap (signed catalogs, downloader, integrity verification)  
-- [ ] [neuro-infra] Conduct E2E and failure drills (integration tests, chaos tests)  
-- [ ] [neuro-infra] Write docs and release (operator, validator, developer guides; reproducible bootstrap)  
+---
+
+### 4. Web NS Node
+1. [neuro-web] Build React UI (chat, provenance panel, role toggles, peer connect)  
+2. [neuro-web] Integrate with Gateway APIs and Indexer search  
+3. [neuro-web] Surface on‑chain provenance (CID, tx signature, slot, confidence)  
+4. [neuro-web] Add local cache/index (browser storage or lightweight backend)  
+5. [neuro-web] Write UI integration tests  
+6. [neuro-web] Build GUI (desktop/web UI for sync progress, provenance panel, peers list, role toggles, search, settings)  
+
+---
+
+### 5. Networking & Sync
+1. [neuro-infra] Implement NS Node peer sync (WebRTC/WebSockets)  
+   - [ ] DNS seeds  
+   - [ ] Static peers  
+   - [ ] QUIC transport  
+   - [ ] Handshake/versioning  
+   - [ ] Banlist/reputation  
+2. [neuro-infra] Add reconcile loops for Gateway/Indexer vs Solana state  
+3. [neuro-infra] Handle stale state markers, retries, reorgs  
+
+---
+
+### 6. Security & Governance
+1. [neuro-program] Implement validator registry workflow (activation/suspension)  
+2. [neuro-services] Add API auth (keys/signatures), RBAC, rate limits  
+3. [neuro-program] Add governance flags (pause, thresholds, weighting model)  
+4. [neuro-infra] Document threat model and run security tests  
+
+---
+
+### 7. NS Node (Binary/Daemon)
+1. [neuro-infra] Implement peer networking MVP (DNS seeds, static peers, QUIC transport, handshake)  
+2. [neuro-infra] Build local storage + index (catalog DB, artifact cache, IPFS pin/unpin)  
+3. [neuro-infra] Develop sync engine (initial sync, resumable, incremental updates)  
+4. [neuro-program + neuro-infra] Integrate Solana anchoring (verify manifests/attests, cache provenance)  
+5. [neuro-services] Implement Gateway API (local HTTP/GraphQL endpoints, auth, audit logs)  
+6. [neuro-services] Add Indexer integration (event ingestion, faceted search, lineage graphs)  
+7. [neuro-infra] Complete CLI commands (`nsd start/stop/status`, `ns peer add/list/ban`, `ns prune`, `ns snapshot`)  
+8. [neuro-infra] Implement operating modes (standalone offline, peer-only, anchored, light client, validator node; config flags + runtime switching)  
+9. [neuro-infra] Set up distribution & install (binaries for Linux/macOS/Windows, packages, Docker, first run wizard)  
+10. [neuro-infra] Enhance security & trust (Ed25519 keys, TLS/Noise transport, verification, hardening)  
+11. [neuro-infra] Add observability (logs, metrics, Prometheus exporter, tracing IDs)  
+12. [neuro-infra] Create installers and Docker (cross-compiled binaries, packages, Docker image)  
+13. [neuro-infra] Implement snapshots and bootstrap (signed catalogs, downloader, integrity verification)  
+14. [neuro-infra] Conduct E2E and failure drills (integration tests, chaos tests)  
+15. [neuro-infra] Write docs and release (operator, validator, developer guides; reproducible bootstrap)  
+
+---
 
 ## Done
 - [x] [neuro-infra] Create 5 repositories (`neuro-shared`, `neuro-program`, `neuro-services`, `neuro-web`, `neuro-infra`)  
