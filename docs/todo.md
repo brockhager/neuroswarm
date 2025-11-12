@@ -1,7 +1,7 @@
 # 📝 NeuroSwarm Project Kanban
 
 ## In Progress
-- [ ] [neuro-infra] Enhance security & trust (Ed25519 keys, TLS/Noise transport, verification, hardening)
+- [ ] [neuro-infra] Add observability (logs, metrics, Prometheus exporter, tracing IDs)
 
 ## Backlog (to be done)
 
@@ -67,18 +67,17 @@
 ---
 
 ### 7. NS Node (Binary/Daemon)
-1. [neuro-program + neuro-infra] Integrate Solana anchoring (verify manifests/attests, cache provenance)
-5. [neuro-services] Implement Gateway API (local HTTP/GraphQL endpoints, auth, audit logs)  
-6. [neuro-services] Add Indexer integration (event ingestion, faceted search, lineage graphs)  
-7. [neuro-infra] Complete CLI commands (`nsd start/stop/status`, `ns peer add/list/ban`, `ns prune`, `ns snapshot`)  
-8. [neuro-infra] Implement operating modes (standalone offline, peer-only, anchored, light client, validator node; config flags + runtime switching)  
-9. [neuro-infra] Set up distribution & install (binaries for Linux/macOS/Windows, packages, Docker, first run wizard)  
-10. [neuro-infra] Enhance security & trust (Ed25519 keys, TLS/Noise transport, verification, hardening)  
-11. [neuro-infra] Add observability (logs, metrics, Prometheus exporter, tracing IDs)  
-12. [neuro-infra] Create installers and Docker (cross-compiled binaries, packages, Docker image)  
-13. [neuro-infra] Implement snapshots and bootstrap (signed catalogs, downloader, integrity verification)  
-14. [neuro-infra] Conduct E2E and failure drills (integration tests, chaos tests)  
-15. [neuro-infra] Write docs and release (operator, validator, developer guides; reproducible bootstrap)  
+1. [x] [neuro-program + neuro-infra] Integrate Solana anchoring (verify manifests/attests, cache provenance)
+5. [x] [neuro-services] Implement Gateway API (local HTTP/GraphQL endpoints, auth, audit logs)  
+6. [x] [neuro-services] Add Indexer integration (event ingestion, faceted search, lineage graphs)  
+7. [x] [neuro-infra] Complete CLI commands (`nsd start/stop/status`, `ns peer add/list/ban`, `ns prune`, `ns snapshot`)  
+8. [x] [neuro-infra] Implement operating modes (standalone offline, peer-only, anchored, light client, validator node; config flags + runtime switching)  
+9. [x] [neuro-infra] Set up distribution & install (binaries for Linux/macOS/Windows, packages, Docker, first run wizard)  
+11. [ ] [neuro-infra] Add observability (logs, metrics, Prometheus exporter, tracing IDs)  
+12. [ ] [neuro-infra] Create installers and Docker (cross-compiled binaries, packages, Docker image)  
+13. [ ] [neuro-infra] Implement snapshots and bootstrap (signed catalogs, downloader, integrity verification)  
+14. [ ] [neuro-infra] Conduct E2E and failure drills (integration tests, chaos tests)  
+15. [ ] [neuro-infra] Write docs and release (operator, validator, developer guides; reproducible bootstrap)  
 
 ---
 
@@ -89,4 +88,5 @@
 - [x] [neuro-infra] Implement peer networking MVP (DNS seeds, static peers, QUIC transport, handshake)
 - [x] [neuro-infra] Build local storage + index (catalog DB, artifact cache, IPFS pin/unpin)
 - [x] [neuro-infra] Set up distribution & install (binaries for Linux/macOS/Windows, packages, Docker, first run wizard)
-- [x] [neuro-program + neuro-infra] Integrate Solana anchoring (verify manifests/attests, cache provenance)  
+- [x] [neuro-program + neuro-infra] Integrate Solana anchoring (verify manifests/attests, cache provenance)
+- [x] [neuro-infra] Enhance security & trust (Ed25519 keys, TLS/Noise transport, verification, hardening)  
