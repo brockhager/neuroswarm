@@ -20,12 +20,10 @@ Jump directly to the main documentation pages in this folder:
 - [GitHub Structure](./github-structure.md)
 - [This index (README)](./README.md)
 
-### Node Architecture & Components
-- [Node Design](./NODE-DESIGN.md)
-- [Gateway Nodes](./GATEWAY-NODES.md)
-- [Indexer Nodes](./INDEXER-NODES.md)
-- [Validator Nodes](./VALIDATOR-NODES.md)
-- [Indexing & Discovery](./INDEXING-DISCOVERY.md)
+### Contributor Playbooks
+- [Adding a Validator Node](./playbooks/adding-validator.md) — Step-by-step guide for deploying validator nodes
+- [Extending the Indexer](./playbooks/extending-indexer.md) — Guide for adding new search and indexing capabilities
+- [Writing Tests](./playbooks/writing-tests.md) — Comprehensive testing guide for code quality assurance
 
 ### Technical Infrastructure
 - [IPFS Storage](./IPFS-storage.md)

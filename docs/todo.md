@@ -90,4 +90,5 @@
 - [x] [neuro-infra] Set up distribution & install (binaries for Linux/macOS/Windows, packages, Docker, first run wizard)
 - [x] [neuro-program + neuro-infra] Integrate Solana anchoring (verify manifests/attests, cache provenance)
 - [x] [neuro-infra] Enhance security & trust (Ed25519 keys, TLS/Noise transport, verification, hardening)
-- [x] [neuro-services] Add observability (Prometheus metrics, Grafana dashboards, monitoring stack)  
+- [x] [neuro-services] Add observability (Prometheus metrics, Grafana dashboards, monitoring stack)
+- [x] [docs] Create contributor playbooks (adding validator, extending indexer, writing tests)  
