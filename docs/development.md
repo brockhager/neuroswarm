@@ -232,7 +232,7 @@ cd neuro-infra && cargo run
 Contributing to NeuroSwarm follows a structured workflow that integrates planning, development, testing, and deployment. Here's the complete journey:
 
 #### 1. **Discover & Plan** 📋
-- **Check the Kanban:** Review [current tasks](../kanban.md) and [objectives](../objectives.md)
+- **Check the Kanban:** Review [current tasks](../governance/kanban.md) and [objectives](../governance/objectives.md)
 - **Find your role:** Choose based on your skills:
   - **Gateway/API:** Focus on services layer and external interfaces
   - **Indexer:** Work on search, lineage, and data indexing
@@ -324,4 +324,4 @@ Contributing to NeuroSwarm follows a structured workflow that integrates plannin
 - [Architecture Overview](./architecture.md)
 - [API Documentation](../neuro-services/docs/services.md)
 - [Security Guidelines](./SECURITY-TRUST.md)
-- [Kanban Board](./kanban.md)
+- [Kanban Board](./governance/kanban.md)

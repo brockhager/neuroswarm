@@ -93,7 +93,7 @@ cargo test
 
 ## Development Workflow
 
-1. **Pick an issue** from the [Kanban board](./kanban.md)
+1. **Pick an issue** from the [Kanban board](./governance/kanban.md)
 2. **Create a feature branch:** `git checkout -b feature/your-feature`
 3. **Make changes** following the [development guide](./development.md)
 4. **Run tests** to ensure everything works

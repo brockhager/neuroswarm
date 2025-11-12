@@ -11,7 +11,7 @@ Jump directly to the main documentation pages in this folder:
 - [Architecture](./architecture.md)
 - [Decentralized Chatbot System](./decentralized-chatbot-system.md)
 - [Global Brain Design](./global-brain-design.md)
-- [Governance](./governance.md)
+- [Governance](./governance/governance.md)
 - [Master Documentation Outline](./master-documentation-outline.md)
 - [Personal AI Economy](./personal-ai-economy.md)
 - [Terms & Metaphors (glossary)](./TERMS.md)
@@ -25,6 +25,13 @@ Jump directly to the main documentation pages in this folder:
 - [Extending the Indexer](./playbooks/extending-indexer.md) — Guide for adding new search and indexing capabilities
 - [Writing Tests](./playbooks/writing-tests.md) — Comprehensive testing guide for code quality assurance
 
+### Community & Governance
+- [Contributor Recognition & Governance](./governance/contributor-recognition.md) — Recognition system, governance processes, and community scaling
+- [Governance Charter & Decision Framework](./governance/governance-charter.md) — Formal governance structure, decision-making rules, and conflict resolution
+- [Living Documentation Processes](./governance/living-documentation.md) — Automated documentation generation, validation, and maintenance
+- [Workshop Template](./governance/workshop-template.md) — Complete guide for running NeuroSwarm contributor workshops
+- [Code of Conduct](./governance/code-of-conduct.md) — Community standards and enforcement guidelines
+
 ### Technical Infrastructure
 - [IPFS Storage](./IPFS-storage.md)
 - [Security & Trust](./SECURITY-TRUST.md)
@@ -32,9 +39,9 @@ Jump directly to the main documentation pages in this folder:
 - [Global Brain](./GLOBAL-BRAIN.md)
 
 ### Project Management
-- [Objectives](./objectives.md)
-- [Kanban Board](./kanban.md)
-- [Todo List](./todo.md)
+- [Objectives](./governance/objectives.md)
+- [Kanban Board](./governance/kanban.md)
+- [Todo List](./governance/todo.md)
 
 ### Research & Concepts
 - [Definition of Trusted Data](./Definition%20of%20Trusted%20Data%20and%20the%20Fight%20Against%20Misinformation.md)

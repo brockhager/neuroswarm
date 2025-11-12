@@ -36,12 +36,12 @@ Purpose
 - Dynamic validator sets sized by network metrics.
 - Validators vote on proposals; confidence = weighted proportion of agreement.
 - Incentives for participation and alignment with consensus; reputation tracking.
-- Recommended doc: `docs/governance.md` and `docs/global-brain-design.md`.
+- Recommended doc: `docs/governance/governance.md` and `docs/global-brain-design.md`.
 
 ## 5. Blockchain Layer
 - Stores metadata, ordering, attestations, and reward events (artifacts kept off-chain via IPFS/CAS).
 - Smart contracts: submission, vote posting (or merkle roots), finalization, rewards, disputes.
-- Recommended doc: `docs/governance.md` and `docs/global-brain-design.md`.
+- Recommended doc: `docs/governance/governance.md` and `docs/global-brain-design.md`.
 
 ## 6. Verification Layer
 - Redundant validator runs, deterministic benchmarks, and optional ZK proofs.
@@ -58,7 +58,7 @@ Purpose
 ## 8. Governance
 - Staking, voting models (token, reputation, hybrid), committees, and dispute flows.
 - Slashing rules, reputation mechanics, and emergency governance.
-- Recommended doc: `docs/governance.md`.
+- Recommended doc: `docs/governance/governance.md`.
 
 ## 9. Incentive Model
 - Proof-of-Useful-Work: rewards for verified, useful contributions.
@@ -69,7 +69,7 @@ Purpose
 ## 10. Auditability
 - Canonical on-chain events and off-chain artifacts (CIDs).
 - Auditor playbook: fetch tx -> artifact -> reproduce evaluation -> compare attestations -> recompute rewards.
-- Recommended doc: `docs/global-brain-design.md` and `docs/governance.md`.
+- Recommended doc: `docs/global-brain-design.md` and `docs/governance/governance.md`.
 
 ## 11. User-Facing APIs
 - Local chat APIs, fact-check dashboards, audit explorers, developer SDKs.
@@ -99,7 +99,9 @@ Purpose
 - `docs/decentralized-chatbot-system.md` — system design
 - `docs/global-brain-design.md` — global brain technical spec
 - `docs/personal-ai-economy.md` — personal AI economy and monetization
-- `docs/governance.md` — governance (staking, voting, slashing)
+- `docs/governance/governance.md` — governance (staking, voting, slashing)
+- `docs/governance/governance-charter.md` — governance charter and decision framework
+- `docs/governance/living-documentation.md` — living documentation processes
 
 ---
 
