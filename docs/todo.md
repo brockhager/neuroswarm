@@ -1,7 +1,7 @@
 # 📝 NeuroSwarm Project Kanban
 
 ## In Progress
-- [ ] Define node spec (roles, modes, RPC surface, config schema, message types)
+- [ ] Initialize daemon skeleton, CLI, and config loader
 
 ## Backlog (to be done)
 - [ ] Define objectives, roles (NS Node, Gateway, Indexer, Validators), and success criteria  
@@ -57,4 +57,15 @@
 - [ ] Add GUI (optional desktop UI for sync progress, provenance, search, settings)
 - [ ] Implement operating modes (standalone offline, peer-only, anchored, light client, validator node)
 - [ ] Set up distribution & install (binaries for Linux/macOS/Windows, packages, Docker, first run wizard)
-- [ ] Enhance security & trust (Ed25519 keys, TLS/Noise transport, verification, hardening) 
+- [ ] Enhance security & trust (Ed25519 keys, TLS/Noise transport, verification, hardening)
+- [ ] Add GUI (optional first-pass: sync progress, peers list, provenance viewer)
+- [ ] Implement operating modes (config flags for standalone/light/anchored)
+- [ ] Add observability (logs, metrics, Prometheus exporter, tracing IDs)
+- [ ] Create installers and Docker (cross-compiled binaries, packages, Docker image)
+- [ ] Implement snapshots and bootstrap (signed catalogs, downloader, integrity verification)
+- [ ] Conduct E2E and failure drills (integration tests, chaos tests)
+- [ ] Write docs and release (operator, validator, developer guides; reproducible bootstrap)
+
+## Done
+- [x] Create 5 repositories (`neuro-shared`, `neuro-program`, `neuro-services`, `neuro-web`, `neuro-infra`)
+- [x] Define node spec (roles, modes, RPC surface, config schema, message types) 
