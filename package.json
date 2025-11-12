@@ -1,0 +1,17 @@
+{
+  "name": "neuroswarm",
+  "version": "0.1.0",
+  "description": "NeuroSwarm coordination and documentation",
+  "scripts": {
+    "docs": "echo 'Documentation is in docs/ folder'",
+    "clone-all": "echo 'Use git clone for individual repos'",
+    "test": "echo 'No tests in coordination repo'"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brockhager/neuroswarm.git"
+  },
+  "keywords": ["neuroswarm", "ai", "blockchain"],
+  "author": "NeuroSwarm Team",
+  "license": "MIT"
+}
