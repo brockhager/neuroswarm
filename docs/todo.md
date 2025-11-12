@@ -86,5 +86,5 @@
 ---
 
 ## Done
-- [x] [neuro-infra] Create 5 repositories (`neuro-shared`, `neuro-program`, `neuro-services`, `neuro-web`, `neuro-infra`)  
+- [x] Create 6 repositories (`neuro-shared`, `neuro-program`, `neuro-services`, `neuro-web`, `neuro-infra`, `neuroswarm`)
 - [x] [neuro-infra] Define node spec (roles, modes, RPC surface, config schema, message types)  
