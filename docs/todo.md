@@ -1,7 +1,7 @@
 # 📝 NeuroSwarm Project Kanban
 
 ## In Progress
-- [ ] [neuro-services] Add Indexer integration (event ingestion, faceted search, lineage graphs)
+- [ ] [neuro-infra] Complete CLI commands (`nsd start/stop/status`, `ns peer add/list/ban`, `ns prune`, `ns snapshot`)
 
 ## Backlog (to be done)
 
@@ -88,5 +88,5 @@
 - [x] [neuro-infra] Initialize daemon skeleton, CLI, and config loader
 - [x] [neuro-infra] Implement peer networking MVP (DNS seeds, static peers, QUIC transport, handshake)
 - [x] [neuro-infra] Build local storage + index (catalog DB, artifact cache, IPFS pin/unpin)
-- [x] [neuro-services] Implement Gateway API (local HTTP/GraphQL endpoints, auth, audit logs)
+- [x] [neuro-services] Add Indexer integration (event ingestion, faceted search, lineage graphs)
 - [x] [neuro-program + neuro-infra] Integrate Solana anchoring (verify manifests/attests, cache provenance)  
