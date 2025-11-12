@@ -1,7 +1,7 @@
 # 📝 NeuroSwarm Project Kanban
 
 ## In Progress
-- [ ] [neuro-infra] Integrate Solana anchoring (verify manifests/attests, cache provenance)
+- [ ] [neuro-services] Implement Gateway API (local HTTP/GraphQL endpoints, auth, audit logs)
 
 ## Backlog (to be done)
 
@@ -88,4 +88,5 @@
 - [x] [neuro-infra] Initialize daemon skeleton, CLI, and config loader
 - [x] [neuro-infra] Implement peer networking MVP (DNS seeds, static peers, QUIC transport, handshake)
 - [x] [neuro-infra] Build local storage + index (catalog DB, artifact cache, IPFS pin/unpin)
-- [x] [neuro-infra] Develop sync engine (initial sync, resumable, incremental updates)  
+- [x] [neuro-infra] Develop sync engine (initial sync, resumable, incremental updates)
+- [x] [neuro-program + neuro-infra] Integrate Solana anchoring (verify manifests/attests, cache provenance)  
