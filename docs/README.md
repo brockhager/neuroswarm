@@ -6,6 +6,8 @@ Welcome to the documentation hub for the neuroswarm project. This `docs/README.m
 
 Jump directly to the main documentation pages in this folder:
 
+- [Getting Started](./getting-started.md) — Setup and quickstart guide
+- [Development Guide](./development.md) — Developer workflow and coding standards
 - [Architecture](./architecture.md)
 - [Decentralized Chatbot System](./decentralized-chatbot-system.md)
 - [Global Brain Design](./global-brain-design.md)
@@ -17,6 +19,27 @@ Jump directly to the main documentation pages in this folder:
 - [Economics](./ECONOMICS.md)
 - [GitHub Structure](./github-structure.md)
 - [This index (README)](./README.md)
+
+### Node Architecture & Components
+- [Node Design](./NODE-DESIGN.md)
+- [Gateway Nodes](./GATEWAY-NODES.md)
+- [Indexer Nodes](./INDEXER-NODES.md)
+- [Validator Nodes](./VALIDATOR-NODES.md)
+- [Indexing & Discovery](./INDEXING-DISCOVERY.md)
+
+### Technical Infrastructure
+- [IPFS Storage](./IPFS-storage.md)
+- [Security & Trust](./SECURITY-TRUST.md)
+- [Extensions](./EXTENSIONS.md)
+- [Global Brain](./GLOBAL-BRAIN.md)
+
+### Project Management
+- [Objectives](./objectives.md)
+- [Kanban Board](./kanban.md)
+- [Todo List](./todo.md)
+
+### Research & Concepts
+- [Definition of Trusted Data](./Definition%20of%20Trusted%20Data%20and%20the%20Fight%20Against%20Misinformation.md)
 
 
 ## Purpose
@@ -55,9 +78,20 @@ This folder is where we collect all design documentation, architecture diagrams,
 
 ## Next steps
 
-- Add `getting-started.md` with a minimal setup and run guide.
-- Add `architecture.md` with a diagram and component descriptions.
-- Consider adding a small script to build a static doc site (optional).
+✅ **Completed:**
+- Added `getting-started.md` with setup and run guide
+- Added `development.md` with workflow, build, tests, and code style
+- Added comprehensive documentation linking
+
+🔄 **In Progress:**
+- Review and update existing documentation for consistency
+- Add API documentation links for each service
+- Create deployment guides for different environments
+
+📋 **Future:**
+- Add troubleshooting guides
+- Create video tutorials for complex setups
+- Implement automated documentation generation
 
 ---
 
