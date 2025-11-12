@@ -95,13 +95,17 @@ Purpose
 
 ## File Map (current docs)
 - `docs/README.md` — docs index and contribution guidance
+- `docs/overview.md` — project overview for new visitors
 - `docs/architecture.md` — architecture outline and details
 - `docs/decentralized-chatbot-system.md` — system design
 - `docs/global-brain-design.md` — global brain technical spec
 - `docs/personal-ai-economy.md` — personal AI economy and monetization
 - `docs/governance/governance.md` — governance (staking, voting, slashing)
 - `docs/governance/governance-charter.md` — governance charter and decision framework
+- `docs/governance/contributor-recognition.md` — contributor recognition and badge system
+- `docs/governance/voting.md` — voting system and processes
 - `docs/governance/living-documentation.md` — living documentation processes
+- `docs/governance/contributor-portal.md` — contributor portal and knowledge base
 
 ---
 
