@@ -1,7 +1,7 @@
 # 📝 NeuroSwarm Project Kanban
 
 ## In Progress
-- [ ] [neuro-infra] Initialize daemon skeleton, CLI, and config loader
+- [ ] [neuro-infra] Build local storage + index (catalog DB, artifact cache, IPFS pin/unpin)
 
 ## Backlog (to be done)
 
@@ -67,9 +67,7 @@
 ---
 
 ### 7. NS Node (Binary/Daemon)
-1. [neuro-infra] Implement peer networking MVP (DNS seeds, static peers, QUIC transport, handshake)  
-2. [neuro-infra] Build local storage + index (catalog DB, artifact cache, IPFS pin/unpin)  
-3. [neuro-infra] Develop sync engine (initial sync, resumable, incremental updates)  
+1. [neuro-infra] Develop sync engine (initial sync, resumable, incremental updates)
 4. [neuro-program + neuro-infra] Integrate Solana anchoring (verify manifests/attests, cache provenance)  
 5. [neuro-services] Implement Gateway API (local HTTP/GraphQL endpoints, auth, audit logs)  
 6. [neuro-services] Add Indexer integration (event ingestion, faceted search, lineage graphs)  
@@ -87,4 +85,6 @@
 
 ## Done
 - [x] Create 6 repositories (`neuro-shared`, `neuro-program`, `neuro-services`, `neuro-web`, `neuro-infra`, `neuroswarm`)
-- [x] [neuro-infra] Define node spec (roles, modes, RPC surface, config schema, message types)  
+- [x] [neuro-infra] Define node spec (roles, modes, RPC surface, config schema, message types)
+- [x] [neuro-infra] Initialize daemon skeleton, CLI, and config loader
+- [x] [neuro-infra] Implement peer networking MVP (DNS seeds, static peers, QUIC transport, handshake)  
