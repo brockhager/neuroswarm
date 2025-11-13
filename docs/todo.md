@@ -18,6 +18,19 @@ Each backlog item must meet ALL criteria before moving to Ready:
 - [ ] Design decentralized consensus mechanism for AI agent validation (Priority: HIGH, Estimate: L, Assignee: TBD)
 - [ ] Create tokenomics model with quadratic funding integration (Priority: HIGH, Estimate: M, Assignee: TBD)
 - [ ] Build validator staking and reward distribution system (Priority: HIGH, Estimate: M, Assignee: TBD)
+- [ ] Develop AI agent registration and discovery protocol (Priority: HIGH, Estimate: M, Assignee: TBD)
+- [ ] Implement secure inter-agent communication framework (Priority: HIGH, Estimate: L, Assignee: TBD)
+- [ ] Create governance proposal and voting smart contracts (Priority: HIGH, Estimate: XL, Assignee: TBD)
+- [ ] Design reputation system for contributor quality assessment (Priority: HIGH, Estimate: M, Assignee: TBD)
+- [ ] Build real-time swarm coordination dashboard (Priority: HIGH, Estimate: L, Assignee: TBD)
+- [ ] Implement automated testing framework for swarm behaviors (Priority: HIGH, Estimate: M, Assignee: TBD)
+
+## In Progress
+
+<!-- MAX 3 tasks at a time (WIP Limit) -->
+- [ ] Implement core swarm intelligence coordination algorithms (Priority: HIGH, Estimate: XL, Assignee: Core Infrastructure Team)
+- [ ] Design decentralized consensus mechanism for AI agent validation (Priority: HIGH, Estimate: L, Assignee: Core Infrastructure Team)
+- [ ] Create tokenomics model with quadratic funding integration (Priority: HIGH, Estimate: M, Assignee: Token Economics Team)
 
 ## Done
 
@@ -53,16 +66,11 @@ Each backlog item must meet ALL criteria before moving to Ready:
 ## Backlog (to be done)
 
 ### HIGH Priority
-- [ ] Implement core swarm intelligence coordination algorithms
-- [ ] Design decentralized consensus mechanism for AI agent validation
-- [ ] Create tokenomics model with quadratic funding integration
-- [ ] Build validator staking and reward distribution system
-- [ ] Develop AI agent registration and discovery protocol
-- [ ] Implement secure inter-agent communication framework
-- [ ] Create governance proposal and voting smart contracts
-- [ ] Design reputation system for contributor quality assessment
-- [ ] Build real-time swarm coordination dashboard
-- [ ] Implement automated testing framework for swarm behaviors
+- [ ] Create contributor onboarding flow with skill assessment (Priority: MEDIUM, Estimate: M, Assignee: TBD)
+- [ ] Build analytics system for swarm performance metrics (Priority: MEDIUM, Estimate: L, Assignee: TBD)
+- [ ] Design emergency shutdown protocols for swarm safety (Priority: MEDIUM, Estimate: M, Assignee: TBD)
+- [ ] Implement cross-chain interoperability for token transfers (Priority: MEDIUM, Estimate: L, Assignee: TBD)
+- [ ] Create dispute resolution mechanism for governance conflicts (Priority: MEDIUM, Estimate: M, Assignee: TBD)
 
 ### MEDIUM Priority
 - [ ] Create developer SDK for AI agent integration
@@ -99,11 +107,48 @@ Each backlog item must meet ALL criteria before moving to Ready:
 ## Contributor Assignment
 
 ### Working Groups
-- **Core Infrastructure**: System architecture, consensus mechanisms
-- **Token Economics**: Tokenomics design, reward systems
-- **AI Integration**: Agent protocols, swarm intelligence
-- **Developer Experience**: SDKs, documentation, tooling
-- **Community & Governance**: Contributor onboarding, governance systems
+- **Core Infrastructure**: System architecture, consensus mechanisms, blockchain integration, security protocols
+- **Token Economics**: Tokenomics design, reward systems, economic modeling, incentive mechanisms
+- **AI Integration**: Agent protocols, swarm intelligence algorithms, ML/AI frameworks, inter-agent communication
+- **Developer Experience**: SDKs, documentation, tooling, APIs, developer onboarding, testing frameworks
+- **Community & Governance**: Contributor onboarding, governance systems, transparency tools, community management
+
+### Working Group Responsibilities
+
+#### Core Infrastructure Team
+- Design and implement decentralized consensus mechanisms
+- Build secure blockchain integration layers
+- Develop system architecture and scalability solutions
+- Maintain security protocols and audit trails
+- Coordinate cross-chain interoperability
+
+#### Token Economics Team
+- Design token distribution and vesting schedules
+- Implement quadratic funding mechanisms
+- Create economic incentive models
+- Build reward distribution systems
+- Analyze economic impact and sustainability
+
+#### AI Integration Team
+- Develop swarm intelligence coordination algorithms
+- Design inter-agent communication protocols
+- Build AI agent registration and discovery systems
+- Implement machine learning frameworks integration
+- Create automated testing for swarm behaviors
+
+#### Developer Experience Team
+- Build and maintain developer SDKs
+- Create comprehensive documentation
+- Develop testing and debugging tools
+- Design APIs and integration guides
+- Maintain CI/CD pipelines and deployment automation
+
+#### Community & Governance Team
+- Design contributor onboarding flows
+- Build governance proposal and voting systems
+- Create transparency and audit tools
+- Manage community engagement initiatives
+- Coordinate contributor skill assessments and assignments
 
 ### Assignment Guidelines
 - Contributors self-select based on interest and expertise
