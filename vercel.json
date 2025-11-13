@@ -3,7 +3,6 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "framework": "nextjs",
   "regions": ["iad1"],
-  "rootDirectory": "website",
   "env": {
     "NODE_ENV": "production"
   }
