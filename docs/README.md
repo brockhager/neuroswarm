@@ -86,9 +86,12 @@ Backend APIs, data storage, and service integrations.
 
 - **[Extensions](./services/EXTENSIONS.md)** - Service extension framework### Project Management
 
-- **[IPFS Storage](./services/IPFS-storage.md)** - Decentralized file storage- [Objectives](./governance/objectives.md)
+### Project Management
 
-- [Kanban Board](./governance/kanban.md)
+- **[Kanban Board](./governance/kanban.md)** - Project management workflow
+- **[Board State](../neuro-infra/docs/board_state.json)** - Current Kanban board snapshot
+- **[Publish Log](../neuro-infra/docs/wp_publish_log.jsonl)** - Audit trail of all file operations
+- **[Objectives](./governance/objectives.md)** - Project goals and milestones
 
 ### 🌐 [Web](./web/)- [Todo List](./todo.md)
 

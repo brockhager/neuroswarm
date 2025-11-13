@@ -53,6 +53,45 @@ All documentation must be placed in the `/docs/` directory with proper categoriz
 6. **Commit with clear messages**: `git commit -m 'Add: feature description'`
 7. **Push and create PR**
 
+## 📁 File Placement Rules
+
+To maintain a clean and organized monorepo structure, all files must be placed in their appropriate subsystem directories. The sync agent and CI will automatically enforce these rules.
+
+### Monorepo Structure
+
+```
+neuroswarm/
+├── neuro-program/     # Solana programs and smart contracts
+├── neuro-services/    # Backend APIs and services  
+├── neuro-web/         # Frontend interfaces
+├── neuro-shared/      # Shared utilities and types
+├── neuro-runner/      # Node runner and orchestration
+├── neuro-infra/       # Infrastructure and deployment
+└── docs/              # All documentation
+```
+
+### Placement Rules
+
+- **Code files**: Place in the appropriate subsystem directory (e.g., `neuro-program/src/`, `neuro-services/src/`)
+- **Configuration files**: Place in subsystem root (e.g., `neuro-program/package.json`, `neuro-program/Cargo.toml`)
+- **Documentation**: All `.md` files must go in `docs/` subdirectories
+- **Scripts and tooling**: Place in `neuro-infra/scripts/` or subsystem-specific locations
+- **CI/CD workflows**: Place in `neuro-infra/.github/workflows/`
+
+### 🚫 Prohibited Locations
+
+- **Never place files in the monorepo root** - CI will reject PRs with stray files
+- **No code outside subsystem directories** - Except shared utilities in `neuro-shared/`
+- **No documentation outside `docs/`** - Use appropriate subdirectories
+
+### Automated Enforcement
+
+- **Sync agent**: Automatically moves misplaced files during PR review
+- **CI checks**: Fail PRs with files in prohibited locations
+- **Audit logging**: All file moves are logged in `wp_publish_log.jsonl`
+
+Violations will be automatically corrected, but please follow these rules to avoid delays in your PR review.
+
 ### Code Standards
 
 - **TypeScript/JavaScript**: Follow ESLint rules and Prettier formatting
