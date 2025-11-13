@@ -1,7 +1,7 @@
 # 📝 NeuroSwarm Project Kanban
 
 ## In Progress
-- [ ] [neuro-infra] Add observability (logs, metrics, Prometheus exporter, tracing IDs)
+- [ ] [neuro-web] Portal Implementation MVP (React dashboard, badge system, learning paths)
 
 ## Backlog (to be done)
 
@@ -53,6 +53,13 @@
 2. [ ] [neuro-infra] Implement snapshots and bootstrap (signed catalogs, downloader, integrity verification)  
 3. [ ] [neuro-infra] Conduct E2E and failure drills (integration tests, chaos tests)  
 4. [ ] [neuro-infra] Write docs and release (operator, validator, developer guides; reproducible bootstrap)
+
+### 8. Portal Implementation MVP
+**✅ Frontend (neuro-web)**: Next.js app with Tailwind CSS, portal layout, badge display, dashboard, learning paths, and Solana wallet integration  
+**Backend (neuro-program)**: Solana attestation integration for confidence scoring of docs and contributions  
+**Community Hub**: Basic forum threads + mentorship matching prototype  
+**Search & Discovery**: Initial AI-powered search across playbooks, governance docs, and living documentation  
+**Observability**: Metrics for portal usage, contributor progression, and voting participation
 
 ## Done
 - [x] Create 6 repositories (`neuro-shared`, `neuro-program`, `neuro-services`, `neuro-web`, `neuro-infra`, `neuroswarm`)

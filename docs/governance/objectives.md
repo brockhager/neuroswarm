@@ -145,7 +145,7 @@ NeuroSwarm is a decentralized network for verifiable AI model provenance and col
 - **Contributor Portal**: Unified knowledge base with confidence scoring, learning paths, and community hub
 
 ### 🔄 Ready for Implementation
-- **Portal Web Application**: React-based frontend with personalized learning paths and search
+- **Portal Web Application**: React-based frontend with personalized learning paths and search (IN PROGRESS)
 - **Confidence Scoring System**: Solana-based attestation system extending provenance to documentation
 - **Community Hub**: Forums, mentorship matching, and collaboration tools
 - **Automated Curation**: AI-powered content recommendations and quality assessment
