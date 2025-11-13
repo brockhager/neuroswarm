@@ -16,3 +16,5 @@
 {"timestamp":"2025-11-13 11:16","details":"Directory hygiene confirmed - all KB content in /website/kb/, no old /wp-kb/ directories found","file":"/website/kb/","action":"validated"}
 {"timestamp":"2025-11-13 11:16","details":"Next.js build successful - all KB pages compiled (11/11 routes generated including /kb paths)","file":"website","action":"built"}
 {"timestamp":"2025-11-13 11:16","details":"Build artifacts ready for deployment to Vercel/Netlify - KB content accessible at /kb routes","file":"website","action":"deploy-ready"}
+{"timestamp":"2025-11-13 11:21","details":"CI/CD pipeline configured for build + deploy","file":".github/workflows/deploy.yml","action":"created"}
+{"timestamp":"2025-11-13 11:21","details":"Workflow syntax validated, build step tested successfully, ready for deployment","file":".github/workflows/deploy.yml","action":"validated"}
