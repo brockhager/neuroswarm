@@ -173,7 +173,7 @@ cat docs/CONTRIBUTOR-GUIDE.md
 
 ```bash
 # Run hygiene checks
-.\scripts\sync-agent.ps1
+.\agents\sync-agent.ps1
 
 # Run tests
 Invoke-Pester -Path "tests/agent/"
@@ -196,7 +196,7 @@ git checkout -b feature/your-feature-name
 Invoke-Pester
 
 # Run hygiene checks
-.\scripts\sync-agent.ps1
+.\agents\sync-agent.ps1
 
 # Check for linting issues
 npm run lint  # If available

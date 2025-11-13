@@ -7,7 +7,7 @@ Describe "Sync Agent Core Functions" {
         $projectId = 3
         $owner = "brockhager"
         $todoFile = "docs/todo.md"
-        $logFile = "wp_publish_log.jsonl"
+        $logFile = ".logs/wp_publish_log.jsonl"
 
         function Get-TodoContent {
             if (Test-Path $todoFile) {
@@ -264,7 +264,7 @@ Describe "Structural Hygiene Checks" {
 Describe "Script Parsing Issues" {
     It "Should identify that sync-agent.ps1 has parsing errors" {
         # This test documents the known issue
-        $scriptPath = "scripts/sync-agent.ps1"
+        $scriptPath = "agents/sync-agent.ps1"
         Test-Path $scriptPath | Should Be $true
 
         # Note: The script currently has parsing errors that prevent execution

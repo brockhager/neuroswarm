@@ -1,0 +1,47 @@
+# Code Owners and Approval Requirements
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/managing-repository-settings/about-code-owners
+
+# Global owners - require approval from core team for all changes
+* @owner @core-team
+
+# Critical security and governance files - require owner approval
+docs/SECURITY.md @owner
+docs/GOVERNANCE.md @owner
+CODEOWNERS @owner
+.github/workflows/deploy.yml @owner @core-team
+.github/workflows/security.yml @owner @core-team
+
+# Package and dependency management
+package.json @core-team
+pnpm-lock.yaml @core-team
+requirements*.txt @core-team
+Cargo.toml @core-team
+Anchor.toml @core-team
+
+# Documentation - core team approval for docs changes
+docs/ @core-team
+README.md @core-team
+
+# Source code - standard approval process
+src/ @core-team
+website/ @core-team
+scripts/ @core-team
+
+# Configuration files
+config/tsconfig.json @core-team
+config/.eslintrc.json @core-team
+config/vercel.json @core-team
+.gitignore @core-team
+
+# Build and deployment
+.github/ @core-team
+dist/ @core-team
+
+# Tests - can be approved by any contributor
+tests/ @*
+*.test.* @*
+
+# Content and data - broader approval
+content/ @*
+data/ @*
+example-content.json @*
