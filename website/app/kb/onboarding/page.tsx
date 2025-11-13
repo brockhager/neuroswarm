@@ -213,7 +213,7 @@ export default function OnboardingPage() {
             Step-by-Step Guide
           </h2>
           <div className="space-y-6">
-            {onboardingSteps.map((step, index) => {
+            {onboardingSteps.map((step) => {
               const Icon = step.icon;
               return (
                 <div key={step.step} className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">

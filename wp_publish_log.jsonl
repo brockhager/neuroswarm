@@ -20,3 +20,5 @@
 {"timestamp":"2025-11-13 11:21","details":"Workflow syntax validated, build step tested successfully, ready for deployment","file":".github/workflows/deploy.yml","action":"validated"}
 {"timestamp":"2025-11-13 13:18","details":"Mission, vision, values, and KB links added to NeuroSwarm landing page","file":"/website/app/page.tsx","action":"updated"}
 {"timestamp":"2025-11-13 13:18","details":"Landing page published live with mission-driven content","file":"/website/app/page.tsx","action":"deployed"}
+{"timestamp":"2025-11-13 13:25","details":"GitHub Actions deployment workflow triggered by push to main branch","file":"website","action":"deployment-triggered"}
+{"timestamp":"2025-11-13 13:27","details":"NeuroSwarm website successfully deployed to https://getblockchain.tech/neuroswarm/ with mission-driven landing page and full KB integration","file":"website","action":"live"}

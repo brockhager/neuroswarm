@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft, FileText, Vote, Clock, CheckCircle, XCircle, TrendingUp, Eye, ExternalLink, Users, MessageSquare } from 'lucide-react';
+import { ArrowLeft, FileText, Vote, CheckCircle, XCircle, TrendingUp, Eye, ExternalLink, Users, MessageSquare } from 'lucide-react';
 
 export const metadata = {
   title: 'Transparency & Logs | NeuroSwarm',
@@ -208,7 +208,7 @@ export default function TransparencyPage() {
             Transparency & Logs
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300">
-            Complete transparency into NeuroSwarm's governance process, with auditable records
+            Complete transparency into NeuroSwarm&apos;s governance process, with auditable records
             of all decisions, votes, and platform activities.
           </p>
         </div>

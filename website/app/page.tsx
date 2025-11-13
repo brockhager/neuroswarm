@@ -165,7 +165,7 @@ export default function HomePage() {
                 Our Mission & Vision
               </h2>
               <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-                Building the foundation for a decentralized AI future where technology serves humanity's collective intelligence.
+                Building the foundation for a decentralized AI future where technology serves humanity&apos;s collective intelligence.
               </p>
             </div>
 
@@ -177,7 +177,7 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Our Mission</h3>
                 <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-                  To democratize artificial intelligence by creating an open, decentralized platform where AI development is collaborative, transparent, and accessible to everyone. We believe AI should serve humanity's collective intelligence, not centralized interests.
+                  To democratize artificial intelligence by creating an open, decentralized platform where AI development is collaborative, transparent, and accessible to everyone. We believe AI should serve humanity&apos;s collective intelligence, not centralized interests.
                 </p>
               </div>
 
@@ -237,7 +237,7 @@ export default function HomePage() {
                   <div className="text-left">
                     <h4 className="text-lg font-semibold text-green-600 dark:text-green-400 mb-3">Our Purpose</h4>
                     <p className="text-gray-700 dark:text-gray-300">
-                      To democratize artificial intelligence by creating an open, decentralized platform where AI development is collaborative, transparent, and accessible to everyone. We believe AI should serve humanity's collective intelligence, not centralized interests.
+                      To democratize artificial intelligence by creating an open, decentralized platform where AI development is collaborative, transparent, and accessible to everyone. We believe AI should serve humanity&apos;s collective intelligence, not centralized interests.
                     </p>
                   </div>
                 </div>
@@ -248,7 +248,7 @@ export default function HomePage() {
             <div className="text-center mb-16">
               <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Your Contributor Journey</h3>
               <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
-                Whether you're new to open source or an experienced developer, NeuroSwarm offers clear pathways to contribute and grow within our community.
+                Whether you&apos;re new to open source or an experienced developer, NeuroSwarm offers clear pathways to contribute and grow within our community.
               </p>
               <Link
                 href="/kb/pathways"
@@ -316,7 +316,7 @@ export default function HomePage() {
                 Why NeuroSwarm?
               </h2>
               <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-                We're building the next generation of AI infrastructure that's transparent,
+                We&apos;re building the next generation of AI infrastructure that&apos;s transparent,
                 community-owned, and designed for the decentralized future.
               </p>
             </div>
