@@ -321,7 +321,7 @@ Contributing to NeuroSwarm follows a structured workflow that integrates plannin
 
 ## Resources
 
-- [Architecture Overview](./architecture.md)
-- [API Documentation](../neuro-services/docs/services.md)
+- [Architecture Overview](../program/architecture.md)
+- [API Documentation](../services/)
 - [Security Guidelines](./SECURITY-TRUST.md)
-- [Kanban Board](./governance/kanban.md)
+- [Kanban Board](../governance/kanban.md)
