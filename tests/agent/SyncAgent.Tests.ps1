@@ -16,7 +16,7 @@ Describe "Sync Agent Core Functions" {
             return $null
         }
 
-        function Get-FileHash {
+        function Get-FileSHA256Hash {
             param([string]$filePath)
             if (Test-Path $filePath) {
                 return Get-FileHash $filePath -Algorithm SHA256 | Select-Object -ExpandProperty Hash
@@ -71,20 +71,20 @@ Describe "Sync Agent Core Functions" {
     Context "File Operations" {
         It "Should return null for non-existent todo file" {
             $result = Get-TodoContent
-            $result | Should -Be $null
+            $result | Should Be $null
         }
 
         It "Should return null for non-existent file hash" {
-            $result = Get-FileHash "nonexistent.txt"
-            $result | Should -Be $null
+            $result = Get-FileSHA256Hash "nonexistent.txt"
+            $result | Should Be $null
         }
 
         It "Should calculate hash for existing file" {
             # Create a test file
             "test content" | Out-File -FilePath "test-hash.txt" -Encoding UTF8
-            $result = Get-FileHash "test-hash.txt"
-            $result | Should -Not -Be $null
-            $result.Length | Should -Be 64  # SHA256 hash length
+            $result = Get-FileSHA256Hash "test-hash.txt"
+            $result | Should Not Be $null
+            $result.Length | Should Be 64  # SHA256 hash length
             Remove-Item "test-hash.txt"
         }
     }
@@ -103,12 +103,12 @@ Describe "Sync Agent Core Functions" {
             $logContent = Get-Content $logFile -Raw
             $logEntry = $logContent | ConvertFrom-Json
 
-            $logEntry.action | Should -Be "test_action"
-            $logEntry.task | Should -Be "test_task"
-            $logEntry.status | Should -Be "completed"
-            $logEntry.details | Should -Be "test details"
-            $logEntry.project_id | Should -Be 3
-            $logEntry.timestamp | Should -Not -Be $null
+            $logEntry.action | Should Be "test_action"
+            $logEntry.task | Should Be "test_task"
+            $logEntry.status | Should Be "completed"
+            $logEntry.details | Should Be "test details"
+            $logEntry.project_id | Should Be 3
+            $logEntry.timestamp | Should Not Be $null
         }
 
         It "Should log governance events" {
@@ -117,13 +117,13 @@ Describe "Sync Agent Core Functions" {
             $logContent = Get-Content $logFile -Raw
             $logEntry = $logContent | ConvertFrom-Json
 
-            $logEntry.event_type | Should -Be "structural_violation"
-            $logEntry.severity | Should -Be "high"
-            $logEntry.description | Should -Be "Test violation"
-            $logEntry.violations | Should -Be "test violation"
-            $logEntry.remediation | Should -Be "fix it"
-            $logEntry.component | Should -Be "structural-hygiene"
-            $logEntry.governance_action | Should -Be "monitor"
+            $logEntry.event_type | Should Be "structural_violation"
+            $logEntry.severity | Should Be "high"
+            $logEntry.description | Should Be "Test violation"
+            $logEntry.violations | Should Be "test violation"
+            $logEntry.remediation | Should Be "fix it"
+            $logEntry.component | Should Be "structural-hygiene"
+            $logEntry.governance_action | Should Be "monitor"
         }
 
         It "Should append multiple log entries" {
@@ -131,13 +131,13 @@ Describe "Sync Agent Core Functions" {
             Log-GovernanceEvent -eventType "compliance" -severity "info" -description "All good"
 
             $logLines = Get-Content $logFile
-            $logLines.Count | Should -Be 2
+            $logLines.Count | Should Be 2
 
             $firstEntry = $logLines[0] | ConvertFrom-Json
             $secondEntry = $logLines[1] | ConvertFrom-Json
 
-            $firstEntry.action | Should -Be "action1"
-            $secondEntry.event_type | Should -Be "compliance"
+            $firstEntry.action | Should Be "action1"
+            $secondEntry.event_type | Should Be "compliance"
         }
     }
 
@@ -149,7 +149,7 @@ Describe "Sync Agent Core Functions" {
 
             Log-Action -action "test" -task "test" -status "test"
 
-            Test-Path $logFile | Should -Be $true
+            Test-Path $logFile | Should Be $true
         }
 
         It "Should append to existing log file" {
@@ -161,7 +161,7 @@ Describe "Sync Agent Core Functions" {
             Log-Action -action "test" -task "test" -status "test"
 
             $finalLines = (Get-Content $logFile).Count
-            $finalLines | Should -Be ($initialLines + 1)
+            $finalLines | Should Be ($initialLines + 1)
         }
     }
 }
@@ -218,7 +218,7 @@ Describe "Structural Hygiene Checks" {
         It "Should detect missing required directories" {
             # This test assumes the directories exist in the actual repo
             $result = Check-StructuralHygiene
-            $result.Violations | Should -Not -Contain "Required directory missing:*"
+            $result.Violations | Where-Object { $_ -like "Required directory missing:*" } | Should BeNullOrEmpty
         }
 
         It "Should detect scripts in root directory" {
@@ -226,7 +226,7 @@ Describe "Structural Hygiene Checks" {
             "test script" | Out-File -FilePath "test-script.ps1" -Encoding UTF8
 
             $result = Check-StructuralHygiene
-            $result.Violations | Should -Contain "Scripts found in root directory:*"
+            $result.Violations | Where-Object { $_ -like "Scripts found in root directory:*" } | Should Not BeNullOrEmpty
 
             Remove-Item "test-script.ps1"
         }
@@ -236,7 +236,7 @@ Describe "Structural Hygiene Checks" {
             "test file" | Out-File -FilePath "test-outside.test.js" -Encoding UTF8
 
             $result = Check-StructuralHygiene
-            $result.Violations | Should -Contain "Test files found outside tests/ directory:*"
+            $result.Violations | Where-Object { $_ -like "Test files found outside tests/ directory:*" } | Should Not BeNullOrEmpty
 
             Remove-Item "test-outside.test.js"
         }
@@ -247,7 +247,7 @@ Describe "Structural Hygiene Checks" {
             $scriptDocExists = Test-Path "docs/scripts/README.md"
             if (-not $scriptDocExists) {
                 $result = Check-StructuralHygiene
-                $result.Warnings | Should -Contain "Script registry missing: docs/scripts/README.md"
+                $result.Warnings | Should Contain "Script registry missing: docs/scripts/README.md"
             }
         }
 
@@ -265,11 +265,11 @@ Describe "Script Parsing Issues" {
     It "Should identify that sync-agent.ps1 has parsing errors" {
         # This test documents the known issue
         $scriptPath = "scripts/sync-agent.ps1"
-        Test-Path $scriptPath | Should -Be $true
+        Test-Path $scriptPath | Should Be $true
 
         # Note: The script currently has parsing errors that prevent execution
         # This test serves as documentation until the issues are resolved
-        $true | Should -Be $true  # Placeholder assertion
+        $true | Should Be $true  # Placeholder assertion
     }
 
     It "Should validate that governance logging functions work in isolation" {
@@ -286,9 +286,9 @@ Describe "Script Parsing Issues" {
         }
 
         $result = Test-Log-GovernanceEvent -eventType "test" -severity "info" -description "test"
-        $result.event_type | Should -Be "test"
-        $result.severity | Should -Be "info"
-        $result.description | Should -Be "test"
-        $result.timestamp | Should -Not -Be $null
+        $result.event_type | Should Be "test"
+        $result.severity | Should Be "info"
+        $result.description | Should Be "test"
+        $result.timestamp | Should Not Be $null
     }
 }

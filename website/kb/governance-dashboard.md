@@ -112,7 +112,7 @@ Each governance event contains:
 
 ## Questions?
 
-- 📖 [Getting Started Guide](../wp-kb/getting-started.md)
+- 📖 [Getting Started Guide](getting-started.md)
 - 🏛️ [Governance Overview](../governance/governance.md)
 - 💬 [Community Discussions](https://github.com/brockhager/neuro-infra/discussions)
 
