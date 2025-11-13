@@ -29,9 +29,10 @@ A future where AI is developed collectively by humanity, for humanity. Where eve
 
 New to NeuroSwarm? Start your journey here.
 
-- **[Getting Started Guide](/docs/onboarding/getting-started.md)** - Complete walkthrough from environment setup to your first contribution
-- **[Prerequisites](/docs/onboarding/getting-started.md#prerequisites)** - Required tools, accounts, and knowledge
-- **[Automated Setup](/docs/scripts/README.md)** - Use our setup scripts for faster onboarding
+- **[Interactive Quickstart](quickstart.md)** - Get running in 5 minutes with copy-paste commands
+- **[Getting Started Guide](getting-started.md)** - Complete walkthrough from environment setup to your first contribution
+- **[Prerequisites](getting-started.md#prerequisites)** - Required tools, accounts, and knowledge
+- **[Automated Setup](scripts/README.md)** - Use our setup scripts for faster onboarding
 
 Begin by cloning the repository, installing dependencies, and running your first build and test cycle.
 
@@ -39,6 +40,8 @@ Begin by cloning the repository, installing dependencies, and running your first
 
 Learn how to contribute effectively to NeuroSwarm's development.
 
+- **[Contributor Pathways](pathways.md)** - Visual roadmap from newcomer to governance leader
+- **[Community Showcase](showcase.md)** - Featured contributor stories and achievements
 - **[Full KB Index](index.md)** - Complete table of contents for all documentation
 - **[File Organization Rules](/docs/CONTRIBUTOR-GUIDE.md#file-placement)** - Understanding our monorepo structure and hygiene enforcement
 - **[Kanban Workflow](/docs/governance/rituals.md)** - Ready → In Progress → Done process for task management
@@ -51,7 +54,7 @@ Our contributor experience emphasizes clear communication, automated validation,
 
 NeuroSwarm operates through transparent, community-driven governance.
 
-- **[Governance Dashboard](governance-dashboard.md)** - Live view of all governance activities and decisions
+- **[Governance Dashboard](governance-dashboard.md)** - Live metrics, events, and community health indicators
 - **[Governance Model](/docs/governance/governance.md)** - Off-chain community governance vs. on-chain protocol governance
 - **[Weekly Rituals](/docs/governance/rituals.md)** - Structured ceremonies for refinement, dependency reviews, and progress updates
 - **[Governance Events](/wp_publish_log.jsonl)** - All governance actions logged in our transparency record
@@ -100,6 +103,7 @@ Ready to contribute? Here's your pathway forward:
 - [📋 Open Issues](https://github.com/brockhager/neuro-infra/issues)
 - [💬 Governance Discussions](https://github.com/brockhager/neuro-infra/discussions)
 - [🤝 Contribution Guidelines](/docs/CONTRIBUTOR-GUIDE.md)
+- **[Community Showcase](showcase.md)** - See contributor stories and get inspired
 
 ## Governance & Transparency
 
