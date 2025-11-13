@@ -22,7 +22,10 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+        cache: 'pnpm'
+
+    - name: Setup pnpm
+      run: corepack enable
 
     - name: Setup Python
       uses: actions/setup-python@v4
@@ -36,7 +39,8 @@ jobs:
         $PSVersionTable.PSVersion
 
     - name: Install Node.js dependencies
-      run: npm ci
+      run: pnpm install --frozen-lockfile
+      working-directory: ./website
 
     - name: Install Python dependencies
       run: |
@@ -50,7 +54,8 @@ jobs:
         Install-Module -Name PSScriptAnalyzer -Force
 
     - name: Lint TypeScript
-      run: npx tsc --noEmit
+      run: pnpm tsc --noEmit
+      working-directory: ./website
 
     - name: Lint PowerShell scripts
       shell: pwsh
@@ -61,10 +66,12 @@ jobs:
         }
 
     - name: Run Governance Tests
-      run: npm test -- tests/governance/ --coverage --coverageDirectory=coverage/governance
+      run: pnpm test -- tests/governance/ --coverage --coverageDirectory=coverage/governance
+      working-directory: ./website
 
     - name: Run Integration Tests
-      run: npm run test:integration
+      run: pnpm run test:integration
+      working-directory: ./website
       env:
         NODE_ENV: test
 
@@ -80,7 +87,8 @@ jobs:
         }
 
     - name: Run E2E Tests
-      run: npx playwright test tests/e2e/
+      run: pnpm playwright test tests/e2e/
+      working-directory: ./website
       env:
         CI: true
 
@@ -129,7 +137,8 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Run security audit
-      run: npm audit --audit-level high
+      run: pnpm audit --audit-level high
+      working-directory: ./website
 
     - name: Check for secrets
       uses: gitleaks/gitleaks-action@v2
@@ -148,13 +157,18 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 20.x
-        cache: 'npm'
+        cache: 'pnpm'
+
+    - name: Setup pnpm
+      run: corepack enable
 
     - name: Install dependencies
-      run: npm ci
+      run: pnpm install --frozen-lockfile
+      working-directory: ./website
 
     - name: Build for production
-      run: npm run build
+      run: pnpm run build
+      working-directory: ./website
 
     - name: Validate build artifacts
       run: |
@@ -174,26 +188,33 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 20.x
-        cache: 'npm'
+        cache: 'pnpm'
 
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
 
+    - name: Setup pnpm
+      run: corepack enable
+
     - name: Install dependencies
       run: |
-        npm ci
+        pnpm install --frozen-lockfile
         pip install -r requirements-wp.txt
+      working-directory: ./website
 
     - name: Run extended E2E tests
-      run: npx playwright test tests/e2e/ --headed=false --workers=1
+      run: pnpm playwright test tests/e2e/ --headed=false --workers=1
+      working-directory: ./website
       env:
         CI: true
         EXTENDED_TESTS: true
 
     - name: Performance tests
-      run: npm run test:performance
+      run: pnpm run test:performance
+      working-directory: ./website
 
     - name: Load tests
-      run: npm run test:load
+      run: pnpm run test:load
+      working-directory: ./website
