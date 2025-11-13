@@ -49,17 +49,16 @@ Below is a live view of recent governance events. These events are automatically
 
 | Timestamp | Action | File | Details |
 |-----------|--------|------|---------|
-| 2025-11-13 10:44 | moved | neuroswarm/scripts/README.md | Relocated to docs/scripts/README.md for proper documentation organization |
-| 2025-11-13 10:44 | moved | neuroswarm/tests/README.md | Relocated to docs/tests/README.md for proper documentation organization |
-| 2025-11-13 10:44 | moved | neuroswarm/website/README.md | Relocated to docs/website/README.md for proper documentation organization |
-| 2025-11-13 10:44 | moved | neuroswarm/website/SEO-README.md | Relocated to docs/website/SEO-README.md for proper documentation organization |
-| 2025-11-13 10:44 | moved | neuroswarm/website/GOVERNANCE-LAUNCH-ANNOUNCEMENT.md | Relocated to docs/governance/GOVERNANCE-LAUNCH-ANNOUNCEMENT.md for governance documentation |
-| 2025-11-13 10:44 | moved | neuroswarm/.github/pull_request_template.md | Relocated to docs/.github/pull_request_template.md for GitHub configuration documentation |
-| 2025-11-13 10:41 | moved | CONTRIBUTOR-GUIDE.md | Relocated to docs/CONTRIBUTOR-GUIDE.md for proper documentation organization |
-| 2025-11-13 10:41 | moved | neuro-services/src/index.test.ts | Relocated to neuro-services/tests/index.test.ts for proper test organization |
-| 2025-11-13 10:41 | moved | neuroswarm/scripts/test_connection.py | Relocated to neuroswarm/tests/test_connection.py for proper test organization |
-| 2025-11-13 10:41 | moved | neuroswarm/scripts/governance/test-quorum-validation.ts | Relocated to neuroswarm/tests/governance/test-quorum-validation.ts for proper test organization |
-| 2025-11-13 10:41 | moved | neuro-web/scripts/test-quorum-validation.ts | Relocated to neuro-web/tests/test-quorum-validation.ts for proper test organization |
+| 2025-11-13 14:10 | executed | sync-agent.ps1 | Ran sync agent to synchronize completed todos with GitHub Project board |
+| 2025-11-13 14:10 | created | docs/todo.md | Created todo.md with all completed tasks marked as done |
+| 2025-11-13 14:05 | validated | codebase | Lint, typecheck, and build all passed with 0 errors |
+| 2025-11-13 14:05 | linting_fixed | codebase | Resolved final 14 ESLint/TypeScript problems; codebase now fully clean |
+| 2025-11-13 13:59 | nextjs-config-updated | website/next.config.ts | Updated images.domains to images.remotePatterns for Next.js 16 compatibility |
+| 2025-11-13 13:59 | linting_validated | codebase | ESLint reports 0 problems, TypeScript compilation passes cleanly, build generates all 11 routes successfully |
+| 2025-11-13 13:56 | nodejs-version-update | .github/workflows | Updated Node.js version from 18 to 20 in all workflows to meet Next.js 16 requirement of Node.js >=20.9.0 |
+| 2025-11-13 13:54 | pnpm-version-alignment | .github/workflows | Updated pnpm version from 8 to 10 in all workflows to match local environment and fix lock file compatibility issues |
+| 2025-11-13 13:43 | pnpm-setup-fix | .github/workflows | Replaced corepack enable with pnpm/action-setup@v2 action - fixes pnpm executable not found error in GitHub Actions by properly installing pnpm before usage |
+| 2025-11-13 13:41 | npm-to-pnpm-migration | .github/workflows/ci.yml | Migrated entire CI workflow from npm to pnpm - updated setup-node cache, added pnpm setup, changed all npm commands to pnpm with frozen-lockfile, added working-directory for website context |
 
 ## Understanding Governance Events
 
@@ -154,4 +153,4 @@ Each governance event contains:
 
 ---
 
-*This dashboard is automatically updated. Last refresh: 2025-11-13*
+*This dashboard is automatically updated. Last refresh: 2025-11-13 14:15*

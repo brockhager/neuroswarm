@@ -139,6 +139,38 @@ Invoke-Pester tests/agent/SyncAgent.Tests.ps1 -OutputFormat Detailed
 - [ ] No scripts in root directory
 - [ ] Required directories exist
 
+### Todo Workflow Integration
+
+The sync agent automatically synchronizes `docs/todo.md` with the GitHub Project board, ensuring consistent task tracking across the team.
+
+#### Todo File Structure
+```markdown
+# NeuroSwarm Project Todo
+
+## Done
+- [x] Completed task description
+
+## Backlog (to be done)
+- [ ] Future task description
+
+## In Progress
+- [ ] Currently active task description
+```
+
+#### Workflow Steps
+1. **Add new tasks** to `docs/todo.md` in the appropriate section
+2. **Move tasks** between sections as work progresses (`Backlog` → `In Progress` → `Done`)
+3. **Sync automatically** happens every 30 minutes via the monitoring agent
+4. **Manual sync** available with `.\sync-agent.ps1 -Sync`
+5. **Check governance logs** in `wp_publish_log.jsonl` for sync confirmations
+
+#### Best Practices
+- Keep task descriptions clear and actionable
+- Update task status immediately when starting/finishing work
+- Use consistent formatting for easy parsing
+- Reference issue numbers when applicable
+- Log significant changes in governance records
+
 ### Development Workflow
 
 1. **Make changes** to sync agent or related scripts

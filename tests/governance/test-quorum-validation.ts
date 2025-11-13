@@ -10,9 +10,6 @@
  * 4. Testing early voter bonuses and incentive calculations
  */
 
-const fs = require('fs');
-const path = require('path');
-
 interface Proposal {
   id: string;
   title: string;
@@ -39,7 +36,13 @@ interface Vote {
   badgeTier: string;
   timestamp: Date;
   isEarly: boolean;
-  incentives: any;
+  incentives: {
+    baseReward: number;
+    earlyBonus: number;
+    quorumBonus: number;
+    totalReward: number;
+    votingPower: number;
+  };
 }
 
 interface ProposalData {
@@ -88,15 +91,18 @@ class MockGovernanceService {
     if (!this.votes.has(proposalId)) {
       this.votes.set(proposalId, []);
     }
-    this.votes.get(proposalId)!.push({
-      voterId,
-      choice,
-      votingPower,
-      badgeTier,
-      timestamp: new Date(),
-      isEarly: this.isEarlyVote(proposal),
-      incentives: this.calculateIncentives(voterId, proposal, choice, votingPower, badgeTier)
-    });
+    const voteArray = this.votes.get(proposalId);
+    if (voteArray) {
+      voteArray.push({
+        voterId,
+        choice,
+        votingPower,
+        badgeTier,
+        timestamp: new Date(),
+        isEarly: this.isEarlyVote(proposal),
+        incentives: this.calculateIncentives(voterId, proposal, choice, votingPower, badgeTier)
+      });
+    }
 
     return { signature: `mock-tx-${Date.now()}`, incentives: this.calculateIncentives(voterId, proposal, choice, votingPower, badgeTier) };
   }
@@ -205,12 +211,10 @@ function runQuorumTest() {
   console.log('-'.repeat(40));
 
   const earlyVoters = testContributors.slice(0, 4); // First 4 contributors vote early
-  let totalEarlyVotes = 0;
 
   for (const voter of earlyVoters) {
     try {
       const result = governance.castVote(proposal.id, voter.id, 'yes', voter.votingPower, voter.badgeTier);
-      totalEarlyVotes += voter.votingPower;
       console.log(`✅ ${voter.id} (${voter.badgeTier}): +${voter.votingPower} votes, Reward: ${result.incentives.totalReward.toFixed(2)} NEURO`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -235,12 +239,10 @@ function runQuorumTest() {
   console.log('-'.repeat(40));
 
   const regularVoters = testContributors.slice(4, 8); // Next 4 contributors
-  let totalRegularVotes = 0;
 
   for (const voter of regularVoters) {
     try {
       const result = governance.castVote(proposal.id, voter.id, 'yes', voter.votingPower, voter.badgeTier);
-      totalRegularVotes += voter.votingPower;
       console.log(`✅ ${voter.id} (${voter.badgeTier}): +${voter.votingPower} votes, Reward: ${result.incentives.totalReward.toFixed(2)} NEURO`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -265,12 +267,10 @@ function runQuorumTest() {
   console.log('-'.repeat(40));
 
   const finalVoters = testContributors.slice(8); // Last 2 contributors
-  let totalFinalVotes = 0;
 
   for (const voter of finalVoters) {
     try {
       const result = governance.castVote(proposal.id, voter.id, 'yes', voter.votingPower, voter.badgeTier);
-      totalFinalVotes += voter.votingPower;
       console.log(`✅ ${voter.id} (${voter.badgeTier}): +${voter.votingPower} votes, Reward: ${result.incentives.totalReward.toFixed(2)} NEURO`);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

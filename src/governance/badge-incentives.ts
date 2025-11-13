@@ -204,7 +204,10 @@ export class BadgeIncentivesService {
     if (!this.voterHistory.has(voterId)) {
       this.voterHistory.set(voterId, [])
     }
-    this.voterHistory.get(voterId)!.push(incentive)
+    const voterIncentives = this.voterHistory.get(voterId)
+    if (voterIncentives) {
+      voterIncentives.push(incentive)
+    }
 
     return incentive
   }
@@ -337,7 +340,7 @@ export class BadgeIncentivesService {
 
     // Calculate total bonus distributed
     let totalBonus = 0
-    let participants = new Set<string>()
+    const participants = new Set<string>()
 
     this.voterHistory.forEach((incentives, voterId) => {
       for (const incentive of incentives) {

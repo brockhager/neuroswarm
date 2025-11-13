@@ -10,7 +10,7 @@ export interface GovernanceEvent {
   timestamp: Date
   eventType: 'proposal_created' | 'proposal_updated' | 'vote_cast' | 'proposal_closed' | 'rewards_claimed' | 'badge_upgraded'
   actor: string // Public key or identifier
-  details: Record<string, any>
+  details: Record<string, unknown>
   metadata: {
     blockNumber?: number
     transactionHash?: string
@@ -119,7 +119,7 @@ export class TransparencyLogger {
   logEvent(
     eventType: GovernanceEvent['eventType'],
     actor: string,
-    details: Record<string, any>,
+    details: Record<string, unknown>,
     metadata: Partial<GovernanceEvent['metadata']> = {}
   ): string {
     const event: GovernanceEvent = {
@@ -210,7 +210,10 @@ export class TransparencyLogger {
       this.votes.set(vote.proposalId, [])
     }
 
-    this.votes.get(vote.proposalId)!.push(vote)
+    const voteArray = this.votes.get(vote.proposalId)
+    if (voteArray) {
+      voteArray.push(vote)
+    }
 
     // Update proposal voting data
     const proposal = this.proposals.get(vote.proposalId)
@@ -261,7 +264,6 @@ export class TransparencyLogger {
       return acc
     }, {} as Record<string, number>)
 
-    const totalVotes = votes.length
     const badgeTypes = Object.keys(badgeCounts).length
 
     // Higher diversity = more badge types participating
@@ -310,10 +312,10 @@ export class TransparencyLogger {
       acc[vote.voterId].totalVotes++
       acc[vote.voterId].totalVotingPower += vote.votingPower
       return acc
-    }, {} as Record<string, any>)
+    }, {} as Record<string, { voterId: string; totalVotes: number; totalVotingPower: number; badgesEarned: string[] }>)
 
     const topVoters = Object.values(voterStats)
-      .sort((a: any, b: any) => b.totalVotingPower - a.totalVotingPower)
+      .sort((a, b) => b.totalVotingPower - a.totalVotingPower)
       .slice(0, 10)
 
     // Calculate category breakdown
@@ -332,9 +334,9 @@ export class TransparencyLogger {
       acc[proposal.category].totalParticipation += proposal.metrics.participationRate
       acc[proposal.category].voteCount += proposal.votingPeriod.totalVotes
       return acc
-    }, {} as Record<string, any>)
+    }, {} as Record<string, { category: string; proposals: number; passed: number; totalParticipation: number; voteCount: number }>)
 
-    const categoryBreakdown = Object.values(categoryStats).map((cat: any) => ({
+    const categoryBreakdown = Object.values(categoryStats).map((cat) => ({
       category: cat.category,
       proposals: cat.proposals,
       passRate: cat.proposals > 0 ? (cat.passed / cat.proposals) * 100 : 0,

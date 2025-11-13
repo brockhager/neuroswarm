@@ -1,13 +1,13 @@
+import { Transaction } from '@solana/web3.js'
+import { PublicKey } from '@solana/web3.js'
 import { GovernanceService } from '../../src/governance/governance';
 import fs from 'fs';
 import path from 'path';
 
 // Mock wallet for testing
 const mockWallet = {
-  publicKey: {
-    toString: () => 'test-wallet-public-key'
-  },
-  signTransaction: async (tx: any) => tx
+  publicKey: new PublicKey('11111111111111111111111111111112'),
+  signTransaction: async (tx: Transaction) => tx
 };
 
 async function submitBootstrapProposals() {

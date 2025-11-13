@@ -2,16 +2,34 @@
   "name": "neuroswarm",
   "version": "0.1.0",
   "description": "NeuroSwarm coordination and documentation",
+  "main": "dist/index.js",
   "scripts": {
+    "build": "tsc",
+    "test": "node tests/governance/test-quorum-validation.ts",
+    "submit-proposals": "node scripts/governance/submit-bootstrap-proposals.ts",
     "docs": "echo 'Documentation is in docs/ folder'",
-    "clone-all": "echo 'Use git clone for individual repos'",
-    "test": "echo 'No tests in coordination repo'"
+    "clone-all": "echo 'Use git clone for individual repos'"
+  },
+  "dependencies": {
+    "@solana/wallet-adapter-react": "^0.15.35",
+    "@solana/web3.js": "^1.87.6"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.4",
+    "@typescript-eslint/parser": "^8.46.4",
+    "eslint": "^8.57.1",
+    "typescript": "^5.0.0"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/brockhager/neuroswarm.git"
   },
-  "keywords": ["neuroswarm", "ai", "blockchain"],
+  "keywords": [
+    "neuroswarm",
+    "ai",
+    "blockchain"
+  ],
   "author": "NeuroSwarm Team",
   "license": "MIT"
 }
