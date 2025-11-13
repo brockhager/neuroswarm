@@ -1,0 +1,199 @@
+name: NeuroSwarm CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+
+    - name: Setup PowerShell
+      shell: pwsh
+      run: |
+        $PSVersionTable.PSVersion
+
+    - name: Install Node.js dependencies
+      run: npm ci
+
+    - name: Install Python dependencies
+      run: |
+        pip install -r requirements-wp.txt
+        pip install pytest pytest-cov
+
+    - name: Install PowerShell testing tools
+      shell: pwsh
+      run: |
+        Install-Module -Name Pester -Force -SkipPublisherCheck
+        Install-Module -Name PSScriptAnalyzer -Force
+
+    - name: Lint TypeScript
+      run: npx tsc --noEmit
+
+    - name: Lint PowerShell scripts
+      shell: pwsh
+      run: |
+        $scripts = Get-ChildItem -Path scripts/ -Recurse -Include *.ps1
+        foreach ($script in $scripts) {
+          Invoke-ScriptAnalyzer -Path $script.FullName -Severity Error
+        }
+
+    - name: Run Governance Tests
+      run: npm test -- tests/governance/ --coverage --coverageDirectory=coverage/governance
+
+    - name: Run Integration Tests
+      run: npm run test:integration
+      env:
+        NODE_ENV: test
+
+    - name: Run Python Script Tests
+      run: python -m pytest tests/scripts/ -v --cov=scripts --cov-report=xml:coverage/python-coverage.xml
+
+    - name: Run PowerShell Script Tests
+      shell: pwsh
+      run: |
+        $testResults = Invoke-Pester -Path tests/scripts/ -Output Detailed -PassThru
+        if ($testResults.FailedCount -gt 0) {
+          throw "PowerShell tests failed: $($testResults.FailedCount) failed"
+        }
+
+    - name: Run E2E Tests
+      run: npx playwright test tests/e2e/
+      env:
+        CI: true
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage/lcov.info,./coverage/python-coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+    - name: Validate Script Registry
+      run: |
+        if [ ! -f docs/scripts/README.md ]; then
+          echo "Script registry missing"
+          exit 1
+        fi
+        # Validate all scripts mentioned in registry exist
+        grep -E "\./scripts/" docs/scripts/README.md | while read -r line; do
+          script_path=$(echo "$line" | sed 's/.*`\.\///' | sed 's/`.*/./')
+          if [ ! -f "$script_path" ]; then
+            echo "Script not found: $script_path"
+            exit 1
+          fi
+        done
+
+    - name: Validate Test Structure
+      run: |
+        if [ ! -f docs/tests/README.md ]; then
+          echo "Test documentation missing"
+          exit 1
+        fi
+        # Check for required test directories
+        required_dirs=("governance" "scripts" "integration" "e2e" "utils")
+        for dir in "${required_dirs[@]}"; do
+          if [ ! -d "tests/$dir" ]; then
+            echo "Required test directory missing: tests/$dir"
+            exit 1
+          fi
+        done
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run security audit
+      run: npm audit --audit-level high
+
+    - name: Check for secrets
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-validation:
+    runs-on: ubuntu-latest
+    needs: [test, security]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build for production
+      run: npm run build
+
+    - name: Validate build artifacts
+      run: |
+        if [ ! -d "dist" ] && [ ! -d "build" ]; then
+          echo "No build output directory found"
+          exit 1
+        fi
+
+  nightly:
+    runs-on: ubuntu-latest
+    if: github.event.schedule == '0 2 * * *'  # Daily at 2 AM UTC
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20.x
+        cache: 'npm'
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+
+    - name: Install dependencies
+      run: |
+        npm ci
+        pip install -r requirements-wp.txt
+
+    - name: Run extended E2E tests
+      run: npx playwright test tests/e2e/ --headed=false --workers=1
+      env:
+        CI: true
+        EXTENDED_TESTS: true
+
+    - name: Performance tests
+      run: npm run test:performance
+
+    - name: Load tests
+      run: npm run test:load

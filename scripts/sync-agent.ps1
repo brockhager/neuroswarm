@@ -36,7 +36,7 @@ function Log-Action {
     )
 
     $logEntry = @{
-        timestamp = Get-Date -Format "yyyy-MM-ddTHH:mm:ss.ffffff"
+        timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ss.ffffff")
         action = $action
         task = $task
         status = $status
@@ -47,8 +47,95 @@ function Log-Action {
     $logEntry | ConvertTo-Json -Compress | Out-File -FilePath $logFile -Append -Encoding UTF8
 }
 
+function Log-GovernanceEvent {
+    param(
+        [string]$eventType,
+        [string]$severity,
+        [string]$description,
+        [string]$violations = "",
+        [string]$remediation = ""
+    )
+
+    $governanceEntry = @{
+        timestamp = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss.ffffff')
+        event_type = $eventType
+        severity = $severity
+        description = $description
+        violations = $violations
+        remediation = $remediation
+        component = "structural-hygiene"
+        governance_action = "monitor"
+    }
+
+    $governanceEntry | ConvertTo-Json -Compress | Out-File -FilePath $logFile -Append -Encoding UTF8
+}
+
+function Check-StructuralHygiene {
+    Write-Host "🔍 Checking structural hygiene..."
+
+    $violations = @()
+    $warnings = @()
+
+    # Check for scripts in root directory
+    $rootScripts = Get-ChildItem -Path "." -File | Where-Object {
+        $_.Extension -in @('.ps1', '.py', '.sh', '.bash')
+    }
+    if ($rootScripts) {
+        $violations += "Scripts found in root directory: $($rootScripts.Name -join ', ')"
+    }
+
+    # Check for test files outside tests/ directory
+    $testFilesOutsideTests = Get-ChildItem -Path "." -Recurse -File | Where-Object {
+        $_.Name -match '\.(test|spec)\.(ts|js|py)$' -and $_.FullName -notmatch '\\tests\\'
+    }
+    if ($testFilesOutsideTests) {
+        $violations += "Test files found outside tests/ directory: $($testFilesOutsideTests.Name -join ', ')"
+    }
+
+    # Check for missing script documentation
+    if (-not (Test-Path "docs/scripts/README.md")) {
+        $warnings += "Script registry missing: docs/scripts/README.md"
+    }
+
+    # Check for missing test documentation
+    if (-not (Test-Path "docs/tests/README.md")) {
+        $warnings += "Test documentation missing: docs/tests/README.md"
+    }
+
+    # Check for required directories
+    $requiredDirs = @("src/governance", "scripts", "tests", "docs")
+    foreach ($dir in $requiredDirs) {
+        if (-not (Test-Path $dir)) {
+            $violations += "Required directory missing: $dir"
+        }
+    }
+
+    # Log violations as governance events
+    if ($violations.Count -gt 0) {
+        Log-GovernanceEvent -eventType "structural_violation" -severity "high" -description "Structural hygiene violations detected" -violations ($violations -join '; ') -remediation "Run hygiene enforcement scripts and update documentation"
+        Write-Host "🚨 Structural violations found:" -ForegroundColor Red
+        $violations | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
+    }
+
+    if ($warnings.Count -gt 0) {
+        Log-GovernanceEvent -eventType "structural_warning" -severity "medium" -description "Structural hygiene warnings detected" -violations ($warnings -join '; ') -remediation "Create missing documentation files"
+        Write-Host "⚠️ Structural warnings:" -ForegroundColor Yellow
+        $warnings | ForEach-Object { Write-Host "  - $_" -ForegroundColor Yellow }
+    }
+
+    if ($violations.Count -eq 0 -and $warnings.Count -eq 0) {
+        Log-GovernanceEvent -eventType "structural_compliance" -severity "info" -description "Structural hygiene check passed" -remediation ""
+        Write-Host "✅ Structural hygiene check passed" -ForegroundColor Green
+    }
+
+    return $violations.Count -eq 0
+}
+
 function Sync-TodoToBoard {
     Write-Host "🔄 Starting sync from $todoFile to GitHub Project board..."
+
+    # Run structural hygiene check as part of sync
+    $hygienePassed = Check-StructuralHygiene
 
     $todoContent = Get-TodoContent
     if (-not $todoContent) {
@@ -111,9 +198,18 @@ function Start-Monitoring {
     Write-Host "Press Ctrl+C to stop monitoring"
 
     $lastHash = Get-FileHash $todoFile
+    $lastHygieneCheck = Get-Date
 
     while ($true) {
         Start-Sleep -Seconds ($IntervalMinutes * 60)
+
+        # Check structural hygiene every 4 hours
+        $hygieneInterval = [TimeSpan]::FromHours(4)
+        if ((Get-Date) - $lastHygieneCheck -gt $hygieneInterval) {
+            Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') - Running scheduled structural hygiene check"
+            Check-StructuralHygiene
+            $lastHygieneCheck = Get-Date
+        }
 
         $currentHash = Get-FileHash $todoFile
         if ($currentHash -ne $lastHash) {
@@ -121,7 +217,8 @@ function Start-Monitoring {
             Sync-TodoToBoard
             $lastHash = $currentHash
         } else {
-            Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') - No changes detected"
+            $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+            Write-Host "$timestamp - No changes detected"
         }
     }
 }

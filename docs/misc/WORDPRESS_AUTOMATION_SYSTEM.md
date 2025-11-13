@@ -37,7 +37,7 @@ WordPress Site ←───── REST API ←─────── JSON Payload
 
 **Usage**:
 ```bash
-python3 wp_publisher.py \
+python3 scripts/wp_publisher.py \
   --username your_username \
   --password your_app_password \
   --content content-file.json
@@ -55,7 +55,7 @@ python3 wp_publisher.py \
 
 **Usage**:
 ```bash
-python3 batch_publish.py \
+python3 scripts/batch_publish.py \
   --username your_username \
   --password your_app_password \
   --directory ./content \
@@ -75,10 +75,10 @@ python3 batch_publish.py \
 **Usage**:
 ```bash
 # One-time sync
-python3 content_sync.py --content-dirs ./docs ./content
+python3 scripts/content_sync.py --content-dirs ./docs ./content
 
 # Watch mode (syncs every 5 minutes)
-python3 content_sync.py --watch --interval 300
+python3 scripts/content_sync.py --watch --interval 300
 ```
 
 ### 4. Connection Tester (`test_connection.py`)
@@ -93,7 +93,7 @@ python3 content_sync.py --watch --interval 300
 
 **Usage**:
 ```bash
-python3 test_connection.py \
+python3 tests/test_connection.py \
   --username your_username \
   --password your_app_password
 ```
@@ -160,13 +160,13 @@ cp .wp_publisher.env.example .wp_publisher.env
 
 ### 3. Test Connection
 ```bash
-python3 test_connection.py
+python3 tests/test_connection.py
 ```
 
 ### 4. Initial Content Sync
 ```bash
 # Sync existing documentation
-python3 content_sync.py --content-dirs ./docs ./website/content
+python3 scripts/content_sync.py --content-dirs ./docs ./website/content
 ```
 
 ## Integration Examples

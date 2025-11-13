@@ -60,7 +60,7 @@ if [ -f ".wp_publisher.env" ]; then
     export $(cat .wp_publisher.env | xargs 2>/dev/null)
 
     if [ -n "$WP_USERNAME" ] && [ -n "$WP_APP_PASSWORD" ]; then
-        python3 test_connection.py --username "$WP_USERNAME" --password "$WP_APP_PASSWORD" --url "${WP_SITE_URL:-https://getblockchain.tech/neuroswarm/}"
+        python3 tests/test_connection.py --username "$WP_USERNAME" --password "$WP_APP_PASSWORD" --url "${WP_SITE_URL:-https://getblockchain.tech/neuroswarm/}"
         connection_test=$?
     else
         echo "⚠️  WordPress credentials not found in .wp_publisher.env"
@@ -74,13 +74,13 @@ echo ""
 echo "🎉 Setup complete!"
 echo ""
 echo "Available commands:"
-echo "  python3 wp_publisher.py --help          # Single file publishing"
-echo "  python3 batch_publish.py --help         # Batch publishing"
-echo "  python3 content_sync.py --help          # Auto-sync with watch mode"
-echo "  python3 test_connection.py --help       # Test WordPress connection"
+echo "  python3 scripts/wp_publisher.py --help          # Single file publishing"
+echo "  python3 scripts/batch_publish.py --help         # Batch publishing"
+echo "  python3 scripts/content_sync.py --help          # Auto-sync with watch mode"
+echo "  python3 tests/test_connection.py --help       # Test WordPress connection"
 echo ""
 echo "Example usage:"
-echo "  python3 wp_publisher.py --content example-content.json"
+echo "  python3 scripts/wp_publisher.py --content example-content.json"
 echo ""
 echo "For more information, see WP_PUBLISHER_README.md"
 

@@ -13,21 +13,21 @@ This PowerShell script maintains synchronization between `docs/todo.md` and the 
 
 ### One-time Sync
 ```powershell
-.\sync-agent.ps1 -Sync
+.\scripts\sync-agent.ps1 -Sync
 ```
 
 ### Continuous Monitoring
 ```powershell
 # Monitor with default 60-minute interval
-.\sync-agent.ps1 -Monitor
+.\scripts\sync-agent.ps1 -Monitor
 
 # Monitor with custom interval (30 minutes)
-.\sync-agent.ps1 -Monitor -IntervalMinutes 30
+.\scripts\sync-agent.ps1 -Monitor -IntervalMinutes 30
 ```
 
 ### Help
 ```powershell
-.\sync-agent.ps1
+.\scripts\sync-agent.ps1
 ```
 
 ## How It Works
@@ -54,7 +54,7 @@ For automated syncing, add this to your CI/CD pipeline:
 ```yaml
 # Example GitHub Actions step
 - name: Sync Kanban Board
-  run: .\sync-agent.ps1 -Sync
+  run: .\scripts\sync-agent.ps1 -Sync
   shell: pwsh
 ```
 
