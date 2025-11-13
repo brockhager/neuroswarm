@@ -1,5 +1,24 @@
 # NeuroSwarm Project Todo
 
+## Refinement Pipeline
+
+### 6-Criteria Checklist for Backlog Refinement
+Each backlog item must meet ALL criteria before moving to Ready:
+
+1. **Clear Definition**: Task has specific, measurable deliverables
+2. **Value Alignment**: Directly supports NeuroSwarm mission/vision
+3. **Technical Feasibility**: Required technology/skills are available or obtainable
+4. **Dependencies Identified**: All prerequisites and blockers documented
+5. **Estimation Possible**: Rough effort estimate can be provided (S/M/L/XL)
+6. **Acceptance Criteria**: Clear completion conditions defined
+
+### Ready for Development
+<!-- Tasks that pass 6-criteria checklist and are prioritized for next sprint -->
+- [ ] Implement core swarm intelligence coordination algorithms (Priority: HIGH, Estimate: XL, Assignee: TBD)
+- [ ] Design decentralized consensus mechanism for AI agent validation (Priority: HIGH, Estimate: L, Assignee: TBD)
+- [ ] Create tokenomics model with quadratic funding integration (Priority: HIGH, Estimate: M, Assignee: TBD)
+- [ ] Build validator staking and reward distribution system (Priority: HIGH, Estimate: M, Assignee: TBD)
+
 ## Done
 
 - [x] Set up comprehensive NeuroSwarm Knowledge Base with mission-driven content
@@ -33,8 +52,61 @@
 
 ## Backlog (to be done)
 
-<!-- Future tasks go here -->
+### HIGH Priority
+- [ ] Implement core swarm intelligence coordination algorithms
+- [ ] Design decentralized consensus mechanism for AI agent validation
+- [ ] Create tokenomics model with quadratic funding integration
+- [ ] Build validator staking and reward distribution system
+- [ ] Develop AI agent registration and discovery protocol
+- [ ] Implement secure inter-agent communication framework
+- [ ] Create governance proposal and voting smart contracts
+- [ ] Design reputation system for contributor quality assessment
+- [ ] Build real-time swarm coordination dashboard
+- [ ] Implement automated testing framework for swarm behaviors
 
-## In Progress
+### MEDIUM Priority
+- [ ] Create developer SDK for AI agent integration
+- [ ] Design API rate limiting and abuse prevention
+- [ ] Implement multi-language support for agent communication
+- [ ] Create contributor onboarding flow with skill assessment
+- [ ] Build analytics system for swarm performance metrics
+- [ ] Design emergency shutdown protocols for swarm safety
+- [ ] Implement cross-chain interoperability for token transfers
+- [ ] Create dispute resolution mechanism for governance conflicts
 
-<!-- Currently active tasks go here -->
+### LOW Priority
+- [ ] Design mobile application for swarm monitoring
+- [ ] Create educational content for AI agent development
+- [ ] Implement advanced visualization for swarm intelligence patterns
+- [ ] Build integration with popular AI frameworks (TensorFlow, PyTorch)
+- [ ] Create marketplace for AI agent services
+- [ ] Implement advanced analytics for contributor behavior patterns
+
+## Flow Rules
+
+### Work in Progress (WIP) Limits
+- **In Progress**: Maximum 3 tasks (currently 2 active)
+- **Ready**: Maximum 10 tasks (prioritized backlog)
+- **Backlog**: Unlimited (needs refinement before moving to Ready)
+
+### Definition of Done
+- Code reviewed and approved
+- Tests written and passing
+- Documentation updated
+- Governance log entry created
+- Deployed to staging environment
+
+## Contributor Assignment
+
+### Working Groups
+- **Core Infrastructure**: System architecture, consensus mechanisms
+- **Token Economics**: Tokenomics design, reward systems
+- **AI Integration**: Agent protocols, swarm intelligence
+- **Developer Experience**: SDKs, documentation, tooling
+- **Community & Governance**: Contributor onboarding, governance systems
+
+### Assignment Guidelines
+- Contributors self-select based on interest and expertise
+- Assignments reviewed in weekly governance meetings
+- Workload balanced across active contributors
+- Cross-training encouraged for critical path items
