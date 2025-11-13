@@ -2,6 +2,16 @@
 
 > **✅ STATUS: COMPLETE AND LIVE** - This document is the authoritative source for NeuroSwarm voting mechanics and is actively used by the governance system.
 
+## Live Governance Portal
+
+🗳️ **Access the live governance system at:** [getblockchain.tech/neuroswarm/governance](https://getblockchain.tech/neuroswarm/governance)
+
+The governance portal provides:
+- **Proposal Submission**: Create and submit governance proposals
+- **Live Voting**: Participate in active votes with badge-weighted influence
+- **Transparency Dashboard**: View voting history, outcomes, and analytics
+- **Badge Management**: Track your contributor recognition and voting power
+
 ## Purpose
 
 Voting is the cornerstone of NeuroSwarm's decentralized governance model, ensuring that all major decisions reflect the collective wisdom and priorities of our contributor community. By implementing a transparent, badge-weighted voting system, we empower contributors to shape the project's direction while maintaining accountability and preventing any single entity from dominating decision-making.
@@ -128,7 +138,7 @@ Every voting event maintains:
 
 ### Accessibility
 
-- **Public Dashboard**: Real-time voting status and results
+- **Public Dashboard**: Real-time voting status and results at [getblockchain.tech/neuroswarm/governance/transparency](https://getblockchain.tech/neuroswarm/governance/transparency)
 - **API Access**: Programmatic access for analysis tools
 - **Archive Policy**: All records retained indefinitely
 
@@ -160,9 +170,9 @@ Final arbitration follows these principles:
 ### Voting Platform Integration
 
 NeuroSwarm provides multiple interfaces for participation:
-- **Web Dashboard**: Full-featured interface in the contributor portal
+- **Web Dashboard**: Full-featured interface at [getblockchain.tech/neuroswarm/governance](https://getblockchain.tech/neuroswarm/governance)
 - **CLI Tools**: Command-line voting for technical contributors
-- **Mobile App**: Basic voting and notification capabilities
+- **Mobile App**: Basic voting and notification capabilities (planned Q1 2026)
 
 ### Identity Verification
 

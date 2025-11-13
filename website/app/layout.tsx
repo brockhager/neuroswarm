@@ -20,6 +20,10 @@ export const metadata: Metadata = {
   authors: [{ name: "NeuroSwarm Team" }],
   creator: "NeuroSwarm",
   publisher: "NeuroSwarm",
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+  },
   openGraph: {
     title: "NeuroSwarm Knowledge Base",
     description: "Comprehensive knowledge base for the NeuroSwarm decentralized AI platform",
@@ -37,6 +41,9 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+  },
+  verification: {
+    google: 'your-google-site-verification-code', // Replace with actual verification code
   },
 };
 

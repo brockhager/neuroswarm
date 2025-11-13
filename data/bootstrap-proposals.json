@@ -2,7 +2,7 @@
   {
     "id": "bootstrap-001",
     "title": "Establish Core Development Working Group",
-    "description": "## Proposal: Establish Core Development Working Group\n\n### Overview\nCreate a dedicated working group focused on NeuroSwarm's core protocol development, including neural network optimization, consensus mechanisms, and cross-chain interoperability.\n\n### Objectives\n- Accelerate core protocol development\n- Coordinate technical roadmap execution\n- Foster collaboration between core contributors\n- Establish technical standards and best practices\n\n### Structure\n- **Lead**: Elected by working group members\n- **Members**: Contributors with Gold+ badges and technical expertise\n- **Meetings**: Bi-weekly technical syncs\n- **Decision Making**: Consensus-based with fallback to voting\n\n### Budget Request\n- Initial allocation: 50,000 NEURO tokens\n- Monthly operational budget: 10,000 NEURO tokens\n- Duration: 6 months (renewable)\n\n### Success Metrics\n- Protocol improvements delivered\n- Code quality standards implemented\n- Contributor onboarding streamlined\n- Cross-team collaboration increased\n\n### Timeline\n- Month 1: Team formation and planning\n- Month 2-3: Core protocol enhancements\n- Month 4-5: Testing and optimization\n- Month 6: Review and transition planning\n\n### Supporting Documentation\n- [Technical Roadmap](https://docs.neuroswarm.ai/roadmap)\n- [Working Group Guidelines](https://docs.neuroswarm.ai/working-groups)\n- [Budget Framework](https://docs.neuroswarm.ai/budget-framework)",
+    "description": "## Proposal: Establish Core Development Working Group\n\n### Overview\nCreate a dedicated working group focused on NeuroSwarm's core protocol development, including neural network optimization, consensus mechanisms, and cross-chain interoperability.\n\n### Objectives\n- Accelerate core protocol development\n- Coordinate technical roadmap execution\n- Foster collaboration between core contributors\n- Establish technical standards and best practices\n\n### Structure\n- **Lead**: Elected by working group members\n- **Members**: Contributors with Gold+ badges and technical expertise\n- **Meetings**: Bi-weekly technical syncs\n- **Decision Making**: Consensus-based with fallback to voting\n\n### Budget Request\n- Initial allocation: 50,000 NEURO tokens\n- Monthly operational budget: 10,000 NEURO tokens\n- Duration: 6 months (renewable)\n\n### Success Metrics\n- Protocol improvements delivered\n- Code quality standards implemented\n- Contributor onboarding streamlined\n- Cross-team collaboration increased\n\n### Timeline\n- Month 1: Team formation and planning\n- Month 2-3: Core protocol enhancements\n- Month 4-5: Testing and optimization\n- Month 6: Review and transition planning\n\n### Supporting Documentation\n- [Technical Roadmap](https://getblockchain.tech/neuroswarm/docs/roadmap)\n- [Working Group Guidelines](https://getblockchain.tech/neuroswarm/docs/working-groups)\n- [Budget Framework](https://getblockchain.tech/neuroswarm/docs/budget-framework)",
     "category": "Operational",
     "author": "NeuroSwarm Foundation",
     "tags": [
@@ -12,16 +12,16 @@
       "governance"
     ],
     "documentationLinks": [
-      "https://docs.neuroswarm.ai/roadmap",
-      "https://docs.neuroswarm.ai/working-groups",
-      "https://docs.neuroswarm.ai/budget-framework"
+      "https://getblockchain.tech/neuroswarm/docs/roadmap",
+      "https://getblockchain.tech/neuroswarm/docs/working-groups",
+      "https://getblockchain.tech/neuroswarm/docs/budget-framework"
     ],
     "votingPeriodDays": 14,
     "discussionPeriodDays": 7,
     "status": "active",
-    "createdAt": "2025-11-13T00:10:20.107Z",
-    "votingEndsAt": "2025-11-27T00:10:20.107Z",
-    "discussionEndsAt": "2025-11-20T00:10:20.107Z",
+    "createdAt": "2025-11-13T04:05:09.355Z",
+    "votingEndsAt": "2025-11-27T04:05:09.355Z",
+    "discussionEndsAt": "2025-11-20T04:05:09.355Z",
     "votes": {
       "yes": 0,
       "no": 0,
@@ -34,7 +34,7 @@
   {
     "id": "bootstrap-002",
     "title": "Community Growth and Adoption Strategy",
-    "description": "## Proposal: Community Growth and Adoption Strategy\n\n### Overview\nDevelop and implement a comprehensive strategy to accelerate NeuroSwarm's community growth and ecosystem adoption through targeted initiatives, partnerships, and educational programs.\n\n### Key Initiatives\n\n#### 1. Developer Onboarding Program\n- **Hackathons**: Quarterly developer challenges\n- **Bootcamps**: Technical training sessions\n- **Mentorship**: Pairing new developers with experienced contributors\n- **Grants**: Funding for promising projects\n\n#### 2. Partnership Ecosystem\n- **Integration Partners**: Key protocols and platforms\n- **Educational Institutions**: University collaborations\n- **Industry Alliances**: Enterprise adoption programs\n- **Community Ambassadors**: Regional community leaders\n\n#### 3. Content and Education\n- **Documentation**: Comprehensive developer docs\n- **Tutorials**: Step-by-step guides and examples\n- **Webinars**: Regular technical sessions\n- **Blog**: Weekly technical updates and insights\n\n#### 4. Community Engagement\n- **Discord Optimization**: Enhanced community channels\n- **Governance Participation**: Voting incentives and rewards\n- **Events**: Virtual and physical meetups\n- **Recognition**: Achievement badges and leaderboards\n\n### Budget Allocation\n- Developer Programs: 40% (80,000 NEURO)\n- Partnerships: 30% (60,000 NEURO)\n- Content & Education: 20% (40,000 NEURO)\n- Community Events: 10% (20,000 NEURO)\n\n### Success Metrics\n- Monthly active developers: +200%\n- New partnerships secured: 15+\n- Documentation completion: 90%\n- Community satisfaction: 8.5/10\n\n### Timeline\n- Q1: Foundation and planning\n- Q2: Program launches and partnerships\n- Q3: Scaling and optimization\n- Q4: Review and expansion\n\n### Supporting Documentation\n- [Community Strategy Document](https://docs.neuroswarm.ai/community-strategy)\n- [Partnership Framework](https://docs.neuroswarm.ai/partnerships)\n- [Education Roadmap](https://docs.neuroswarm.ai/education)",
+    "description": "## Proposal: Community Growth and Adoption Strategy\n\n### Overview\nDevelop and implement a comprehensive strategy to accelerate NeuroSwarm's community growth and ecosystem adoption through targeted initiatives, partnerships, and educational programs.\n\n### Key Initiatives\n\n#### 1. Developer Onboarding Program\n- **Hackathons**: Quarterly developer challenges\n- **Bootcamps**: Technical training sessions\n- **Mentorship**: Pairing new developers with experienced contributors\n- **Grants**: Funding for promising projects\n\n#### 2. Partnership Ecosystem\n- **Integration Partners**: Key protocols and platforms\n- **Educational Institutions**: University collaborations\n- **Industry Alliances**: Enterprise adoption programs\n- **Community Ambassadors**: Regional community leaders\n\n#### 3. Content and Education\n- **Documentation**: Comprehensive developer docs\n- **Tutorials**: Step-by-step guides and examples\n- **Webinars**: Regular technical sessions\n- **Blog**: Weekly technical updates and insights\n\n#### 4. Community Engagement\n- **Discord Optimization**: Enhanced community channels\n- **Governance Participation**: Voting incentives and rewards\n- **Events**: Virtual and physical meetups\n- **Recognition**: Achievement badges and leaderboards\n\n### Budget Allocation\n- Developer Programs: 40% (80,000 NEURO)\n- Partnerships: 30% (60,000 NEURO)\n- Content & Education: 20% (40,000 NEURO)\n- Community Events: 10% (20,000 NEURO)\n\n### Success Metrics\n- Monthly active developers: +200%\n- New partnerships secured: 15+\n- Documentation completion: 90%\n- Community satisfaction: 8.5/10\n\n### Timeline\n- Q1: Foundation and planning\n- Q2: Program launches and partnerships\n- Q3: Scaling and optimization\n- Q4: Review and expansion\n\n### Supporting Documentation\n- [Community Strategy Document](https://getblockchain.tech/neuroswarm/docs/community-strategy)\n- [Partnership Framework](https://getblockchain.tech/neuroswarm/docs/partnerships)\n- [Education Roadmap](https://getblockchain.tech/neuroswarm/docs/education)",
     "category": "Strategic",
     "author": "Community Council",
     "tags": [
@@ -45,16 +45,16 @@
       "partnerships"
     ],
     "documentationLinks": [
-      "https://docs.neuroswarm.ai/community-strategy",
-      "https://docs.neuroswarm.ai/partnerships",
-      "https://docs.neuroswarm.ai/education"
+      "https://getblockchain.tech/neuroswarm/docs/community-strategy",
+      "https://getblockchain.tech/neuroswarm/docs/partnerships",
+      "https://getblockchain.tech/neuroswarm/docs/education"
     ],
     "votingPeriodDays": 21,
     "discussionPeriodDays": 14,
     "status": "active",
-    "createdAt": "2025-11-13T00:10:20.107Z",
-    "votingEndsAt": "2025-12-04T00:10:20.107Z",
-    "discussionEndsAt": "2025-11-27T00:10:20.107Z",
+    "createdAt": "2025-11-13T04:05:09.355Z",
+    "votingEndsAt": "2025-12-04T04:05:09.355Z",
+    "discussionEndsAt": "2025-11-27T04:05:09.355Z",
     "votes": {
       "yes": 0,
       "no": 0,
@@ -67,7 +67,7 @@
   {
     "id": "bootstrap-003",
     "title": "Tokenomics Optimization and Incentives",
-    "description": "## Proposal: Tokenomics Optimization and Incentives\n\n### Overview\nReview and optimize NeuroSwarm's tokenomics to ensure sustainable growth, fair distribution, and effective incentive alignment across all ecosystem participants.\n\n### Current Assessment\n\n#### Strengths\n- ✅ Decentralized mining rewards\n- ✅ Staking incentives for validators\n- ✅ Governance participation rewards\n- ✅ Developer grant program\n\n#### Areas for Improvement\n- ⚠️ Long-term token velocity\n- ⚠️ Incentive alignment for node operators\n- ⚠️ Community treasury management\n- ⚠️ Cross-chain liquidity incentives\n\n### Proposed Changes\n\n#### 1. Reward Structure Optimization\n- **Mining Rewards**: Dynamic adjustment based on network health\n- **Staking APR**: Variable rates (8-15%) based on lock duration\n- **Governance Rewards**: Enhanced voting incentives\n- **Developer Grants**: Increased funding for ecosystem projects\n\n#### 2. Treasury Management\n- **Reserve Allocation**: 30% for long-term development\n- **Community Fund**: 25% for community initiatives\n- **Liquidity Incentives**: 20% for DEX liquidity\n- **Emergency Fund**: 15% for network security\n- **Operational Budget**: 10% for day-to-day expenses\n\n#### 3. Incentive Programs\n- **Early Adopter Bonuses**: Retroactive rewards for pioneers\n- **Loyalty Program**: Multiplier rewards for long-term holders\n- **Referral System**: Token rewards for successful referrals\n- **Achievement Badges**: Token bonuses for community contributions\n\n#### 4. Economic Security\n- **Maximum Supply**: Cap at 1 billion NEURO tokens\n- **Burn Mechanism**: Automatic burning of transaction fees\n- **Vesting Schedules**: Multi-year locks for team and advisors\n- **Circuit Breakers**: Emergency pause mechanisms\n\n### Implementation Timeline\n- Month 1-2: Economic analysis and modeling\n- Month 3: Community consultation and feedback\n- Month 4: Smart contract development and testing\n- Month 5: Gradual rollout and monitoring\n- Month 6: Full implementation and optimization\n\n### Risk Mitigation\n- Extensive economic modeling and stress testing\n- Gradual implementation with rollback capabilities\n- Community oversight and governance controls\n- Independent audit by leading DeFi firms\n\n### Supporting Documentation\n- [Current Tokenomics](https://docs.neuroswarm.ai/tokenomics)\n- [Economic Analysis Report](https://docs.neuroswarm.ai/economic-analysis)\n- [Incentive Design Framework](https://docs.neuroswarm.ai/incentives)",
+    "description": "## Proposal: Tokenomics Optimization and Incentives\n\n### Overview\nReview and optimize NeuroSwarm's tokenomics to ensure sustainable growth, fair distribution, and effective incentive alignment across all ecosystem participants.\n\n### Current Assessment\n\n#### Strengths\n- ✅ Decentralized mining rewards\n- ✅ Staking incentives for validators\n- ✅ Governance participation rewards\n- ✅ Developer grant program\n\n#### Areas for Improvement\n- ⚠️ Long-term token velocity\n- ⚠️ Incentive alignment for node operators\n- ⚠️ Community treasury management\n- ⚠️ Cross-chain liquidity incentives\n\n### Proposed Changes\n\n#### 1. Reward Structure Optimization\n- **Mining Rewards**: Dynamic adjustment based on network health\n- **Staking APR**: Variable rates (8-15%) based on lock duration\n- **Governance Rewards**: Enhanced voting incentives\n- **Developer Grants**: Increased funding for ecosystem projects\n\n#### 2. Treasury Management\n- **Reserve Allocation**: 30% for long-term development\n- **Community Fund**: 25% for community initiatives\n- **Liquidity Incentives**: 20% for DEX liquidity\n- **Emergency Fund**: 15% for network security\n- **Operational Budget**: 10% for day-to-day expenses\n\n#### 3. Incentive Programs\n- **Early Adopter Bonuses**: Retroactive rewards for pioneers\n- **Loyalty Program**: Multiplier rewards for long-term holders\n- **Referral System**: Token rewards for successful referrals\n- **Achievement Badges**: Token bonuses for community contributions\n\n#### 4. Economic Security\n- **Maximum Supply**: Cap at 1 billion NEURO tokens\n- **Burn Mechanism**: Automatic burning of transaction fees\n- **Vesting Schedules**: Multi-year locks for team and advisors\n- **Circuit Breakers**: Emergency pause mechanisms\n\n### Implementation Timeline\n- Month 1-2: Economic analysis and modeling\n- Month 3: Community consultation and feedback\n- Month 4: Smart contract development and testing\n- Month 5: Gradual rollout and monitoring\n- Month 6: Full implementation and optimization\n\n### Risk Mitigation\n- Extensive economic modeling and stress testing\n- Gradual implementation with rollback capabilities\n- Community oversight and governance controls\n- Independent audit by leading DeFi firms\n\n### Supporting Documentation\n- [Current Tokenomics](https://getblockchain.tech/neuroswarm/docs/tokenomics)\n- [Economic Analysis Report](https://getblockchain.tech/neuroswarm/docs/economic-analysis)\n- [Incentive Design Framework](https://getblockchain.tech/neuroswarm/docs/incentives)",
     "category": "Strategic",
     "author": "Economics Committee",
     "tags": [
@@ -78,16 +78,16 @@
       "staking"
     ],
     "documentationLinks": [
-      "https://docs.neuroswarm.ai/tokenomics",
-      "https://docs.neuroswarm.ai/economic-analysis",
-      "https://docs.neuroswarm.ai/incentives"
+      "https://getblockchain.tech/neuroswarm/docs/tokenomics",
+      "https://getblockchain.tech/neuroswarm/docs/economic-analysis",
+      "https://getblockchain.tech/neuroswarm/docs/incentives"
     ],
     "votingPeriodDays": 21,
     "discussionPeriodDays": 14,
     "status": "active",
-    "createdAt": "2025-11-13T00:10:20.107Z",
-    "votingEndsAt": "2025-12-04T00:10:20.107Z",
-    "discussionEndsAt": "2025-11-27T00:10:20.107Z",
+    "createdAt": "2025-11-13T04:05:09.355Z",
+    "votingEndsAt": "2025-12-04T04:05:09.355Z",
+    "discussionEndsAt": "2025-11-27T04:05:09.355Z",
     "votes": {
       "yes": 0,
       "no": 0,
@@ -100,7 +100,7 @@
   {
     "id": "bootstrap-004",
     "title": "Security Audit and Bug Bounty Program",
-    "description": "## Proposal: Comprehensive Security Audit and Bug Bounty Program\n\n### Overview\nConduct thorough security audits of NeuroSwarm's smart contracts, protocols, and infrastructure, while establishing a professional bug bounty program to ensure ongoing security excellence.\n\n### Security Audit Scope\n\n#### Smart Contracts\n- Governance contracts and voting mechanisms\n- Token contracts and economic incentives\n- Staking and reward distribution contracts\n- Cross-chain bridge contracts\n\n#### Protocol Security\n- Consensus mechanism vulnerabilities\n- Network partition resistance\n- Sybil attack prevention\n- Economic attack vectors\n\n#### Infrastructure Security\n- Node operator security requirements\n- API endpoint protection\n- Database security and encryption\n- Access control and authentication\n\n### Audit Firms\n**Primary Auditors:**\n- Trail of Bits (Smart contracts)\n- NCC Group (Protocol security)\n- OpenZeppelin (Contract review)\n\n**Secondary Review:**\n- Community audit participation\n- Independent security researchers\n- Academic cryptography review\n\n### Bug Bounty Program\n\n#### Reward Structure\n- **Critical**: Up to $100,000 + 10,000 NEURO\n- **High**: Up to $25,000 + 2,500 NEURO\n- **Medium**: Up to $5,000 + 500 NEURO\n- **Low**: Up to $1,000 + 100 NEURO\n\n#### Program Features\n- **Scope**: All NeuroSwarm repositories and deployments\n- **Out-of-Scope**: Third-party dependencies, spam reports\n- **Safe Harbor**: Protection for good-faith research\n- **Response Time**: 48-hour acknowledgment, 7-day triage\n\n#### Eligibility\n- Must follow responsible disclosure\n- First valid report receives reward\n- Multiple researchers can collaborate\n- International participation welcome\n\n### Budget Allocation\n- Security Audits: $150,000\n- Bug Bounty Reserve: $100,000\n- Infrastructure Hardening: $50,000\n- Ongoing Monitoring: $25,000/month\n\n### Timeline\n- Week 1-2: RFP and auditor selection\n- Week 3-8: Comprehensive audits\n- Week 9-10: Findings review and fixes\n- Week 11: Bug bounty program launch\n- Ongoing: Continuous monitoring and updates\n\n### Success Metrics\n- Zero critical vulnerabilities post-audit\n- Active bug bounty participation\n- Security incident response time < 24 hours\n- Community confidence in security\n\n### Supporting Documentation\n- [Security Framework](https://docs.neuroswarm.ai/security)\n- [Audit Methodology](https://docs.neuroswarm.ai/audit-methodology)\n- [Bug Bounty Guidelines](https://docs.neuroswarm.ai/bug-bounty)",
+    "description": "## Proposal: Comprehensive Security Audit and Bug Bounty Program\n\n### Overview\nConduct thorough security audits of NeuroSwarm's smart contracts, protocols, and infrastructure, while establishing a professional bug bounty program to ensure ongoing security excellence.\n\n### Security Audit Scope\n\n#### Smart Contracts\n- Governance contracts and voting mechanisms\n- Token contracts and economic incentives\n- Staking and reward distribution contracts\n- Cross-chain bridge contracts\n\n#### Protocol Security\n- Consensus mechanism vulnerabilities\n- Network partition resistance\n- Sybil attack prevention\n- Economic attack vectors\n\n#### Infrastructure Security\n- Node operator security requirements\n- API endpoint protection\n- Database security and encryption\n- Access control and authentication\n\n### Audit Firms\n**Primary Auditors:**\n- Trail of Bits (Smart contracts)\n- NCC Group (Protocol security)\n- OpenZeppelin (Contract review)\n\n**Secondary Review:**\n- Community audit participation\n- Independent security researchers\n- Academic cryptography review\n\n### Bug Bounty Program\n\n#### Reward Structure\n- **Critical**: Up to $100,000 + 10,000 NEURO\n- **High**: Up to $25,000 + 2,500 NEURO\n- **Medium**: Up to $5,000 + 500 NEURO\n- **Low**: Up to $1,000 + 100 NEURO\n\n#### Program Features\n- **Scope**: All NeuroSwarm repositories and deployments\n- **Out-of-Scope**: Third-party dependencies, spam reports\n- **Safe Harbor**: Protection for good-faith research\n- **Response Time**: 48-hour acknowledgment, 7-day triage\n\n#### Eligibility\n- Must follow responsible disclosure\n- First valid report receives reward\n- Multiple researchers can collaborate\n- International participation welcome\n\n### Budget Allocation\n- Security Audits: $150,000\n- Bug Bounty Reserve: $100,000\n- Infrastructure Hardening: $50,000\n- Ongoing Monitoring: $25,000/month\n\n### Timeline\n- Week 1-2: RFP and auditor selection\n- Week 3-8: Comprehensive audits\n- Week 9-10: Findings review and fixes\n- Week 11: Bug bounty program launch\n- Ongoing: Continuous monitoring and updates\n\n### Success Metrics\n- Zero critical vulnerabilities post-audit\n- Active bug bounty participation\n- Security incident response time < 24 hours\n- Community confidence in security\n\n### Supporting Documentation\n- [Security Framework](https://getblockchain.tech/neuroswarm/docs/security)\n- [Audit Methodology](https://getblockchain.tech/neuroswarm/docs/audit-methodology)\n- [Bug Bounty Guidelines](https://getblockchain.tech/neuroswarm/docs/bug-bounty)",
     "category": "Technical",
     "author": "Security Council",
     "tags": [
@@ -111,16 +111,16 @@
       "infrastructure"
     ],
     "documentationLinks": [
-      "https://docs.neuroswarm.ai/security",
-      "https://docs.neuroswarm.ai/audit-methodology",
-      "https://docs.neuroswarm.ai/bug-bounty"
+      "https://getblockchain.tech/neuroswarm/docs/security",
+      "https://getblockchain.tech/neuroswarm/docs/audit-methodology",
+      "https://getblockchain.tech/neuroswarm/docs/bug-bounty"
     ],
     "votingPeriodDays": 14,
     "discussionPeriodDays": 7,
     "status": "active",
-    "createdAt": "2025-11-13T00:10:20.107Z",
-    "votingEndsAt": "2025-11-27T00:10:20.107Z",
-    "discussionEndsAt": "2025-11-20T00:10:20.107Z",
+    "createdAt": "2025-11-13T04:05:09.355Z",
+    "votingEndsAt": "2025-11-27T04:05:09.355Z",
+    "discussionEndsAt": "2025-11-20T04:05:09.355Z",
     "votes": {
       "yes": 0,
       "no": 0,
@@ -133,7 +133,7 @@
   {
     "id": "bootstrap-005",
     "title": "Decentralized Identity and Reputation System",
-    "description": "## Proposal: Decentralized Identity and Reputation System\n\n### Overview\nImplement a comprehensive decentralized identity and reputation system that enhances trust, enables seamless interactions, and provides robust sybil resistance across the NeuroSwarm ecosystem.\n\n### System Components\n\n#### 1. Decentralized Identity (DID)\n- **Self-Sovereign Identity**: User-controlled digital identities\n- **Verifiable Credentials**: Cryptographically verifiable claims\n- **Privacy-Preserving**: Zero-knowledge proofs for sensitive data\n- **Interoperable**: W3C DID standards compliance\n\n#### 2. Reputation Scoring\n- **Multi-Dimensional**: Technical, social, and economic reputation\n- **Dynamic Updates**: Real-time reputation adjustments\n- **Attestation-Based**: Community and algorithmic validation\n- **Portable**: Cross-platform reputation portability\n\n#### 3. Sybil Resistance Mechanisms\n- **Proof-of-Humanity**: Integration with decentralized human verification\n- **Social Graph Analysis**: Network-based sybil detection\n- **Economic Stakes**: Token-based commitment signals\n- **Behavioral Patterns**: Activity-based authenticity scoring\n\n### Technical Implementation\n\n#### Identity Layer\n- **DID Method**: did:neuro (NeuroSwarm-specific DID method)\n- **Key Management**: Hardware security module integration\n- **Recovery Mechanisms**: Social recovery with threshold cryptography\n- **Privacy Features**: Selective disclosure and predicate proofs\n\n#### Reputation Engine\n- **Scoring Algorithm**: Weighted combination of multiple factors\n- **Attestation Network**: Decentralized oracle network for validation\n- **Temporal Decay**: Time-weighted reputation scoring\n- **Appeal Process**: Dispute resolution for reputation disputes\n\n#### Integration Points\n- **Governance**: Reputation-weighted voting\n- **Staking**: Reputation-based staking rewards\n- **Marketplace**: Trust scores for service providers\n- **Social Features**: Reputation-based community features\n\n### Privacy and Ethics\n\n#### Data Protection\n- **Minimal Data Collection**: Only necessary reputation signals\n- **User Consent**: Explicit opt-in for reputation tracking\n- **Right to Deletion**: Complete identity and reputation erasure\n- **Audit Trail**: Transparent reputation calculation history\n\n#### Anti-Discrimination\n- **Fair Algorithms**: Bias detection and mitigation\n- **Appeal Rights**: Independent review of reputation decisions\n- **Diverse Signals**: Multiple reputation dimensions prevent single-point failure\n- **Community Governance**: Reputation system governed by community\n\n### Budget and Resources\n- Development Team: 6-month dedicated team\n- Smart Contract Audit: $75,000\n- Integration Testing: 3-month period\n- Community Incentives: 50,000 NEURO for beta testing\n\n### Timeline\n- Month 1-2: Requirements and architecture design\n- Month 3-4: Core identity system development\n- Month 5-6: Reputation engine implementation\n- Month 7-8: Integration and testing\n- Month 9-10: Beta launch and community feedback\n- Month 11-12: Full deployment and optimization\n\n### Success Metrics\n- User adoption: 50% of active users with DID\n- Reputation accuracy: >90% correlation with community trust\n- Sybil resistance: <1% false positive rate\n- System uptime: 99.9% availability\n\n### Supporting Documentation\n- [Identity System Design](https://docs.neuroswarm.ai/identity)\n- [Reputation Framework](https://docs.neuroswarm.ai/reputation)\n- [Privacy Considerations](https://docs.neuroswarm.ai/privacy)",
+    "description": "## Proposal: Decentralized Identity and Reputation System\n\n### Overview\nImplement a comprehensive decentralized identity and reputation system that enhances trust, enables seamless interactions, and provides robust sybil resistance across the NeuroSwarm ecosystem.\n\n### System Components\n\n#### 1. Decentralized Identity (DID)\n- **Self-Sovereign Identity**: User-controlled digital identities\n- **Verifiable Credentials**: Cryptographically verifiable claims\n- **Privacy-Preserving**: Zero-knowledge proofs for sensitive data\n- **Interoperable**: W3C DID standards compliance\n\n#### 2. Reputation Scoring\n- **Multi-Dimensional**: Technical, social, and economic reputation\n- **Dynamic Updates**: Real-time reputation adjustments\n- **Attestation-Based**: Community and algorithmic validation\n- **Portable**: Cross-platform reputation portability\n\n#### 3. Sybil Resistance Mechanisms\n- **Proof-of-Humanity**: Integration with decentralized human verification\n- **Social Graph Analysis**: Network-based sybil detection\n- **Economic Stakes**: Token-based commitment signals\n- **Behavioral Patterns**: Activity-based authenticity scoring\n\n### Technical Implementation\n\n#### Identity Layer\n- **DID Method**: did:neuro (NeuroSwarm-specific DID method)\n- **Key Management**: Hardware security module integration\n- **Recovery Mechanisms**: Social recovery with threshold cryptography\n- **Privacy Features**: Selective disclosure and predicate proofs\n\n#### Reputation Engine\n- **Scoring Algorithm**: Weighted combination of multiple factors\n- **Attestation Network**: Decentralized oracle network for validation\n- **Temporal Decay**: Time-weighted reputation scoring\n- **Appeal Process**: Dispute resolution for reputation disputes\n\n#### Integration Points\n- **Governance**: Reputation-weighted voting\n- **Staking**: Reputation-based staking rewards\n- **Marketplace**: Trust scores for service providers\n- **Social Features**: Reputation-based community features\n\n### Privacy and Ethics\n\n#### Data Protection\n- **Minimal Data Collection**: Only necessary reputation signals\n- **User Consent**: Explicit opt-in for reputation tracking\n- **Right to Deletion**: Complete identity and reputation erasure\n- **Audit Trail**: Transparent reputation calculation history\n\n#### Anti-Discrimination\n- **Fair Algorithms**: Bias detection and mitigation\n- **Appeal Rights**: Independent review of reputation decisions\n- **Diverse Signals**: Multiple reputation dimensions prevent single-point failure\n- **Community Governance**: Reputation system governed by community\n\n### Budget and Resources\n- Development Team: 6-month dedicated team\n- Smart Contract Audit: $75,000\n- Integration Testing: 3-month period\n- Community Incentives: 50,000 NEURO for beta testing\n\n### Timeline\n- Month 1-2: Requirements and architecture design\n- Month 3-4: Core identity system development\n- Month 5-6: Reputation engine implementation\n- Month 7-8: Integration and testing\n- Month 9-10: Beta launch and community feedback\n- Month 11-12: Full deployment and optimization\n\n### Success Metrics\n- User adoption: 50% of active users with DID\n- Reputation accuracy: >90% correlation with community trust\n- Sybil resistance: <1% false positive rate\n- System uptime: 99.9% availability\n\n### Supporting Documentation\n- [Identity System Design](https://getblockchain.tech/neuroswarm/docs/identity)\n- [Reputation Framework](https://getblockchain.tech/neuroswarm/docs/reputation)\n- [Privacy Considerations](https://getblockchain.tech/neuroswarm/docs/privacy)",
     "category": "Technical",
     "author": "Identity Working Group",
     "tags": [
@@ -144,16 +144,16 @@
       "trust"
     ],
     "documentationLinks": [
-      "https://docs.neuroswarm.ai/identity",
-      "https://docs.neuroswarm.ai/reputation",
-      "https://docs.neuroswarm.ai/privacy"
+      "https://getblockchain.tech/neuroswarm/docs/identity",
+      "https://getblockchain.tech/neuroswarm/docs/reputation",
+      "https://getblockchain.tech/neuroswarm/docs/privacy"
     ],
     "votingPeriodDays": 21,
     "discussionPeriodDays": 14,
     "status": "active",
-    "createdAt": "2025-11-13T00:10:20.107Z",
-    "votingEndsAt": "2025-12-04T00:10:20.107Z",
-    "discussionEndsAt": "2025-11-27T00:10:20.107Z",
+    "createdAt": "2025-11-13T04:05:09.355Z",
+    "votingEndsAt": "2025-12-04T04:05:09.355Z",
+    "discussionEndsAt": "2025-11-27T04:05:09.355Z",
     "votes": {
       "yes": 0,
       "no": 0,

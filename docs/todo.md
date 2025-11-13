@@ -1,7 +1,8 @@
 # 📝 NeuroSwarm Project Kanban
 
 ## In Progress
-- [ ] [neuro-web] Real-World Governance Activation (bootstrap proposals, community launch, docs finalization)
+- [ ] [docs] Complete Knowledge Base implementation (modular pages, search, cross-linking)
+- [ ] [governance] Final governance activation (quorum test, launch announcement)
 
 ## Backlog (to be done)
 
@@ -69,14 +70,23 @@
 - [ ] [announcement] Governance launch draft
 
 **📢 Community Scaling**
-- [ ] [onboarding] Sprint kickoff plan
-- [ ] [badge] Incentive design
-- [ ] [event] Governance demo call
+- [x] [onboarding] Sprint kickoff plan
+- [x] [badge] Incentive design
+- [x] [event] Governance demo call
 
 **📁 Documentation & Transparency**
-- [ ] [docs] voting.md finalization
-- [ ] [docs] Quickstart guide
-- [ ] [logs] Transparency record schema
+- [x] [docs] voting.md finalization
+- [x] [docs] Quickstart guide
+- [x] [logs] Transparency record schema
+- [ ] [kb] Implement modular Knowledge Base structure
+  - [ ] KB Homepage (/kb) with intro and navigation grid
+  - [ ] Getting Started page (/kb/getting-started) - overview and core principles
+  - [ ] Contributor Onboarding page (/kb/onboarding) - step-by-step guide and playbooks
+  - [ ] Governance System page (/kb/governance) - voting mechanics and working groups
+  - [ ] Community Resources page (/kb/community) - channels, events, recognition
+  - [ ] Technical Documentation page (/kb/technical) - system overview and developer guides
+  - [ ] Transparency & Logs page (/kb/transparency) - decision records and audit trails
+  - [ ] Add search functionality and cross-linking between pages
 
 **🚀 Ecosystem Growth**
 - [ ] [outreach] Contributor campaign
@@ -108,8 +118,8 @@
 **🔧 Core Pages & Features**
 - [ ] Homepage with hero, features, and call-to-actions
 - [ ] About page explaining the vision and technology
-- [ ] Governance page linking to portal.neuroswarm.ai/governance
-- [ ] Documentation hub with links to docs.neuroswarm.ai
+- [ ] Governance page linking to getblockchain.tech/neuroswarm/governance
+- [ ] Documentation hub with links to getblockchain.tech/neuroswarm/docs
 - [ ] Community page with Discord, forum, and social links
 - [ ] Blog/news section for announcements and updates
 

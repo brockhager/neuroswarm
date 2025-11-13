@@ -1,0 +1,19 @@
+{
+  "title": "NeuroSwarm Governance Overview",
+  "slug": "governance-overview",
+  "content": "<h2>What is NeuroSwarm Governance?</h2><p>NeuroSwarm implements a sophisticated governance system that combines badge-weighted voting with transparent decision-making processes. Our governance model ensures that contributors with proven track records have greater influence in shaping the platform's future.</p><h3>Key Components</h3><ul><li><strong>Badge System:</strong> Contributors earn badges through active participation and demonstrated expertise</li><li><strong>Proposal Lifecycle:</strong> Structured process from draft to implementation</li><li><strong>Transparent Voting:</strong> All votes are recorded on-chain with complete audit trails</li><li><strong>Working Groups:</strong> Specialized teams focused on different aspects of platform development</li></ul><h2>Getting Started with Governance</h2><p>To participate in NeuroSwarm governance, you'll need to:</p><ol><li>Complete contributor onboarding</li><li>Earn your first badge through contributions</li><li>Connect a Solana-compatible wallet</li><li>Start voting on active proposals</li></ol><p><em>This content was auto-generated from the NeuroSwarm Knowledge Base on {{date}}.</em></p>",
+  "status": "publish",
+  "format": "html",
+  "assets": [
+    {
+      "path": "./assets/governance-diagram.png",
+      "placeholder": "{{GOVERNANCE_DIAGRAM}}",
+      "alt_text": "NeuroSwarm Governance System Diagram"
+    }
+  ],
+  "metadata": {
+    "category": "governance",
+    "last_updated": "2024-12-19",
+    "author": "NeuroSwarm Team"
+  }
+}

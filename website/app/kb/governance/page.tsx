@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft, Vote, FileText, Clock, CheckCircle, XCircle, Users, Trophy, BarChart3 } from 'lucide-react';
+import { ArrowLeft, Vote, FileText, Clock, CheckCircle, XCircle, Users, Trophy, BarChart3, MessageSquare } from 'lucide-react';
 
 export const metadata = {
   title: 'Governance System | NeuroSwarm',
@@ -409,6 +409,53 @@ export default function GovernancePage() {
                 </Link>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Related Content */}
+        <section className="mt-12">
+          <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
+            Related Content
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Link
+              href="/kb/onboarding"
+              className="block p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
+            >
+              <Users className="h-8 w-8 text-green-600 mb-3" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Contributor Onboarding
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                Learn how to earn badges and gain voting rights in the governance system.
+              </p>
+            </Link>
+
+            <Link
+              href="/kb/transparency"
+              className="block p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
+            >
+              <BarChart3 className="h-8 w-8 text-gray-600 mb-3" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Transparency & Logs
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                View governance decisions, audit trails, and real-time analytics.
+              </p>
+            </Link>
+
+            <Link
+              href="/kb/community"
+              className="block p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:shadow-lg transition-shadow"
+            >
+              <MessageSquare className="h-8 w-8 text-orange-600 mb-3" />
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                Community Resources
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm">
+                Join working groups and participate in governance discussions.
+              </p>
+            </Link>
           </div>
         </section>
       </div>
