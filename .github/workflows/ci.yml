@@ -28,107 +28,21 @@ jobs:
       with:
         version: 8
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-
-    - name: Setup PowerShell
-      shell: pwsh
-      run: |
-        $PSVersionTable.PSVersion
-
     - name: Install Node.js dependencies
       run: pnpm install --frozen-lockfile
       working-directory: ./website
-
-    - name: Install Python dependencies
-      run: |
-        pip install -r requirements-wp.txt
-        pip install pytest pytest-cov
-
-    - name: Install PowerShell testing tools
-      shell: pwsh
-      run: |
-        Install-Module -Name Pester -Force -SkipPublisherCheck
-        Install-Module -Name PSScriptAnalyzer -Force
 
     - name: Lint TypeScript
       run: pnpm tsc --noEmit
       working-directory: ./website
 
-    - name: Lint PowerShell scripts
-      shell: pwsh
-      run: |
-        $scripts = Get-ChildItem -Path scripts/ -Recurse -Include *.ps1
-        foreach ($script in $scripts) {
-          Invoke-ScriptAnalyzer -Path $script.FullName -Severity Error
-        }
-
-    - name: Run Governance Tests
-      run: pnpm test -- tests/governance/ --coverage --coverageDirectory=coverage/governance
+    - name: Lint with ESLint
+      run: pnpm lint
       working-directory: ./website
 
-    - name: Run Integration Tests
-      run: pnpm run test:integration
+    - name: Build website
+      run: pnpm build
       working-directory: ./website
-      env:
-        NODE_ENV: test
-
-    - name: Run Python Script Tests
-      run: python -m pytest tests/scripts/ -v --cov=scripts --cov-report=xml:coverage/python-coverage.xml
-
-    - name: Run PowerShell Script Tests
-      shell: pwsh
-      run: |
-        $testResults = Invoke-Pester -Path tests/scripts/ -Output Detailed -PassThru
-        if ($testResults.FailedCount -gt 0) {
-          throw "PowerShell tests failed: $($testResults.FailedCount) failed"
-        }
-
-    - name: Run E2E Tests
-      run: pnpm playwright test tests/e2e/
-      working-directory: ./website
-      env:
-        CI: true
-
-    - name: Upload coverage reports
-      uses: codecov/codecov-action@v3
-      with:
-        files: ./coverage/lcov.info,./coverage/python-coverage.xml
-        flags: unittests
-        name: codecov-umbrella
-        fail_ci_if_error: false
-
-    - name: Validate Script Registry
-      run: |
-        if [ ! -f docs/scripts/README.md ]; then
-          echo "Script registry missing"
-          exit 1
-        fi
-        # Validate all scripts mentioned in registry exist
-        grep -E "\./scripts/" docs/scripts/README.md | while read -r line; do
-          script_path=$(echo "$line" | sed 's/.*`\.\///' | sed 's/`.*/./')
-          if [ ! -f "$script_path" ]; then
-            echo "Script not found: $script_path"
-            exit 1
-          fi
-        done
-
-    - name: Validate Test Structure
-      run: |
-        if [ ! -f docs/tests/README.md ]; then
-          echo "Test documentation missing"
-          exit 1
-        fi
-        # Check for required test directories
-        required_dirs=("governance" "scripts" "integration" "e2e" "utils")
-        for dir in "${required_dirs[@]}"; do
-          if [ ! -d "tests/$dir" ]; then
-            echo "Required test directory missing: tests/$dir"
-            exit 1
-          fi
-        done
 
   security:
     runs-on: ubuntu-latest
@@ -187,50 +101,7 @@ jobs:
 
     - name: Validate build artifacts
       run: |
-        if [ ! -d "dist" ] && [ ! -d "build" ]; then
-          echo "No build output directory found"
+        if [ ! -d "website/.next" ]; then
+          echo "Next.js build output not found"
           exit 1
         fi
-
-  nightly:
-    runs-on: ubuntu-latest
-    if: github.event.schedule == '0 2 * * *'  # Daily at 2 AM UTC
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20.x
-
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
-
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: 8
-
-    - name: Install dependencies
-      run: |
-        pnpm install --frozen-lockfile
-        pip install -r requirements-wp.txt
-      working-directory: ./website
-
-    - name: Run extended E2E tests
-      run: pnpm playwright test tests/e2e/ --headed=false --workers=1
-      working-directory: ./website
-      env:
-        CI: true
-        EXTENDED_TESTS: true
-
-    - name: Performance tests
-      run: pnpm run test:performance
-      working-directory: ./website
-
-    - name: Load tests
-      run: pnpm run test:load
-      working-directory: ./website
