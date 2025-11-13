@@ -63,19 +63,90 @@
 
 ### 9. Real-World Governance Activation
 **🗳️ Governance Bootstrapping**
-- [ ] Seed the first proposals: roadmap priorities, working group formation, bounty allocations
-- [ ] Run a community-wide vote to validate quorum mechanics and badge-weighted tallies
-- [ ] Publish a governance launch announcement with a walkthrough of how to participate
+- [x] [proposal] Draft roadmap priorities
+- [x] [proposal] Working group formation
+- [ ] [vote] Quorum validation test
+- [ ] [announcement] Governance launch draft
 
-**📢 Community Activation**
-- [ ] Host a Governance Kickoff Call to demo the portal and answer questions
-- [ ] Launch a Contributor Onboarding Sprint using the learning paths and playbooks
-- [ ] Offer badge incentives for early voters, proposal authors, and reviewers
+**📢 Community Scaling**
+- [ ] [onboarding] Sprint kickoff plan
+- [ ] [badge] Incentive design
+- [ ] [event] Governance demo call
 
-**📁 Documentation Finalization**
-- [ ] Mark /docs/governance/voting.md as complete and live
-- [ ] Add a "How to Vote" quickstart guide to the portal and README
-- [ ] Begin governance transparency logs: structured records of proposals, votes, and outcomes
+**📁 Documentation & Transparency**
+- [ ] [docs] voting.md finalization
+- [ ] [docs] Quickstart guide
+- [ ] [logs] Transparency record schema
+
+**🚀 Ecosystem Growth**
+- [ ] [outreach] Contributor campaign
+- [ ] [seo] Metadata + discoverability
+- [ ] [enterprise] Adoption deck
+
+### 10. Website Development & Launch
+**🏗️ Website Infrastructure Setup**
+- [ ] Set up Next.js 14 project in `/neuroswarm/website/` with TypeScript and Tailwind CSS
+- [ ] Configure deployment pipeline for getblockchain.tech/neuroswarm
+- [ ] Set up CI/CD with automated builds and deployments
+- [ ] Implement SEO optimization and meta tags
+- [ ] Add analytics tracking (Google Analytics, custom events)
+
+**🎨 Design & Branding**
+- [ ] Create NeuroSwarm brand guidelines and color palette
+- [ ] Design homepage hero section with value proposition
+- [ ] Build responsive navigation and footer components
+- [ ] Create consistent typography and spacing system
+- [ ] Design key page layouts (About, Governance, Docs, Community)
+
+**📄 Content Creation**
+- [ ] Write homepage copy explaining NeuroSwarm's mission and value
+- [ ] Create "What is NeuroSwarm" section with clear explanations
+- [ ] Build governance portal integration and voting guides
+- [ ] Write technical documentation landing pages
+- [ ] Create community and contributor onboarding content
+
+**🔧 Core Pages & Features**
+- [ ] Homepage with hero, features, and call-to-actions
+- [ ] About page explaining the vision and technology
+- [ ] Governance page linking to portal.neuroswarm.ai/governance
+- [ ] Documentation hub with links to docs.neuroswarm.ai
+- [ ] Community page with Discord, forum, and social links
+- [ ] Blog/news section for announcements and updates
+
+**🚀 Portal Integration**
+- [ ] Embed governance portal iframe or redirect system
+- [ ] Add voting status widgets and proposal previews
+- [ ] Implement wallet connection prompts and badge displays
+- [ ] Create contributor dashboard integration
+- [ ] Add real-time governance metrics and statistics
+
+**📱 Mobile & Performance**
+- [ ] Ensure full mobile responsiveness across all pages
+- [ ] Optimize images and assets for fast loading
+- [ ] Implement lazy loading and code splitting
+- [ ] Add PWA capabilities for offline access
+- [ ] Test cross-browser compatibility
+
+**🔒 Security & Compliance**
+- [ ] Implement HTTPS and security headers
+- [ ] Add rate limiting and DDoS protection
+- [ ] Set up monitoring and error tracking
+- [ ] Ensure GDPR compliance for user data
+- [ ] Add content security policies
+
+**📊 Analytics & Optimization**
+- [ ] Set up conversion tracking for key actions
+- [ ] Implement A/B testing framework
+- [ ] Add user feedback and survey systems
+- [ ] Create performance monitoring dashboards
+- [ ] Set up automated testing and quality assurance
+
+**🚀 Launch & Marketing**
+- [ ] Create launch announcement and press kit
+- [ ] Set up social media profiles and branding
+- [ ] Build email newsletter signup and automation
+- [ ] Create promotional graphics and video content
+- [ ] Plan community launch event and AMA sessions
 
 ## Done
 - [x] Create 6 repositories (`neuro-shared`, `neuro-program`, `neuro-services`, `neuro-web`, `neuro-infra`, `neuroswarm`)
