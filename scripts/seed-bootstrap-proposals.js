@@ -50,16 +50,16 @@ Create a dedicated working group focused on NeuroSwarm's core protocol developme
 - Month 6: Review and transition planning
 
 ### Supporting Documentation
-- [Technical Roadmap](https://docs.neuroswarm.ai/roadmap)
-- [Working Group Guidelines](https://docs.neuroswarm.ai/working-groups)
-- [Budget Framework](https://docs.neuroswarm.ai/budget-framework)`,
+- [Technical Roadmap](https://getblockchain.tech/neuroswarm/docs/roadmap)
+- [Working Group Guidelines](https://getblockchain.tech/neuroswarm/docs/working-groups)
+- [Budget Framework](https://getblockchain.tech/neuroswarm/docs/budget-framework)`,
     category: 'Operational',
     author: 'NeuroSwarm Foundation',
     tags: ['working-group', 'development', 'core-protocol', 'governance'],
     documentationLinks: [
-      'https://docs.neuroswarm.ai/roadmap',
-      'https://docs.neuroswarm.ai/working-groups',
-      'https://docs.neuroswarm.ai/budget-framework'
+      'https://getblockchain.tech/neuroswarm/docs/roadmap',
+      'https://getblockchain.tech/neuroswarm/docs/working-groups',
+      'https://getblockchain.tech/neuroswarm/docs/budget-framework'
     ],
     votingPeriodDays: 14,
     discussionPeriodDays: 7
@@ -117,16 +117,16 @@ Develop and implement a comprehensive strategy to accelerate NeuroSwarm's commun
 - Q4: Review and expansion
 
 ### Supporting Documentation
-- [Community Strategy Document](https://docs.neuroswarm.ai/community-strategy)
-- [Partnership Framework](https://docs.neuroswarm.ai/partnerships)
-- [Education Roadmap](https://docs.neuroswarm.ai/education)`,
+- [Community Strategy Document](https://getblockchain.tech/neuroswarm/docs/community-strategy)
+- [Partnership Framework](https://getblockchain.tech/neuroswarm/docs/partnerships)
+- [Education Roadmap](https://getblockchain.tech/neuroswarm/docs/education)`,
     category: 'Strategic',
     author: 'Community Council',
     tags: ['community', 'growth', 'adoption', 'education', 'partnerships'],
     documentationLinks: [
-      'https://docs.neuroswarm.ai/community-strategy',
-      'https://docs.neuroswarm.ai/partnerships',
-      'https://docs.neuroswarm.ai/education'
+      'https://getblockchain.tech/neuroswarm/docs/community-strategy',
+      'https://getblockchain.tech/neuroswarm/docs/partnerships',
+      'https://getblockchain.tech/neuroswarm/docs/education'
     ],
     votingPeriodDays: 21,
     discussionPeriodDays: 14
@@ -194,16 +194,16 @@ Review and optimize NeuroSwarm's tokenomics to ensure sustainable growth, fair d
 - Independent audit by leading DeFi firms
 
 ### Supporting Documentation
-- [Current Tokenomics](https://docs.neuroswarm.ai/tokenomics)
-- [Economic Analysis Report](https://docs.neuroswarm.ai/economic-analysis)
-- [Incentive Design Framework](https://docs.neuroswarm.ai/incentives)`,
+- [Current Tokenomics](https://getblockchain.tech/neuroswarm/docs/tokenomics)
+- [Economic Analysis Report](https://getblockchain.tech/neuroswarm/docs/economic-analysis)
+- [Incentive Design Framework](https://getblockchain.tech/neuroswarm/docs/incentives)`,
     category: 'Strategic',
     author: 'Economics Committee',
     tags: ['tokenomics', 'incentives', 'economics', 'treasury', 'staking'],
     documentationLinks: [
-      'https://docs.neuroswarm.ai/tokenomics',
-      'https://docs.neuroswarm.ai/economic-analysis',
-      'https://docs.neuroswarm.ai/incentives'
+      'https://getblockchain.tech/neuroswarm/docs/tokenomics',
+      'https://getblockchain.tech/neuroswarm/docs/economic-analysis',
+      'https://getblockchain.tech/neuroswarm/docs/incentives'
     ],
     votingPeriodDays: 21,
     discussionPeriodDays: 14
@@ -287,16 +287,16 @@ Conduct thorough security audits of NeuroSwarm's smart contracts, protocols, and
 - Community confidence in security
 
 ### Supporting Documentation
-- [Security Framework](https://docs.neuroswarm.ai/security)
-- [Audit Methodology](https://docs.neuroswarm.ai/audit-methodology)
-- [Bug Bounty Guidelines](https://docs.neuroswarm.ai/bug-bounty)`,
+- [Security Framework](https://getblockchain.tech/neuroswarm/docs/security)
+- [Audit Methodology](https://getblockchain.tech/neuroswarm/docs/audit-methodology)
+- [Bug Bounty Guidelines](https://getblockchain.tech/neuroswarm/docs/bug-bounty)`,
     category: 'Technical',
     author: 'Security Council',
     tags: ['security', 'audit', 'bug-bounty', 'smart-contracts', 'infrastructure'],
     documentationLinks: [
-      'https://docs.neuroswarm.ai/security',
-      'https://docs.neuroswarm.ai/audit-methodology',
-      'https://docs.neuroswarm.ai/bug-bounty'
+      'https://getblockchain.tech/neuroswarm/docs/security',
+      'https://getblockchain.tech/neuroswarm/docs/audit-methodology',
+      'https://getblockchain.tech/neuroswarm/docs/bug-bounty'
     ],
     votingPeriodDays: 14,
     discussionPeriodDays: 7
@@ -384,16 +384,16 @@ Implement a comprehensive decentralized identity and reputation system that enha
 - System uptime: 99.9% availability
 
 ### Supporting Documentation
-- [Identity System Design](https://docs.neuroswarm.ai/identity)
-- [Reputation Framework](https://docs.neuroswarm.ai/reputation)
-- [Privacy Considerations](https://docs.neuroswarm.ai/privacy)`,
+- [Identity System Design](https://getblockchain.tech/neuroswarm/docs/identity)
+- [Reputation Framework](https://getblockchain.tech/neuroswarm/docs/reputation)
+- [Privacy Considerations](https://getblockchain.tech/neuroswarm/docs/privacy)`,
     category: 'Technical',
     author: 'Identity Working Group',
     tags: ['identity', 'reputation', 'privacy', 'decentralized', 'trust'],
     documentationLinks: [
-      'https://docs.neuroswarm.ai/identity',
-      'https://docs.neuroswarm.ai/reputation',
-      'https://docs.neuroswarm.ai/privacy'
+      'https://getblockchain.tech/neuroswarm/docs/identity',
+      'https://getblockchain.tech/neuroswarm/docs/reputation',
+      'https://getblockchain.tech/neuroswarm/docs/privacy'
     ],
     votingPeriodDays: 21,
     discussionPeriodDays: 14
