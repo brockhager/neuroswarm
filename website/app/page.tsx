@@ -157,6 +157,157 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* Mission, Vision, Values Section */}
+        <div className="py-24 bg-white dark:bg-gray-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                Our Mission & Vision
+              </h2>
+              <p className="text-lg text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+                Building the foundation for a decentralized AI future where technology serves humanity's collective intelligence.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 mb-16">
+              {/* Mission */}
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Globe className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Our Mission</h3>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                  To democratize artificial intelligence by creating an open, decentralized platform where AI development is collaborative, transparent, and accessible to everyone. We believe AI should serve humanity's collective intelligence, not centralized interests.
+                </p>
+              </div>
+
+              {/* Vision */}
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Zap className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Our Vision</h3>
+                <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+                  A future where AI is developed collectively by humanity, for humanity. Where every person can contribute to AI advancement, every AI decision is auditable, and every benefit is shared equitably. NeuroSwarm will become the foundation for a global brain - a distributed intelligence that enhances human potential while respecting individual sovereignty.
+                </p>
+              </div>
+
+              {/* Values */}
+              <div className="text-center">
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Shield className="h-8 w-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Our Values</h3>
+                <ul className="text-gray-600 dark:text-gray-300 space-y-2 text-left max-w-xs mx-auto">
+                  <li className="flex items-start">
+                    <span className="text-green-500 mr-2">✓</span>
+                    <span><strong>Decentralization:</strong> Power distributed across the network, not concentrated in corporations</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-green-500 mr-2">✓</span>
+                    <span><strong>Transparency:</strong> All AI decisions and training data auditable and verifiable</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-green-500 mr-2">✓</span>
+                    <span><strong>Collaboration:</strong> Open participation in AI development and governance</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-green-500 mr-2">✓</span>
+                    <span><strong>Ethics:</strong> Human values and safety built into the core architecture</span>
+                  </li>
+                  <li className="flex items-start">
+                    <span className="text-green-500 mr-2">✓</span>
+                    <span><strong>Accessibility:</strong> AI tools available to individuals, not just institutions</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Why We Exist */}
+            <div className="bg-gradient-to-r from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 rounded-2xl p-8 mb-16">
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Why We Exist</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                  <div className="text-left">
+                    <h4 className="text-lg font-semibold text-red-600 dark:text-red-400 mb-3">The Problem</h4>
+                    <p className="text-gray-700 dark:text-gray-300">
+                      Current AI development is dominated by centralized entities, creating black-box systems that prioritize profit over transparency, ethics, and user control. This concentration of power leads to biased algorithms, privacy violations, and unequal access to AI benefits.
+                    </p>
+                  </div>
+                  <div className="text-left">
+                    <h4 className="text-lg font-semibold text-green-600 dark:text-green-400 mb-3">Our Purpose</h4>
+                    <p className="text-gray-700 dark:text-gray-300">
+                      To democratize artificial intelligence by creating an open, decentralized platform where AI development is collaborative, transparent, and accessible to everyone. We believe AI should serve humanity's collective intelligence, not centralized interests.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Contributor Pathways */}
+            <div className="text-center mb-16">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Your Contributor Journey</h3>
+              <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto">
+                Whether you're new to open source or an experienced developer, NeuroSwarm offers clear pathways to contribute and grow within our community.
+              </p>
+              <Link
+                href="/kb/pathways"
+                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"
+              >
+                Explore Contributor Pathways
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </div>
+
+            {/* Quick Links to KB */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <Link
+                href="/kb/faq"
+                className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 border border-gray-100 dark:border-gray-700 group"
+              >
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <BookOpen className="h-6 w-6 text-white" />
+                </div>
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">FAQ</h4>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">Common questions and answers for contributors</p>
+              </Link>
+
+              <Link
+                href="/kb/getting-started"
+                className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 border border-gray-100 dark:border-gray-700 group"
+              >
+                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <ArrowRight className="h-6 w-6 text-white" />
+                </div>
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Getting Started</h4>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">Complete setup guide for new contributors</p>
+              </Link>
+
+              <Link
+                href="/kb/governance"
+                className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 border border-gray-100 dark:border-gray-700 group"
+              >
+                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Shield className="h-6 w-6 text-white" />
+                </div>
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Governance Dashboard</h4>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">Live metrics and community health indicators</p>
+              </Link>
+
+              <Link
+                href="/docs"
+                className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 border border-gray-100 dark:border-gray-700 group"
+              >
+                <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <Globe className="h-6 w-6 text-white" />
+                </div>
+                <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Technical Docs</h4>
+                <p className="text-gray-600 dark:text-gray-300 text-sm">Deep dives into our architecture and systems</p>
+              </Link>
+            </div>
+          </div>
+        </div>
+
         {/* Features Section */}
         <div className="py-24 bg-white/50 dark:bg-gray-800/50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
