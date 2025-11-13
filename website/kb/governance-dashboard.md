@@ -127,9 +127,10 @@ We're working on a web-based dashboard to visualize governance events in real-ti
 Want to participate in NeuroSwarm governance?
 
 1. **Review Events**: Monitor this dashboard for ongoing activities
-2. **Propose Changes**: Submit governance proposals via GitHub Issues
-3. **Vote on Decisions**: Participate in community votes when they occur
-4. **Join Discussions**: Contribute to governance conversations
+2. **Learn Our Story**: Read the [NeuroSwarm Stories](/docs/stories.md) to understand our vision and journey
+3. **Propose Changes**: Submit governance proposals via GitHub Issues
+4. **Vote on Decisions**: Participate in community votes when they occur
+5. **Join Discussions**: Contribute to governance conversations
 
 ## Event Schema
 

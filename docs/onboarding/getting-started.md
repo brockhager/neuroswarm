@@ -111,11 +111,32 @@ cargo test
 
 - Check the [documentation index](../general/neuroswarm-docs-README.md) for detailed guides
 - Review the [architecture overview](../program/architecture.md)
+- Read the [NeuroSwarm Stories](../stories.md) to understand our vision and journey
 - Join our Discord/Telegram for community support
 - Open an issue for bugs or feature requests
 
-## Next Steps
+## Contributor Workflow
 
-- Read the [architecture overview](../program/architecture.md)
-- Explore the [API documentation](../services/)
-- Set up your development environment following the [development guide](../misc/development.md)
+Before contributing, ensure you follow our quality standards:
+
+### Pre-Commit Checklist
+- [ ] Run `pnpm lint` in the relevant project directory (0 errors required)
+- [ ] Run `pnpm typecheck` or `tsc --noEmit` to validate TypeScript (0 errors required)
+- [ ] Update `docs/todo.md` for any new tasks or significant changes
+- [ ] Run `sync-agent.ps1` to sync changes with the project board
+
+### Development Workflow
+
+1. **Pick an issue** from the [Kanban board](../governance/kanban.md)
+2. **Create a feature branch:** `git checkout -b feature/your-feature`
+3. **Make changes** following the [development guide](../misc/development.md)
+4. **Run the pre-commit checklist** to ensure quality
+5. **Commit with clear messages** and create a PR
+
+### Quality Gates
+
+All contributions must pass:
+- **Linting**: `pnpm lint` returns 0 errors
+- **Type Checking**: `tsc --noEmit` passes cleanly
+- **Testing**: All existing tests pass
+- **Build**: Project builds successfully

@@ -17,6 +17,15 @@
 - [x] Fix React useEffect dependency warnings
 - [x] Ensure all builds pass with 0 errors
 - [x] Log final validation in governance records
+- [x] Expand docs/stories.md with vision, contributor journey, and governance narrative
+- [x] Cross-link stories into KB pages (/kb/getting-started, /kb/governance)
+- [x] Update onboarding docs with contributor workflow checklist
+- [x] Validate linting, typecheck, and build remain clean (0 errors)
+- [x] Confirm Next.js routes compile and render correctly
+- [x] Update governance logs with story development and validation entries
+- [x] Resolve Vercel GitHub Actions authentication error by documenting token/secret setup
+- [x] Update CONTRIBUTOR-GUIDE.md with comprehensive Vercel deployment instructions
+- [x] Log Vercel deployment configuration in governance records
 
 ## Backlog (to be done)
 
