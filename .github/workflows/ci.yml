@@ -32,6 +32,10 @@ jobs:
       run: pnpm install --frozen-lockfile
       working-directory: ./website
 
+    - name: Run tests
+      run: pnpm test
+      working-directory: ./website
+
     - name: Lint TypeScript
       run: pnpm tsc --noEmit
       working-directory: ./website
