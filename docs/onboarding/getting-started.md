@@ -93,9 +93,9 @@ cargo test
 
 ## Development Workflow
 
-1. **Pick an issue** from the [Kanban board](./governance/kanban.md)
+1. **Pick an issue** from the [Kanban board](../governance/kanban.md)
 2. **Create a feature branch:** `git checkout -b feature/your-feature`
-3. **Make changes** following the [development guide](./development.md)
+3. **Make changes** following the [development guide](../misc/development.md)
 4. **Run tests** to ensure everything works
 5. **Commit with clear messages** and create a PR
 
@@ -109,13 +109,13 @@ cargo test
 
 ## Getting Help
 
-- Check the [documentation index](./README.md) for detailed guides
-- Review the [architecture overview](./architecture.md)
+- Check the [documentation index](../general/neuroswarm-docs-README.md) for detailed guides
+- Review the [architecture overview](../program/architecture.md)
 - Join our Discord/Telegram for community support
 - Open an issue for bugs or feature requests
 
 ## Next Steps
 
-- Read the [architecture overview](./architecture.md)
-- Explore the [API documentation](../neuro-services/docs/services.md)
-- Set up your development environment following the [development guide](./development.md)
+- Read the [architecture overview](../program/architecture.md)
+- Explore the [API documentation](../services/)
+- Set up your development environment following the [development guide](../misc/development.md)

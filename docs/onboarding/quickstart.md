@@ -112,12 +112,12 @@ Join specialized teams based on your interests:
 ### Immediate Support
 - **Discord #help**: Real-time community support
 - **GitHub Issues**: Report bugs or request features
-- **Documentation**: Search our [knowledge base](./governance/contributor-portal.md)
+- **Documentation**: Search our [knowledge base](../governance/contributor-portal.md)
 
 ### Learning Resources
-- **[Contributor Playbooks](../playbooks/)**: Step-by-step guides for specific tasks
-- **[Governance Documentation](./governance/)**: Understanding decision-making
-- **[Technical Documentation](./)**: Deep dives into system architecture
+- **[Contributor Playbooks](../misc/playbooks/)**: Step-by-step guides for specific tasks
+- **[Governance Documentation](../governance/)**: Understanding decision-making
+- **[Technical Documentation](../general/)**: Deep dives into system architecture
 
 ### Office Hours
 - **Community Calls**: Every Tuesday at 3 PM UTC
@@ -147,5 +147,5 @@ Remember: Every expert was once a beginner. Your first contribution is the harde
 *Need help? Reach out on [Discord](https://discord.gg/neuroswarm) or open an issue on [GitHub](https://github.com/brockhager/neuroswarm).*
 
 *For detailed technical setup, see: [Getting Started](./getting-started.md)*
-*For governance participation, see: [How to Vote](./governance/voting.md)*</content>
+*For governance participation, see: [How to Vote](../governance/voting.md)*</content>
 <parameter name="filePath">c:\JS\ns\neuroswarm\docs\quickstart.md
