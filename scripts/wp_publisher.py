@@ -317,7 +317,7 @@ def main():
         'results': results
     }
 
-    log_file = 'wp_publish_log.jsonl'
+    log_file = '.logs/wp_publish_log.jsonl'
     with open(log_file, 'a', encoding='utf-8') as f:
         f.write(json.dumps(log_entry) + '\n')
 

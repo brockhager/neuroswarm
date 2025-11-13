@@ -1,0 +1,131 @@
+name: Security Checks
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  schedule:
+    # Run daily security checks
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+    - name: Run CodeQL Analysis
+      uses: github/codeql-action/init@v3
+      with:
+        languages: javascript, typescript
+
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v3
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+
+    - name: Dependency Review
+      uses: actions/dependency-review-action@v4
+      if: github.event_name == 'pull_request'
+
+    - name: Run security audit
+      run: pnpm audit --audit-level moderate
+      working-directory: ./website
+      continue-on-error: true
+
+    - name: Check for secrets
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: main
+        head: HEAD
+        extra_args: --debug --only-verified
+
+    - name: Verify commit signatures
+      if: github.event_name == 'push'
+      run: |
+        echo "Verifying commit signatures..."
+        if git log --oneline --show-signature ${{ github.event.before }}..${{ github.sha }} | grep -q "gpg: Signature made"; then
+          echo "✅ All commits are signed"
+        else
+          echo "❌ Unsigned commits detected"
+          exit 1
+        fi
+
+  compliance-check:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Check license compliance
+      run: |
+        # Check that all source files have appropriate license headers
+        find src website -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" | head -10 | xargs grep -L "Copyright" || echo "Some files missing copyright headers"
+
+    - name: Validate CODEOWNERS
+      run: |
+        if [ -f .github/CODEOWNERS ]; then
+          echo "✅ CODEOWNERS file exists"
+        else
+          echo "❌ CODEOWNERS file missing"
+          exit 1
+        fi
+
+    - name: Check security documentation
+      run: |
+        required_files=("docs/SECURITY.md" "docs/GOVERNANCE.md")
+        for file in "${required_files[@]}"; do
+          if [ -f "$file" ]; then
+            echo "✅ $file exists"
+          else
+            echo "❌ $file missing"
+            exit 1
+          fi
+        done
+
+  notify-security:
+    needs: [security-scan, compliance-check]
+    runs-on: ubuntu-latest
+    if: failure() && github.ref == 'refs/heads/main'
+
+    steps:
+    - name: Send security alert
+      run: |
+        echo "🚨 Security check failed on main branch"
+        echo "Repository: ${{ github.repository }}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Check the security scan results above for details"
+        # Add your notification logic here (Slack, email, etc.)

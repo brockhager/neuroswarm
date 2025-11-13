@@ -10,7 +10,7 @@ param(
 $projectId = 3
 $owner = "brockhager"
 $todoFile = "docs/todo.md"
-$logFile = "wp_publish_log.jsonl"
+$logFile = ".logs/wp_publish_log.jsonl"
 
 function Get-TodoContent {
     if (Test-Path $todoFile) {
@@ -135,8 +135,8 @@ if ($MyInvocation.InvocationName -eq $MyInvocation.MyCommand.Name) {
     } else {
         Write-Host "NeuroSwarm Kanban Sync Agent"
         Write-Host "Usage:"
-        Write-Host "  .\sync-agent.ps1 -Sync              # Run one-time sync"
-        Write-Host "  .\sync-agent.ps1 -Monitor           # Start continuous monitoring"
-        Write-Host "  .\sync-agent.ps1 -Monitor -IntervalMinutes 30  # Monitor with custom interval"
+        Write-Host "  .\agents\sync-agent.ps1 -Sync              # Run one-time sync"
+        Write-Host "  .\agents\sync-agent.ps1 -Monitor           # Start continuous monitoring"
+        Write-Host "  .\agents\sync-agent.ps1 -Monitor -IntervalMinutes 30  # Monitor with custom interval"
     }
 }

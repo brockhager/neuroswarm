@@ -159,16 +159,16 @@ class TestWordPressPublisher:
 Describe "Sync Agent" {
     Context "File Operations" {
         It "Should move files correctly" {
-            $result = .\scripts\sync-agent.ps1 -Sync -WhatIf
+            $result = .\agents\sync-agent.ps1 -Sync -WhatIf
             $result | Should -Not -BeNullOrEmpty
         }
 
         It "Should log operations" {
-            $logPath = "wp_publish_log.jsonl"
+            $logPath = ".logs/wp_publish_log.jsonl"
             $initialCount = Get-Content $logPath | Measure-Object | Select-Object -ExpandProperty Count
 
             # Run operation
-            .\scripts\sync-agent.ps1 -Sync
+            .\agents\sync-agent.ps1 -Sync
 
             $finalCount = Get-Content $logPath | Measure-Object | Select-Object -ExpandProperty Count
             $finalCount | Should -BeGreaterThan $initialCount
