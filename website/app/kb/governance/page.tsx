@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft, Vote, FileText, Clock, CheckCircle, XCircle, Users, Trophy, BarChart3, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Vote, FileText, CheckCircle, Users, Trophy, BarChart3, MessageSquare } from 'lucide-react';
 
 export const metadata = {
   title: 'Governance System | NeuroSwarm',
@@ -203,7 +203,7 @@ export default function GovernancePage() {
             Governance System
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300">
-            Learn how NeuroSwarm's decentralized governance works, from proposal submission to voting and implementation.
+            Learn how NeuroSwarm&apos;s decentralized governance works, from proposal submission to voting and implementation.
           </p>
         </div>
 
@@ -256,7 +256,7 @@ export default function GovernancePage() {
             Proposal Lifecycle
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {proposalLifecycle.map((stage, index) => {
+            {proposalLifecycle.map((stage) => {
               const Icon = stage.icon;
               return (
                 <div key={stage.stage} className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
@@ -391,7 +391,7 @@ export default function GovernancePage() {
                 Participate in Governance
               </h2>
               <p className="text-gray-700 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
-                Your voice matters in shaping NeuroSwarm's future. Join the governance process and help
+                Your voice matters in shaping NeuroSwarm&apos;s future. Join the governance process and help
                 build the decentralized AI platform.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">

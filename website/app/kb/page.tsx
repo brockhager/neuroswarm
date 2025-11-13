@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { BookOpen, Users, Shield, Wrench, MessageSquare, FileText, Search, TrendingUp, Award, Calendar, ChevronRight, Star, Zap, Users as UsersIcon } from 'lucide-react';
+import { BookOpen, Users, Shield, Wrench, MessageSquare, FileText, TrendingUp, Award, Calendar, ChevronRight, Star, Zap, Users as UsersIcon } from 'lucide-react';
 import KBSearch from '@/components/KBSearch';
 
 export const metadata = {
@@ -287,7 +287,7 @@ export default function KBHomePage() {
               <div>
                 <h2 className="text-xl font-bold mb-2">🎉 Governance System Now Live!</h2>
                 <p className="text-blue-100 mb-4">
-                  NeuroSwarm's comprehensive Knowledge Base and governance system are now available.
+                  NeuroSwarm&apos;s comprehensive Knowledge Base and governance system are now available.
                   Join thousands of contributors shaping the future of decentralized AI.
                 </p>
                 <div className="flex flex-wrap gap-4 text-sm">
@@ -387,7 +387,7 @@ export default function KBHomePage() {
                           <p className="text-sm text-gray-600 dark:text-gray-400">{story.badge} • {story.achievement}</p>
                         </div>
                       </div>
-                      <p className="text-sm text-gray-700 dark:text-gray-300 italic">"{story.quote}"</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300 italic">&ldquo;{story.quote}&rdquo;</p>
                     </div>
                   ))}
                 </div>

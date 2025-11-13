@@ -363,8 +363,8 @@ export default function CommunityPage() {
                 Join the Conversation
               </h2>
               <p className="text-gray-700 dark:text-gray-300 mb-6 max-w-2xl mx-auto">
-                NeuroSwarm thrives on community participation. Whether you're a developer, researcher,
-                or enthusiast, there's a place for you in our growing ecosystem.
+                NeuroSwarm thrives on community participation. Whether you&apos;re a developer, researcher,
+                or enthusiast, there&apos;s a place for you in our growing ecosystem.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link

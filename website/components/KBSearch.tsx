@@ -22,7 +22,11 @@ const fuse = new Fuse(searchIndex, {
 interface SearchResult {
   item: typeof searchIndex[0];
   score?: number;
-  matches?: any[];
+  matches?: Array<{
+    indices: number[][];
+    value: string;
+    key: string;
+  }>;
 }
 
 export default function KBSearch() {
@@ -102,7 +106,7 @@ export default function KBSearch() {
       {isOpen && query && results.length === 0 && (
         <div className="absolute top-full mt-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 p-4">
           <p className="text-gray-500 dark:text-gray-400 text-center">
-            No results found for "{query}"
+            No results found for &ldquo;{query}&rdquo;
           </p>
         </div>
       )}

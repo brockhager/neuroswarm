@@ -113,7 +113,7 @@ export default function GettingStartedPage() {
             Getting Started with NeuroSwarm
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300">
-            Learn about NeuroSwarm's vision, principles, and how to get involved in building the decentralized AI platform.
+            Learn about NeuroSwarm&apos;s vision, principles, and how to get involved in building the decentralized AI platform.
           </p>
         </div>
 
@@ -178,7 +178,7 @@ export default function GettingStartedPage() {
                 </h3>
               </div>
               <p className="text-gray-600 dark:text-gray-400">
-                Contributors have real governance power and economic incentives aligned with the platform's success.
+                Contributors have real governance power and economic incentives aligned with the platform&apos;s success.
               </p>
             </div>
 
