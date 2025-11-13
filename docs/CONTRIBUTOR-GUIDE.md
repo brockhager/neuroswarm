@@ -139,6 +139,86 @@ Invoke-Pester tests/agent/SyncAgent.Tests.ps1 -OutputFormat Detailed
 - [ ] No scripts in root directory
 - [ ] Required directories exist
 
+## 🚀 Deployment Setup
+
+### Vercel Deployment Configuration
+
+The NeuroSwarm website is deployed to Vercel using GitHub Actions. To set up deployment, repository maintainers need to configure Vercel authentication secrets.
+
+#### Prerequisites
+- Vercel account with admin access to the NeuroSwarm project
+- GitHub repository admin access to configure secrets
+
+#### Step 1: Create Vercel Personal Access Token
+
+1. **Log into Vercel Dashboard**: Go to [vercel.com](https://vercel.com) and sign in
+2. **Navigate to Account Settings**: Click your profile → Account Settings
+3. **Create Token**: Go to "Tokens" tab → "Create Token"
+4. **Configure Token**:
+   - Name: `neuroswarm-deployment`
+   - Scope: Select your organization/team
+   - Expiration: Set to "No Expiration" for continuous deployment
+5. **Copy Token**: Save the generated token securely
+
+#### Step 2: Retrieve Vercel Organization and Project IDs
+
+1. **Get Organization ID**:
+   - In Vercel dashboard, go to Settings → General
+   - Copy the "Organization ID" (starts with `team_`)
+
+2. **Get Project ID**:
+   - Navigate to your NeuroSwarm project
+   - Go to Settings → General
+   - Copy the "Project ID"
+
+#### Step 3: Configure GitHub Repository Secrets
+
+1. **Go to Repository Settings**: 
+   - Navigate to `https://github.com/brockhager/neuroswarm/settings/secrets/actions`
+
+2. **Add Secrets**:
+   - `VERCEL_TOKEN`: Paste your Personal Access Token
+   - `VERCEL_ORG_ID`: Paste your Organization ID
+   - `VERCEL_PROJECT_ID`: Paste your Project ID
+
+#### Step 4: Verify Deployment
+
+1. **Trigger Deployment**: Push to `main` branch or use workflow dispatch
+2. **Check GitHub Actions**: Verify workflow runs without "vercel-token" errors
+3. **Confirm Vercel Deployment**: Check Vercel dashboard for successful deployment
+
+#### Troubleshooting Deployment
+
+**❌ "Error: Input required and not supplied: vercel-token"**
+```
+The Vercel action requires authentication inputs that are missing.
+```
+
+**🔍 Diagnosis**:
+- GitHub repository secrets not configured
+- Secret names don't match workflow expectations
+- Vercel token expired or invalid
+
+**🛠️ Solutions**:
+1. Verify secrets exist in repository settings
+2. Check secret names match: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
+3. Regenerate Vercel token if expired
+4. Ensure token has correct scope and permissions
+
+**❌ "Error: Organization not found"**
+```
+The specified organization ID is invalid.
+```
+
+**🔍 Diagnosis**:
+- VERCEL_ORG_ID secret has incorrect value
+- Token doesn't have access to the organization
+
+**🛠️ Solutions**:
+1. Double-check Organization ID in Vercel settings
+2. Ensure token scope includes the correct organization
+3. Verify organization name matches
+
 ### Todo Workflow Integration
 
 The sync agent automatically synchronizes `docs/todo.md` with the GitHub Project board, ensuring consistent task tracking across the team.

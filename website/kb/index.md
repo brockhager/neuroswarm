@@ -29,6 +29,7 @@ A future where AI is developed collectively by humanity, for humanity. Where eve
 
 New to NeuroSwarm? Start your journey here.
 
+- **[NeuroSwarm Stories](/docs/stories.md)** - Platform vision, contributor journeys, and governance narrative
 - **[Interactive Quickstart](quickstart.md)** - Get running in 5 minutes with copy-paste commands
 - **[Getting Started Guide](getting-started.md)** - Complete walkthrough from environment setup to your first contribution
 - **[Prerequisites](getting-started.md#prerequisites)** - Required tools, accounts, and knowledge
