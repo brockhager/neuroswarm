@@ -2,6 +2,12 @@
 
 Welcome to the NeuroSwarm Governance Transparency Dashboard! This page provides real-time visibility into governance actions, structural hygiene enforcement, and community decisions that shape our project.
 
+## 📖 Related Resources
+
+- **[Governance Overview](../../docs/stories.md#governance--transparency)** - Learn about NeuroSwarm's governance framework and decision-making processes
+- **[Transparency Mechanisms](../../docs/stories.md#transparency-mechanisms)** - Understand how all activities are publicly auditable
+- **[Governance Logs](../../wp_publish_log.jsonl)** - Raw governance event data for transparency
+
 ## 📊 Live Metrics Overview
 
 ### Project Health Indicators
