@@ -1,7 +1,7 @@
 # 📝 NeuroSwarm Project Kanban
 
 ## In Progress
-- [ ] [neuro-web] Portal Implementation MVP (React dashboard, badge system, learning paths)
+- [ ] [neuro-web] Real-World Governance Activation (bootstrap proposals, community launch, docs finalization)
 
 ## Backlog (to be done)
 
@@ -60,6 +60,22 @@
 **Community Hub**: Basic forum threads + mentorship matching prototype  
 **Search & Discovery**: Initial AI-powered search across playbooks, governance docs, and living documentation  
 **Observability**: Metrics for portal usage, contributor progression, and voting participation
+
+### 9. Real-World Governance Activation
+**🗳️ Governance Bootstrapping**
+- [ ] Seed the first proposals: roadmap priorities, working group formation, bounty allocations
+- [ ] Run a community-wide vote to validate quorum mechanics and badge-weighted tallies
+- [ ] Publish a governance launch announcement with a walkthrough of how to participate
+
+**📢 Community Activation**
+- [ ] Host a Governance Kickoff Call to demo the portal and answer questions
+- [ ] Launch a Contributor Onboarding Sprint using the learning paths and playbooks
+- [ ] Offer badge incentives for early voters, proposal authors, and reviewers
+
+**📁 Documentation Finalization**
+- [ ] Mark /docs/governance/voting.md as complete and live
+- [ ] Add a "How to Vote" quickstart guide to the portal and README
+- [ ] Begin governance transparency logs: structured records of proposals, votes, and outcomes
 
 ## Done
 - [x] Create 6 repositories (`neuro-shared`, `neuro-program`, `neuro-services`, `neuro-web`, `neuro-infra`, `neuroswarm`)

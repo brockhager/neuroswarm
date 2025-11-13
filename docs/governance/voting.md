@@ -1,5 +1,7 @@
 # Voting in NeuroSwarm Governance
 
+> **✅ STATUS: COMPLETE AND LIVE** - This document is the authoritative source for NeuroSwarm voting mechanics and is actively used by the governance system.
+
 ## Purpose
 
 Voting is the cornerstone of NeuroSwarm's decentralized governance model, ensuring that all major decisions reflect the collective wisdom and priorities of our contributor community. By implementing a transparent, badge-weighted voting system, we empower contributors to shape the project's direction while maintaining accountability and preventing any single entity from dominating decision-making.
