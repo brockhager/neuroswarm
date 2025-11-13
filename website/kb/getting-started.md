@@ -2,6 +2,14 @@
 
 Welcome to NeuroSwarm! This guide will walk you through setting up your development environment and running your first test. Whether you're a new contributor or returning developer, follow these steps to get up and running quickly.
 
+## 🗺️ Understanding Your Journey
+
+Before diving into technical setup, take a moment to understand your path in NeuroSwarm:
+
+- **[Contributor Journey Overview](../../docs/stories.md#contributor-journey)** - Learn about different contributor pathways and growth opportunities
+- **[Working Groups](../../docs/stories.md#working-groups)** - Discover specialized teams and their responsibilities
+- **[Success Stories](../../docs/stories.md#success-stories)** - Read about real contributor experiences and progression
+
 ## Prerequisites
 
 Before you begin, ensure you have the following installed:
