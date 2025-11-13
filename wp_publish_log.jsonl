@@ -24,3 +24,6 @@
 {"timestamp":"2025-11-13 13:27","details":"NeuroSwarm website successfully deployed to https://getblockchain.tech/neuroswarm/ with mission-driven landing page and full KB integration","file":"website","action":"live"}
 {"timestamp":"2025-11-13 13:34","details":"Resolved all ESLint issues (27 problems  0) for clean CI/CD pipeline","file":"website","action":"linting-fixed"}
 {"timestamp":"2025-11-13 13:34","details":"GitHub Actions deployment triggered with linting fixes for clean production build","file":"website","action":"deployment-triggered"}
+{"timestamp":"2025-11-13 13:37","details":"Migrated CI/CD pipeline to pnpm with frozen lockfile for reliable dependency management","file":".github/workflows/deploy.yml","action":"updated"}
+{"timestamp":"2025-11-13 13:37","details":"Generated pnpm lock file for consistent dependency resolution in CI/CD","file":"website/pnpm-lock.yaml","action":"created"}
+{"timestamp":"2025-11-13 13:37","details":"GitHub Actions deployment triggered with pnpm migration for lock file resolution","file":"website","action":"deployment-triggered"}
