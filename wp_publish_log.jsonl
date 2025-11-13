@@ -27,3 +27,6 @@
 {"timestamp":"2025-11-13 13:37","details":"Migrated CI/CD pipeline to pnpm with frozen lockfile for reliable dependency management","file":".github/workflows/deploy.yml","action":"updated"}
 {"timestamp":"2025-11-13 13:37","details":"Generated pnpm lock file for consistent dependency resolution in CI/CD","file":"website/pnpm-lock.yaml","action":"created"}
 {"timestamp":"2025-11-13 13:37","details":"GitHub Actions deployment triggered with pnpm migration for lock file resolution","file":"website","action":"deployment-triggered"}
+{"timestamp":"2025-11-13 13:41","details":"Migrated entire CI workflow from npm to pnpm - updated setup-node cache, added pnpm setup, changed all npm commands to pnpm with frozen-lockfile, added working-directory for website context","file":".github/workflows/ci.yml","action":"npm-to-pnpm-migration"}
+{"timestamp":"2025-11-13 13:43","details":"Replaced corepack enable with pnpm/action-setup@v2 action - fixes pnpm executable not found error in GitHub Actions by properly installing pnpm before usage","file":".github/workflows","action":"pnpm-setup-fix"}
+{"timestamp":"2025-11-13 13:54","details":"Updated pnpm version from 8 to 10 in all workflows to match local environment and fix lock file compatibility issues causing frozen-lockfile errors","file":".github/workflows","action":"pnpm-version-alignment"}
