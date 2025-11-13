@@ -19,7 +19,7 @@ function Get-TodoContent {
     return $null
 }
 
-function Get-FileHash {
+function Get-FileSHA256Hash {
     param([string]$filePath)
     if (Test-Path $filePath) {
         return Get-FileHash $filePath -Algorithm SHA256 | Select-Object -ExpandProperty Hash
@@ -145,7 +145,7 @@ function Sync-TodoToBoard {
 
     # Parse In Progress tasks
     $inProgressPattern = '(?m)^## In Progress$(.*?)(?=^##|\z)'
-    $inProgressMatch = [regex]::Match($todoContent, $inProgressPattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    $inProgressMatch = [regex]::Match($todoContent, $inProgressPattern, 'Singleline')
 
     if ($inProgressMatch.Success) {
         $inProgressTasks = [regex]::Matches($inProgressMatch.Groups[1].Value, '(?m)^- \[ \] (.+)$')
@@ -159,8 +159,8 @@ function Sync-TodoToBoard {
 
             if (-not $existingCard) {
                 # Create new card
-                gh project item-create $projectId --owner $owner --title $taskTitle --body "Auto-synced from docs/todo.md on $(Get-Date -Format 'yyyy-MM-dd'). Status: In Progress."
-                Log-Action -action "auto_sync" -task $taskTitle -status "In progress" -details "Created new In Progress card"
+                                gh project item-create $projectId --owner $owner --title $taskTitle --body "Auto-synced from docs/todo.md on $(Get-Date -Format 'yyyy-MM-dd'). Status: In Progress."
+                                Log-Action -action "auto_sync" -task $taskTitle -status "In progress" -details "Created new In Progress card"
                 Write-Host "✅ Created: $taskTitle"
             }
         }
@@ -168,7 +168,7 @@ function Sync-TodoToBoard {
 
     # Parse Backlog tasks
     $backlogPattern = '(?m)^## Backlog \(to be done\)$(.*?)(?=^## Done|\z)'
-    $backlogMatch = [regex]::Match($todoContent, $backlogPattern, [System.Text.RegularExpressions.RegexOptions]::Singleline)
+    $backlogMatch = [regex]::Match($todoContent, $backlogPattern, 'Singleline')
 
     if ($backlogMatch.Success) {
         $backlogTasks = [regex]::Matches($backlogMatch.Groups[1].Value, '(?m)^- \[ \] (.+)$')
@@ -182,8 +182,8 @@ function Sync-TodoToBoard {
 
             if (-not $existingCard) {
                 # Create new card
-                gh project item-create $projectId --owner $owner --title $taskTitle --body "Auto-synced from docs/todo.md on $(Get-Date -Format 'yyyy-MM-dd'). Status: Backlog."
-                Log-Action -action "auto_sync" -task $taskTitle -status "Backlog" -details "Created new Backlog card"
+                                gh project item-create $projectId --owner $owner --title $taskTitle --body "Auto-synced from docs/todo.md on $(Get-Date -Format 'yyyy-MM-dd'). Status: Backlog."
+                                Log-Action -action "auto_sync" -task $taskTitle -status "Backlog" -details "Created new Backlog card"
                 Write-Host "✅ Created: $taskTitle"
             }
         }
@@ -197,7 +197,7 @@ function Start-Monitoring {
     Write-Host "⏰ Check interval: $IntervalMinutes minutes"
     Write-Host "Press Ctrl+C to stop monitoring"
 
-    $lastHash = Get-FileHash $todoFile
+    $lastHash = Get-FileSHA256Hash $todoFile
     $lastHygieneCheck = Get-Date
 
     while ($true) {
@@ -211,7 +211,7 @@ function Start-Monitoring {
             $lastHygieneCheck = Get-Date
         }
 
-        $currentHash = Get-FileHash $todoFile
+        $currentHash = Get-FileSHA256Hash $todoFile
         if ($currentHash -ne $lastHash) {
             Write-Host "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') - Change detected in $todoFile"
             Sync-TodoToBoard

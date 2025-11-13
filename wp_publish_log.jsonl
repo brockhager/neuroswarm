@@ -1,6 +1,7 @@
 ﻿{"test":"data"}
-{"action":"test","project_id":3,"details":"","timestamp":"2025-11-13T10:47:56.402215","status":"test","task":"test"}
-{"timestamp":"2025-11-13 10:49","details":"Knowledge base table of contents","file":"docs/index.md","new_path":"docs/index.md","action":"created"}
-{"timestamp":"2025-11-13 10:50","details":"Step-by-step contributor onboarding guide","file":"docs/wp-kb/getting-started.md","new_path":"docs/wp-kb/getting-started.md","action":"created"}
-{"timestamp":"2025-11-13 10:50","details":"Contributor-facing governance events dashboard","file":"docs/wp-kb/governance-dashboard.md","new_path":"docs/wp-kb/governance-dashboard.md","action":"created"}
-{"timestamp":"2025-11-13 10:50","details":"Documentation of weekly governance rituals","file":"docs/governance/rituals.md","new_path":"docs/governance/rituals.md","action":"created"}
+{"action":"test","project_id":3,"details":"","timestamp":"2025-11-13T10:59:19.523298","status":"test","task":"test"}
+{"timestamp":"2025-11-13 11:00","details":"KB landing page refreshed with onboarding structure","file":"kb/index","action":"updated"}
+{"timestamp":"2025-11-13 11:05","details":"KB landing page refreshed with mission, vision, and contributor pathways","file":"kb/index","action":"updated"}
+{"timestamp":"2025-11-13 11:05","details":"KB directory relocated inside website","file":"/wp-kb/","new_path":"/website/kb/","action":"moved"}
+{"timestamp":"2025-11-13 11:08","details":"Fixed broken links in KB index after directory relocation","file":"kb/index","action":"updated"}
+{"timestamp":"2025-11-13 11:09","details":"Next.js website build successful after KB relocation","file":"website","action":"validated"}
