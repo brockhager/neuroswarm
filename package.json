@@ -4,7 +4,7 @@
   "description": "NeuroSwarm coordination and documentation",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --project config",
     "test": "node tests/governance/test-quorum-validation.ts",
     "submit-proposals": "node scripts/governance/submit-bootstrap-proposals.ts",
     "docs": "echo 'Documentation is in docs/ folder'",

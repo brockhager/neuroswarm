@@ -4,22 +4,68 @@ on:
   push:
     branches: [ main, master ]
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+        - production
+        - staging
 
 jobs:
-  build:
+  security-check:
     runs-on: ubuntu-latest
+    outputs:
+      signatures-verified: ${{ steps.verify-signatures.outputs.verified }}
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Verify commit signatures
+      id: verify-signatures
+      run: |
+        # Check if all commits in the push are signed
+        if git log --oneline --show-signature ${{ github.event.before }}..${{ github.sha }} | grep -q "gpg: Signature made"; then
+          echo "verified=true" >> $GITHUB_OUTPUT
+          echo "✅ All commits are signed"
+        else
+          echo "verified=false" >> $GITHUB_OUTPUT
+          echo "❌ Unsigned commits detected"
+          exit 1
+        fi
+
+    - name: Run security scan
+      uses: github/super-linter/slim@v5
+      env:
+        DEFAULT_BRANCH: main
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        VALIDATE_ALL_CODEBASE: false
+        VALIDATE_JAVASCRIPT_ES: true
+        VALIDATE_TYPESCRIPT_ES: true
+        VALIDATE_JSON: true
+        VALIDATE_YAML: true
+
+  build:
+    needs: security-check
+    runs-on: ubuntu-latest
+    if: needs.security-check.outputs.signatures-verified == 'true'
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
 
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: 20
 
     - name: Setup pnpm
-      uses: pnpm/action-setup@v2
+      uses: pnpm/action-setup@v4
       with:
         version: 10
 
@@ -30,7 +76,7 @@ jobs:
         echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
 
     - name: Setup pnpm cache
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
         key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
@@ -41,19 +87,76 @@ jobs:
       run: pnpm install --frozen-lockfile
       working-directory: ./website
 
+    - name: Run security audit
+      run: pnpm audit --audit-level high
+      working-directory: ./website
+
     - name: Build Next.js application
       run: pnpm build
       working-directory: ./website
 
-  deploy:
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: ./website/.next/
+        retention-days: 1
+
+  deploy-staging:
     needs: build
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: staging
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
-    - name: Deploy to Vercel
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-artifacts
+        path: ./website/.next/
+
+    - name: Deploy to Vercel Staging
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        vercel-args: '--cwd ./website'
+
+  deploy-production:
+    needs: build
+    runs-on: ubuntu-latest
+    if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.environment == 'production')
+    environment: production
+    concurrency:
+      group: production-deployment
+      cancel-in-progress: false
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: build-artifacts
+        path: ./website/.next/
+
+    - name: Manual approval for production
+      if: github.event_name == 'workflow_dispatch'
+      uses: trstringer/manual-approval@v1
+      with:
+        secret: ${{ secrets.DEPLOYMENT_APPROVAL_SECRET }}
+        approvers: owner,core-team
+        minimum-approvals: 2
+        issue-title: "Deploy to Production"
+        issue-body: "Please approve or deny the deployment to production."
+        exclude-workflow-initiator-as-approver: false
+
+    - name: Deploy to Vercel Production
       uses: amondnet/vercel-action@v25
       with:
         vercel-token: ${{ secrets.VERCEL_TOKEN }}

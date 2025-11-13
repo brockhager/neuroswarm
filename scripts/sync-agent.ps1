@@ -10,7 +10,7 @@ param(
 $projectId = 3
 $owner = "brockhager"
 $todoFile = "docs/todo.md"
-$logFile = "wp_publish_log.jsonl"
+$logFile = ".logs/wp_publish_log.jsonl"
 
 function Get-TodoContent {
     if (Test-Path $todoFile) {

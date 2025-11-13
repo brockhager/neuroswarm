@@ -165,13 +165,13 @@ PROPOSAL_DATA=custom.json npx ts-node scripts/governance/submit-bootstrap-propos
 **Usage Examples**:
 ```powershell
 # One-time sync
-.\scripts\sync-agent.ps1 -Sync
+.\agents\sync-agent.ps1 -Sync
 
 # Continuous monitoring
-.\scripts\sync-agent.ps1 -Monitor
+.\agents\sync-agent.ps1 -Monitor
 
 # Custom interval monitoring
-.\scripts\sync-agent.ps1 -Monitor -IntervalMinutes 30
+.\agents\sync-agent.ps1 -Monitor -IntervalMinutes 30
 ```
 
 ### Validation Scripts
@@ -218,7 +218,7 @@ PROPOSAL_DATA=custom.json npx ts-node scripts/governance/submit-bootstrap-propos
 
 3. **Run Sync Agent**:
    ```powershell
-   .\scripts\sync-agent.ps1 -Sync
+   .\agents\sync-agent.ps1 -Sync
    ```
 
 4. **Publish Content**:

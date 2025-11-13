@@ -25,10 +25,10 @@ The sync agent monitors `docs/todo.md` for changes and synchronizes them with Gi
 3. **Test agent functionality**:
    ```powershell
    # Run one-time sync
-   .\scripts\sync-agent.ps1 -Sync
+   .\agents\sync-agent.ps1 -Sync
 
    # Start monitoring mode
-   .\scripts\sync-agent.ps1 -Monitor -IntervalMinutes 30
+   .\agents\sync-agent.ps1 -Monitor -IntervalMinutes 30
    ```
 
 ### Debugging Failures
@@ -241,7 +241,7 @@ The sync agent automatically synchronizes `docs/todo.md` with the GitHub Project
 1. **Add new tasks** to `docs/todo.md` in the appropriate section
 2. **Move tasks** between sections as work progresses (`Backlog` → `In Progress` → `Done`)
 3. **Sync automatically** happens every 30 minutes via the monitoring agent
-4. **Manual sync** available with `.\sync-agent.ps1 -Sync`
+4. **Manual sync** available with `.\agents\sync-agent.ps1 -Sync`
 5. **Check governance logs** in `wp_publish_log.jsonl` for sync confirmations
 
 #### Best Practices
@@ -272,13 +272,13 @@ gh project list --owner brockhager
 
 # Validate script syntax (if parsing works)
 Set-StrictMode -Version Latest
-& .\scripts\sync-agent.ps1
+& .\agents\sync-agent.ps1
 
 # Check log file
 Get-Content wp_publish_log.jsonl -Tail 10 | ConvertFrom-Json
 
 # Test individual functions
-. .\scripts\sync-agent.ps1
+. .\agents\sync-agent.ps1
 Get-TodoContent
 Get-FileHash "docs/todo.md"
 ```
