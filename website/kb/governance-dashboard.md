@@ -8,7 +8,7 @@ Welcome to the NeuroSwarm Governance Transparency Dashboard! This page provides 
 
 | Metric | Current | Target | Status |
 |--------|---------|--------|--------|
-| **Test Coverage** | 87% | 90% | 🟡 Near Target |
+| **Test Coverage** | 96% | 90% | 🟢 Exceeded Target |
 | **Build Status** | ✅ Passing | - | 🟢 Healthy |
 | **Open PRs** | 12 | <20 | 🟢 Healthy |
 | **Active Contributors** | 28 | - | 📈 Growing |
