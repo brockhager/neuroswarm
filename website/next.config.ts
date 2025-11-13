@@ -7,7 +7,12 @@ const nextConfig: NextConfig = {
 
   // Image optimization
   images: {
-    domains: ['getblockchain.tech'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'getblockchain.tech',
+      },
+    ],
     formats: ['image/webp', 'image/avif'],
   },
 
