@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import fs from 'fs';
+import path from 'path';
 import { logger } from '../index';
 import { governanceLogger } from '../services/governance-logger';
 
@@ -14,6 +16,36 @@ declare global {
       };
     }
   }
+}
+
+// Load JWT private key for signing/verification
+let jwtPrivateKey: string | null = null;
+let jwtPublicKey: string | null = null;
+
+try {
+  const privateKeyPath = process.env.SERVICE_JWT_PRIVATE_KEY_PATH;
+  if (privateKeyPath) {
+    const fullPath = path.resolve(privateKeyPath);
+    if (fs.existsSync(fullPath)) {
+      jwtPrivateKey = fs.readFileSync(fullPath, 'utf8');
+      logger.info('JWT private key loaded from file');
+    } else {
+      logger.error(`JWT private key file not found: ${fullPath}`);
+    }
+  }
+
+  const publicKeyPath = process.env.FOUNDER_PUBLIC_KEY_PATH;
+  if (publicKeyPath) {
+    const fullPath = path.resolve(publicKeyPath);
+    if (fs.existsSync(fullPath)) {
+      jwtPublicKey = fs.readFileSync(fullPath, 'utf8');
+      logger.info('JWT public key loaded from file');
+    } else {
+      logger.error(`JWT public key file not found: ${fullPath}`);
+    }
+  }
+} catch (error) {
+  logger.error('Failed to load JWT keys:', error);
 }
 
 export const authMiddleware = (req: Request, res: Response, next: NextFunction): void => {
@@ -38,14 +70,13 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction):
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
     // Verify JWT token
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      logger.error('JWT_SECRET not configured');
+    if (!jwtPublicKey) {
+      logger.error('JWT public key not configured');
       res.status(500).json({ error: 'Server configuration error' });
       return;
     }
 
-    const decoded = jwt.verify(token, secret) as {
+    const decoded = jwt.verify(token, jwtPublicKey, { algorithms: ['RS256'] }) as {
       id: string;
       role: string;
       permissions: string[];

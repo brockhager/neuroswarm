@@ -40,6 +40,13 @@ if (process.env.NODE_ENV !== 'production') {
 // Initialize governance logger with winston logger
 const governanceLoggerInstance = createGovernanceLogger(logger);
 
+// Log key setup completion
+governanceLoggerInstance.log('key-setup', {
+  status: 'completed',
+  keys: ['founder.jwt.key', 'founder.jwt.pub', 'admin-node.jwt.key', 'admin-node.jwt.pub'],
+  environment: process.env.NODE_ENV
+});
+
 // Security middleware
 app.use(helmet());
 app.use(cors({
