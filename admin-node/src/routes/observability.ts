@@ -196,4 +196,81 @@ router.get('/anchor-status', requireAdmin, async (req: Request, res: Response) =
   }
 });
 
+// GET /v1/observability/nodes - Network nodes overview
+router.get('/nodes', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+
+    governanceLogger.logAdminAction('observability_query', userId, {
+      stream: 'nodes',
+      endpoint: '/v1/observability/nodes',
+    });
+
+    // TODO: Implement node discovery and status tracking
+    // For now, return mock data based on admin-genesis.json
+    const nodes = [
+      {
+        nodeId: 'admin-node-1',
+        name: 'Admin Node 1',
+        role: 'admin',
+        ip: '203.0.113.42',
+        status: 'active',
+      },
+      {
+        nodeId: 'admin-node-2',
+        name: 'Admin Node 2',
+        role: 'admin',
+        ip: '198.51.100.17',
+        status: 'active',
+      },
+      {
+        nodeId: 'admin-node-3',
+        name: 'Admin Node 3',
+        role: 'admin',
+        ip: '192.0.2.1',
+        status: 'pending',
+      },
+      {
+        nodeId: 'validator-001',
+        name: 'Validator Node 1',
+        role: 'validator',
+        ip: '10.0.0.100',
+        status: 'active',
+      },
+      {
+        nodeId: 'indexer-001',
+        name: 'Indexer Node 1',
+        role: 'indexer',
+        ip: '10.0.0.101',
+        status: 'active',
+      },
+      {
+        nodeId: 'gateway-001',
+        name: 'Gateway Node 1',
+        role: 'gateway',
+        ip: '10.0.0.102',
+        status: 'denied',
+      },
+    ];
+
+    // Log any denied nodes for governance
+    nodes.forEach(node => {
+      if (node.status === 'denied') {
+        governanceLogger.logNodeStatusUpdate(node.nodeId, node.ip, node.status, {
+          role: node.role,
+          reason: 'IP not in admin whitelist',
+        });
+      }
+    });
+
+    res.json(nodes);
+  } catch (error) {
+    logger.error('Nodes observability error:', error);
+    res.status(500).json({
+      error: 'Failed to retrieve nodes data',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
 export { router as observabilityRoutes };
