@@ -1,3 +1,11 @@
+# ⚠️ WARNING! ⚠️
+
+**DO NOT USE ADMIN NODE UNLESS GIVEN PERMISSION BY FOUNDER.**
+
+**USING WITHOUT PERMISSION CAN RESULT IN PERMANENT BAN**
+
+---
+
 # Admin Node
 
 NeuroSwarm Admin Node - Founder control plane for observability and emergency controls.
