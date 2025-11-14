@@ -1,0 +1,147 @@
+{
+  "kanban_board": {
+    "metadata": {
+      "version": "1.0",
+      "last_updated": "2025-11-13T22:15:00Z",
+      "description": "NeuroSwarm Admin Node Kanban Board - Security & Infrastructure Track"
+    },
+    "swimlanes": {
+      "security_governance": {
+        "name": "Security & Governance",
+        "cards": [
+          {
+            "id": "genesis-safeguards-blockchain-anchor",
+            "title": "Genesis Safeguards + Blockchain Anchor",
+            "status": "BACKLOG",
+            "assignee": "@brockhager",
+            "priority": "HIGH",
+            "track": "Security/Infra",
+            "dependencies": ["admin-node-core-architecture"],
+            "definition_of_done": [
+              "✅ Cryptographic anchoring: founder keypair verification baked into startup",
+              "✅ Genesis configuration lock: immutable admin-genesis.json with hash anchoring",
+              "❌ Hardware binding: TPM/HSM checks integrated, unauthorized devices denied",
+              "❌ Consensus enforcement: rogue nodes rejected by quorum",
+              "✅ Governance logging: startup attempts logged with anomaly alerts",
+              "✅ Blockchain anchor: SHA-256 hash of Admin Node 1 recorded on Solana, transaction signature referenced in /docs/admin-node-genesis.md",
+              "✅ Governance log entry appended (wp_publish_log.jsonl) confirming blockchain anchoring",
+              "✅ Contributor guide updated with 'Genesis Safeguards + Blockchain Anchor' awareness section"
+            ],
+            "description": "Implement comprehensive genesis safeguards with blockchain-verified founder authorization and immutable audit trails",
+            "created": "2025-11-13T22:15:00Z",
+            "updated": "2025-11-13T22:15:00Z"
+          }
+        ]
+      },
+      "phase_1_mvp": {
+        "name": "Phase 1: MVP Observability",
+        "cards": [
+          {
+            "id": "admin-node-core-architecture",
+            "title": "Build core architecture and authentication",
+            "status": "IN_PROGRESS",
+            "assignee": "@brockhager",
+            "priority": "HIGH",
+            "track": "Security/Infra",
+            "dependencies": [],
+            "definition_of_done": [
+              "Express.js service with TypeScript implemented",
+              "Authentication middleware with JWT and role-based access",
+              "Governance logging service with cryptographic signing",
+              "Basic observability routes for system monitoring",
+              "WebSocket support for real-time updates",
+              "Health check and error handling endpoints"
+            ],
+            "description": "Scaffold the core admin node architecture with authentication and basic observability",
+            "created": "2025-11-13T21:36:00Z",
+            "updated": "2025-11-13T22:00:00Z"
+          },
+          {
+            "id": "admin-node-basic-dashboards",
+            "title": "Stand up basic dashboards for agent activity and consensus monitoring",
+            "status": "BACKLOG",
+            "assignee": "@brockhager",
+            "priority": "MEDIUM",
+            "track": "Security/Infra",
+            "dependencies": ["admin-node-core-architecture"],
+            "definition_of_done": [
+              "Agent activity dashboard with real-time metrics",
+              "Consensus monitoring interface",
+              "Basic alert system for anomalies",
+              "Dashboard authentication integration",
+              "WebSocket real-time updates"
+            ],
+            "description": "Implement basic monitoring dashboards for admin node observability",
+            "created": "2025-11-13T21:37:00Z",
+            "updated": "2025-11-13T21:37:00Z"
+          },
+          {
+            "id": "admin-node-governance-logging",
+            "title": "Validate governance logging integration for observability events",
+            "status": "BACKLOG",
+            "assignee": "@brockhager",
+            "priority": "MEDIUM",
+            "track": "Security/Infra",
+            "dependencies": ["admin-node-core-architecture"],
+            "definition_of_done": [
+              "All admin actions logged to governance log",
+              "Log entries include cryptographic signatures",
+              "Observability events properly categorized",
+              "Log integrity verification working",
+              "Alert system for governance anomalies"
+            ],
+            "description": "Ensure governance logging is properly integrated across all admin node operations",
+            "created": "2025-11-13T21:38:00Z",
+            "updated": "2025-11-13T21:38:00Z"
+          }
+        ]
+      }
+    },
+    "backlog": {
+      "integration_testing": [
+        {
+          "id": "integration-test-harness",
+          "title": "Define test harness for admin endpoints",
+          "status": "BACKLOG",
+          "assignee": "@brockhager",
+          "priority": "LOW",
+          "track": "Testing",
+          "dependencies": ["admin-node-core-architecture"],
+          "created": "2025-11-13T21:39:00Z"
+        },
+        {
+          "id": "integration-freeze-restore",
+          "title": "Ensure freeze/restore flows are logged and auditable",
+          "status": "BACKLOG",
+          "assignee": "@brockhager",
+          "priority": "LOW",
+          "track": "Testing",
+          "dependencies": ["admin-node-core-architecture"],
+          "created": "2025-11-13T21:40:00Z"
+        }
+      ],
+      "contributor_scaling": [
+        {
+          "id": "contributor-admin-awareness",
+          "title": "Use updated guide to onboard contributors into admin node awareness",
+          "status": "READY",
+          "assignee": "@brockhager",
+          "priority": "MEDIUM",
+          "track": "Contributor Scaling",
+          "dependencies": ["admin-node-core-architecture"],
+          "created": "2025-11-13T21:41:00Z"
+        },
+        {
+          "id": "contributor-kanban-workflow",
+          "title": "Reinforce Kanban as the single source of truth for task flow",
+          "status": "READY",
+          "assignee": "@brockhager",
+          "priority": "MEDIUM",
+          "track": "Contributor Scaling",
+          "dependencies": ["admin-node-core-architecture"],
+          "created": "2025-11-13T21:42:00Z"
+        }
+      ]
+    }
+  }
+}
