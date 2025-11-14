@@ -1,0 +1,44 @@
+{
+  "swarm": {
+    "join": {
+      "gatewayUrl": "https://gateway.neuroswarm.net",
+      "nodeType": "standard",
+      "maxNodes": 50,
+      "currentNodes": 1
+    },
+    "roles": {
+      "allowed": [
+        "contributor",
+        "validator",
+        "gateway",
+        "indexer"
+      ]
+    },
+    "security": {
+      "whitelist": [
+        {
+          "nodeId": "node1",
+          "deviceFingerprint": "node1-device-fingerprint-001",
+          "ipRange": "127.0.0.1/32",
+          "permissions": ["read", "write", "validate"]
+        }
+      ]
+    },
+    "network": {
+      "discovery": {
+        "enabled": true,
+        "protocol": "libp2p",
+        "bootstrapPeers": [
+          "/ip4/127.0.0.1/tcp/9090/p2p/node1"
+        ]
+      }
+    },
+    "governance": {
+      "enabled": true,
+      "logging": {
+        "endpoint": "/v1/governance/log",
+        "required": true
+      }
+    }
+  }
+}
