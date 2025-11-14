@@ -143,6 +143,19 @@ export class GovernanceLogger {
   }
 
   /**
+   * Log node status updates (join/deny events)
+   */
+  logNodeStatusUpdate(nodeId: string, ip: string, status: string, details?: Record<string, any>): void {
+    this.log('node-status-update', {
+      nodeId,
+      ip,
+      status,
+      userAgent: 'admin-node',
+      ...details,
+    });
+  }
+
+  /**
    * Log system events (startup, shutdown, errors)
    */
   logSystemEvent(event: string, details: Record<string, any>): void {
