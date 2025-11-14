@@ -181,3 +181,8 @@ website/dist/
 # Content processing artifacts
 content/processed/
 content/cache/
+
+# Secrets and private keys
+secrets/
+*.key
+*.pem
