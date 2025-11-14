@@ -294,6 +294,44 @@ All admin actions are automatically logged to `wp_publish_log.jsonl` with crypto
 - `admin_intervention`: Emergency governance actions
 - `admin_export`: Data export operations
 
+### Blockchain Anchor
+
+The Admin Node genesis is anchored to the Solana blockchain for immutable proof of founder authorization. Contributors can verify this anchor to ensure system integrity.
+
+**🔍 Verification Process**:
+
+1. **Check Genesis Hash**:
+   ```bash
+   # Compute current genesis hash
+   sha256sum docs/admin-genesis.json
+   ```
+
+2. **Find Anchor Transaction**:
+   - Check `wp_publish_log.jsonl` for latest `"action": "genesis-anchor"` entry
+   - Extract `txSignature` and `hash` values
+
+3. **Verify on Solana Explorer**:
+   - Visit: `https://explorer.solana.com/tx/<transaction-signature>`
+   - Look for memo containing: `AdminNode1:<genesis-hash>`
+   - Confirm transaction is from founder wallet
+
+4. **Automated Verification**:
+   ```bash
+   # Run verification script
+   ./scripts/verify-anchor.sh
+   ```
+
+**📊 What to Verify**:
+- Genesis hash matches blockchain memo
+- Transaction is recent and valid
+- Memo format follows `AdminNode1:<hash>` pattern
+- No verification failures in governance logs
+
+**🚨 Alert Conditions**:
+- Hash mismatch indicates potential tampering
+- Missing anchor transaction requires immediate review
+- Verification script failures trigger governance alerts
+
 ### Contributor Responsibilities
 
 - [ ] **Respect boundaries**: Never attempt admin node access
