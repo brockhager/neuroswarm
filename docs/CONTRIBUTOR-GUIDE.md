@@ -139,6 +139,171 @@ Invoke-Pester tests/agent/SyncAgent.Tests.ps1 -OutputFormat Detailed
 - [ ] No scripts in root directory
 - [ ] Required directories exist
 
+## 🔧 Code Quality Standards
+
+### Definition of Done
+
+All code contributions must meet these requirements before merging:
+
+- [ ] **No ESLint errors**: `npm run lint` passes without errors
+- [ ] **Type safety enforced**: `npm run build` compiles without type errors
+- [ ] **Tests pass**: `npm run test:ci` passes with >95% coverage
+- [ ] **Race condition testing**: `npm run test:race` passes
+- [ ] **Documentation updated**: Code changes documented in relevant docs
+
+### Linting and TypeScript Standards
+
+#### TypeScript Configuration
+- **Strict mode enabled**: `tsconfig.json` has `"strict": true`
+- **No implicit any**: All variables must have explicit types
+- **Null safety**: Strict null checks prevent runtime null reference errors
+
+#### ESLint Rules
+- **No unused variables**: Remove all unused imports and variables
+- **Explicit types**: Replace `any` with specific TypeScript types
+- **Consistent formatting**: Use Prettier for code formatting
+
+#### Auto-fix Commands
+```bash
+# Fix linting issues automatically
+npm run lint:fix
+
+# Format code
+npm run format
+
+# Type check only
+npm run build
+```
+
+#### Common Issues and Solutions
+
+**❌ ESLint: Unexpected any type**
+```typescript
+// ❌ Bad
+const data: any = response.data;
+
+// ✅ Good
+interface ApiResponse {
+  id: string;
+  name: string;
+  value: number;
+}
+const data: ApiResponse = response.data;
+```
+
+**❌ TypeScript: Property X does not exist on type Y**
+```typescript
+// ❌ Bad - implicit any
+const result = someFunction();
+
+// ✅ Good - explicit typing
+const result: ExpectedType = someFunction();
+```
+
+**❌ ESLint: Unused variable**
+```typescript
+// ❌ Bad
+import { UnusedType } from './types';
+const unusedVar = 'test';
+
+// ✅ Good - remove unused imports/variables
+// (Remove the import and variable if not needed)
+```
+
+#### CI/CD Pipeline Requirements
+
+The full CI pipeline (`npm run ci:full`) must pass:
+1. **Linting**: No ESLint errors or warnings
+2. **Type checking**: TypeScript compilation succeeds
+3. **Unit tests**: All tests pass with coverage
+4. **Race condition tests**: Randomized delay tests pass
+
+**Failure Modes**:
+- ❌ Linting fails → PR blocked
+- ❌ Type errors → PR blocked  
+- ❌ Tests fail → PR blocked
+- ❌ Coverage <95% → PR blocked
+
+### Governance Logging
+
+Code quality events are automatically logged to `wp_publish_log.jsonl`:
+
+```json
+{
+  "timestamp": "2025-11-13T20:35:00Z",
+  "event_type": "code_quality_violation",
+  "severity": "high",
+  "description": "ESLint errors found in PR",
+  "violations": "unused variables, implicit any types",
+  "remediation": "Run npm run lint:fix and fix remaining issues",
+  "component": "code-quality",
+  "governance_action": "block_merge"
+}
+```
+
+**Quality Event Types**:
+- `code_quality_violation`: Linting/type errors found
+- `code_quality_compliance`: All quality checks passed
+- `type_safety_enforced`: Strict TypeScript rules validated
+- `test_coverage_met`: Required coverage thresholds met
+
+## 🔐 Admin Node Awareness
+
+### Understanding the Admin Node
+
+NeuroSwarm implements a secure, founder-only admin node for advanced governance control and observability. All contributors must understand its role, boundaries, and auditability requirements.
+
+**📖 Reference Documentation**: See `docs/admin-node-design.md` for complete technical specifications, security model, and operational procedures.
+
+### Admin Node Boundaries
+
+**What the Admin Node Controls**:
+- Founder-only access to sensitive governance operations
+- Advanced observability dashboards for system health
+- Emergency intervention capabilities
+- Policy engine for automated governance
+- Data export and analytics for compliance
+
+**What Contributors Should Know**:
+- Admin actions are **always logged** and auditable
+- No contributor access to admin endpoints (`/v1/admin/*`)
+- All admin operations require multi-signature validation
+- Governance logs provide complete transparency
+- Admin node enhances, doesn't replace, community governance
+
+### Auditability Requirements
+
+All admin actions are automatically logged to `wp_publish_log.jsonl` with cryptographic signatures:
+
+```json
+{
+  "timestamp": "2025-11-13T21:30:00Z",
+  "event_type": "admin_action",
+  "severity": "info",
+  "description": "Admin dashboard accessed",
+  "actor": "founder-multisig",
+  "action": "observability_query",
+  "component": "admin-node",
+  "governance_action": "logged"
+}
+```
+
+**Admin Event Types**:
+- `admin_action`: Any admin operation performed
+- `admin_authentication`: Multi-signature validation events
+- `admin_intervention`: Emergency governance actions
+- `admin_export`: Data export operations
+
+### Contributor Responsibilities
+
+- [ ] **Respect boundaries**: Never attempt admin node access
+- [ ] **Report concerns**: Use standard governance channels for admin-related issues
+- [ ] **Understand auditability**: All admin actions are transparent and logged
+- [ ] **Follow security protocols**: Multi-signature requirements are strictly enforced
+- [ ] **Reference documentation**: Consult `admin-node-design.md` for technical details
+
+**🚨 Security Note**: Attempting to bypass admin node security controls or access restricted endpoints will result in immediate governance logging and potential contributor status review.
+
 ## 🚀 Deployment Setup
 
 ### Vercel Deployment Configuration
