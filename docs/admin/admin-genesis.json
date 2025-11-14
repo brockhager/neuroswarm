@@ -12,16 +12,6 @@
           "name": "admin-node-1",
           "ip": "203.0.113.42",
           "fingerprint": "HOST_FINGERPRINT_ADMIN_NODE_1"
-        },
-        {
-          "name": "admin-node-2",
-          "ip": "198.51.100.17",
-          "fingerprint": "HOST_FINGERPRINT_ADMIN_NODE_2"
-        },
-        {
-          "name": "admin-node-3",
-          "ip": "192.0.2.15",
-          "fingerprint": "HOST_FINGERPRINT_ADMIN_NODE_3"
         }
       ]
     },
