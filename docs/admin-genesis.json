@@ -1,0 +1,88 @@
+{
+  "genesis": {
+    "version": "1.0.0",
+    "timestamp": "2025-11-13T22:30:00Z",
+    "admin_node_id": "neuroswarm-admin-node-1",
+    "description": "Genesis configuration for NeuroSwarm Admin Node 1 - Founder-controlled control plane"
+  },
+  "founder_authorization": {
+    "authorized_founders": [
+      {
+        "name": "brockhager",
+        "role": "founder",
+        "permissions": ["admin", "governance", "emergency_control"],
+        "authorized_at": "2025-11-13T22:30:00Z"
+      }
+    ],
+    "authorization_model": "multi_signature_required",
+    "minimum_signatures": 1,
+    "emergency_override": {
+      "enabled": true,
+      "conditions": ["system_integrity_threat", "consensus_failure"],
+      "cooldown_period_hours": 24
+    }
+  },
+  "security_configuration": {
+    "cryptographic_standards": {
+      "hash_algorithm": "SHA-256",
+      "signature_algorithm": "ECDSA",
+      "key_derivation": "PBKDF2"
+    },
+    "access_control": {
+      "authentication_required": true,
+      "session_timeout_minutes": 60,
+      "max_failed_attempts": 5,
+      "lockout_duration_minutes": 15
+    },
+    "audit_trail": {
+      "governance_logging": true,
+      "blockchain_anchoring": true,
+      "log_retention_days": 365
+    }
+  },
+  "system_parameters": {
+    "observability_endpoints": [
+      "/v1/observability/health",
+      "/v1/observability/metrics",
+      "/v1/observability/consensus",
+      "/v1/observability/anchor-status"
+    ],
+    "admin_endpoints": [
+      "/v1/admin/freeze",
+      "/v1/admin/restore",
+      "/v1/admin/quorum-status"
+    ],
+    "websocket_channels": [
+      "system_alerts",
+      "consensus_updates",
+      "governance_events"
+    ]
+  },
+  "blockchain_anchor": {
+    "network": "solana",
+    "anchor_type": "genesis_hash",
+    "expected_hash": null,
+    "transaction_signature": null,
+    "explorer_url": null,
+    "verification_script": "scripts/verify-anchor.ps1",
+    "last_verified": null
+  },
+  "integrity_checks": {
+    "hardware_binding": {
+      "enabled": false,
+      "tpm_required": false,
+      "authorized_devices": []
+    },
+    "consensus_enforcement": {
+      "enabled": false,
+      "quorum_threshold": 0.67,
+      "rogue_detection": false
+    }
+  },
+  "metadata": {
+    "created_by": "brockhager",
+    "creation_context": "Initial admin node deployment",
+    "security_classification": "founder_controlled",
+    "update_policy": "founder_approval_required"
+  }
+}
