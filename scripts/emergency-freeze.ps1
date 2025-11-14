@@ -87,7 +87,7 @@ function Set-BranchProtection {
             "Accept" = "application/vnd.github+json"
         } -Body $body -ContentType "application/json"
 
-        Write-Host "✅ Branch protection updated successfully"
+        Write-Host "✅ Branch protection updated successfully - URL: $($response.url)"
         return $true
     }
     catch {
@@ -96,7 +96,7 @@ function Set-BranchProtection {
     }
 }
 
-function Log-EmergencyAction {
+function Write-EmergencyLog {
     param([string]$Action, [string]$Reason)
 
     $logEntry = @{
@@ -137,7 +137,7 @@ switch ($Action) {
 
         # Apply emergency branch protection
         if (Set-BranchProtection -ProtectionSettings $FreezeProtection) {
-            Log-EmergencyAction -Action "freeze" -Reason $Reason
+            Write-EmergencyLog -Action "freeze" -Reason $Reason
             Send-Notification -Message "Emergency freeze activated: $Reason"
 
             # Schedule unfreeze if duration specified
@@ -158,7 +158,7 @@ switch ($Action) {
         Write-Host "🔓 Lifting emergency freeze..."
 
         if (Set-BranchProtection -ProtectionSettings $NormalProtection) {
-            Log-EmergencyAction -Action "unfreeze" -Reason $Reason
+            Write-EmergencyLog -Action "unfreeze" -Reason $Reason
             Send-Notification -Message "Emergency freeze lifted"
 
             # Remove scheduled task if it exists
