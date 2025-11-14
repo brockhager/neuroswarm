@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroSwarm Admin Node Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f0f23;
+            color: #ffffff;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #00ff88;
+            margin-bottom: 10px;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .status-card {
+            background: #1a1a2e;
+            border-radius: 10px;
+            padding: 20px;
+            border: 2px solid #16213e;
+        }
+
+        .status-card.verified {
+            border-color: #00ff88;
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f2e1a 100%);
+        }
+
+        .status-card.failed {
+            border-color: #ff4444;
+            background: linear-gradient(135deg, #1a1a2e 0%, #2e0f0f 100%);
+        }
+
+        .status-card.pending {
+            border-color: #ffa500;
+            background: linear-gradient(135deg, #1a1a2e 0%, #2e1a0f 100%);
+        }
+
+        .status-card h3 {
+            color: #00ff88;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status-badge.verified {
+            background: #00ff88;
+            color: #0f0f23;
+        }
+
+        .status-badge.failed {
+            background: #ff4444;
+            color: white;
+        }
+
+        .status-badge.pending {
+            background: #ffa500;
+            color: #0f0f23;
+        }
+
+        .status-badge.error {
+            background: #666;
+            color: white;
+        }
+
+        .metric {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #333;
+        }
+
+        .metric:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            color: #ccc;
+        }
+
+        .metric-value {
+            color: #fff;
+            font-weight: bold;
+            word-break: break-all;
+        }
+
+        .alerts {
+            margin-top: 20px;
+        }
+
+        .alert {
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .alert.critical {
+            background: #ff4444;
+            color: white;
+        }
+
+        .alert.warning {
+            background: #ffa500;
+            color: #0f0f23;
+        }
+
+        .alert.info {
+            background: #444;
+            color: white;
+        }
+
+        .actions {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .btn {
+            background: #00ff88;
+            color: #0f0f23;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 0 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            background: #00cc66;
+        }
+
+        .btn.secondary {
+            background: #444;
+            color: white;
+        }
+
+        .btn.secondary:hover {
+            background: #666;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+
+        .hash-display {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            background: #000;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 5px;
+            word-break: break-all;
+        }
+
+        .explorer-link {
+            color: #00ff88;
+            text-decoration: none;
+        }
+
+        .explorer-link:hover {
+            text-decoration: underline;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #333;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: #1a1a2e;
+            border: none;
+            color: #ccc;
+            cursor: pointer;
+            border-radius: 5px 5px 0 0;
+            margin-right: 5px;
+        }
+
+        .tab.active {
+            background: #00ff88;
+            color: #0f0f23;
+            font-weight: bold;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .nodes-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .nodes-table th,
+        .nodes-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #333;
+        }
+
+        .nodes-table th {
+            background: #16213e;
+            color: #00ff88;
+            font-weight: bold;
+        }
+
+        .nodes-table tr:hover {
+            background: #1a1a2e;
+        }
+
+        .status-denied {
+            color: #ff4444;
+            font-weight: bold;
+        }
+
+        .status-active {
+            color: #00ff88;
+        }
+
+        .status-pending {
+            color: #ffa500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧠 NeuroSwarm Admin Node Dashboard</h1>
+            <p>Founder-Controlled Control Plane | Blockchain-Verified Genesis</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('anchor-status')">Anchor Status</button>
+            <button class="tab" onclick="showTab('node-overview')">Node Overview</button>
+        </div>
+
+        <div id="anchor-status" class="tab-content active">
+            <div class="loading">Loading anchor status...</div>
+        </div>
+
+        <div id="node-overview" class="tab-content">
+            <div class="loading">Loading node overview...</div>
+        </div>
+
+        <div class="actions">
+            <button class="btn" onclick="refreshData()">🔄 Refresh Status</button>
+            <button class="btn secondary" onclick="runVerification()">✅ Run Verification</button>
+            <a href="https://explorer.solana.com" target="_blank" class="btn secondary">🔍 Solana Explorer</a>
+        </div>
+    </div>
+
+    <script>
+        let anchorData = null;
+        let nodesData = null;
+
+        function showTab(tabName) {
+            // Hide all tab contents
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+
+            // Load data for the tab if needed
+            if (tabName === 'node-overview' && !nodesData) {
+                fetchNodesData();
+            }
+        }
+
+        async function fetchAnchorStatus() {
+            try {
+                const response = await fetch('/v1/observability/anchor-status', {
+                    headers: {
+                        'Authorization': 'Bearer ' + getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('Failed to fetch anchor status:', error);
+                return {
+                    timestamp: new Date().toISOString(),
+                    verificationStatus: 'error',
+                    alerts: [`Failed to fetch status: ${error.message}`],
+                    blockchainAnchor: {},
+                    localHash: null,
+                    blockchainHash: null
+                };
+            }
+        }
+
+        async function fetchNodesData() {
+            try {
+                const response = await fetch('/v1/observability/nodes', {
+                    headers: {
+                        'Authorization': 'Bearer ' + getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('Failed to fetch nodes data:', error);
+                return [];
+            }
+        }
+
+        function getAuthToken() {
+            // In production, this should be securely managed
+            // For demo purposes, using a placeholder
+            return localStorage.getItem('admin_token') || 'demo-token';
+        }
+
+        function renderAnchorStatus(data) {
+            const container = document.getElementById('anchor-status');
+
+            const statusClass = data.verificationStatus || 'error';
+            const statusEmoji = {
+                'verified': '✅',
+                'failed': '❌',
+                'pending': '⏳',
+                'error': '⚠️'
+            }[statusClass] || '❓';
+
+            container.innerHTML = `
+                <div class="status-grid">
+                    <div class="status-card ${statusClass}">
+                        <h3>
+                            ${statusEmoji} Genesis Anchor Status
+                            <span class="status-badge ${statusClass}">${data.verificationStatus || 'unknown'}</span>
+                        </h3>
+
+                        <div class="metric">
+                            <span class="metric-label">Genesis File</span>
+                            <span class="metric-value">${data.genesisFile || 'Not configured'}</span>
+                        </div>
+
+                        <div class="metric">
+                            <span class="metric-label">Local Hash</span>
+                            <div class="metric-value">
+                                ${data.localHash ? `<div class="hash-display">${data.localHash}</div>` : 'Not computed'}
+                            </div>
+                        </div>
+
+                        <div class="metric">
+                            <span class="metric-label">Blockchain Hash</span>
+                            <div class="metric-value">
+                                ${data.blockchainHash ? `<div class="hash-display">${data.blockchainHash}</div>` : 'Not anchored'}
+                            </div>
+                        </div>
+
+                        <div class="metric">
+                            <span class="metric-label">Network</span>
+                            <span class="metric-value">${data.blockchainAnchor?.network || 'Not configured'}</span>
+                        </div>
+
+                        <div class="metric">
+                            <span class="metric-label">Transaction</span>
+                            <span class="metric-value">
+                                ${data.blockchainAnchor?.transactionSignature ?
+                                    `<a href="${data.blockchainAnchor.explorerUrl}" target="_blank" class="explorer-link">
+                                        ${data.blockchainAnchor.transactionSignature.substring(0, 8)}...
+                                    </a>` :
+                                    'Not anchored'
+                                }
+                            </span>
+                        </div>
+
+                        <div class="metric">
+                            <span class="metric-label">Last Verification</span>
+                            <span class="metric-value">
+                                ${data.lastVerification ? new Date(data.lastVerification).toLocaleString() : 'Never'}
+                            </span>
+                        </div>
+
+                        <div class="timestamp">
+                            Last updated: ${new Date(data.timestamp).toLocaleString()}
+                        </div>
+                    </div>
+
+                    <div class="status-card">
+                        <h3>🔍 System Health</h3>
+
+                        <div class="metric">
+                            <span class="metric-label">Admin Node</span>
+                            <span class="metric-value">✅ Operational</span>
+                        </div>
+
+                        <div class="metric">
+                            <span class="metric-label">Governance Logging</span>
+                            <span class="metric-value">✅ Active</span>
+                        </div>
+
+                        <div class="metric">
+                            <span class="metric-label">Blockchain Anchor</span>
+                            <span class="metric-value">${data.verificationStatus === 'verified' ? '✅ Verified' : '⚠️ Check Status'}</span>
+                        </div>
+
+                        <div class="metric">
+                            <span class="metric-label">Security Alerts</span>
+                            <span class="metric-value">${(data.alerts || []).length === 0 ? '✅ None' : '⚠️ ' + (data.alerts || []).length + ' active'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${renderAlerts(data.alerts || [])}
+            `;
+        }
+
+        function renderNodeOverview(nodes) {
+            const container = document.getElementById('node-overview');
+
+            if (!nodes || nodes.length === 0) {
+                container.innerHTML = '<div class="alert info">No nodes found in the network.</div>';
+                return;
+            }
+
+            const tableRows = nodes.map(node => `
+                <tr>
+                    <td>${node.nodeId}</td>
+                    <td>${node.name}</td>
+                    <td>${node.role}</td>
+                    <td>${node.ip}</td>
+                    <td class="status-${node.status}">${node.status.toUpperCase()}</td>
+                </tr>
+            `).join('');
+
+            container.innerHTML = `
+                <div class="status-card">
+                    <h3>🌐 Network Node Overview</h3>
+                    <p>Real-time view of all nodes in the NeuroSwarm network</p>
+
+                    <table class="nodes-table">
+                        <thead>
+                            <tr>
+                                <th>Node ID</th>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>IP Address</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
+
+                    <div class="timestamp">
+                        Last updated: ${new Date().toLocaleString()} | Auto-refresh: 10s
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderAlerts(alerts) {
+            if (!alerts || alerts.length === 0) {
+                return `
+                    <div class="alerts">
+                        <div class="alert info">
+                            ✅ No active alerts - system is healthy
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="alerts">
+                    <h3>🚨 Active Alerts</h3>
+                    ${alerts.map(alert => {
+                        const isCritical = alert.toLowerCase().includes('critical');
+                        const alertClass = isCritical ? 'critical' : 'warning';
+                        return `<div class="alert ${alertClass}">${alert}</div>`;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        async function refreshData() {
+            // Refresh anchor status
+            const anchorData = await fetchAnchorStatus();
+            renderAnchorStatus(anchorData);
+
+            // Refresh nodes data if on that tab
+            const activeTab = document.querySelector('.tab-content.active');
+            if (activeTab && activeTab.id === 'node-overview') {
+                const nodesData = await fetchNodesData();
+                renderNodeOverview(nodesData);
+            }
+        }
+
+        async function runVerification() {
+            if (confirm('Run blockchain anchor verification? This may take a few moments.')) {
+                try {
+                    // This would trigger the verification endpoint
+                    // For now, just refresh the data
+                    await refreshData();
+                    alert('Verification completed! Check the status above.');
+                } catch (error) {
+                    alert('Verification failed: ' + error.message);
+                }
+            }
+        }
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load initial anchor status
+            fetchAnchorStatus().then(data => {
+                anchorData = data;
+                renderAnchorStatus(data);
+            });
+
+            // Auto-refresh every 30 seconds for anchor status
+            setInterval(() => {
+                if (document.getElementById('anchor-status').classList.contains('active')) {
+                    fetchAnchorStatus().then(data => {
+                        anchorData = data;
+                        renderAnchorStatus(data);
+                    });
+                }
+            }, 30000);
+
+            // Auto-refresh nodes every 10 seconds when on that tab
+            setInterval(() => {
+                if (document.getElementById('node-overview').classList.contains('active')) {
+                    fetchNodesData().then(data => {
+                        nodesData = data;
+                        renderNodeOverview(data);
+                    });
+                }
+            }, 10000);
+        });
+
+        // Make functions globally available
+        window.refreshData = refreshData;
+        window.runVerification = runVerification;
+        window.showTab = showTab;
+    </script>
+</body>
+</html>

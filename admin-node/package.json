@@ -4,7 +4,7 @@
   "description": "NeuroSwarm Admin Node - Founder control plane for observability and emergency controls",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc --project config",
+    "build": "tsc",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
     "test": "jest",
