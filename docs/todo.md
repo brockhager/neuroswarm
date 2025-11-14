@@ -14,12 +14,7 @@ Each backlog item must meet ALL criteria before moving to Ready:
 
 ### Ready for Development
 <!-- Tasks that pass 6-criteria checklist and are prioritized for next sprint -->
-- [ ] Implement core swarm intelligence coordination algorithms (Priority: HIGH, Estimate: XL, Assignee: TBD)
-- [ ] Design decentralized consensus mechanism for AI agent validation (Priority: HIGH, Estimate: L, Assignee: TBD)
-- [ ] Create tokenomics model with quadratic funding integration (Priority: HIGH, Estimate: M, Assignee: TBD)
 - [ ] Build validator staking and reward distribution system (Priority: HIGH, Estimate: M, Assignee: TBD)
-- [ ] Develop AI agent registration and discovery protocol (Priority: HIGH, Estimate: M, Assignee: TBD)
-- [ ] Implement secure inter-agent communication framework (Priority: HIGH, Estimate: L, Assignee: TBD)
 - [ ] Create governance proposal and voting smart contracts (Priority: HIGH, Estimate: XL, Assignee: TBD)
 - [ ] Design reputation system for contributor quality assessment (Priority: HIGH, Estimate: M, Assignee: TBD)
 - [ ] Build real-time swarm coordination dashboard (Priority: HIGH, Estimate: L, Assignee: TBD)
@@ -28,9 +23,9 @@ Each backlog item must meet ALL criteria before moving to Ready:
 ## In Progress
 
 <!-- MAX 3 tasks at a time (WIP Limit) -->
-- [ ] Implement core swarm intelligence coordination algorithms (Priority: HIGH, Estimate: XL, Assignee: Core Infrastructure Team)
 - [ ] Design decentralized consensus mechanism for AI agent validation (Priority: HIGH, Estimate: L, Assignee: Core Infrastructure Team)
 - [ ] Create tokenomics model with quadratic funding integration (Priority: HIGH, Estimate: M, Assignee: Token Economics Team)
+- [ ] Implement core swarm intelligence coordination algorithms (Priority: HIGH, Estimate: XL, Assignee: AI Integration Team)
 
 ## Done
 
@@ -62,6 +57,8 @@ Each backlog item must meet ALL criteria before moving to Ready:
 - [x] Add comprehensive tests for KBSearch component (96% coverage achieved)
 - [x] Integrate test execution into CI/CD pipeline
 - [x] Update governance dashboard with improved test coverage metrics
+- [x] Implement AI agent registration and discovery protocol (Priority: HIGH, Estimate: M, Assignee: AI Integration Team)
+- [x] Implement secure inter-agent communication framework (Priority: HIGH, Estimate: L, Assignee: AI Integration Team)
 
 ## Backlog (to be done)
 
@@ -93,7 +90,7 @@ Each backlog item must meet ALL criteria before moving to Ready:
 ## Flow Rules
 
 ### Work in Progress (WIP) Limits
-- **In Progress**: Maximum 3 tasks (currently 2 active)
+- **In Progress**: Maximum 3 tasks (currently 3 active)
 - **Ready**: Maximum 10 tasks (prioritized backlog)
 - **Backlog**: Unlimited (needs refinement before moving to Ready)
 
