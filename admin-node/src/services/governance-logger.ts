@@ -27,12 +27,17 @@ export class GovernanceLogger {
 
     // Load private key for signing (if available)
     const keyPath = process.env.GOVERNANCE_PRIVATE_KEY_PATH;
-    if (keyPath && fs.existsSync(keyPath)) {
-      try {
-        this.privateKey = fs.readFileSync(keyPath, 'utf8');
-        this.logger.info('Governance logger initialized with signing key');
-      } catch (error) {
-        this.logger.error('Failed to load governance signing key:', error);
+    if (keyPath) {
+      console.log("Loading governance key from:", keyPath);
+      if (fs.existsSync(keyPath)) {
+        try {
+          this.privateKey = fs.readFileSync(keyPath, 'utf8');
+          this.logger.info('Governance logger initialized with signing key');
+        } catch (error) {
+          this.logger.error('Failed to load governance signing key:', error);
+        }
+      } else {
+        this.logger.warn('Governance signing key file not found');
       }
     } else {
       this.logger.warn('No governance signing key found - logs will be unsigned');
