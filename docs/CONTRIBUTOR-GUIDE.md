@@ -253,7 +253,7 @@ Code quality events are automatically logged to `wp_publish_log.jsonl`:
 
 NeuroSwarm implements a secure, founder-only admin node for advanced governance control and observability. All contributors must understand its role, boundaries, and auditability requirements.
 
-**📖 Reference Documentation**: See `docs/admin-node-design.md` for complete technical specifications, security model, and operational procedures.
+**📖 Reference Documentation**: See `docs/admin/admin-node-design.md` for complete technical specifications, security model, and operational procedures.
 
 ### Admin Node Boundaries
 
@@ -298,7 +298,9 @@ All admin actions are automatically logged to `wp_publish_log.jsonl` with crypto
 
 The Admin Node genesis is anchored to the Solana blockchain for immutable proof of founder authorization. Contributors can verify this anchor to ensure system integrity.
 
-**🔍 Verification Process**:
+**📖 Complete Verification Guide**: See `docs/contributor-anchor-verification.md` for detailed verification procedures, troubleshooting, and security implications.
+
+**🔍 Quick Verification**:
 
 1. **Check Genesis Hash**:
    ```bash
@@ -338,7 +340,7 @@ The Admin Node genesis is anchored to the Solana blockchain for immutable proof 
 - [ ] **Report concerns**: Use standard governance channels for admin-related issues
 - [ ] **Understand auditability**: All admin actions are transparent and logged
 - [ ] **Follow security protocols**: Multi-signature requirements are strictly enforced
-- [ ] **Reference documentation**: Consult `admin-node-design.md` for technical details
+- [ ] **Reference documentation**: Consult `docs/admin/admin-node-design.md` for technical details
 
 **🚨 Security Note**: Attempting to bypass admin node security controls or access restricted endpoints will result in immediate governance logging and potential contributor status review.
 
