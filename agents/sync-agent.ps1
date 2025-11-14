@@ -27,7 +27,7 @@ function Get-FileSHA256Hash {
     return $null
 }
 
-function Log-Action {
+function Write-ActionLog {
     param(
         [string]$action,
         [string]$task,
@@ -73,7 +73,7 @@ function Sync-TodoToBoard {
             if (-not $existingCard) {
                 # Create new card
                 gh project item-create $projectId --owner $owner --title $taskTitle --body "Auto-synced from docs/todo.md on $(Get-Date -Format 'yyyy-MM-dd'). Status: In Progress."
-                Log-Action -action "auto_sync" -task $taskTitle -status "In progress" -details "Created new In Progress card"
+                Write-ActionLog -action "auto_sync" -task $taskTitle -status "In progress" -details "Created new In Progress card"
                 Write-Host "✅ Created: $taskTitle"
             }
         }
@@ -96,7 +96,7 @@ function Sync-TodoToBoard {
             if (-not $existingCard) {
                 # Create new card
                 gh project item-create $projectId --owner $owner --title $taskTitle --body "Auto-synced from docs/todo.md on $(Get-Date -Format 'yyyy-MM-dd'). Status: Backlog."
-                Log-Action -action "auto_sync" -task $taskTitle -status "Backlog" -details "Created new Backlog card"
+                Write-ActionLog -action "auto_sync" -task $taskTitle -status "Backlog" -details "Created new Backlog card"
                 Write-Host "✅ Created: $taskTitle"
             }
         }
