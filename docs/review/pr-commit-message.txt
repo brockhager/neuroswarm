@@ -1,0 +1,41 @@
+CI/E2E: Stabilize Admin Node tests, add SafetyService, and enforce reproducible CI
+
+This PR addresses stability issues surrounding Admin Node e2e tests and CI reproducibility. Key changes include:
+- Pin Playwright to a stable version for test stability.
+- Enforce deterministic installs using `npm ci` with a CI lockfile validation step.
+- Update seed scripts to compute and write the real `genesisSha256` to `governance-timeline.jsonl` (repo root) and `admin-node` copy so admin observability endpoints match seeded data.
+- Add `SafetyService` (safe mode + `POST /v1/admin/shutdown`) to protect mutating endpoints under maintenance.
+- Improve `AnchorService` to respect `verificationStatus` and support multiple txSignature fields returned by observability.
+- Harden Playwright e2e tests with proper auth headers, robust selectors, clipboard & permission handling, and serial execution to avoid global state conflicts.
+
+Files/areas changed (high-level):
+- `admin-node/` — safety service, seed script updates, services, routes, unit/integration tests, e2e tests.
+- `.github/workflows/admin-node-integration.yml` and `.github/workflows/pr-checklist.yml` — enforced `npm ci`, Playwright validation, seed timeline step, serial e2e tests (`--workers=1`).
+- `docs/review/` — PR checklist (`pr-checklist-ci.md`), PR body (`pr-body-ci.md`), and PR commit message (`pr-commit-message.txt`).
+
+Why this matters
+- CI stability and reproducibility are essential for developer velocity and rapid PR iteration. Improving seeding, test determinism, and adding safe mode protect both tests and production behavior.
+
+Validation steps and reviewer tips
+- Use `docs/review/pr-checklist-ci.md` as the main reference for validation steps.
+
+Quick commands:
+1) Local unit & integration tests
+```powershell
+cd admin-node
+npm ci
+npm test
+```
+2) Playwright E2E (serial for deterministic results)
+```powershell
+npx playwright install --with-deps
+npx playwright test -c e2e/playwright.config.ts --project=chromium --workers=1
+```
+
+Notes:
+- Run Playwright in serial (`--workers=1`) while we have global state toggles, e.g., shutdown tests.
+- If you want to test locally without committing: run `./admin-node/scripts/run-pr-checklist.ps1` (PowerShell) or `./admin-node/scripts/run-pr-checklist.sh` (Bash).
+
+References
+- PR Checklist: `docs/review/pr-checklist-ci.md`
+- Changelog: `docs/changelog/changelog-112025.md`
