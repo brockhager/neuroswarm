@@ -21,6 +21,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -55,6 +56,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -63,6 +65,15 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
         working-directory: ./admin-node
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/ms-playwright
+          key: ${{ runner.os }}-ms-playwright-${{ hashFiles('admin-node/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-ms-playwright-
 
       - name: Validate Playwright browsers installed
         run: |
@@ -82,3 +93,38 @@ jobs:
         run: |
           NODE_ENV=test DISCORD_BOT_TOKEN="" npm run e2e:ci -- --workers=1
         working-directory: ./admin-node
+
+      - name: Generate Playwright HTML report (if test produced results)
+        if: always()
+        run: |
+          # Ensure the HTML report exists (Playwright creates a report directory under admin-node)
+          if [ -d "admin-node/playwright-report" ]; then
+            echo "playwright-report exists";
+          else
+            echo "No playwright html report found; attempting to show any existing report";
+            cd admin-node; npx playwright show-report || true; cd -;
+          fi
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: admin-node/playwright-report
+
+      - name: Upload Playwright test-results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results
+          path: admin-node/test-results
+
+      - name: Upload Playwright trace and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-screenshots
+          path: |
+            admin-node/**/trace
+            admin-node/**/screenshot*
+            admin-node/**/screenshots
