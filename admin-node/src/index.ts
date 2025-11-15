@@ -56,7 +56,11 @@ governanceLoggerInstance.log('key-setup', {
 });
 
 // Security middleware
-app.use(helmet());
+// Allow relaxed Content Security Policy in non-production environments so e2e/dev harness which uses
+// inline event handlers and inline scripts continues to function. In production environments we keep
+// CSP enforcement enabled.
+const helmetOptions = process.env.NODE_ENV === 'production' ? {} : { contentSecurityPolicy: false };
+app.use(helmet(helmetOptions));
 app.use(cors({
   origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
   credentials: true,
