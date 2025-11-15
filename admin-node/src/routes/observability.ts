@@ -4,6 +4,7 @@ import { governanceLogger } from '../services/governance-logger';
 import { logger } from '../index';
 import { anchorService } from '../services/anchor-service';
 import { timelineService } from '../services/timeline-service';
+import { Channel, GuildChannel } from 'discord.js';
 
 const router = Router();
 
@@ -527,6 +528,99 @@ router.get('/discord-status', requireAdmin, async (req: Request, res: Response) 
     logger.error('Discord status check error:', error);
     res.status(500).json({
       error: 'Failed to check Discord status',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// POST /v1/observability/test-discord - Send test message to Discord
+router.post('/test-discord', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+
+    governanceLogger.logAdminAction('discord_test_sent', userId, {
+      endpoint: '/v1/observability/test-discord',
+    });
+
+    // Import discord service dynamically to avoid circular imports
+    const { discordService } = await import('../services/discord-service');
+
+    // Send a simple test message to system-health channel
+    await discordService.sendMessage('system-health', '🤖 Discord integration test successful! The bot is working properly.');
+
+    res.json({
+      success: true,
+      operation: 'test_discord',
+      message: 'Test message sent to #system-health channel',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Discord test send error:', error);
+    res.status(500).json({
+      error: 'Failed to send test message to Discord',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// GET /v1/observability/debug-channels - Debug: list channels the bot can see
+router.get('/debug-channels', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+
+    governanceLogger.logAdminAction('discord_debug_channels', userId, {
+      endpoint: '/v1/observability/debug-channels',
+    });
+
+    // Import discord service dynamically to avoid circular imports
+    const { discordService } = await import('../services/discord-service');
+
+    if (!discordService.isConnected()) {
+      return res.status(503).json({
+        error: 'Discord bot not connected',
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const client = (discordService as any).client;
+    const guild = client.guilds.cache.get(process.env.DISCORD_GUILD_ID!);
+
+    if (!guild) {
+      return res.status(404).json({
+        error: 'Guild not found',
+        guildId: process.env.DISCORD_GUILD_ID,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const channels = guild.channels.cache.map((channel: Channel) => {
+      const guildChannel = channel as GuildChannel;
+      return {
+        id: channel.id,
+        name: guildChannel.name,
+        type: channel.type,
+        parentId: guildChannel.parentId,
+      };
+    });
+
+    res.json({
+      success: true,
+      guild: {
+        id: guild.id,
+        name: guild.name,
+        memberCount: guild.memberCount,
+      },
+      channels,
+      configuredChannels: {
+        onboarding: process.env.ONBOARDING_CHANNEL_ID,
+        'system-health': process.env.SYSTEM_HEALTH_CHANNEL_ID,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Discord debug channels error:', error);
+    res.status(500).json({
+      error: 'Failed to debug Discord channels',
       timestamp: new Date().toISOString(),
     });
   }

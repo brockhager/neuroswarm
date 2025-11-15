@@ -184,11 +184,15 @@ function anchorToSolana(fingerprints: KeyFingerprint): string {
 /**
  * Log anchoring action to governance logs
  */
-function logAnchoring(txSignature: string, memoContent: string): void {
+function logAnchoring(txSignature: string, memoContent: string, fingerprints: any): void {
   const logEntry: any = {
     timestamp: new Date().toISOString(),
-    action: 'genesis_anchor',
+    action: 'genesis',
     actor: 'founder',
+    txSignature: txSignature,
+    memoContent: memoContent,
+    fingerprints: fingerprints,
+    verificationStatus: 'pending',
     details: {
       tx_signature: txSignature,
       memo_content: memoContent,
@@ -214,12 +218,16 @@ function logAnchoring(txSignature: string, memoContent: string): void {
   logEntry.signature = sign.sign(privateKey, 'hex');
 
   // Write to governance log
-  const logPath = path.join(process.cwd(), '..', 'wp_publish_log.jsonl');
+  const root = path.join(process.cwd(), '..');
+  const fallbackLogPath = path.join(root, 'wp_publish_log.jsonl');
+  const timelinePath = path.join(root, 'governance-timeline.jsonl');
   const logLine = JSON.stringify(logEntry) + '\n';
-  fs.appendFileSync(logPath, logLine);
+  // Append to both legacy log and timeline for compatibility
+  fs.appendFileSync(fallbackLogPath, logLine);
+  fs.appendFileSync(timelinePath, logLine);
 
   console.log('✅ Anchoring action logged to governance records');
-  console.log(`   Log file: ${logPath}`);
+  console.log(`   Log files: ${fallbackLogPath}, ${timelinePath}`);
 }
 
 /**
@@ -247,7 +255,7 @@ function main() {
     // Anchor to blockchain (manual step)
     const txSignature = anchorToSolana(fingerprints);
 
-    // Log the action
+    // Log the action (include fingerprints so timeline has a genesis_sha256)
     const memoContent = JSON.stringify({
       founder_pub_sha256: fingerprints.founder_pub_sha256,
       admin_pub_sha256: fingerprints.admin_pub_sha256,
@@ -256,7 +264,7 @@ function main() {
       format: fingerprints.format
     });
 
-    logAnchoring(txSignature, memoContent);
+    logAnchoring(txSignature, memoContent, fingerprints);
 
     console.log('\n🎉 Genesis anchoring preparation complete!');
     console.log('=====================================');
