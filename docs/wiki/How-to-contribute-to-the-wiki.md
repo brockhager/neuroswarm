@@ -19,6 +19,12 @@ How-to edit the wiki files (preferred flow)
 5. Wait for the PR CI to run; CI will run the `pr-checklist` and `admin-node-integration` workflows.
 6. After the PR is merged, the Wiki will be synced automatically to the GitHub Wiki via `sync-wiki.yml` (see below).
 
+Continuous updates & Kanban flow
+- Add a task to the Wiki column on the project Kanban board when you plan to make a change.
+- Move the Kanban task through the workflows: Backlog → In Progress → Review → Done.
+- For sensitive changes (CI, governance, security), add a PR label like `security`, `ci`, or `governance` and request a governance reviewer.
+- Once merged, confirm the `sync-wiki` workflow run succeeded and the updated page is visible in the Wiki.
+
 Review process
 - Small cosmetic changes can be merged with 1 reviewer.
 - Structural changes (adding pages to critical areas like Governance or Security) require at least 2 reviewers and a member of the governance team (founder/admin) to sign off.
