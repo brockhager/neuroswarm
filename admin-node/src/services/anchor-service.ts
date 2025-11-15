@@ -4,6 +4,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { logger } from '../index';
 import { governanceLogger } from './governance-logger';
+import { timelineService } from './timeline-service';
 
 export interface AnchorStatus {
   timestamp: string;
@@ -109,6 +110,35 @@ export class AnchorService {
     }
 
     return status;
+  }
+
+  /**
+   * Prepare anchoring for a submission hash by writing a timeline anchor entry and producing a manual Solana memo instruction.
+   * Returns a timelineId and a status indicating whether manual execution is required.
+   */
+  public prepareSubmissionAnchor(submissionHash: string, actor: string, submissionType: string, metadata?: Record<string, any>, submissionTimelineId?: string) {
+    // Create a timeline entry for the submission anchor (no txSignature yet)
+    const entryId = timelineService.addAnchorEntry({
+      timestamp: new Date().toISOString(),
+      action: 'submission-anchor',
+      actor,
+      txSignature: undefined,
+      memoContent: `Submission anchor for ${submissionHash}`,
+      fingerprints: { submission_sha256: submissionHash },
+      verificationStatus: 'pending',
+      explorerUrl: undefined,
+      details: { submissionType, metadata, submissionTimelineId },
+    });
+
+    governanceLogger.log('submission_anchor_prepared', {
+      entryId,
+      submissionHash,
+      actor,
+      submissionType,
+    });
+
+    // Return a manual step indicator; actual Solana execution will be performed externally by founder
+    return { timelineId: entryId, status: 'manual_execution_required' };
   }
 
   /**
