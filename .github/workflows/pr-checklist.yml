@@ -20,6 +20,14 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-ms-playwright-${{ hashFiles('admin-node/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-ms-playwright-
+
       - name: Run admin-node PR checklist (Bash)
         run: |
           chmod +x ./admin-node/scripts/run-pr-checklist.sh
@@ -38,5 +46,50 @@ jobs:
         with:
           name: playwright-test-results
           path: admin-node/test-results
+
+      - name: Upload Playwright trace and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-screenshots
+          path: |
+            admin-node/**/trace
+            admin-node/**/screenshot*
+            admin-node/**/screenshots
+
+      - name: Comment PR with Playwright report link & summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const runId = context.runId;
+            const resp = await github.rest.actions.listWorkflowRunArtifacts({ owner, repo, run_id: runId });
+            const artifact = resp.data.artifacts.find(a => a.name === 'playwright-report');
+            const resultsArt = resp.data.artifacts.find(a => a.name === 'playwright-test-results');
+            const uiUrl = artifact ? `https://github.com/${owner}/${repo}/suites/${runId}/artifacts/${artifact.id}` : null;
+            const downloadUrl = artifact ? artifact.archive_download_url : null;
+            const resultsDownload = resultsArt ? resultsArt.archive_download_url : null;
+            const summaryPath = 'admin-node/playwright-results/summary.json';
+            let summary = null;
+            if (fs.existsSync(summaryPath)) {
+              try { summary = JSON.parse(fs.readFileSync(summaryPath)); } catch(e) { summary = null; }
+            }
+            let summaryLine = '';
+            if (summary) {
+              summaryLine = `**Summary**: ${summary.passed} passed, ${summary.failed} failed, ${summary.skipped} skipped`;
+            } else {
+              summaryLine = 'Playwright summary not available.';
+            }
+            const prNumber = context.payload.pull_request.number;
+            const parts = [`:robot: Playwright artifacts uploaded for this run.`, summaryLine];
+            if (uiUrl) parts.push(`- [View HTML Report](${uiUrl})`);
+            if (downloadUrl) parts.push(`- [Download HTML Report (zip)](${downloadUrl})`);
+            if (resultsDownload) parts.push(`- [Download Test Results (zip)](${resultsDownload})`);
+            const commentBody = parts.join('\n');
+            await github.rest.issues.createComment({ owner, repo, issue_number: prNumber, body: commentBody });
 
     timeout-minutes: 30

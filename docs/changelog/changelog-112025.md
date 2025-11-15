@@ -49,6 +49,12 @@ Key outcomes:
 
 - Seed script fix: `admin-node/scripts/seed-e2e-timeline.js` now computes the actual `genesisSha256` from `docs/admin/admin-genesis.json` to produce timeline entries with the correct fingerprint.
 
+### CI & Developer Experience (follow-ups in this PR)
+- Added `docs/review/pr-checklist-ci.md`, `docs/review/pr-body-ci.md` and `docs/review/pr-commit-message.txt` to provide reviewers a concise validation checklist and PR body templates.
+- Added helper scripts `admin-node/scripts/run-pr-checklist.ps1` and `admin-node/scripts/run-pr-checklist.sh` to run the checklist locally.
+- Added PR-level workflow `.github/workflows/pr-checklist.yml` which runs `npm ci`, unit/integration tests, and Playwright e2e in serial and uploads Playwright artifacts.
+- Enhanced `admin-node/.github/workflows/admin-node-integration.yml` to cache Node modules and Playwright browsers and to upload Playwright HTML report, traces, test results and screenshots for easier debugging.
+
 ## Why this was necessary
 - Tests were failing because seed data had mismatched placeholder genesis hashes (`E2E_HASH`) while the actual `admin-genesis.json` and UI showed a real `genesisSha256`.
 - `getGovernanceAnchoringStatus` was reading `details.tx_signature` but not the top-level `txSignature`, producing inconsistent UI state.
@@ -68,6 +74,7 @@ Key outcomes:
 ## Test Outcomes
 - Focused Playwright e2e test (`Latest Anchor Modal and Actions`) now passes locally.
 - Unit and integration tests were run locally (17/17 passed at the time of verification in this session).
+ - E2E suite and CI artifact uploads validated locally; Playwright report and artifacts are now uploaded to the PR for easier debugging (PR: https://github.com/brockhager/neuroswarm/pull/1).
 
 Example test command used during debugging:
 ```powershell
