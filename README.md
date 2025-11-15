@@ -24,6 +24,7 @@ Key design and developer docs (in the `docs/` folder):
 
 - [Docs index](docs/README.md)
  - [Contributor onboarding](docs/onboarding/contributor-onboarding.md)
+ - [Project Wiki (living docs)](https://github.com/brockhager/neuro-infra/wiki)
 
 
 
