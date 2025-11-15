@@ -11,6 +11,11 @@ Navigation:
 - Analytics & SDK
 - Changelog & Release Notes
 - How to contribute to the wiki
+ - Terminology & Conventions
+
+## Related resources
+- [Docs Index](../index.md)
+- [Contributor Guide](../CONTRIBUTOR-GUIDE.md)
 
 Select a topic to begin.
 
