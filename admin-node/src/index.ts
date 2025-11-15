@@ -15,6 +15,8 @@ console.log('Environment variables loaded. GOVERNANCE_PRIVATE_KEY_PATH:', proces
 // Import routes and middleware
 import { authMiddleware } from './middleware/auth';
 import { adminRoutes } from './routes/admin';
+import { createSubmissionsRouter } from '../../submissions/src/index';
+import { requireContributor } from './middleware/auth';
 import { observabilityRoutes } from './routes/observability';
 import { anchorService } from './services/anchor-service';
 import { createGovernanceLogger, governanceLogger } from './services/governance-logger';
@@ -88,6 +90,9 @@ app.get('/health', (req, res) => {
 
 // Admin routes (protected)
 app.use('/v1/admin', authMiddleware, adminRoutes);
+
+// Submissions router under /v1/brain
+app.use('/v1/brain', authMiddleware, requireContributor, createSubmissionsRouter({ safetyService, timelineService, anchorService, governanceLogger, logger }));
 
 // Observability routes (protected)
 // Public observability endpoints (registered before auth middleware)
