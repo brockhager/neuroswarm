@@ -48,6 +48,8 @@ Run the preferred script from the repo root to validate the PR checklist locally
   - `anchor-mismatch.spec.ts`: verifies anchor is not marked verified when the passed genesis hash mismatches.
   - `accessibility.spec.ts`: confirms modal open/close via keyboard, and `aria-label`s and `data-testid` presence for controls.
 
+- [ ] Confirm Playwright artifacts are usable in CI (HTML report, screenshots, traces) and are uploaded to the PR as artifacts for reviewers to inspect.
+
 ## 4. CI Workflow Validation
 - [ ] Confirm `seed-e2e-timeline` step runs before Playwright e2e tests in `neuroswarm/.github/workflows/admin-node-integration.yml`.
 - [ ] Confirm the e2e step uses `--workers=1` or an equivalent to avoid global state conflicts.
