@@ -1,0 +1,45 @@
+name: Sync Wiki
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  sync-wiki:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Clone wiki repo
+        env:
+          REPO: ${{ github.repository }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git clone https://x-access-token:${TOKEN}@github.com/${REPO}.wiki.git wiki-repo
+
+      - name: Copy wiki files
+        run: |
+          rm -rf wiki-repo/* || true
+          cp -r docs/wiki/* wiki-repo/
+
+      - name: Commit and push
+        working-directory: wiki-repo
+        run: |
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No wiki changes detected"
+            exit 0
+          fi
+          git commit -m "chore(wiki): sync docs/wiki content (automated)"
+          git push
+
+    permissions:
+      contents: write

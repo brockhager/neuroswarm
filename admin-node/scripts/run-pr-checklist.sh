@@ -25,7 +25,24 @@ npx playwright install --with-deps
 echo "Run unit & integration tests"
 npm test
 
-echo "Run Playwright e2e tests in serial"
-npx playwright test -c e2e/playwright.config.ts --project=chromium --workers=1
+echo "Run Playwright e2e tests in serial and produce JSON results"
+mkdir -p playwright-results
+set +e
+npx playwright test -c e2e/playwright.config.ts --project=chromium --workers=1 --reporter=json > playwright-results/results.json
+E2E_EXIT=$?
+set -e
+
+echo "Compute Playwright JSON summary"
+if [ -f "playwright-results/results.json" ]; then
+  node -e "const fs=require('fs'); const r=JSON.parse(fs.readFileSync('playwright-results/results.json')); let passed=0, failed=0, skipped=0; const walk=(s)=>{ if(s.tests){ s.tests.forEach(t=>{ if(t.status==='passed') passed++; else if(t.status==='failed') failed++; else if(t.status==='skipped') skipped++; }) } if(s.suites) s.suites.forEach(walk); }; walk(r); fs.writeFileSync('playwright-results/summary.json', JSON.stringify({passed,failed,skipped})); console.log(JSON.stringify({passed,failed,skipped}));"
+fi
+exit ${E2E_EXIT}
 
 echo "PR checklist validation completed successfully"
+echo "Generate Playwright HTML report (if tests produced results)"
+if [ -d "playwright-report" ]; then
+  echo "playwright-report already exists";
+else
+  echo "Attempting to generate Playwright HTML report"
+  npx playwright show-report || true
+fi

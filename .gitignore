@@ -182,6 +182,9 @@ website/dist/
 content/processed/
 content/cache/
 
+# Playwright results (local)
+admin-node/playwright-results/
+
 # Secrets and private keys
 secrets/
 *.key
