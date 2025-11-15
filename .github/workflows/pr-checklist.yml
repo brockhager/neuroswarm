@@ -20,6 +20,14 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-ms-playwright-${{ hashFiles('admin-node/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-ms-playwright-
+
       - name: Run admin-node PR checklist (Bash)
         run: |
           chmod +x ./admin-node/scripts/run-pr-checklist.sh
@@ -38,5 +46,15 @@ jobs:
         with:
           name: playwright-test-results
           path: admin-node/test-results
+
+      - name: Upload Playwright trace and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces-screenshots
+          path: |
+            admin-node/**/trace
+            admin-node/**/screenshot*
+            admin-node/**/screenshots
 
     timeout-minutes: 30
