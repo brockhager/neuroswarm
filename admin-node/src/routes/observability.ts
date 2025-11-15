@@ -475,4 +475,61 @@ router.post('/check-alerts', requireAdmin, async (req: Request, res: Response) =
   }
 });
 
+// POST /v1/observability/send-onboarding - Send onboarding guide to Discord
+router.post('/send-onboarding', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+
+    governanceLogger.logAdminAction('discord_onboarding_sent', userId, {
+      endpoint: '/v1/observability/send-onboarding',
+    });
+
+    // Import discord service dynamically to avoid circular imports
+    const { discordService } = await import('../services/discord-service');
+
+    await discordService.sendOnboardingGuide();
+
+    res.json({
+      success: true,
+      operation: 'send_onboarding',
+      message: 'Onboarding guide sent to Discord',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Discord onboarding send error:', error);
+    res.status(500).json({
+      error: 'Failed to send onboarding guide to Discord',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// GET /v1/observability/discord-status - Check Discord bot status
+router.get('/discord-status', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+
+    // Import discord service dynamically to avoid circular imports
+    const { discordService } = await import('../services/discord-service');
+
+    const isConnected = discordService.isConnected();
+
+    governanceLogger.logAdminAction('discord_status_check', userId, {
+      endpoint: '/v1/observability/discord-status',
+      connected: isConnected,
+    });
+
+    res.json({
+      connected: isConnected,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Discord status check error:', error);
+    res.status(500).json({
+      error: 'Failed to check Discord status',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
 export { router as observabilityRoutes };

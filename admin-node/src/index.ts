@@ -17,6 +17,7 @@ import { authMiddleware } from './middleware/auth';
 import { adminRoutes } from './routes/admin';
 import { observabilityRoutes } from './routes/observability';
 import { createGovernanceLogger, governanceLogger } from './services/governance-logger';
+import { discordService } from './services/discord-service';
 
 const app = express();
 const server = createServer(app);
@@ -130,6 +131,11 @@ const PORT = process.env.PORT || 8080;
 server.listen(PORT, () => {
   logger.info(`Admin Node server running on port ${PORT}`);
   governanceLoggerInstance.log('server_start', { port: PORT, environment: process.env.NODE_ENV });
+
+  // Start Discord service
+  discordService.start().catch(error => {
+    logger.error('Failed to start Discord service:', error);
+  });
 });
 
 // Graceful shutdown
