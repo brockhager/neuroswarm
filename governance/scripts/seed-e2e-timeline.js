@@ -3,9 +3,9 @@ const fs = require('fs');
 const path = require('path');
 const { randomUUID, createHash } = require('crypto');
 
-const timelinePath = path.join(__dirname, '..', 'governance-timeline.jsonl');
+const timelinePath = path.join(__dirname, '..', 'timeline', 'governance-timeline.jsonl');
 // Also write to the repository root path so AnchorService (which expects ../governance-timeline.jsonl) reads seeded entries
-const workspaceRootTimelinePath = path.join(__dirname, '..', '..', 'governance-timeline.jsonl');
+const workspaceRootTimelinePath = path.join(__dirname, '..', '..', 'governance', 'timeline', 'governance-timeline.jsonl');
 
 // Compute the actual genesis hash from admin-genesis.json
 const genesisPath = path.join(__dirname, '..', '..', 'docs', 'admin', 'admin-genesis.json');

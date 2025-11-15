@@ -9,7 +9,7 @@ set -e
 GENESIS_FILE="docs/admin-genesis.json"
 FOUNDER_WALLET="${FOUNDER_WALLET:-}"  # Set via environment variable
 SOLANA_RPC="${SOLANA_RPC:-https://api.mainnet-beta.solana.com}"
-LOG_FILE="wp_publish_log.jsonl"
+LOG_FILE="${WP_PUBLISH_LOG_PATH:-../governance/logs/wp_publish_log.jsonl}"
 
 # Colors for output
 RED='\033[0;31m'
