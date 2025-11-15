@@ -8,6 +8,9 @@ This PR addresses stability issues surrounding Admin Node e2e tests and CI repro
 - Improve `AnchorService` to respect `verificationStatus` and support multiple txSignature fields returned by observability.
 - Harden Playwright e2e tests with proper auth headers, robust selectors, clipboard & permission handling, and serial execution to avoid global state conflicts.
 
+- Publish Playwright artifacts (HTML report, test results, screenshots, traces) to PRs for easier debugging and review.
+- Cache Playwright browser downloads to reduce CI time.
+
 Files/areas changed (high-level):
 - `admin-node/` — safety service, seed script updates, services, routes, unit/integration tests, e2e tests.
 - `.github/workflows/admin-node-integration.yml` and `.github/workflows/pr-checklist.yml` — enforced `npm ci`, Playwright validation, seed timeline step, serial e2e tests (`--workers=1`).

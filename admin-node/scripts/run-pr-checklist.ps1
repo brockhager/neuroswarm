@@ -45,6 +45,10 @@ if (Test-Path -Path "playwright-report") {
     Write-Host "playwright-report already exists";
 } else {
     Write-Host "Attempting to generate Playwright HTML report";
-    npx playwright show-report || Write-Host "Playwright HTML report generation failed or no report found";
+    try {
+        npx playwright show-report
+    } catch {
+        Write-Host "Playwright HTML report generation failed or no report found";
+    }
 }
 Set-Location -Path $scriptDir
