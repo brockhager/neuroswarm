@@ -223,5 +223,6 @@ jobs:
             const runId = context.runId;
             const prNumber = context.payload.pull_request.number;
             const pagesUrl = `https://${owner}.github.io/${repo}/playwright-reports/${runId}/index.html`;
-            const body = `:robot: Playwright HTML report published to GitHub Pages: ${pagesUrl}`;
+            const indexUrl = `https://${owner}.github.io/${repo}/playwright-reports/`;
+            const body = `:robot: Playwright HTML report published to GitHub Pages: ${pagesUrl}\n\nIndex page: ${indexUrl}`;
             await github.rest.issues.createComment({ owner, repo, issue_number: prNumber, body });
