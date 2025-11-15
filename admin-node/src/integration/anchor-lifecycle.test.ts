@@ -16,9 +16,28 @@ describe('Anchor lifecycle integration', () => {
     process.env.NODE_ENV = 'test';
     process.env.PORT = '0';
 
+    // Load keys or generate temporary ones for tests if missing
+    const secretsDir = path.join(__dirname, '..', '..', 'secrets');
+    if (!fs.existsSync(secretsDir)) fs.mkdirSync(secretsDir);
+
+    const privatePath = path.join(secretsDir, 'founder.jwt.key');
+    const publicPath = path.join(secretsDir, 'founder.jwt.pub');
+
+    if (!fs.existsSync(privatePath) || !fs.existsSync(publicPath)) {
+      // Generate an RSA keypair for the test
+      const { generateKeyPairSync } = require('crypto');
+      const { privateKey, publicKey } = generateKeyPairSync('rsa', {
+        modulusLength: 2048,
+        publicKeyEncoding: { type: 'spki', format: 'pem' },
+        privateKeyEncoding: { type: 'pkcs8', format: 'pem' },
+      });
+      fs.writeFileSync(privatePath, privateKey);
+      fs.writeFileSync(publicPath, publicKey);
+    }
+
     // Load keys
-    founderPrivateKey = fs.readFileSync(path.join(__dirname, '..', '..', 'secrets', 'founder.jwt.key'), 'utf8');
-    founderPublicKey = fs.readFileSync(path.join(__dirname, '..', '..', 'secrets', 'founder.jwt.pub'), 'utf8');
+    founderPrivateKey = fs.readFileSync(privatePath, 'utf8');
+    founderPublicKey = fs.readFileSync(publicPath, 'utf8');
 
     // Import index after env var changes so server starts on ephemeral port
     const index = await import('../../src/index');
@@ -99,6 +118,25 @@ describe('Anchor lifecycle integration', () => {
     expect(latestRes.body.anchor).toBeDefined();
     expect(latestRes.body.anchor.txSignature).toBe('INTEG_SIG');
     expect(latestRes.body.anchor.hash).toBe(genesisSha);
+
+    // Query latest Genesis anchor specifically
+    const latestGenesisRes = await request(app)
+      .get('/v1/admin/latest-anchor?action=genesis')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send();
+
+    expect(latestGenesisRes.status).toBe(200);
+    expect(latestGenesisRes.body.anchor).toBeDefined();
+    expect(latestGenesisRes.body.anchor.txSignature).toBe('INTEG_SIG');
+
+    // Also query the public observability endpoint (no auth required)
+    const publicLatest = await request(app)
+      .get('/v1/observability/latest-anchor')
+      .send();
+
+    expect(publicLatest.status).toBe(200);
+    expect(publicLatest.body.success).toBe(true);
+    expect(publicLatest.body.anchor.txSignature).toBe('INTEG_SIG');
   });
 
   test('endpoint auth test: non-founder cannot set tx signature', async () => {
@@ -109,5 +147,26 @@ describe('Anchor lifecycle integration', () => {
       .send({ txSignature: 'OTHER_SIG' });
 
     expect(res.status).toBe(403);
+  });
+
+  test('verify-genesis access control: non-founder cannot call, founder allowed', async () => {
+    const adminToken = createAdminJwt();
+    const trialSig = 'TRIAL_SIG';
+
+    const adminRes = await request(app)
+      .get(`/v1/admin/verify-genesis/${trialSig}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send();
+
+    expect(adminRes.status).toBe(403);
+
+    const founderToken = createFounderJwt();
+    const founderRes = await request(app)
+      .get(`/v1/admin/verify-genesis/${trialSig}`)
+      .set('Authorization', `Bearer ${founderToken}`)
+      .send();
+
+    // Founder should be allowed to call; it may return 200 or 500 depending on script output
+    expect([200, 500]).toContain(founderRes.status);
   });
 });

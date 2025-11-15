@@ -99,6 +99,35 @@
             color: white;
         }
 
+        /* Toast notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1100;
+            max-width: 320px;
+        }
+
+        .toast {
+            background: #111;
+            color: #fff;
+            border-radius: 6px;
+            padding: 10px 14px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.4);
+            opacity: 0;
+            transform: translateY(-6px);
+            transition: opacity 180ms ease, transform 180ms ease;
+            font-size: 0.95em;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0px);
+        }
+
         .metric {
             display: flex;
             justify-content: space-between;
@@ -266,6 +295,18 @@
 
         .status-pending {
             color: #ffa500;
+        }
+
+        /* Modal transitions */
+        #latest-anchor-modal {
+            opacity: 0;
+            transition: opacity 180ms ease;
+            pointer-events: none;
+        }
+
+        #latest-anchor-modal.visible {
+            opacity: 1;
+            pointer-events: auto;
         }
     </style>
 </head>
@@ -621,11 +662,11 @@
 
                         <div class="actions" style="margin-top: 15px; text-align: center;">
                             ${anchor.txSignature ? `
-                                <button class="btn secondary" onclick="copyVerificationCommand('${anchor.txSignature}', '${anchor.action}')">
+                                <button class="btn secondary" data-testid="copy-btn-${anchor.txSignature}" aria-label="Copy verification command" onclick="copyVerificationCommand('${anchor.txSignature}', '${anchor.action}')">
                                     📋 Copy Verification Command
                                 </button>
                                 ${anchor.verificationStatus !== 'verified' ? `
-                                  <button class="btn" style="margin-left: 8px;" onclick="markVerified('${anchor.txSignature}', '${anchor.fingerprints?.genesis_sha256 || ''}')">
+                                                                      <button class="btn" data-testid="mark-verified-btn-${anchor.txSignature}" aria-label="Mark anchor verified" style="margin-left: 8px;" onclick="markVerified('${anchor.txSignature}', '${anchor.fingerprints?.genesis_sha256 || ''}')">
                                     ✅ Mark Verified
                                   </button>
                                 ` : ''}
@@ -640,6 +681,29 @@
             }).join('');
 
             container.innerHTML = `
+                <div class="status-grid">
+                    <!-- Latest anchor quick card -->
+                    <div class="status-card ${data.anchors[0] && data.anchors[0].verificationStatus ? data.anchors[0].verificationStatus : ''}">
+                        <h3>🧾 Latest Anchor
+                            ${data.anchors[0] && data.anchors[0].verificationStatus ? `<span class="status-badge ${data.anchors[0].verificationStatus}">${data.anchors[0].verificationStatus}</span>` : ''}
+                        </h3>
+                        <div class="metric">
+                            <span class="metric-label">Transaction</span>
+                            <span class="metric-value">${data.anchors.length > 0 && data.anchors[0].txSignature ? `<a href="${data.anchors[0].explorerUrl}" target="_blank">${data.anchors[0].txSignature.substring(0,12)}...</a>` : 'Not anchored'}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Hash</span>
+                            <span class="metric-value">${(data.anchors[0] && data.anchors[0].fingerprints && data.anchors[0].fingerprints.genesis_sha256) || 'N/A'}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Timestamp</span>
+                            <span class="metric-value">${data.anchors[0] && data.anchors[0].timestamp ? new Date(data.anchors[0].timestamp).toLocaleString() : 'Unknown'}</span>
+                        </div>
+                        <div class="actions" style="margin-top:10px; text-align:center;">
+                            <button class="btn" data-testid="latest-anchor-show-details" onclick="fetchLatestAnchor()">🧾 Show Details</button>
+                        </div>
+                    </div>
+                </div>
                 <div class="status-grid">
                     ${anchorCards}
                 </div>
@@ -1011,7 +1075,7 @@
 
         async function fetchLatestAnchor() {
             try {
-                const response = await fetch('/v1/admin/latest-anchor', {
+                const response = await fetch('/v1/observability/latest-anchor', {
                     headers: {
                         'Authorization': 'Bearer ' + getAuthToken(),
                         'Content-Type': 'application/json'
@@ -1026,14 +1090,62 @@
 
                 if (result.success && result.anchor) {
                     const anchor = result.anchor;
-                    const explorerLink = `https://explorer.solana.com/tx/${anchor.txSignature}`;
-                    alert(`Latest Anchor:\nTX: ${anchor.txSignature}\nHash: ${anchor.hash}\nExplorer: ${explorerLink}`);
+                    showLatestAnchorModal(anchor);
                 } else {
-                    alert('No anchor found');
+                    showLatestAnchorModal(null);
                 }
             } catch (error) {
                 alert('❌ Error fetching latest anchor: ' + error.message);
             }
+        }
+
+        function showLatestAnchorModal(anchor) {
+            const modal = document.getElementById('latest-anchor-modal');
+            const content = document.getElementById('latest-anchor-content');
+            if (!anchor) {
+                content.innerHTML = `<div class="status-card pending"><p>No anchor was found in governance logs.</p></div>`;
+                modal.style.display = 'flex';
+                requestAnimationFrame(() => modal.classList.add('visible'));
+                return;
+            }
+
+            const explorerLink = anchor.txSignature ? `https://explorer.solana.com/tx/${anchor.txSignature}` : '#';
+            const txHtml = anchor.txSignature ? `<a class="explorer-link" href="${explorerLink}" target="_blank">${anchor.txSignature}</a>` : 'Not anchored';
+
+            content.innerHTML = `
+                <div class="metric">
+                    <span class="metric-label">Transaction</span>
+                    <span class="metric-value">${txHtml}</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Hash</span>
+                    <div class="metric-value"><div class="hash-display">${anchor.hash || 'N/A'}</div></div>
+                </div>
+                <div class="metric">
+                    <span class="metric-label">Timestamp</span>
+                    <span class="metric-value">${anchor.timestamp ? new Date(anchor.timestamp).toLocaleString() : 'Unknown'}</span>
+                </div>
+                <div style="margin-top: 12px; text-align: center;">
+                    ${anchor.txSignature ? `
+                        <button class="btn secondary" data-testid="copy-btn-${anchor.txSignature}" onclick="copyVerificationCommand('${anchor.txSignature}','genesis')">📋 Copy Verify Command</button>
+                        <button class="btn" data-testid="mark-verified-btn-${anchor.txSignature}" style="margin-left: 8px;" onclick="markVerified('${anchor.txSignature}', '${anchor.hash || ''}')">✅ Mark Verified</button>
+                    ` : `
+                        <button class="btn secondary" onclick="promptSetTxSignature('', '${anchor.hash || ''}')">🖊️ Set Transaction Signature</button>
+                    `}
+                </div>
+            `;
+
+            modal.style.display = 'flex';
+            requestAnimationFrame(() => modal.classList.add('visible'));
+            // Focus the close button for accessibility
+            const closeButton = document.querySelector('[data-testid="latest-anchor-close-btn"]');
+            if (closeButton) closeButton.focus();
+        }
+
+        function closeLatestAnchorModal() {
+            const modal = document.getElementById('latest-anchor-modal');
+            modal.classList.remove('visible');
+            setTimeout(() => modal.style.display = 'none', 200);
         }
 
         async function runKeyRotation() {
@@ -1282,9 +1394,9 @@
 
                 const result = await response.json();
                 if (result.success) {
-                    alert('✅ Transaction signature recorded. Verification status may be updated.');
+                    showToast('✅ Transaction signature recorded. Verification status may be updated.', 'success');
                 } else {
-                    alert('❌ Failed to set signature: ' + (result.error || 'Unknown error'));
+                    showToast('❌ Failed to set signature: ' + (result.error || 'Unknown error'), 'error');
                 }
 
                 if (document.getElementById('governance-anchoring').classList.contains('active')) {
@@ -1292,7 +1404,7 @@
                 }
 
             } catch (error) {
-                alert('❌ Error setting tx signature: ' + error.message);
+                showToast('❌ Error setting tx signature: ' + error.message, 'error');
             }
         }
 
@@ -1313,9 +1425,9 @@
 
                 const result = await response.json();
                 if (result.success) {
-                    alert('✅ Anchor verified and updated');
+                    showToast('✅ Anchor verified and updated', 'success');
                 } else {
-                    alert('❌ Failed to mark verified: ' + (result.error || 'Unknown error'));
+                    showToast('❌ Failed to mark verified: ' + (result.error || 'Unknown error'), 'error');
                 }
 
                 // Refresh anchoring tab
@@ -1323,19 +1435,19 @@
                     fetchGovernanceAnchoring().then(data => { governanceData = data; renderGovernanceAnchoring(data); });
                 }
             } catch (error) {
-                alert('❌ Error updating tx signature: ' + error.message);
+                showToast('❌ Error updating tx signature: ' + error.message, 'error');
             }
         }
 
         function copyVerificationCommand(txSignature, actionType) {
             if (!txSignature) {
-                alert('No transaction signature available for verification.');
+                showToast('No transaction signature available for verification.', 'error');
                 return;
             }
 
             const command = `npm run verify-governance ${txSignature} ${actionType}`;
             navigator.clipboard.writeText(command).then(() => {
-                alert(`Verification command copied to clipboard:\n${command}`);
+                showToast(`Verification command copied to clipboard: ${command}`, 'success');
             }).catch(() => {
                 // Fallback for browsers that don't support clipboard API
                 const textArea = document.createElement('textarea');
@@ -1344,8 +1456,28 @@
                 textArea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textArea);
-                alert(`Verification command copied to clipboard:\n${command}`);
+                showToast(`Verification command copied to clipboard: ${command}`, 'success');
             });
+        }
+
+        // Toast helpers
+        function showToast(message, type = 'info', timeout = 3000) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const el = document.createElement('div');
+            el.className = 'toast';
+            el.setAttribute('role', 'status');
+            el.textContent = message;
+            if (type === 'success') el.style.borderLeft = '4px solid #00ff88';
+            if (type === 'error') el.style.borderLeft = '4px solid #ff4444';
+            container.appendChild(el);
+            // show animation
+            requestAnimationFrame(() => el.classList.add('show'));
+            setTimeout(() => {
+                el.classList.remove('show');
+                setTimeout(() => container.removeChild(el), 200);
+            }, timeout);
+            return el;
         }
 
         // Initialize dashboard
@@ -1375,6 +1507,18 @@
                     });
                 }
             }, 10000);
+
+            // Close modal on overlay click
+            const modal = document.getElementById('latest-anchor-modal');
+            if (modal) {
+                modal.addEventListener('click', (ev) => {
+                    if (ev.target === modal) closeLatestAnchorModal();
+                });
+                // Close modal on Escape key
+                modal.addEventListener('keydown', (ev) => {
+                    if (ev.key === 'Escape') closeLatestAnchorModal();
+                });
+            }
         });
 
                 async function sendDiscordOnboarding() {
@@ -1424,6 +1568,26 @@
         window.sendDiscordOnboarding = sendDiscordOnboarding;
         window.showTab = showTab;
         window.promptSetTxSignature = promptSetTxSignature;
+        window.fetchLatestAnchor = fetchLatestAnchor;
+        window.showLatestAnchorModal = showLatestAnchorModal;
     </script>
+
+    <!-- Latest Anchor Modal -->
+    <div id="latest-anchor-modal" tabindex="-1" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 999;">
+        <div style="background: #0f0f23; border: 1px solid #16213e; padding: 20px; width: 520px; border-radius: 8px; color: #fff; font-family: inherit;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0; color: #00ff88;">🧾 Latest Anchor</h3>
+                <button data-testid="latest-anchor-close-btn" aria-label="Close Latest Anchor modal" onclick="closeLatestAnchorModal()" style="background: none; border: none; color: #fff; font-size: 18px; cursor: pointer;">✖</button>
+            </div>
+            <div id="latest-anchor-content">
+                <!-- Content populated by JS -->
+            </div>
+            <div style="text-align: right; margin-top: 14px;">
+                <button onclick="closeLatestAnchorModal()" class="btn secondary" aria-label="Close Latest Anchor modal">Close</button>
+            </div>
+        </div>
+    </div>
+    <!-- Toast container -->
+    <div class="toast-container" id="toast-container" aria-live="polite"></div>
 </body>
 </html>

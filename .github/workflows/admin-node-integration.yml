@@ -10,6 +10,38 @@ jobs:
   integration-tests:
     runs-on: ubuntu-latest
     name: Run integration and unit tests for admin-node
+    strategy:
+      matrix:
+        node-version: [18, 20, 22]
+        chain-mode: [simulated, real]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./admin-node
+
+      - name: Run tests (unit + integration)
+        run: |
+          # Simulate different chain modes to catch edge cases
+          if [ "${{ matrix.chain-mode }}" = "simulated" ]; then
+            export SIMULATED_CHAIN=true;
+          else
+            export SIMULATED_CHAIN=false;
+          fi
+
+          NODE_ENV=test DISCORD_BOT_TOKEN="" PORT=0 npm test --silent
+        working-directory: ./admin-node
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    needs: integration-tests
+    name: Run Playwright e2e tests for admin-node
     steps:
       - uses: actions/checkout@v4
 
@@ -22,7 +54,11 @@ jobs:
         run: npm ci
         working-directory: ./admin-node
 
-      - name: Run tests (unit + integration)
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+        working-directory: ./admin-node
+
+      - name: Run e2e tests
         run: |
-          NODE_ENV=test DISCORD_BOT_TOKEN="" PORT=0 npm test --silent
+          NODE_ENV=test DISCORD_BOT_TOKEN="" npm run e2e:ci
         working-directory: ./admin-node

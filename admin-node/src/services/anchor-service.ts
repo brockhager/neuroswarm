@@ -196,8 +196,10 @@ export class AnchorService {
 
       if (logs.length === 0) return null;
 
-      const latest = logs[0];
-      // txSignature can be top-level or under details
+      // Find the most recent entry with a transaction signature
+      const latestWithTx = logs.find((entry: any) => (entry.txSignature || entry.tx_signature || entry.details?.txSignature || entry.details?.tx_signature));
+      if (!latestWithTx) return null;
+      const latest = latestWithTx;
       const txSignature = latest.txSignature || latest.tx_signature || latest.details?.txSignature || latest.details?.tx_signature || null;
       // hash can be under fingerprints.genesis_sha256 or top-level hash
       const hash = (latest.fingerprints && (latest.fingerprints.genesis_sha256 || latest.fingerprints.genesis_sha256)) || latest.hash || latest.details?.hash || null;
@@ -215,6 +217,29 @@ export class AnchorService {
    */
   public getLatestAnchor(): { txSignature: string; hash: string; timestamp: string } | null {
     return this.findLatestAnchor();
+  }
+
+  /**
+   * Return the latest anchor for a given action type (e.g. genesis, key-rotation)
+   */
+  public getLatestAnchorByType(actionType: string): { txSignature: string; hash: string; timestamp: string } | null {
+    try {
+      const anchors = this.findAnchorsByType(actionType);
+      if (!anchors || anchors.length === 0) return null;
+
+      const latest = anchors
+        .filter(a => (a.txSignature || a.tx_signature || a.details?.txSignature || a.details?.tx_signature))
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())[0];
+
+      if (!latest) return null;
+
+      const txSignature = latest.txSignature || latest.tx_signature || latest.details?.txSignature || latest.details?.tx_signature || null;
+      const hash = (latest.fingerprints && (latest.fingerprints.genesis_sha256 || latest.fingerprints.genesis_sha256)) || latest.hash || latest.details?.hash || latest.details?.genesis_sha256 || null;
+      return txSignature ? { txSignature, hash: hash || '', timestamp: latest.timestamp } : null;
+    } catch (error) {
+      if (logger && typeof (logger as any).error === 'function') (logger as any).error('Error getting latest anchor by type:', error);
+      return null;
+    }
   }
 
   /**

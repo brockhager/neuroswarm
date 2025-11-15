@@ -198,6 +198,36 @@ router.get('/anchor-status', requireAdmin, async (req: Request, res: Response) =
   }
 });
 
+// GET /v1/observability/latest-anchor - Safely expose latest anchor for dashboards and contributors (public)
+router.get('/latest-anchor', async (req: Request, res: Response) => {
+  try {
+    // Avoid requiring authentication for observability; read-only public endpoint
+    // Use action query param to filter by anchor type if provided
+    const actionType = req.query.action as string | undefined;
+    const anchor = actionType ? anchorService.getLatestAnchorByType(actionType) : anchorService.getLatestAnchor();
+
+    if (!anchor) {
+      return res.status(404).json({ error: 'No anchor found', timestamp: new Date().toISOString() });
+    }
+
+    // Log a public observability access entry under system actor for auditability
+    try {
+      governanceLogger.log('observability_query_public', {
+        stream: 'latest-anchor',
+        actionType: actionType || 'all',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (err) {
+      // swallow; logging shouldn't break response
+    }
+
+    res.json({ success: true, anchor, timestamp: new Date().toISOString() });
+  } catch (error) {
+    logger.error('Latest anchor observability error:', error);
+    res.status(500).json({ error: 'Failed to retrieve latest anchor', timestamp: new Date().toISOString() });
+  }
+});
+
 // GET /v1/observability/nodes - Network nodes overview
 router.get('/nodes', requireAdmin, async (req: Request, res: Response) => {
   try {
