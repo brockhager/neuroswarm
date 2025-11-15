@@ -13,6 +13,9 @@ Navigation:
 - How to contribute to the wiki
  - Terminology & Conventions
 
+## Welcome
+- Home page: [Home](Home.md)
+
 ## Related resources
 - [Docs Index](../index.md)
 - [Contributor Guide](../CONTRIBUTOR-GUIDE.md)

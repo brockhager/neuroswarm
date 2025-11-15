@@ -19,6 +19,9 @@ How-to edit the wiki files (preferred flow)
 5. Wait for the PR CI to run; CI will run the `pr-checklist` and `admin-node-integration` workflows.
 6. After the PR is merged, the Wiki will be synced automatically to the GitHub Wiki via `sync-wiki.yml` (see below).
 
+Automation note
+- The `sync-wiki.yml` workflow automatically updates a `Last updated: YYYY-MM-DD` timestamp at the bottom of each wiki page based on each file's latest commit date, so you do not need to manually add the timestamp.
+
 Continuous updates & Kanban flow
 - Add a task to the Wiki column on the project Kanban board when you plan to make a change.
 - Move the Kanban task through the workflows: Backlog → In Progress → Review → Done.
