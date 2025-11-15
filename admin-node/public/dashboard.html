@@ -278,6 +278,9 @@
 
         <div class="tabs">
             <button class="tab active" onclick="showTab('anchor-status')">Anchor Status</button>
+            <button class="tab" onclick="showTab('governance-timeline')">Governance Timeline</button>
+            <button class="tab" onclick="showTab('governance-alerts')">Alerts</button>
+            <button class="tab" onclick="showTab('governance-anchoring')">Governance Anchoring</button>
             <button class="tab" onclick="showTab('node-overview')">Node Overview</button>
         </div>
 
@@ -285,8 +288,16 @@
             <div class="loading">Loading anchor status...</div>
         </div>
 
-        <div id="node-overview" class="tab-content">
-            <div class="loading">Loading node overview...</div>
+        <div id="governance-timeline" class="tab-content">
+            <div class="loading">Loading governance timeline...</div>
+        </div>
+
+        <div id="governance-alerts" class="tab-content">
+            <div class="loading">Loading governance alerts...</div>
+        </div>
+
+        <div id="governance-anchoring" class="tab-content">
+            <div class="loading">Loading governance anchoring status...</div>
         </div>
 
         <div class="actions">
@@ -299,6 +310,9 @@
     <script>
         let anchorData = null;
         let nodesData = null;
+        let governanceData = null;
+        let timelineData = null;
+        let alertsData = null;
 
         function showTab(tabName) {
             // Hide all tab contents
@@ -318,6 +332,21 @@
             // Load data for the tab if needed
             if (tabName === 'node-overview' && !nodesData) {
                 fetchNodesData();
+            } else if (tabName === 'governance-anchoring' && !governanceData) {
+                fetchGovernanceAnchoring().then(data => {
+                    governanceData = data;
+                    renderGovernanceAnchoring(data);
+                });
+            } else if (tabName === 'governance-timeline' && !timelineData) {
+                fetchGovernanceTimeline().then(data => {
+                    timelineData = data;
+                    renderGovernanceTimeline(data);
+                });
+            } else if (tabName === 'governance-alerts' && !alertsData) {
+                fetchGovernanceAlerts().then(data => {
+                    alertsData = data;
+                    renderGovernanceAlerts(data);
+                });
             }
         }
 
@@ -348,9 +377,9 @@
             }
         }
 
-        async function fetchNodesData() {
+        async function fetchGovernanceAnchoring() {
             try {
-                const response = await fetch('/v1/observability/nodes', {
+                const response = await fetch('/v1/observability/governance-anchoring', {
                     headers: {
                         'Authorization': 'Bearer ' + getAuthToken(),
                         'Content-Type': 'application/json'
@@ -363,8 +392,62 @@
 
                 return await response.json();
             } catch (error) {
-                console.error('Failed to fetch nodes data:', error);
-                return [];
+                console.error('Failed to fetch governance anchoring:', error);
+                return {
+                    timestamp: new Date().toISOString(),
+                    anchors: [],
+                    alerts: [`Failed to fetch anchoring status: ${error.message}`]
+                };
+            }
+        }
+
+        async function fetchGovernanceTimeline() {
+            try {
+                const response = await fetch('/v1/observability/governance-timeline', {
+                    headers: {
+                        'Authorization': 'Bearer ' + getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('Failed to fetch governance timeline:', error);
+                return {
+                    timestamp: new Date().toISOString(),
+                    summary: { total: 0, verified: 0, failed: 0, pending: 0, byAction: {} },
+                    entries: [],
+                    pagination: { limit: 50, offset: 0, hasMore: false }
+                };
+            }
+        }
+
+        async function fetchGovernanceAlerts() {
+            try {
+                const response = await fetch('/v1/observability/governance-alerts', {
+                    headers: {
+                        'Authorization': 'Bearer ' + getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('Failed to fetch governance alerts:', error);
+                return {
+                    timestamp: new Date().toISOString(),
+                    summary: { critical: 0, warning: 0, info: 0, total: 0 },
+                    alerts: [],
+                    pagination: { limit: 50, offset: 0, hasMore: false }
+                };
             }
         }
 
@@ -436,6 +519,10 @@
                             </span>
                         </div>
 
+                        <div class="actions" style="margin-top: 15px; text-align: center;">
+                            <button class="btn secondary" onclick="runGenesisVerification()">✅ Verify Genesis</button>
+                        </div>
+
                         <div class="timestamp">
                             Last updated: ${new Date(data.timestamp).toLocaleString()}
                         </div>
@@ -470,47 +557,317 @@
             `;
         }
 
-        function renderNodeOverview(nodes) {
-            const container = document.getElementById('node-overview');
+        function renderGovernanceAnchoring(data) {
+            const container = document.getElementById('governance-anchoring');
 
-            if (!nodes || nodes.length === 0) {
-                container.innerHTML = '<div class="alert info">No nodes found in the network.</div>';
+            if (!data.anchors || data.anchors.length === 0) {
+                container.innerHTML = `
+                    <div class="status-card">
+                        <h3>🏛️ Governance Anchoring Status</h3>
+                        <p>No governance anchors found. Run genesis anchoring to get started.</p>
+
+                        <div class="actions" style="margin-top: 20px;">
+                            <button class="btn" onclick="runGenesisAnchoring()">🏛️ Run Genesis Anchoring</button>
+                        </div>
+                    </div>
+                `;
                 return;
             }
 
-            const tableRows = nodes.map(node => `
-                <tr>
-                    <td>${node.nodeId}</td>
-                    <td>${node.name}</td>
-                    <td>${node.role}</td>
-                    <td>${node.ip}</td>
-                    <td class="status-${node.status}">${node.status.toUpperCase()}</td>
-                </tr>
-            `).join('');
+            const anchorCards = data.anchors.map(anchor => {
+                const statusClass = anchor.verificationStatus || 'pending';
+                const statusEmoji = {
+                    'verified': '✅',
+                    'failed': '❌',
+                    'pending': '⏳'
+                }[statusClass] || '❓';
+
+                const fingerprintsHtml = Object.entries(anchor.fingerprints || {}).map(([key, value]) => `
+                    <div class="metric">
+                        <span class="metric-label">${key.replace(/_/g, ' ').toUpperCase()}</span>
+                        <div class="metric-value">
+                            <div class="hash-display">${value}</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                return `
+                    <div class="status-card ${statusClass}">
+                        <h3>
+                            ${statusEmoji} ${anchor.action.replace('-', ' ').toUpperCase()}
+                            <span class="status-badge ${statusClass}">${anchor.verificationStatus || 'unknown'}</span>
+                        </h3>
+
+                        ${fingerprintsHtml}
+
+                        <div class="metric">
+                            <span class="metric-label">Transaction</span>
+                            <span class="metric-value">
+                                ${anchor.txSignature ?
+                                    `<a href="${anchor.explorerUrl}" target="_blank" class="explorer-link">
+                                        ${anchor.txSignature.substring(0, 8)}...
+                                    </a>` :
+                                    'Not anchored'
+                                }
+                            </span>
+                        </div>
+
+                        <div class="metric">
+                            <span class="metric-label">Timestamp</span>
+                            <span class="metric-value">${new Date(anchor.timestamp).toLocaleString()}</span>
+                        </div>
+
+                        <div class="actions" style="margin-top: 15px; text-align: center;">
+                            <button class="btn secondary" onclick="copyVerificationCommand('${anchor.txSignature}', '${anchor.action}')">
+                                📋 Copy Verification Command
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
             container.innerHTML = `
+                <div class="status-grid">
+                    ${anchorCards}
+                </div>
+
                 <div class="status-card">
-                    <h3>🌐 Network Node Overview</h3>
-                    <p>Real-time view of all nodes in the NeuroSwarm network</p>
+                    <h3>🔧 Governance Actions</h3>
+                    <p>Execute governance rituals to maintain blockchain-verified integrity.</p>
 
-                    <table class="nodes-table">
-                        <thead>
-                            <tr>
-                                <th>Node ID</th>
-                                <th>Name</th>
-                                <th>Role</th>
-                                <th>IP Address</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${tableRows}
-                        </tbody>
-                    </table>
-
-                    <div class="timestamp">
-                        Last updated: ${new Date().toLocaleString()} | Auto-refresh: 10s
+                    <div class="actions" style="margin-top: 20px;">
+                        <button class="btn" onclick="runGenesisAnchoring()">🏛️ Anchor Genesis</button>
+                        <button class="btn" onclick="runKeyRotation()">🔄 Rotate Founder Key</button>
+                        <button class="btn secondary" onclick="runKeyRotationAnchoring()">🔄 Key Rotation</button>
+                        <button class="btn secondary" onclick="runPolicyUpdateAnchoring()">📋 Policy Update</button>
                     </div>
+
+                    <div class="actions" style="margin-top: 15px;">
+                        <button class="btn secondary" onclick="runGenesisVerification()">✅ Verify Genesis</button>
+                        <button class="btn secondary" onclick="validateGenesisConfig()">🔍 Validate Config</button>
+                    </div>
+                </div>
+
+                ${renderAlerts(data.alerts || [])}
+            `;
+        }
+
+        function renderGovernanceTimeline(data) {
+            const container = document.getElementById('governance-timeline');
+
+            if (!data.entries || data.entries.length === 0) {
+                container.innerHTML = `
+                    <div class="status-card">
+                        <h3>📚 Governance Timeline</h3>
+                        <p>No governance actions recorded yet. Timeline will populate as anchors are created and verified.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Summary cards
+            const summaryHtml = `
+                <div class="status-grid">
+                    <div class="status-card">
+                        <h3>📊 Timeline Summary</h3>
+                        <div class="metric">
+                            <span class="metric-label">Total Actions</span>
+                            <span class="metric-value">${data.summary.total}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Verified</span>
+                            <span class="metric-value" style="color: #00ff88;">${data.summary.verified}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Failed</span>
+                            <span class="metric-value" style="color: #ff4444;">${data.summary.failed}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Pending</span>
+                            <span class="metric-value" style="color: #ffa500;">${data.summary.pending}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Timeline entries
+            const timelineHtml = data.entries.map(entry => {
+                const statusClass = entry.verificationStatus || 'pending';
+                const statusEmoji = {
+                    'verified': '✅',
+                    'failed': '❌',
+                    'pending': '⏳',
+                    'error': '⚠️'
+                }[statusClass] || '❓';
+
+                const fingerprintsHtml = Object.entries(entry.fingerprints || {}).slice(0, 2).map(([key, value]) => `
+                    <div class="metric">
+                        <span class="metric-label">${key.replace(/_/g, ' ').toUpperCase()}</span>
+                        <div class="metric-value">
+                            <div class="hash-display">${value.substring(0, 16)}...</div>
+                        </div>
+                    </div>
+                `).join('');
+
+                return `
+                    <div class="status-card ${statusClass}">
+                        <h3>
+                            ${statusEmoji} ${entry.action.replace('-', ' ').toUpperCase()}
+                            <span class="status-badge ${statusClass}">${entry.verificationStatus || 'unknown'}</span>
+                        </h3>
+
+                        <div class="metric">
+                            <span class="metric-label">Actor</span>
+                            <span class="metric-value">${entry.actor}</span>
+                        </div>
+
+                        ${fingerprintsHtml}
+
+                        <div class="metric">
+                            <span class="metric-label">Transaction</span>
+                            <span class="metric-value">
+                                ${entry.txSignature ?
+                                    `<a href="${entry.explorerUrl}" target="_blank" class="explorer-link">
+                                        ${entry.txSignature.substring(0, 12)}...
+                                    </a>` :
+                                    'Not anchored'
+                                }
+                            </span>
+                        </div>
+
+                        <div class="metric">
+                            <span class="metric-label">Timestamp</span>
+                            <span class="metric-value">${new Date(entry.timestamp).toLocaleString()}</span>
+                        </div>
+
+                        <div class="actions" style="margin-top: 15px; text-align: center;">
+                            ${entry.txSignature ?
+                                `<button class="btn secondary" onclick="runVerificationForEntry('${entry.txSignature}', '${entry.action}')">
+                                    ✅ Verify This Entry
+                                </button>` : ''
+                            }
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                ${summaryHtml}
+                <div class="status-grid">
+                    ${timelineHtml}
+                </div>
+            `;
+        }
+
+        function renderGovernanceAlerts(data) {
+            const container = document.getElementById('governance-alerts');
+
+            // Summary cards
+            const summaryHtml = `
+                <div class="status-grid">
+                    <div class="status-card">
+                        <h3>🚨 Alert Summary</h3>
+                        <div class="metric">
+                            <span class="metric-label">Total Alerts</span>
+                            <span class="metric-value">${data.summary.total}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Critical</span>
+                            <span class="metric-value" style="color: #ff4444;">${data.summary.critical}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Warnings</span>
+                            <span class="metric-value" style="color: #ffa500;">${data.summary.warning}</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Info</span>
+                            <span class="metric-value" style="color: #444;">${data.summary.info}</span>
+                        </div>
+                        <div class="actions" style="margin-top: 15px; text-align: center;">
+                            <button class="btn secondary" onclick="checkForAlerts()">🔄 Check for New Alerts</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            if (!data.alerts || data.alerts.length === 0) {
+                container.innerHTML = `
+                    ${summaryHtml}
+                    <div class="status-card">
+                        <h3>✅ No Active Alerts</h3>
+                        <p>All governance operations are running smoothly. System is healthy.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Alert cards
+            const alertsHtml = data.alerts.map(alert => {
+                const severityClass = alert.severity;
+                const severityEmoji = {
+                    'critical': '🚨',
+                    'warning': '⚠️',
+                    'info': 'ℹ️'
+                }[severityClass] || '❓';
+
+                const resolvedText = alert.resolved ? '✅ RESOLVED' : '🔄 ACTIVE';
+                const resolvedClass = alert.resolved ? 'status-active' : 'status-pending';
+
+                return `
+                    <div class="status-card ${alert.resolved ? '' : severityClass}">
+                        <h3>
+                            ${severityEmoji} ${alert.title}
+                            <span class="status-badge ${resolvedClass}">${resolvedText}</span>
+                        </h3>
+
+                        <div class="metric">
+                            <span class="metric-label">Type</span>
+                            <span class="metric-value">${alert.type.replace(/_/g, ' ').toUpperCase()}</span>
+                        </div>
+
+                        <div class="metric">
+                            <span class="metric-label">Severity</span>
+                            <span class="metric-value">${alert.severity.toUpperCase()}</span>
+                        </div>
+
+                        <div class="metric">
+                            <span class="metric-label">Actor</span>
+                            <span class="metric-value">${alert.actor || 'System'}</span>
+                        </div>
+
+                        <div class="metric">
+                            <span class="metric-label">Timestamp</span>
+                            <span class="metric-value">${new Date(alert.timestamp).toLocaleString()}</span>
+                        </div>
+
+                        <div style="margin-top: 15px; padding: 10px; background: #1a1a2e; border-radius: 5px;">
+                            <strong>Message:</strong><br>
+                            ${alert.message}
+                        </div>
+
+                        ${alert.resolution ? `
+                            <div style="margin-top: 10px; padding: 10px; background: #0f2e1a; border-radius: 5px; border-left: 3px solid #00ff88;">
+                                <strong>Resolution:</strong><br>
+                                ${alert.resolution}
+                                ${alert.resolvedAt ? `<br><small>Resolved: ${new Date(alert.resolvedAt).toLocaleString()}</small>` : ''}
+                            </div>
+                        ` : ''}
+
+                        ${!alert.resolved ? `
+                            <div class="actions" style="margin-top: 15px; text-align: center;">
+                                <button class="btn secondary" onclick="resolveAlert('${alert.id}')">
+                                    ✅ Mark as Resolved
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `
+                ${summaryHtml}
+                <div class="status-grid">
+                    ${alertsHtml}
                 </div>
             `;
         }
@@ -549,19 +906,341 @@
                 const nodesData = await fetchNodesData();
                 renderNodeOverview(nodesData);
             }
+
+            // Refresh timeline data if on that tab
+            if (activeTab && activeTab.id === 'governance-timeline') {
+                const timelineData = await fetchGovernanceTimeline();
+                renderGovernanceTimeline(timelineData);
+            }
+
+            // Refresh alerts data if on that tab
+            if (activeTab && activeTab.id === 'governance-alerts') {
+                const alertsData = await fetchGovernanceAlerts();
+                renderGovernanceAlerts(alertsData);
+            }
         }
 
-        async function runVerification() {
-            if (confirm('Run blockchain anchor verification? This may take a few moments.')) {
-                try {
-                    // This would trigger the verification endpoint
-                    // For now, just refresh the data
-                    await refreshData();
-                    alert('Verification completed! Check the status above.');
-                } catch (error) {
-                    alert('Verification failed: ' + error.message);
-                }
+        async function runGenesisAnchoring() {
+            if (!confirm('Run genesis anchoring? This will generate fingerprints and prepare a Solana transaction.')) {
+                return;
             }
+
+            try {
+                const response = await fetch('/v1/admin/anchor-genesis', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(`✅ Genesis anchoring prepared!\n\n${result.instructions}\n\nMemo Content: ${result.memoContent}`);
+                } else {
+                    alert(`❌ Anchoring failed: ${result.error}`);
+                }
+
+                // Refresh the governance anchoring data
+                if (document.getElementById('governance-anchoring').classList.contains('active')) {
+                    fetchGovernanceAnchoring().then(data => {
+                        governanceData = data;
+                        renderGovernanceAnchoring(data);
+                    });
+                }
+
+            } catch (error) {
+                alert('❌ Error running genesis anchoring: ' + error.message);
+            }
+        }
+
+        async function runGenesisVerification() {
+            const txSig = prompt('Enter transaction signature to verify:');
+            if (!txSig || txSig.trim() === '') {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/v1/admin/verify-genesis/${txSig.trim()}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const status = result.result === 'verified' ? '✅ VERIFIED' : '❌ FAILED';
+                    const explorerLink = `https://explorer.solana.com/tx/${result.txSignature}`;
+
+                    alert(`${status}\n\nTransaction: ${result.txSignature}\nExplorer: ${explorerLink}\n\nDetails:\n${result.details.join('\n')}`);
+
+                    // Open explorer in new tab
+                    window.open(explorerLink, '_blank');
+                } else {
+                    alert(`❌ Verification failed: ${result.error}\n\nDetails: ${result.details}`);
+                }
+
+            } catch (error) {
+                alert('❌ Error running genesis verification: ' + error.message);
+            }
+        }
+
+        async function runKeyRotation() {
+            if (!confirm('Rotate founder key? This will generate a new keypair and prepare anchoring transaction.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/v1/admin/rotate-founder-key', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(`🔄 Founder key rotation prepared!\n\n${result.instructions}\n\nNew Key: ${result.newKeyPath}\nOld Key: ${result.oldKeyPath}\n\nMemo Content: ${result.memoContent}`);
+                } else {
+                    alert(`❌ Key rotation failed: ${result.error}`);
+                }
+
+                // Refresh the governance anchoring data
+                if (document.getElementById('governance-anchoring').classList.contains('active')) {
+                    fetchGovernanceAnchoring().then(data => {
+                        governanceData = data;
+                        renderGovernanceAnchoring(data);
+                    });
+                }
+
+            } catch (error) {
+                alert('❌ Error running key rotation: ' + error.message);
+            }
+        }
+
+        async function fetchNodesData() {
+            try {
+                const response = await fetch('/v1/observability/nodes', {
+                    headers: {
+                        'Authorization': 'Bearer ' + getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('Failed to fetch nodes data:', error);
+                return {
+                    timestamp: new Date().toISOString(),
+                    nodes: [],
+                    alerts: [`Failed to fetch nodes: ${error.message}`]
+                };
+            }
+        }
+
+        function renderNodeOverview(data) {
+            const container = document.getElementById('node-overview');
+
+            if (!data.nodes || data.nodes.length === 0) {
+                container.innerHTML = `
+                    <div class="status-card">
+                        <h3>🌐 Node Overview</h3>
+                        <p>No nodes found. The network may still be initializing.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const nodeRows = data.nodes.map(node => `
+                <tr>
+                    <td>${node.id || 'Unknown'}</td>
+                    <td>${node.type || 'Unknown'}</td>
+                    <td class="status-${node.status || 'unknown'}">${node.status || 'Unknown'}</td>
+                    <td>${node.lastSeen ? new Date(node.lastSeen).toLocaleString() : 'Never'}</td>
+                    <td>${node.version || 'Unknown'}</td>
+                </tr>
+            `).join('');
+
+            container.innerHTML = `
+                <div class="status-card">
+                    <h3>🌐 Network Node Overview</h3>
+                    <table class="nodes-table">
+                        <thead>
+                            <tr>
+                                <th>Node ID</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th>Last Seen</th>
+                                <th>Version</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${nodeRows}
+                        </tbody>
+                    </table>
+                </div>
+
+                ${renderAlerts(data.alerts || [])}
+            `;
+        }
+
+        async function runVerificationForEntry(txSignature, actionType) {
+            if (!confirm(`Verify ${actionType} entry with transaction ${txSignature}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/v1/admin/verify-genesis/${txSignature}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const status = result.result === 'verified' ? '✅ VERIFIED' : '❌ FAILED';
+                    const explorerLink = `https://explorer.solana.com/tx/${result.txSignature}`;
+
+                    alert(`${status}\n\nTransaction: ${result.txSignature}\nExplorer: ${explorerLink}\n\nDetails:\n${result.details.join('\n')}`);
+
+                    // Open explorer in new tab
+                    window.open(explorerLink, '_blank');
+
+                    // Refresh timeline data
+                    if (document.getElementById('governance-timeline').classList.contains('active')) {
+                        fetchGovernanceTimeline().then(data => {
+                            timelineData = data;
+                            renderGovernanceTimeline(data);
+                        });
+                    }
+                } else {
+                    alert(`❌ Verification failed: ${result.error}\n\nDetails: ${result.details}`);
+                }
+
+            } catch (error) {
+                alert('❌ Error running verification: ' + error.message);
+            }
+        }
+
+        async function resolveAlert(alertId) {
+            const resolution = prompt('Enter resolution details (optional):');
+
+            try {
+                const response = await fetch(`/v1/observability/governance-alerts/${alertId}/resolve`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + getAuthToken(),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ resolution })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('✅ Alert resolved successfully!');
+
+                    // Refresh alerts data
+                    if (document.getElementById('governance-alerts').classList.contains('active')) {
+                        fetchGovernanceAlerts().then(data => {
+                            alertsData = data;
+                            renderGovernanceAlerts(data);
+                        });
+                    }
+                } else {
+                    alert(`❌ Failed to resolve alert: ${result.error}`);
+                }
+
+            } catch (error) {
+                alert('❌ Error resolving alert: ' + error.message);
+            }
+        }
+
+        async function checkForAlerts() {
+            try {
+                const response = await fetch('/v1/observability/check-alerts', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert(`🔄 Alert check completed!\n\nFound ${result.summary.total} total alerts\n(${result.summary.critical} critical, ${result.summary.warning} warnings, ${result.summary.info} info)`);
+
+                    // Refresh alerts data
+                    if (document.getElementById('governance-alerts').classList.contains('active')) {
+                        fetchGovernanceAlerts().then(data => {
+                            alertsData = data;
+                            renderGovernanceAlerts(data);
+                        });
+                    }
+                } else {
+                    alert(`❌ Alert check failed: ${result.error}`);
+                }
+
+            } catch (error) {
+                alert('❌ Error checking for alerts: ' + error.message);
+            }
+        }
+
+        function copyVerificationCommand(txSignature, actionType) {
+            if (!txSignature) {
+                alert('No transaction signature available for verification.');
+                return;
+            }
+
+            const command = `npm run verify-governance ${txSignature} ${actionType}`;
+            navigator.clipboard.writeText(command).then(() => {
+                alert(`Verification command copied to clipboard:\n${command}`);
+            }).catch(() => {
+                // Fallback for browsers that don't support clipboard API
+                const textArea = document.createElement('textarea');
+                textArea.value = command;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert(`Verification command copied to clipboard:\n${command}`);
+            });
         }
 
         // Initialize dashboard
@@ -596,6 +1275,16 @@
         // Make functions globally available
         window.refreshData = refreshData;
         window.runVerification = runVerification;
+        window.runGenesisAnchoring = runGenesisAnchoring;
+        window.runGenesisVerification = runGenesisVerification;
+        window.runKeyRotation = runKeyRotation;
+        window.validateGenesisConfig = validateGenesisConfig;
+        window.runKeyRotationAnchoring = runKeyRotationAnchoring;
+        window.runPolicyUpdateAnchoring = runPolicyUpdateAnchoring;
+        window.copyVerificationCommand = copyVerificationCommand;
+        window.runVerificationForEntry = runVerificationForEntry;
+        window.resolveAlert = resolveAlert;
+        window.checkForAlerts = checkForAlerts;
         window.showTab = showTab;
     </script>
 </body>

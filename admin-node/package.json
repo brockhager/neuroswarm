@@ -12,7 +12,9 @@
     "clean": "rm -rf dist",
     "health-check": "ts-node scripts/health-check.ts",
     "anchor-genesis": "ts-node scripts/anchor-genesis.ts",
-    "verify-genesis": "ts-node scripts/verify-genesis.ts"
+    "anchor-governance": "ts-node scripts/anchor-governance.ts",
+    "verify-genesis": "ts-node scripts/verify-genesis.ts",
+    "verify-governance": "ts-node scripts/verify-governance.ts"
   },
   "dependencies": {
     "@solana/web3.js": "^1.87.6",
@@ -32,7 +34,7 @@
     "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
-    "@types/jest": "^29.5.8",
+    "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.10.5",
     "@types/ws": "^8.5.10",
@@ -40,6 +42,7 @@
     "@typescript-eslint/parser": "^6.15.0",
     "eslint": "^8.56.0",
     "jest": "^29.7.0",
+    "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   },
@@ -51,5 +54,16 @@
     "solana"
   ],
   "author": "NeuroSwarm",
-  "license": "MIT"
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/__tests__/**/*.ts",
+      "**/?(*.)+(spec|test).ts"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.d.ts"
+    ]
+  }
 }
