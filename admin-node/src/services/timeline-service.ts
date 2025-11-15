@@ -19,6 +19,13 @@ export interface AnchorTimelineEntry {
   signature?: string;
 }
 
+export interface SubmissionTimelineEntry extends AnchorTimelineEntry {
+  contributorId?: string;
+  submissionType?: 'file' | 'json' | 'telemetry' | string;
+  sha256?: string;
+  anchored?: boolean;
+}
+
 export interface AlertEntry {
   id: string;
   timestamp: string;
@@ -114,6 +121,60 @@ export class TimelineService {
       return id;
     } catch (error) {
       this.logger.error('Failed to write timeline entry:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Add a new submission entry to the timeline
+   */
+  addSubmissionEntry(entry: Omit<SubmissionTimelineEntry, 'id' | 'signature'>): string {
+    const id = crypto.randomUUID();
+    const timelineEntry: SubmissionTimelineEntry = {
+      ...entry,
+      id,
+    } as SubmissionTimelineEntry;
+
+    // Create signature if private key is available
+    if (this.privateKey) {
+      const dataToSign = JSON.stringify({
+        id: timelineEntry.id,
+        timestamp: timelineEntry.timestamp,
+        action: timelineEntry.action,
+        actor: timelineEntry.actor,
+        contributorId: timelineEntry.contributorId,
+        submissionType: timelineEntry.submissionType,
+        sha256: timelineEntry.sha256,
+        anchored: timelineEntry.anchored,
+        details: timelineEntry.details,
+      });
+
+      try {
+        const sign = crypto.createSign('SHA256');
+        sign.update(dataToSign);
+        timelineEntry.signature = sign.sign(this.privateKey, 'hex');
+      } catch (error) {
+        this.logger.error('Failed to sign submission timeline entry:', error);
+      }
+    }
+
+    try {
+      const line = JSON.stringify(timelineEntry) + '\n';
+      fs.appendFileSync(this.timelinePath, line);
+
+      this.logger.info(`Submission timeline entry added: ${entry.action} by ${entry.actor}`);
+
+      governanceLogger.log('timeline_submission_added', {
+        entryId: id,
+        action: entry.action,
+        actor: entry.actor,
+        contributorId: entry.contributorId,
+        sha256: entry.sha256
+      }, entry.actor);
+
+      return id;
+    } catch (error) {
+      this.logger.error('Failed to write submission timeline entry:', error);
       throw error;
     }
   }
@@ -332,6 +393,36 @@ export class TimelineService {
         txSignature,
         verificationStatus: entry.verificationStatus,
       });
+
+      // If this entry is an anchor for a submission, mark the corresponding submission entry as anchored
+      if (entry.action === 'submission-anchor' && entry.details && entry.details.submissionTimelineId) {
+        const subId = entry.details.submissionTimelineId;
+        const subIndex = entries.findIndex(e => e.id === subId);
+        if (subIndex !== -1) {
+          const subEntry: any = entries[subIndex];
+          subEntry.anchored = true;
+          subEntry.details = subEntry.details || {};
+          subEntry.details.anchor_tx_signature = txSignature;
+          // Re-sign the submission entry if we have a private key
+          if (this.privateKey) {
+            const sign = crypto.createSign('SHA256');
+            sign.update(JSON.stringify({
+              id: subEntry.id,
+              timestamp: subEntry.timestamp,
+              action: subEntry.action,
+              actor: subEntry.actor,
+              txSignature: subEntry.txSignature,
+              memoContent: subEntry.memoContent,
+              fingerprints: subEntry.fingerprints,
+              verificationStatus: subEntry.verificationStatus,
+              details: subEntry.details,
+            }));
+            subEntry.signature = sign.sign(this.privateKey, 'hex');
+          }
+        }
+        // rewrite timeline with updated submission entry
+        this.rewriteTimelineFile(entries);
+      }
 
       return true;
     } catch (error) {
