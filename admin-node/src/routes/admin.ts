@@ -346,8 +346,8 @@ router.post('/anchor-genesis', requireFounder, async (req: Request, res: Respons
   }
 });
 
-// GET /v1/admin/verify-genesis/:txSig - Execute genesis verification
-router.get('/verify-genesis/:txSig', requireAdmin, async (req: Request, res: Response) => {
+// GET /v1/admin/verify-genesis/:txSig - Execute genesis verification (founder-only)
+router.get('/verify-genesis/:txSig', requireFounder, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
     const { txSig } = req.params;
@@ -388,6 +388,7 @@ router.get('/verify-genesis/:txSig', requireAdmin, async (req: Request, res: Res
       stderr += data.toString();
     });
 
+    let responded = false;
     child.on('close', (code) => {
       if (code === 0) {
         // Parse verification results
@@ -428,7 +429,9 @@ router.get('/verify-genesis/:txSig', requireAdmin, async (req: Request, res: Res
           }
         }
 
-        res.json({
+        if (!responded) {
+          responded = true;
+          res.json({
           success: true,
           operation: 'verify_genesis',
           txSignature: txSig,
@@ -437,6 +440,7 @@ router.get('/verify-genesis/:txSig', requireAdmin, async (req: Request, res: Res
           fullOutput: stdout,
           timestamp: new Date().toISOString(),
         });
+        }
       } else {
         logger.error(`Verify genesis script failed with code ${code}: ${stderr}`);
 
@@ -447,12 +451,15 @@ router.get('/verify-genesis/:txSig', requireAdmin, async (req: Request, res: Res
           exitCode: code,
         });
 
-        res.status(500).json({
+        if (!responded) {
+          responded = true;
+          res.status(500).json({
           error: 'Genesis verification failed',
           txSignature: txSig,
           details: stderr,
           timestamp: new Date().toISOString(),
         });
+        }
       }
     });
 
@@ -465,12 +472,15 @@ router.get('/verify-genesis/:txSig', requireAdmin, async (req: Request, res: Res
         error: error.message,
       });
 
-      res.status(500).json({
+      if (!responded) {
+        responded = true;
+        res.status(500).json({
         error: 'Failed to execute verification script',
         txSignature: txSig,
         details: error.message,
         timestamp: new Date().toISOString(),
       });
+      }
     });
 
   } catch (error) {
@@ -773,13 +783,14 @@ router.post('/set-tx-signature', requireFounder, async (req: Request, res: Respo
 
 export { router as adminRoutes };
 
-// GET /v1/admin/latest-anchor - Return the most recent governance anchor (admin access)
-router.get('/latest-anchor', requireAdmin, async (req: Request, res: Response) => {
+// GET /v1/admin/latest-anchor - Return the most recent governance anchor (founder-only access)
+router.get('/latest-anchor', requireFounder, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
     governanceLogger.logAdminAction('latest_anchor_query', userId, { endpoint: '/v1/admin/latest-anchor' });
 
-    const anchor = anchorService.getLatestAnchor();
+    const actionType = req.query.action as string | undefined;
+    const anchor = actionType ? anchorService.getLatestAnchorByType(actionType) : anchorService.getLatestAnchor();
     if (!anchor) {
       return res.status(404).json({ error: 'No anchor found', timestamp: new Date().toISOString() });
     }

@@ -16,6 +16,7 @@ console.log('Environment variables loaded. GOVERNANCE_PRIVATE_KEY_PATH:', proces
 import { authMiddleware } from './middleware/auth';
 import { adminRoutes } from './routes/admin';
 import { observabilityRoutes } from './routes/observability';
+import { anchorService } from './services/anchor-service';
 import { createGovernanceLogger, governanceLogger } from './services/governance-logger';
 import { discordService } from './services/discord-service';
 
@@ -85,6 +86,25 @@ app.get('/health', (req, res) => {
 app.use('/v1/admin', authMiddleware, adminRoutes);
 
 // Observability routes (protected)
+// Public observability endpoints (registered before auth middleware)
+// Latest anchor is safe to expose for dashboards, so keep a read-only public endpoint
+app.get('/v1/observability/latest-anchor', async (req, res) => {
+  try {
+    const actionType = req.query.action as string | undefined;
+    const anchor = actionType ? anchorService.getLatestAnchorByType(actionType) : anchorService.getLatestAnchor();
+
+    if (!anchor) {
+      return res.status(404).json({ error: 'No anchor found', timestamp: new Date().toISOString() });
+    }
+
+    res.json({ success: true, anchor, timestamp: new Date().toISOString() });
+  } catch (error) {
+    logger.error('Public latest anchor observability error:', error);
+    res.status(500).json({ error: 'Failed to retrieve latest anchor', timestamp: new Date().toISOString() });
+  }
+});
+
+// Protected observability routes (admin/founder only)
 app.use('/v1/observability', authMiddleware, observabilityRoutes);
 
 // WebSocket for real-time updates
