@@ -19,5 +19,6 @@ npx playwright test -c e2e/playwright.config.ts --project=chromium
 - [ ] Docs updated
 - [ ] Changelog updated
 - [ ] Ready for review
+ - [ ] Wiki updated (`docs/wiki/*`) if endpoints, workflows, or procedures changed
 
 ## Additional Notes
