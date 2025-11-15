@@ -121,4 +121,38 @@ describe('TimelineService', () => {
     expect(founderEntries).toHaveLength(1);
     expect(founderEntries[0].actor).toBe('founder');
   });
+
+  test('should set tx signature and verify an entry by genesis hash or id', () => {
+    const fingerprint = { genesis_sha256: 'verify-123' };
+
+    const id = timelineService.addAnchorEntry({
+      timestamp: new Date().toISOString(),
+      action: 'genesis',
+      actor: 'founder',
+      txSignature: undefined,
+      memoContent: 'Genesis anchor',
+      fingerprints: fingerprint,
+      verificationStatus: 'pending',
+      details: {}
+    });
+
+    // Set by genesis hash
+    const result1 = timelineService.setEntryTxSignature('tx-12345', { genesisSha256: 'verify-123', verifyIfMatching: true });
+    expect(result1).toBe(true);
+
+    const entries1 = timelineService.getTimelineEntries();
+    const found = entries1.find(e => e.id === id);
+    expect(found).toBeDefined();
+    expect(found?.txSignature).toBe('tx-12345');
+    expect(found?.verificationStatus).toBe('verified');
+
+    // Reset verification to pending and set by id
+    timelineService.updateAnchorVerification(id, 'pending');
+    const result2 = timelineService.setEntryTxSignature('tx-67890', { id, verifyIfMatching: false });
+    expect(result2).toBe(true);
+
+    const updated = timelineService.getTimelineEntry(id);
+    expect(updated?.txSignature).toBe('tx-67890');
+    expect(updated?.verificationStatus).toBe('pending');
+  });
 });

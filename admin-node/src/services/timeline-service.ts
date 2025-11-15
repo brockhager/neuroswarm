@@ -3,7 +3,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { logger } from '../index';
 import { governanceLogger } from './governance-logger';
-import { discordService } from './discord-service';
+import { discordService } from '../../../discord/src/discord-service';
 
 export interface AnchorTimelineEntry {
   id: string;
@@ -256,6 +256,86 @@ export class TimelineService {
       return true;
     } catch (error) {
       this.logger.error('Failed to update timeline verification:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Set transaction signature for a timeline entry by id or genesis hash
+   */
+  setEntryTxSignature(txSignature: string, opts: { id?: string; genesisSha256?: string; verifyIfMatching?: boolean } = {}): boolean {
+    try {
+      const entries = this.getTimelineEntries({ limit: 1000 });
+      let entryIndex = -1;
+
+      if (opts.id) {
+        entryIndex = entries.findIndex(e => e.id === opts.id);
+      }
+
+      if (entryIndex === -1 && opts.genesisSha256) {
+        entryIndex = entries.findIndex(e => (e.fingerprints && (e.fingerprints.genesis_sha256 || e.fingerprints.genesis_sha256)) === opts.genesisSha256);
+      }
+
+      // If still not found, find latest genesis entry
+      if (entryIndex === -1) {
+        entryIndex = entries.findIndex(e => e.action === 'genesis' || e.action === 'genesis-anchor');
+        if (entryIndex === -1) return false;
+      }
+
+      const entry = entries[entryIndex];
+
+      // Update fields
+      entry.txSignature = txSignature;
+      entry.details = entry.details || {};
+      entry.details.tx_signature = txSignature;
+
+      // Optionally verify if provided genesisSha256 matches fingerprint
+      if (opts.verifyIfMatching && opts.genesisSha256) {
+        const entryHash = entry.fingerprints?.genesis_sha256 || entry.details?.hash || (entry.details && (entry.details.hash || entry.details.genesis_sha256));
+        if (entryHash && entryHash === opts.genesisSha256) {
+          entry.verificationStatus = 'verified';
+          entry.details.verifiedAt = new Date().toISOString();
+        } else {
+          entry.verificationStatus = 'failed';
+        }
+      }
+
+      // Re-sign if we have a private key
+      if (this.privateKey) {
+        const dataToSign = JSON.stringify({
+          id: entry.id,
+          timestamp: entry.timestamp,
+          action: entry.action,
+          actor: entry.actor,
+          txSignature: entry.txSignature,
+          memoContent: entry.memoContent,
+          fingerprints: entry.fingerprints,
+          verificationStatus: entry.verificationStatus,
+          details: entry.details,
+        });
+
+        try {
+          const sign = crypto.createSign('SHA256');
+          sign.update(dataToSign);
+          entry.signature = sign.sign(this.privateKey, 'hex');
+        } catch (error) {
+          this.logger.error('Failed to sign updated timeline entry:', error);
+        }
+      }
+
+      // Rewrite timeline file
+      this.rewriteTimelineFile(entries);
+
+      this.logger.info(`Updated timeline entry ${entry.id} with txSignature ${txSignature}`);
+      governanceLogger.log('timeline_tx_set', {
+        entryId: entry.id,
+        txSignature,
+        verificationStatus: entry.verificationStatus,
+      });
+
+      return true;
+    } catch (error) {
+      this.logger.error('Failed to set tx signature on timeline entry:', error);
       return false;
     }
   }

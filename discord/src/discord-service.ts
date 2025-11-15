@@ -1,6 +1,31 @@
 import { Client, GatewayIntentBits, TextChannel, EmbedBuilder, ChannelType } from 'discord.js';
-import { logger } from '../index';
-import { AlertEntry, AnchorTimelineEntry } from './timeline-service';
+
+// Simple logger for discord service
+const logger = {
+  info: (message: string, ...args: any[]) => console.log(`[DISCORD] ${message}`, ...args),
+  error: (message: string, ...args: any[]) => console.error(`[DISCORD ERROR] ${message}`, ...args),
+  warn: (message: string, ...args: any[]) => console.warn(`[DISCORD WARN] ${message}`, ...args),
+};
+
+export interface AlertEntry {
+  title: string;
+  message: string;
+  type: string;
+  severity: 'critical' | 'warning' | 'info';
+  actor?: string;
+  timestamp: string;
+  relatedAnchorId?: string;
+}
+
+export interface AnchorTimelineEntry {
+  action: string;
+  actor: string;
+  verificationStatus: 'verified' | 'failed' | 'pending' | 'error';
+  timestamp: string;
+  txSignature?: string;
+  memoContent?: string;
+  fingerprints?: Record<string, string>;
+}
 
 export class DiscordService {
   private client: Client;

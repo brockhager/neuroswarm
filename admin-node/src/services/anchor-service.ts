@@ -27,9 +27,21 @@ export class AnchorService {
   private scriptsDir: string;
 
   constructor() {
-    this.genesisFile = path.join(process.cwd(), '..', 'docs', 'admin-genesis.json');
-    this.logFile = path.join(process.cwd(), '..', 'wp_publish_log.jsonl');
+    // Allow overriding genesis path with environment variable (relative to repo root)
+    const envGenesisPath = process.env.GENESIS_CONFIG_PATH || '';
+    if (envGenesisPath && envGenesisPath.trim() !== '') {
+      // Accept values like /docs/admin/admin-genesis.json or docs/admin/admin-genesis.json
+      // Remove leading slash if present
+      const normalized = envGenesisPath.replace(/^\//, '');
+      this.genesisFile = path.join(process.cwd(), '..', normalized);
+    } else {
+      this.genesisFile = path.join(process.cwd(), '..', 'docs', 'admin-genesis.json');
+    }
+    this.logFile = path.join(process.cwd(), '..', 'governance-timeline.jsonl');
     this.scriptsDir = path.join(process.cwd(), '..', 'scripts');
+    if (logger && typeof (logger as any).info === 'function') {
+      (logger as any).info(`AnchorService initialized - genesisFile: ${this.genesisFile}, logFile: ${this.logFile}`);
+    }
   }
 
   /**
@@ -54,10 +66,21 @@ export class AnchorService {
 
     try {
       // Compute current local hash
+      if (logger && typeof (logger as any).info === 'function') {
+        (logger as any).info('Computing genesis local hash from file: ' + this.genesisFile);
+      }
       status.localHash = this.computeGenesisHash();
 
-      // Find latest anchor transaction from logs
-      const latestAnchor = this.findLatestAnchor();
+      // Find latest anchor transaction from governance timeline logs
+      // Prefer an anchor that matches the local computed genesis hash
+      let latestAnchor = this.findAnchorByHash(status.localHash || '');
+      if (!latestAnchor) {
+        // If no matching anchor found, fallback to latest anchor
+        latestAnchor = this.findLatestAnchor();
+      }
+      if (logger && typeof (logger as any).info === 'function') {
+        (logger as any).info('Latest anchor discovered: ' + JSON.stringify(latestAnchor));
+      }
       if (latestAnchor) {
         status.blockchainAnchor.transactionSignature = latestAnchor.txSignature;
         status.blockchainAnchor.explorerUrl = `https://explorer.solana.com/tx/${latestAnchor.txSignature}`;
@@ -167,17 +190,61 @@ export class AnchorService {
         .split('\n')
         .filter(line => line.trim())
         .map(line => JSON.parse(line))
-        .filter(entry => entry.action === 'genesis-anchor')
+        // Accept both 'genesis' and 'genesis-anchor' actions for backward compatibility
+        .filter(entry => entry.action === 'genesis' || entry.action === 'genesis-anchor')
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
-      return logs.length > 0 ? {
-        txSignature: logs[0].txSignature,
-        hash: logs[0].hash,
-        timestamp: logs[0].timestamp,
-      } : null;
+      if (logs.length === 0) return null;
+
+      const latest = logs[0];
+      // txSignature can be top-level or under details
+      const txSignature = latest.txSignature || latest.tx_signature || latest.details?.txSignature || latest.details?.tx_signature || null;
+      // hash can be under fingerprints.genesis_sha256 or top-level hash
+      const hash = (latest.fingerprints && (latest.fingerprints.genesis_sha256 || latest.fingerprints.genesis_sha256)) || latest.hash || latest.details?.hash || null;
+
+      return txSignature ? { txSignature, hash: hash || '', timestamp: latest.timestamp } : null;
 
     } catch (error) {
       logger.error('Error reading governance logs:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Expose latest anchor for external use
+   */
+  public getLatestAnchor(): { txSignature: string; hash: string; timestamp: string } | null {
+    return this.findLatestAnchor();
+  }
+
+  /**
+   * Find an anchor entry by matching fingerprint hash
+   */
+  private findAnchorByHash(targetHash: string): { txSignature: string; hash: string; timestamp: string } | null {
+    try {
+      if (!fs.existsSync(this.logFile)) return null;
+
+      const lines = fs.readFileSync(this.logFile, 'utf8')
+        .split('\n')
+        .filter(line => line.trim())
+        .map(line => JSON.parse(line))
+        .filter(entry => entry.action === 'genesis' || entry.action === 'genesis-anchor')
+        .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+      for (const entry of lines) {
+        const entryHash = entry.fingerprints?.genesis_sha256 || entry.hash || entry.details?.hash;
+        if (!entryHash) continue;
+        if (entryHash === targetHash) {
+          const txSignature = entry.txSignature || entry.tx_signature || entry.details?.txSignature || entry.details?.tx_signature || null;
+          if (txSignature) {
+            return { txSignature, hash: entryHash, timestamp: entry.timestamp };
+          }
+        }
+      }
+
+      return null;
+    } catch (error) {
+      if (logger && typeof (logger as any).error === 'function') (logger as any).error('Error finding anchor by hash:', error);
       return null;
     }
   }

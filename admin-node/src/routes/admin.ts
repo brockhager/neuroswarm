@@ -5,6 +5,7 @@ import { logger } from '../index';
 import { spawn } from 'child_process';
 import path from 'path';
 import { timelineService } from '../services/timeline-service';
+import { anchorService } from '../services/anchor-service';
 
 const router = Router();
 
@@ -740,4 +741,53 @@ router.get('/validate-genesis-config', requireAdmin, async (req: Request, res: R
   }
 });
 
+// POST /v1/admin/set-tx-signature - Set the transaction signature for a timeline entry (founder only)
+router.post('/set-tx-signature', requireFounder, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { txSignature, id, genesisSha256, verifyIfMatching } = req.body;
+
+    if (!txSignature) {
+      return res.status(400).json({ error: 'txSignature required', timestamp: new Date().toISOString() });
+    }
+
+    governanceLogger.logAdminAction('set_tx_signature', userId, {
+      endpoint: '/v1/admin/set-tx-signature',
+      txSignature,
+      id,
+      genesisSha256,
+    });
+
+    const success = timelineService.setEntryTxSignature(txSignature, { id, genesisSha256, verifyIfMatching });
+
+    if (!success) {
+      return res.status(404).json({ error: 'Timeline entry not found', timestamp: new Date().toISOString() });
+    }
+
+    res.json({ success: true, operation: 'set_tx_signature', txSignature, timestamp: new Date().toISOString() });
+  } catch (error) {
+    logger.error('Set tx signature error:', error);
+    res.status(500).json({ error: 'Failed to set tx signature', timestamp: new Date().toISOString() });
+  }
+});
+
 export { router as adminRoutes };
+
+// GET /v1/admin/latest-anchor - Return the most recent governance anchor (admin access)
+router.get('/latest-anchor', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    governanceLogger.logAdminAction('latest_anchor_query', userId, { endpoint: '/v1/admin/latest-anchor' });
+
+    const anchor = anchorService.getLatestAnchor();
+    if (!anchor) {
+      return res.status(404).json({ error: 'No anchor found', timestamp: new Date().toISOString() });
+    }
+
+    res.json({ success: true, anchor, timestamp: new Date().toISOString() });
+  } catch (error) {
+    logger.error('Latest anchor query error:', error);
+    governanceLogger.log('error', { endpoint: '/v1/admin/latest-anchor', error: (error as Error).message });
+    res.status(500).json({ error: 'Failed to retrieve latest anchor', timestamp: new Date().toISOString() });
+  }
+});
