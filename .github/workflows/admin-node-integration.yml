@@ -1,0 +1,28 @@
+name: Admin Node Integration Tests
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    name: Run integration and unit tests for admin-node
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ./admin-node
+
+      - name: Run tests (unit + integration)
+        run: |
+          NODE_ENV=test DISCORD_BOT_TOKEN="" PORT=0 npm test --silent
+        working-directory: ./admin-node

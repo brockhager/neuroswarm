@@ -303,6 +303,7 @@
         <div class="actions">
             <button class="btn" onclick="refreshData()">🔄 Refresh Status</button>
             <button class="btn secondary" onclick="runVerification()">✅ Run Verification</button>
+            <button class="btn" onclick="fetchLatestAnchor()">🧾 Latest Anchor</button>
             <button class="btn secondary" onclick="sendDiscordOnboarding()">📢 Send Discord Onboarding</button>
             <a href="https://explorer.solana.com" target="_blank" class="btn secondary">🔍 Solana Explorer</a>
         </div>
@@ -619,9 +620,20 @@
                         </div>
 
                         <div class="actions" style="margin-top: 15px; text-align: center;">
-                            <button class="btn secondary" onclick="copyVerificationCommand('${anchor.txSignature}', '${anchor.action}')">
-                                📋 Copy Verification Command
-                            </button>
+                            ${anchor.txSignature ? `
+                                <button class="btn secondary" onclick="copyVerificationCommand('${anchor.txSignature}', '${anchor.action}')">
+                                    📋 Copy Verification Command
+                                </button>
+                                ${anchor.verificationStatus !== 'verified' ? `
+                                  <button class="btn" style="margin-left: 8px;" onclick="markVerified('${anchor.txSignature}', '${anchor.fingerprints?.genesis_sha256 || ''}')">
+                                    ✅ Mark Verified
+                                  </button>
+                                ` : ''}
+                            ` : `
+                                <button class="btn secondary" onclick="promptSetTxSignature('${anchor.id}', '${anchor.fingerprints?.genesis_sha256 || ''}')">
+                                    🖊️ Set Transaction Signature
+                                </button>
+                            `}
                         </div>
                     </div>
                 `;
@@ -997,6 +1009,33 @@
             }
         }
 
+        async function fetchLatestAnchor() {
+            try {
+                const response = await fetch('/v1/admin/latest-anchor', {
+                    headers: {
+                        'Authorization': 'Bearer ' + getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success && result.anchor) {
+                    const anchor = result.anchor;
+                    const explorerLink = `https://explorer.solana.com/tx/${anchor.txSignature}`;
+                    alert(`Latest Anchor:\nTX: ${anchor.txSignature}\nHash: ${anchor.hash}\nExplorer: ${explorerLink}`);
+                } else {
+                    alert('No anchor found');
+                }
+            } catch (error) {
+                alert('❌ Error fetching latest anchor: ' + error.message);
+            }
+        }
+
         async function runKeyRotation() {
             if (!confirm('Rotate founder key? This will generate a new keypair and prepare anchoring transaction.')) {
                 return;
@@ -1223,6 +1262,71 @@
             }
         }
 
+        async function promptSetTxSignature(entryId, genesisSha256) {
+            const txSig = prompt('Enter transaction signature for anchor:');
+            if (!txSig) return;
+
+            try {
+                const response = await fetch('/v1/admin/set-tx-signature', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + getAuthToken(),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ txSignature: txSig, id: entryId, genesisSha256 })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('✅ Transaction signature recorded. Verification status may be updated.');
+                } else {
+                    alert('❌ Failed to set signature: ' + (result.error || 'Unknown error'));
+                }
+
+                if (document.getElementById('governance-anchoring').classList.contains('active')) {
+                    fetchGovernanceAnchoring().then(data => { governanceData = data; renderGovernanceAnchoring(data); });
+                }
+
+            } catch (error) {
+                alert('❌ Error setting tx signature: ' + error.message);
+            }
+        }
+
+        async function markVerified(txSig, genesisSha) {
+            if (!confirm(`Mark transaction ${txSig} as verified?`)) return;
+
+            try {
+                const response = await fetch('/v1/admin/set-tx-signature', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + getAuthToken(),
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ txSignature: txSig, genesisSha256: genesisSha, verifyIfMatching: true })
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('✅ Anchor verified and updated');
+                } else {
+                    alert('❌ Failed to mark verified: ' + (result.error || 'Unknown error'));
+                }
+
+                // Refresh anchoring tab
+                if (document.getElementById('governance-anchoring').classList.contains('active')) {
+                    fetchGovernanceAnchoring().then(data => { governanceData = data; renderGovernanceAnchoring(data); });
+                }
+            } catch (error) {
+                alert('❌ Error updating tx signature: ' + error.message);
+            }
+        }
+
         function copyVerificationCommand(txSignature, actionType) {
             if (!txSignature) {
                 alert('No transaction signature available for verification.');
@@ -1319,6 +1423,7 @@
         window.checkForAlerts = checkForAlerts;
         window.sendDiscordOnboarding = sendDiscordOnboarding;
         window.showTab = showTab;
+        window.promptSetTxSignature = promptSetTxSignature;
     </script>
 </body>
 </html>
