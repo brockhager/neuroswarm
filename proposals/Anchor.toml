@@ -1,0 +1,6 @@
+[workspace]
+members = ["programs/*"]
+
+[programs.proposals]
+name = "proposals"
+path = "programs/proposals"

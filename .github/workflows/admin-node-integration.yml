@@ -26,6 +26,12 @@ jobs:
         run: npm ci
         working-directory: ./admin-node
 
+      - name: Validate npm ci used the lockfile
+        run: |
+          # Ensure package-lock.json wasn't modified by npm ci, to detect lockfile drift
+          git diff --exit-code package-lock.json || (echo "Lockfile changed after npm ci" && exit 1)
+        working-directory: ./admin-node
+
       - name: Run tests (unit + integration)
         run: |
           # Simulate different chain modes to catch edge cases
@@ -58,7 +64,21 @@ jobs:
         run: npx playwright install --with-deps
         working-directory: ./admin-node
 
+      - name: Validate Playwright browsers installed
+        run: |
+          # Confirm browsers are installed by listing them
+          npx playwright show-browsers --with-deps | tee browsers.txt
+          if ! grep -q "chromium" browsers.txt; then echo "Chromium not found" && exit 1; fi
+          if ! grep -q "firefox" browsers.txt; then echo "Firefox not found" && exit 1; fi
+          if ! grep -q "webkit" browsers.txt; then echo "Webkit not found" && exit 1; fi
+        working-directory: ./admin-node
+
+      - name: Seed Governance Timeline for E2E
+        run: |
+          node scripts/seed-e2e-timeline.js
+        working-directory: ./admin-node
+
       - name: Run e2e tests
         run: |
-          NODE_ENV=test DISCORD_BOT_TOKEN="" npm run e2e:ci
+          NODE_ENV=test DISCORD_BOT_TOKEN="" npm run e2e:ci -- --workers=1
         working-directory: ./admin-node
