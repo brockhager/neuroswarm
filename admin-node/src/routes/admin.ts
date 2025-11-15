@@ -6,6 +6,7 @@ import { spawn } from 'child_process';
 import path from 'path';
 import { timelineService } from '../services/timeline-service';
 import { anchorService } from '../services/anchor-service';
+import { safetyService } from '../services/safety-service';
 
 const router = Router();
 
@@ -754,6 +755,10 @@ router.get('/validate-genesis-config', requireAdmin, async (req: Request, res: R
 // POST /v1/admin/set-tx-signature - Set the transaction signature for a timeline entry (founder only)
 router.post('/set-tx-signature', requireFounder, async (req: Request, res: Response) => {
   try {
+    // Block critical admin operations during safety mode
+    if (safetyService.isSafe()) {
+      return res.status(503).json({ error: 'Admin Node in maintenance/safe mode', timestamp: new Date().toISOString() });
+    }
     const userId = req.user!.id;
     const { txSignature, id, genesisSha256, verifyIfMatching } = req.body;
 
@@ -800,5 +805,20 @@ router.get('/latest-anchor', requireFounder, async (req: Request, res: Response)
     logger.error('Latest anchor query error:', error);
     governanceLogger.log('error', { endpoint: '/v1/admin/latest-anchor', error: (error as Error).message });
     res.status(500).json({ error: 'Failed to retrieve latest anchor', timestamp: new Date().toISOString() });
+  }
+});
+
+// POST /v1/admin/shutdown - Toggle safe/maintenance mode (founder only)
+router.post('/shutdown', requireFounder, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { enabled } = req.body;
+    const newMode = safetyService.setSafeMode(!!enabled);
+    governanceLogger.logAdminAction('shutdown_mode', userId, { endpoint: '/v1/admin/shutdown', enabled: newMode });
+    res.json({ success: true, safeMode: newMode, timestamp: new Date().toISOString() });
+  } catch (error) {
+    logger.error('Shutdown route error:', error);
+    governanceLogger.log('error', { endpoint: '/v1/admin/shutdown', error: (error as Error).message });
+    res.status(500).json({ error: 'Failed to update shutdown mode', timestamp: new Date().toISOString() });
   }
 });
