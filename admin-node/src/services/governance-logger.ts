@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { getWpPublishLogPath } from '../utils/paths';
 import crypto from 'crypto';
 
 export interface GovernanceLogEntry {
@@ -23,7 +24,7 @@ export class GovernanceLogger {
       error: console.error,
     };
 
-    this.logPath = path.join(process.cwd(), '..', 'wp_publish_log.jsonl');
+    this.logPath = process.env.WP_PUBLISH_LOG_PATH ? path.resolve(process.env.WP_PUBLISH_LOG_PATH) : getWpPublishLogPath();
 
     // Load private key for signing (if available)
     const keyPath = process.env.GOVERNANCE_PRIVATE_KEY_PATH;
@@ -75,6 +76,8 @@ export class GovernanceLogger {
 
     // Write to log file
     try {
+      const dir = path.dirname(this.logPath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       const logLine = JSON.stringify(entry) + '\n';
       fs.appendFileSync(this.logPath, logLine);
       this.logger.info(`Governance action logged: ${action}`, { actor: entry.actor });

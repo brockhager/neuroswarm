@@ -74,7 +74,7 @@ gh auth login
 ```
 GraphQL: Resource not accessible by integration (read-project)
 ```
-
+Logs are stored in `governance/logs/wp_publish_log.jsonl` with structured JSON entries:
 **🔍 Diagnosis**:
 - Insufficient permissions for GitHub Projects API
 
@@ -88,7 +88,7 @@ GraphQL: Resource not accessible by integration (read-project)
 Logs are stored in `wp_publish_log.jsonl` with structured JSON entries:
 
 ```json
-{
+    - Check `governance/logs/wp_publish_log.jsonl` for latest `"action": "genesis-anchor"` entry
   "timestamp": "2025-11-13T10:30:00.123456",
   "event_type": "structural_violation",
   "severity": "high",
@@ -111,12 +111,6 @@ Logs are stored in `wp_publish_log.jsonl` with structured JSON entries:
 - `medium`: Missing documentation
 - `high`: Structural violations
 
-### Testing the Agent
-
-#### Unit Tests
-```powershell
-# Run agent tests
-Invoke-Pester tests/agent/SyncAgent.Tests.ps1
 
 # Run with verbose output
 Invoke-Pester tests/agent/SyncAgent.Tests.ps1 -OutputFormat Detailed
@@ -125,27 +119,25 @@ Invoke-Pester tests/agent/SyncAgent.Tests.ps1 -OutputFormat Detailed
 #### Integration Testing
 ```powershell
 # Test governance logging
+       }
+       ~
 .\test-governance.ps1
 
-# Test structural hygiene
+Get-Content ../governance/logs/wp_publish_log.jsonl -Tail 10 | ConvertFrom-Json
 # (Functions available in test suite)
 ```
 
 #### Manual Testing Checklist
 - [ ] Agent starts without parsing errors
-- [ ] File hash calculation works
+Check `governance/logs/wp_publish_log.jsonl` for sync confirmations
 - [ ] Log entries are properly formatted
 - [ ] Governance events are emitted
 - [ ] No scripts in root directory
 - [ ] Required directories exist
 
-## 🔧 Code Quality Standards
+All admin actions are automatically logged to `governance/logs/wp_publish_log.jsonl` with cryptographic signatures:
 
 ### Definition of Done
-
-All code contributions must meet these requirements before merging:
-
-- [ ] **No ESLint errors**: `npm run lint` passes without errors
 - [ ] **Type safety enforced**: `npm run build` compiles without type errors
 - [ ] **Tests pass**: `npm run test:ci` passes with >95% coverage
 - [ ] **Race condition testing**: `npm run test:race` passes
@@ -177,23 +169,11 @@ npm run build
 
 #### Common Issues and Solutions
 
-**❌ ESLint: Unexpected any type**
-```typescript
-// ❌ Bad
-const data: any = response.data;
 
 // ✅ Good
-interface ApiResponse {
-  id: string;
-  name: string;
   value: number;
 }
 const data: ApiResponse = response.data;
-```
-
-**❌ TypeScript: Property X does not exist on type Y**
-```typescript
-// ❌ Bad - implicit any
 const result = someFunction();
 
 // ✅ Good - explicit typing
@@ -204,8 +184,6 @@ const result: ExpectedType = someFunction();
 ```typescript
 // ❌ Bad
 import { UnusedType } from './types';
-const unusedVar = 'test';
-
 // ✅ Good - remove unused imports/variables
 // (Remove the import and variable if not needed)
 ```
@@ -253,9 +231,6 @@ Code quality events are automatically logged to `wp_publish_log.jsonl`:
 
 NeuroSwarm implements a secure, founder-only admin node for advanced governance control and observability. All contributors must understand its role, boundaries, and auditability requirements.
 
-**📖 Reference Documentation**: See `docs/admin/admin-node-design.md` for complete technical specifications, security model, and operational procedures.
-
-### Admin Node Boundaries
 
 **What the Admin Node Controls**:
 - Founder-only access to sensitive governance operations
@@ -269,8 +244,6 @@ NeuroSwarm implements a secure, founder-only admin node for advanced governance 
 - No contributor access to admin endpoints (`/v1/admin/*`)
 - All admin operations require multi-signature validation
 - Governance logs provide complete transparency
-- Admin node enhances, doesn't replace, community governance
-
 ### Auditability Requirements
 
 All admin actions are automatically logged to `wp_publish_log.jsonl` with cryptographic signatures:
@@ -286,13 +259,10 @@ All admin actions are automatically logged to `wp_publish_log.jsonl` with crypto
   "component": "admin-node",
   "governance_action": "logged"
 }
-```
 
 **Admin Event Types**:
-- `admin_action`: Any admin operation performed
 - `admin_authentication`: Multi-signature validation events
 - `admin_intervention`: Emergency governance actions
-- `admin_export`: Data export operations
 
 ### Blockchain Anchor
 
@@ -303,11 +273,6 @@ The Admin Node genesis is anchored to the Solana blockchain for immutable proof 
 **🔍 Quick Verification**:
 
 1. **Check Genesis Hash**:
-   ```bash
-   # Compute current genesis hash
-   sha256sum docs/admin-genesis.json
-   ```
-
 2. **Find Anchor Transaction**:
    - Check `wp_publish_log.jsonl` for latest `"action": "genesis-anchor"` entry
    - Extract `txSignature` and `hash` values
@@ -349,7 +314,6 @@ The Admin Node genesis is anchored to the Solana blockchain for immutable proof 
 ### Vercel Deployment Configuration
 
 The NeuroSwarm website is deployed to Vercel using GitHub Actions. To set up deployment, repository maintainers need to configure Vercel authentication secrets.
-
 #### Prerequisites
 - Vercel account with admin access to the NeuroSwarm project
 - GitHub repository admin access to configure secrets

@@ -7,6 +7,7 @@ Welcome to the NeuroSwarm Governance Transparency Dashboard! This page provides 
 - **[Governance Overview](../../docs/stories.md#governance--transparency)** - Learn about NeuroSwarm's governance framework and decision-making processes
 - **[Transparency Mechanisms](../../docs/stories.md#transparency-mechanisms)** - Understand how all activities are publicly auditable
 - **[Governance Logs](../../wp_publish_log.jsonl)** - Raw governance event data for transparency
+ - **[Governance Logs](../../governance/logs/wp_publish_log.jsonl)** - Raw governance event data for transparency
 
 ## 📊 Live Metrics Overview
 
@@ -51,7 +52,7 @@ Below is a live view of recent governance events. These events are automatically
 ### Recent Events
 
 <!-- This section is automatically updated by our governance monitoring system -->
-<!-- To view the raw log data, check wp_publish_log.jsonl -->
+<!-- To view the raw log data, check ../../governance/logs/wp_publish_log.jsonl -->
 
 | Timestamp | Action | File | Details |
 |-----------|--------|------|---------|
@@ -90,22 +91,22 @@ Our governance system ensures:
 ### Option 1: Command Line
 ```bash
 # View recent events
-tail -20 wp_publish_log.jsonl
+tail -20 ../../governance/logs/wp_publish_log.jsonl
 
 # Search for specific actions
-grep "moved" wp_publish_log.jsonl
+grep "moved" ../../governance/logs/wp_publish_log.jsonl
 
 # Pretty print JSON entries
-cat wp_publish_log.jsonl | jq .
+cat ../../governance/logs/wp_publish_log.jsonl | jq .
 ```
 
 ### Option 2: PowerShell
 ```powershell
 # View recent events
-Get-Content wp_publish_log.jsonl -Tail 20
+Get-Content ../../governance/logs/wp_publish_log.jsonl -Tail 20
 
 # Convert to readable format
-Get-Content wp_publish_log.jsonl | ConvertFrom-Json | Format-Table -AutoSize
+Get-Content ../../governance/logs/wp_publish_log.jsonl | ConvertFrom-Json | Format-Table -AutoSize
 ```
 
 ### Option 3: Web Dashboard (Future)
