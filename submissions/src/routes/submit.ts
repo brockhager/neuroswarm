@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import crypto from 'crypto';
+import { validateSubmissionPayload } from '../services/validation';
 
 export function createSubmissionRouter(deps: any): Router {
   const { safetyService, timelineService, anchorService, governanceLogger, logger } = deps;
@@ -13,6 +14,12 @@ export function createSubmissionRouter(deps: any): Router {
       }
 
       const payload = req.body;
+
+      // Validate payload schema
+      const validation = validateSubmissionPayload(payload);
+      if (!validation.valid) {
+        return res.status(400).json({ error: 'Invalid payload', details: validation.errors });
+      }
 
       // Validate required fields
       const contributorId = payload.contributorId;
@@ -61,7 +68,7 @@ export function createSubmissionRouter(deps: any): Router {
       });
 
       // Prepare submission anchor (this will create an anchor timeline entry handled by founder)
-      const anchorResult = anchorService.prepareSubmissionAnchor(sha256, contributorId, submissionType, metadata);
+      const anchorResult = anchorService.prepareSubmissionAnchor(sha256, contributorId, submissionType, metadata, timelineId);
 
       // Return response
       res.json({
