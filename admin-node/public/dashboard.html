@@ -303,6 +303,7 @@
         <div class="actions">
             <button class="btn" onclick="refreshData()">🔄 Refresh Status</button>
             <button class="btn secondary" onclick="runVerification()">✅ Run Verification</button>
+            <button class="btn secondary" onclick="sendDiscordOnboarding()">📢 Send Discord Onboarding</button>
             <a href="https://explorer.solana.com" target="_blank" class="btn secondary">🔍 Solana Explorer</a>
         </div>
     </div>
@@ -1272,6 +1273,37 @@
             }, 10000);
         });
 
+                async function sendDiscordOnboarding() {
+            if (!confirm('Send contributor onboarding guide to Discord?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/v1/observability/send-onboarding', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('✅ Onboarding guide sent to Discord successfully!');
+                } else {
+                    alert(`❌ Failed to send onboarding guide: ${result.error}`);
+                }
+
+            } catch (error) {
+                alert('❌ Error sending Discord onboarding: ' + error.message);
+            }
+        }
+
         // Make functions globally available
         window.refreshData = refreshData;
         window.runVerification = runVerification;
@@ -1285,6 +1317,7 @@
         window.runVerificationForEntry = runVerificationForEntry;
         window.resolveAlert = resolveAlert;
         window.checkForAlerts = checkForAlerts;
+        window.sendDiscordOnboarding = sendDiscordOnboarding;
         window.showTab = showTab;
     </script>
 </body>

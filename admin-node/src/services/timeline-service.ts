@@ -3,6 +3,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { logger } from '../index';
 import { governanceLogger } from './governance-logger';
+import { discordService } from './discord-service';
 
 export interface AnchorTimelineEntry {
   id: string;
@@ -102,6 +103,13 @@ export class TimelineService {
         actor: entry.actor,
         txSignature: entry.txSignature,
       }, entry.actor);
+
+      // Send Discord notification
+      if (process.env.NODE_ENV !== 'test') {
+        discordService.sendAnchorEvent(timelineEntry).catch(error => {
+          this.logger.error('Failed to send Discord notification for timeline entry:', error);
+        });
+      }
 
       return id;
     } catch (error) {
@@ -230,6 +238,21 @@ export class TimelineService {
         details,
       });
 
+      // Send Discord notification for verification results
+      if (status === 'verified' || status === 'failed') {
+        if (process.env.NODE_ENV !== 'test') {
+          discordService.sendVerificationResult({
+            txSignature: entry.txSignature || '',
+            action: entry.action,
+            result: status,
+            details: details ? Object.values(details).map(d => String(d)) : [],
+            verifiedBy: 'system', // TODO: Pass actual verifier
+          }).catch(error => {
+            this.logger.error('Failed to send Discord notification for verification:', error);
+          });
+        }
+      }
+
       return true;
     } catch (error) {
       this.logger.error('Failed to update timeline verification:', error);
@@ -286,6 +309,13 @@ export class TimelineService {
         title: alert.title,
         actor: alert.actor,
       }, alert.actor || 'system');
+
+      // Send Discord notification for alerts
+      if (process.env.NODE_ENV !== 'test') {
+        discordService.sendAlert(alertEntry).catch(error => {
+          this.logger.error('Failed to send Discord notification for alert:', error);
+        });
+      }
 
       return id;
     } catch (error) {

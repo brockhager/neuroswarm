@@ -364,19 +364,121 @@ All admin actions are logged to `wp_publish_log.jsonl` with:
 - Real-time data stream integration
 - Email/Slack alert notifications
 - Advanced timeline filtering and search
+- **Discord bot integration for real-time notifications** ✅
 - **Comprehensive testing and validation** ✅
 - Email/Slack alert notifications
 - Advanced timeline filtering and search
 - Multi-anchor history timeline view
 - Automated alerts system for verification failures
 
-## Deployment
+### Discord Bot Integration
 
-The admin node should be deployed with:
-- HSM access for cryptographic operations
-- Secure network isolation (founder-only access)
-- High availability and backup systems
-- Comprehensive monitoring and alerting
+The Admin Node includes real-time Discord notifications for governance events and contributor engagement.
+
+#### Discord Application Setup
+
+1. **Create Discord Application:**
+   - Go to [Discord Developer Portal](https://discord.com/developers/applications)
+   - Click "New Application" and name it "NeuroSwarm Admin"
+   - Go to "Bot" section and click "Add Bot"
+   - Copy the bot token for environment configuration
+
+2. **Bot Permissions:**
+   - Server Members Intent: ✅ Enabled
+   - Message Content Intent: ✅ Enabled
+   - Bot Permissions: Send Messages, Embed Links, Read Message History
+
+3. **Invite Bot to Server:**
+   ```
+   https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=68608&scope=bot
+   ```
+
+4. **Create Channel Structure:**
+   - `#genesis-anchors` - Anchoring events (genesis, rotations)
+   - `#verification-results` - Contributor verification outcomes
+   - `#governance-logs` - Immutable feed of governance actions
+   - `#alerts-critical` - High-severity alerts (verification failures)
+   - `#alerts-info` - Warnings and informational notices
+   - `#system-health` - Pre-startup health check and monitoring
+   - `#onboarding` - Guides for new contributors
+   - `#faq` - Common governance questions
+   - `#discussion` - General contributor chat
+   - `#timeline-feed` - Auto-posted entries from Governance Timeline
+   - `#audit-trail` - Signed records of all dashboard/API actions
+
+#### Environment Configuration
+
+Add Discord settings to your `.env` file:
+
+```bash
+# Discord Bot Configuration
+DISCORD_BOT_TOKEN=your-bot-token-here
+DISCORD_CHANNEL_GENESIS_ANCHORS=1234567890123456789
+DISCORD_CHANNEL_VERIFICATION_RESULTS=1234567890123456789
+DISCORD_CHANNEL_GOVERNANCE_LOGS=1234567890123456789
+DISCORD_CHANNEL_ALERTS_CRITICAL=1234567890123456789
+DISCORD_CHANNEL_ALERTS_INFO=1234567890123456789
+DISCORD_CHANNEL_SYSTEM_HEALTH=1234567890123456789
+DISCORD_CHANNEL_ONBOARDING=1234567890123456789
+DISCORD_CHANNEL_FAQ=1234567890123456789
+DISCORD_CHANNEL_DISCUSSION=1234567890123456789
+DISCORD_CHANNEL_TIMELINE_FEED=1234567890123456789
+DISCORD_CHANNEL_AUDIT_TRAIL=1234567890123456789
+```
+
+#### Discord Notification Types
+
+**Anchor Events:**
+- Posted when new governance actions are anchored
+- Includes transaction signatures and Solana Explorer links
+- Sent to `#genesis-anchors` and `#timeline-feed`
+
+**Verification Results:**
+- Posted when contributors verify governance actions
+- Shows pass/fail status with detailed results
+- Sent to `#verification-results`
+
+**Alerts:**
+- Critical alerts → `#alerts-critical`
+- Warning/Info alerts → `#alerts-info`
+- Include severity indicators and resolution status
+
+**System Health:**
+- Automated health check reports
+- Posted to `#system-health` channel
+- Includes admin node, logging, and blockchain status
+
+**Governance Logs:**
+- All governance actions logged with signatures
+- Posted to `#governance-logs` and `#audit-trail`
+- Immutable audit trail for transparency
+
+#### Discord API Endpoints
+
+```
+POST /v1/observability/send-onboarding  # Send onboarding guide to Discord
+GET  /v1/observability/discord-status   # Check Discord bot connection status
+```
+
+#### Testing Discord Integration
+
+1. **Check Bot Status:**
+   ```bash
+   curl -H "Authorization: Bearer YOUR_TOKEN" \
+        http://localhost:8080/v1/observability/discord-status
+   ```
+
+2. **Send Onboarding Guide:**
+   ```bash
+   curl -X POST \
+        -H "Authorization: Bearer YOUR_TOKEN" \
+        http://localhost:8080/v1/observability/send-onboarding
+   ```
+
+3. **Trigger Test Events:**
+   - Run genesis anchoring to test anchor notifications
+   - Manually resolve alerts to test alert notifications
+   - Run verification to test verification result notifications
 
 ## Contributing
 

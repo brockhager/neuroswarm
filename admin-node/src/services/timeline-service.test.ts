@@ -8,6 +8,9 @@ describe('TimelineService', () => {
   let timelineService: TimelineService;
 
   beforeEach(async () => {
+    // Ensure no private key is loaded for testing
+    process.env.GOVERNANCE_PRIVATE_KEY_PATH = '/nonexistent/path';
+
     // Clean up any existing test file
     try {
       await fs.unlink(testTimelinePath);
@@ -29,7 +32,7 @@ describe('TimelineService', () => {
     }
   });
 
-  test('should add and retrieve timeline entries', async () => {
+  test('should add and retrieve timeline entries', () => {
     const entry = {
       timestamp: new Date().toISOString(),
       action: 'genesis' as const,
@@ -44,9 +47,9 @@ describe('TimelineService', () => {
       details: { operation: 'anchor_genesis' }
     };
 
-    await timelineService.addAnchorEntry(entry);
+    timelineService.addAnchorEntry(entry);
 
-    const entries = await timelineService.getTimelineEntries();
+    const entries = timelineService.getTimelineEntries();
     expect(entries).toHaveLength(1);
     expect(entries[0].action).toBe('genesis');
     expect(entries[0].actor).toBe('founder');
@@ -55,7 +58,7 @@ describe('TimelineService', () => {
     expect(entries[0].signature).toBeUndefined();
   });
 
-  test('should add and resolve alerts', async () => {
+  test('should add and resolve alerts', () => {
     const alert = {
       timestamp: new Date().toISOString(),
       type: 'verification_failure' as const,
@@ -65,28 +68,28 @@ describe('TimelineService', () => {
       resolved: false
     };
 
-    const alertId = await timelineService.addAlert(alert);
+    const alertId = timelineService.addAlert(alert);
     expect(alertId).toBeDefined();
 
-    let alerts = await timelineService.getAlerts();
+    let alerts = timelineService.getAlerts();
     expect(alerts).toHaveLength(1);
     expect(alerts[0].severity).toBe('critical');
     expect(alerts[0].resolved).toBe(false);
 
-    await timelineService.resolveAlert(alertId, 'Test resolution');
+    timelineService.resolveAlert(alertId, 'Test resolution');
 
-    alerts = await timelineService.getAlerts({ resolved: false });
+    alerts = timelineService.getAlerts({ resolved: false });
     expect(alerts).toHaveLength(0); // Only unresolved alerts
 
-    const allAlerts = await timelineService.getAlerts();
+    const allAlerts = timelineService.getAlerts();
     expect(allAlerts).toHaveLength(1);
     expect(allAlerts[0].resolved).toBe(true);
     expect(allAlerts[0].resolution).toBe('Test resolution');
   });
 
-  test('should filter timeline entries', async () => {
+  test('should filter timeline entries', () => {
     // Add multiple entries
-    await timelineService.addAnchorEntry({
+    timelineService.addAnchorEntry({
       timestamp: new Date().toISOString(),
       action: 'genesis',
       actor: 'founder',
@@ -97,7 +100,7 @@ describe('TimelineService', () => {
       details: {}
     });
 
-    await timelineService.addAnchorEntry({
+    timelineService.addAnchorEntry({
       timestamp: new Date().toISOString(),
       action: 'key-rotation',
       actor: 'admin',
@@ -109,12 +112,12 @@ describe('TimelineService', () => {
     });
 
     // Filter by action
-    const genesisEntries = await timelineService.getTimelineEntries({ action: 'genesis' });
+    const genesisEntries = timelineService.getTimelineEntries({ action: 'genesis' });
     expect(genesisEntries).toHaveLength(1);
     expect(genesisEntries[0].action).toBe('genesis');
 
     // Filter by actor
-    const founderEntries = await timelineService.getTimelineEntries({ actor: 'founder' });
+    const founderEntries = timelineService.getTimelineEntries({ actor: 'founder' });
     expect(founderEntries).toHaveLength(1);
     expect(founderEntries[0].actor).toBe('founder');
   });
