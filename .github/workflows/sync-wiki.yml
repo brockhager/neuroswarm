@@ -18,12 +18,28 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Clone wiki repo
+      - name: Clone wiki repo (create if missing)
         env:
           REPO: ${{ github.repository }}
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git clone https://x-access-token:${TOKEN}@github.com/${REPO}.wiki.git wiki-repo
+          set -e
+          echo "Attempting to clone https://x-access-token:${TOKEN}@github.com/${REPO}.wiki.git"
+          if git clone https://x-access-token:${TOKEN}@github.com/${REPO}.wiki.git wiki-repo; then
+            echo "Cloned existing wiki repo"
+          else
+            echo "Wiki git repo not found; creating a fresh wiki repo and bootstrapping"
+            mkdir -p wiki-repo
+            cd wiki-repo
+            git init
+            git remote add origin https://x-access-token:${TOKEN}@github.com/${REPO}.wiki.git
+            git checkout -b main || git checkout -b master
+            echo "# ${REPO} Wiki" > README.md
+            git add README.md
+            git -c user.email='github-actions[bot]@users.noreply.github.com' -c user.name='github-actions[bot]' commit -m "chore(wiki): initial wiki creation"
+            git push --set-upstream origin HEAD
+            cd -
+          fi
 
       - name: Copy wiki files
         run: |
