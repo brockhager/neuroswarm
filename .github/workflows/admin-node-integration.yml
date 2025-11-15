@@ -91,7 +91,22 @@ jobs:
 
       - name: Run e2e tests
         run: |
-          NODE_ENV=test DISCORD_BOT_TOKEN="" npm run e2e:ci -- --workers=1
+          # Run Playwright tests producing both JSON (results) and HTML report.
+          mkdir -p playwright-results
+          set +e
+          NODE_ENV=test DISCORD_BOT_TOKEN="" npm run e2e:ci -- --workers=1 -- --reporter=json > playwright-results/results.json
+          E2E_EXIT_CODE=$?
+          set -e
+          # Generate HTML report (if Playwright produced report directory)
+          npx playwright show-report || true
+          # Preserve test exit code to fail build if tests failed
+          exit ${E2E_EXIT_CODE}
+        working-directory: ./admin-node
+
+      - name: Compute Playwright test summary
+        run: |
+          mkdir -p playwright-results
+          node -e "const fs=require('fs'); const path='playwright-results/results.json'; if(!fs.existsSync(path)){console.log('No JSON results file to parse.'); process.exit(0);} const r=JSON.parse(fs.readFileSync(path)); let passed=0, failed=0, skipped=0; function walk(s){ if(s.tests){ s.tests.forEach(t=>{ if(t.status==='passed') passed++; else if(t.status==='failed') failed++; else if(t.status==='skipped') skipped++; }) } if(s.suites) s.suites.forEach(walk); } walk(r); const sum={passed,failed,skipped}; fs.writeFileSync('playwright-results/summary.json', JSON.stringify(sum)); console.log(JSON.stringify(sum));"
         working-directory: ./admin-node
 
       - name: Generate Playwright HTML report (if test produced results)
@@ -117,7 +132,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-test-results
-          path: admin-node/test-results
+          path: |
+            admin-node/test-results
+            admin-node/playwright-results
 
       - name: Upload Playwright trace and screenshots
         if: always()
@@ -128,3 +145,38 @@ jobs:
             admin-node/**/trace
             admin-node/**/screenshot*
             admin-node/**/screenshots
+
+      - name: Comment PR with Playwright report and summary
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const runId = context.runId;
+            const resp = await github.rest.actions.listWorkflowRunArtifacts({ owner, repo, run_id: runId });
+            const report = resp.data.artifacts.find(a => a.name === 'playwright-report');
+            const resultsArt = resp.data.artifacts.find(a => a.name === 'playwright-test-results');
+            const reportUiUrl = report ? `https://github.com/${owner}/${repo}/suites/${runId}/artifacts/${report.id}` : null;
+            const reportDownload = report ? report.archive_download_url : null;
+            const resultsDownload = resultsArt ? resultsArt.archive_download_url : null;
+            const summaryPath = 'admin-node/playwright-results/summary.json';
+            let summary = null;
+            if (fs.existsSync(summaryPath)) {
+              try { summary = JSON.parse(fs.readFileSync(summaryPath)); } catch(e){ summary = null; }
+            }
+            let summaryLine = '';
+            if (summary) {
+              summaryLine = `**Summary**: ${summary.passed} passed, ${summary.failed} failed, ${summary.skipped} skipped`;
+            } else {
+              summaryLine = 'Playwright summary not available.';
+            }
+            const prNumber = context.payload.pull_request.number;
+            const bodyParts = [`:robot: Playwright artifacts uploaded for this run.`, summaryLine];
+            if (reportUiUrl) bodyParts.push(`- [View HTML Report](${reportUiUrl})`);
+            if (reportDownload) bodyParts.push(`- [Download HTML Report (zip)](${reportDownload})`);
+            if (resultsDownload) bodyParts.push(`- [Download Test Results (zip)](${resultsDownload})`);
+            const commentBody = bodyParts.join('\n');
+            await github.rest.issues.createComment({ owner, repo, issue_number: prNumber, body: commentBody });
