@@ -44,6 +44,20 @@ jobs:
       - name: Copy wiki files
         run: |
           rm -rf wiki-repo/* || true
+          # Update Last updated timestamps in each wiki source file based on last commit date
+          for f in docs/wiki/*.md; do
+            # Get ISO 8601 commit date for the file's last commit
+            d=$(git log -1 --format=%cI -- "$f" || true)
+            if [ -z "$d" ]; then
+              d=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+            fi
+            # Replace existing Last updated line or append it
+            if grep -q "^Last updated:" "$f"; then
+              sed -i "s/^Last updated:.*$/Last updated: $d/" "$f"
+            else
+              echo -e "\nLast updated: $d" >> "$f"
+            fi
+          done
           cp -r docs/wiki/* wiki-repo/
 
       - name: Commit and push
