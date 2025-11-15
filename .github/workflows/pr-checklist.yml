@@ -121,12 +121,89 @@ jobs:
             cp -r playwright-report/* temp-site/playwright-reports/${{ github.run_id }} || true
           fi
 
-      - name: Publish Playwright report to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          personal_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: temp-site
+      - name: Install jq
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Clone or create gh-pages branch
+        env:
+          REPO: ${{ github.repository }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          echo "Cloning or creating gh-pages branch"
+          git clone https://x-access-token:${TOKEN}@github.com/${REPO}.git gh-pages-repo
+          cd gh-pages-repo
+          if git show-ref --verify --quiet refs/heads/gh-pages; then
+            git checkout gh-pages
+            git pull origin gh-pages
+          else
+            git checkout --orphan gh-pages
+            git rm -rf . || true
+            mkdir -p playwright-reports
+            echo "<html><body><h1>Playwright Reports</h1></body></html>" > index.html
+            git add index.html
+            git commit -m "chore(pages): init gh-pages branch"
+            git push --set-upstream origin gh-pages
+          fi
+          cd ..
+
+      - name: Copy report and build meta
+        env:
+          RUN_ID: ${{ github.run_id }}
+          PR_NUMBER: ${{ github.event.pull_request.number || '' }}
+        run: |
+          set -e
+          mkdir -p temp-site/playwright-reports/${RUN_ID}
+          if [ -d "playwright-report" ]; then
+            cp -r playwright-report/* temp-site/playwright-reports/${RUN_ID}/ || true
+          fi
+          if [ -f "admin-node/playwright-results/summary.json" ]; then
+            cp admin-node/playwright-results/summary.json temp-site/playwright-reports/${RUN_ID}/summary.json || true
+          fi
+          PR_NUMBER=${PR_NUMBER:-}
+          TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "{\"runId\": \"${RUN_ID}\", \"prNumber\": \"${PR_NUMBER}\", \"timestamp\": \"${TIMESTAMP}\"}" > temp-site/playwright-reports/${RUN_ID}/meta.json
+
+      - name: Merge and purge old reports on gh-pages
+        env:
+          KEEP_LAST: 30
+          REPO: ${{ github.repository }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          cd gh-pages-repo
+          mkdir -p playwright-reports
+          cp -r ../temp-site/playwright-reports/* playwright-reports/ || true
+          echo "Purging old reports, keeping last $KEEP_LAST"
+          cd playwright-reports
+          ls -1t | awk -v keep=$KEEP_LAST 'NR>keep{print $0}' | xargs -r rm -rf || true
+          cd ..
+          # Rebuild index.html using meta.json
+          echo "<html><head><meta charset=\"utf-8\"><title>Playwright Reports</title></head><body><h1>Playwright Reports</h1><ul>" > index.html
+          for d in $(ls -1t playwright-reports); do
+            if [ -d "playwright-reports/$d" ]; then
+              meta="playwright-reports/$d/meta.json"
+              if [ -f "$meta" ]; then
+                title=$(jq -r '.runId' $meta)
+                pr=$(jq -r '.prNumber' $meta)
+                ts=$(jq -r '.timestamp' $meta)
+              else
+                title=$d
+                pr=""
+                ts=""
+              fi
+              echo "<li><a href=\"playwright-reports/$d/index.html\">$title</a> - PR: $pr - $ts</li>" >> index.html
+            fi
+          done
+          echo "</ul></body></html>" >> index.html
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to gh-pages"
+          else
+            git commit -m "chore(pages): deploy playwright report and update index"
+            git push
+          fi
 
       - name: Comment PR with GitHub Pages report link
         if: github.event_name == 'pull_request'
