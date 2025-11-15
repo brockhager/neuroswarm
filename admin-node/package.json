@@ -9,7 +9,10 @@
     "dev": "ts-node src/index.ts",
     "test": "jest",
     "lint": "eslint src/**/*.ts",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "health-check": "ts-node scripts/health-check.ts",
+    "anchor-genesis": "ts-node scripts/anchor-genesis.ts",
+    "verify-genesis": "ts-node scripts/verify-genesis.ts"
   },
   "dependencies": {
     "@solana/web3.js": "^1.87.6",
