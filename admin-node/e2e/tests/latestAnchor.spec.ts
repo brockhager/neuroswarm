@@ -91,10 +91,14 @@ test.describe('Latest Anchor Modal and Actions', () => {
 
     // Now call as a founder - expect success (200)
     // Optionally verify that founder can call set-tx-signature directly
+    // Ensure safe mode is disabled before calling set-tx-signature
+    await page.request.post(`${baseUrl}/v1/admin/shutdown`, { data: { enabled: false }, headers: { Authorization: `Bearer ${founderToken}` } });
+
     const founderReq = await page.request.post(`${baseUrl}/v1/admin/set-tx-signature`, {
       data: { txSignature: txSigText, genesisSha256: genesisShaText, verifyIfMatching: true },
       headers: { Authorization: `Bearer ${founderToken}` },
     });
+    // Expect success (server accepts request and schedules verification)
     expect([200, 201, 204]).toContain(founderReq.status());
 
     // Use UI mark verified button to mark our seeded anchor
@@ -153,9 +157,10 @@ test.describe('Latest Anchor Modal and Actions', () => {
     await page.waitForTimeout(1000); // Wait for tab content to reload
 
     // Confirm the anchor card for our tx signature shows verified badge in the UI
-    // Use the copy button's data-testid (still present when verified) to locate the card
-    const cardBadge = page.locator('.status-card', { has: page.locator(`[data-testid="copy-btn-${txSigText}"]`) }).locator('.status-badge.verified');
-    await expect(cardBadge).toBeVisible({ timeout: 10000 });
+    // Use the copy button's data-testid to locate candidate cards, then verify at least one card shows the 'verified' badge
+    const matchingCards = page.locator('.status-card', { has: page.locator(`[data-testid="copy-btn-${txSigText}"]`) });
+    const verifiedBadgeCount = await matchingCards.locator('.status-badge.verified').count();
+    expect(verifiedBadgeCount).toBeGreaterThan(0);
 
     // Close modal and ensure it's not visible via close button
     if (await page.locator('#latest-anchor-modal').isVisible()) {

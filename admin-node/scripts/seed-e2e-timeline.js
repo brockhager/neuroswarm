@@ -4,6 +4,8 @@ const path = require('path');
 const { randomUUID, createHash } = require('crypto');
 
 const timelinePath = path.join(__dirname, '..', 'governance-timeline.jsonl');
+// Also write to the repository root path so AnchorService (which expects ../governance-timeline.jsonl) reads seeded entries
+const workspaceRootTimelinePath = path.join(__dirname, '..', '..', 'governance-timeline.jsonl');
 
 // Compute the actual genesis hash from admin-genesis.json
 const genesisPath = path.join(__dirname, '..', '..', 'docs', 'admin', 'admin-genesis.json');
@@ -29,6 +31,14 @@ if (fs.existsSync(timelinePath)) {
 }
 content = content + JSON.stringify(entry) + '\n';
 fs.writeFileSync(timelinePath, content, 'utf8');
+// Also write a copy to the workspace root timeline path for services that read from ../governance-timeline.jsonl
+// This ensures seeded data is available where AnchorService expects it in tests/CI
+let rootContent = '';
+if (fs.existsSync(workspaceRootTimelinePath)) {
+  rootContent = fs.readFileSync(workspaceRootTimelinePath, 'utf8');
+}
+rootContent = rootContent + JSON.stringify(entry) + '\n';
+fs.writeFileSync(workspaceRootTimelinePath, rootContent, 'utf8');
 console.log('Seeded e2e timeline entry:', entry.id);
 
 process.exit(0);

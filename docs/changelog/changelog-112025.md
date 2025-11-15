@@ -109,6 +109,16 @@ node scripts/seed-e2e-timeline.js
   - Added `console.log` debug helpers inside E2E tests to log UI-extracted signatures, polling attempts and responses to speed up triage.
   - `admin-node/src/services/anchor-service.ts` refresh: made parsing robust across historical field variations (e.g. `tx_signature`, `txSignature`, top-level and `details`), and adjusted the result shape to consistently provide `txSignature`, `verificationStatus`, `fingerprints`, and `explorerUrl` for the UI consumer.
 
+## Other updates in this session
+
+- Added `SafetyService` and `POST /v1/admin/shutdown` endpoint to enable emergency maintenance/safe mode for the Admin Node — includes integrations with `set-tx-signature` to avoid changes when safe mode is active.
+- Added integration test `src/integration/shutdown.test.ts` to validate shutdown mode toggling and enforcement.
+- `admin-node/scripts/seed-e2e-timeline.js` now writes timeline entries to the repository root as well as `admin-node/` for improved service compatibility.
+- Added e2e CI seed step to `neuroswarm/.github/workflows/admin-node-integration.yml` so timeline is seeded before Playwright runs.
+- Added `docs/onboarding/contributor-onboarding.md` with a lightweight contributor onboarding flow, assessment tasks, and starter tasks for new contributors.
+- Documented API rate limiting and abuse prevention design in `docs/security/api-rate-limiting.md`.
+- Documented initial contributor reputation system design in `docs/governance/reputation-system.md`.
+
 
 ## Notes & Acknowledgements
 - This work included multiple debug iterations to identify mismatched data (seed data vs. expected test data) and a fix to ensure consistency across the UI, backend, and e2e tests.

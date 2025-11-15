@@ -23,6 +23,7 @@ NeuroSwarm is a decentralized AI platform where personal AI agents run locally o
 Key design and developer docs (in the `docs/` folder):
 
 - [Docs index](docs/README.md)
+ - [Contributor onboarding](docs/onboarding/contributor-onboarding.md)
 
 
 

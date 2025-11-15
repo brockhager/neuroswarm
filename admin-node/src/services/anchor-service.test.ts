@@ -154,6 +154,30 @@ describe('AnchorService.getLatestAnchor', () => {
     expect(['failed', 'verified', 'pending']).toContain(status.verificationStatus);
   });
 
+  test('getGovernanceAnchoringStatus returns anchors with expected fields and respects verificationStatus', async () => {
+    // Add a timeline entry with a top-level txSignature and verificationStatus verified
+    timelineService.addAnchorEntry({
+      timestamp: new Date().toISOString(),
+      action: 'genesis',
+      actor: 'founder',
+      txSignature: 'ANCHOR_SIG',
+      memoContent: 'anchor for status test',
+      fingerprints: { genesis_sha256: 'TEST_HASH' },
+      verificationStatus: 'verified',
+      details: {}
+    });
+
+    const status = await anchorService.getGovernanceAnchoringStatus();
+    expect(status).toBeTruthy();
+    expect(Array.isArray(status.anchors)).toBe(true);
+    const found = status.anchors.find((a: any) => a.txSignature === 'ANCHOR_SIG');
+    expect(found).toBeTruthy();
+    if (found) {
+      expect(found.verificationStatus).toBe('verified');
+      expect(found.explorerUrl).toContain('ANCHOR_SIG');
+    }
+  });
+
   test('handles missing timeline file gracefully', async () => {
     // Remove timeline file if exists
     const timelinePath = path.join(process.cwd(), '..', 'governance-timeline.jsonl');
