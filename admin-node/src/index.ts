@@ -18,6 +18,8 @@ import { adminRoutes } from './routes/admin';
 import { createSubmissionsRouter } from '../../submissions/src/index';
 import { requireContributor } from './middleware/auth';
 import { observabilityRoutes } from './routes/observability';
+import { safetyService } from './services/safety-service';
+import { timelineService } from './services/timeline-service';
 import { chatRoutes } from './routes/chat';
 import { anchorService } from './services/anchor-service';
 import { createGovernanceLogger, governanceLogger } from './services/governance-logger';

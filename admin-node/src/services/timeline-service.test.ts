@@ -122,6 +122,30 @@ describe('TimelineService', () => {
     expect(founderEntries[0].actor).toBe('founder');
   });
 
+  test('should add a submission timeline entry', () => {
+    const submissionId = timelineService.addSubmissionEntry({
+      timestamp: new Date().toISOString(),
+      action: 'submission',
+      actor: 'contributor-1',
+      fingerprints: { submission_sha256: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef' },
+      verificationStatus: 'pending',
+      details: { submissionType: 'file' },
+      contributorId: 'contributor-1',
+      submissionType: 'file',
+      sha256: 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef',
+      anchored: false,
+    });
+
+    expect(submissionId).toBeDefined();
+
+    const entries = timelineService.getTimelineEntries();
+    const found = entries.find(e => e.id === submissionId);
+    expect(found).toBeDefined();
+    expect(found?.action).toBe('submission');
+    expect((found as any).contributorId).toBe('contributor-1');
+    expect((found as any).sha256).toBe('deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef');
+  });
+
   test('should set tx signature and verify an entry by genesis hash or id', () => {
     const fingerprint = { genesis_sha256: 'verify-123' };
 

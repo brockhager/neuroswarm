@@ -3,6 +3,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { logger } from '../index';
 import { governanceLogger } from './governance-logger';
+import { getGovernanceTimelinePath, getGovernanceAlertsPath } from '../utils/paths';
 import { discordService } from '../../../discord/src/discord-service';
 
 export interface AnchorTimelineEntry {
@@ -49,8 +50,8 @@ export class TimelineService {
 
   constructor(logger?: any, timelinePath?: string, alertsPath?: string) {
     this.logger = logger || console;
-    this.timelinePath = timelinePath || path.join(process.cwd(), '..', 'governance-timeline.jsonl');
-    this.alertsPath = alertsPath || path.join(process.cwd(), '..', 'governance-alerts.jsonl');
+    this.timelinePath = timelinePath || getGovernanceTimelinePath();
+    this.alertsPath = alertsPath || getGovernanceAlertsPath();
 
     // Load private key for signing
     const keyPath = process.env.GOVERNANCE_PRIVATE_KEY_PATH;
@@ -98,6 +99,8 @@ export class TimelineService {
 
     // Write to timeline file (append-only)
     try {
+      const dir = path.dirname(this.timelinePath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       const line = JSON.stringify(timelineEntry) + '\n';
       fs.appendFileSync(this.timelinePath, line);
 
@@ -159,6 +162,8 @@ export class TimelineService {
     }
 
     try {
+      const dir = path.dirname(this.timelinePath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       const line = JSON.stringify(timelineEntry) + '\n';
       fs.appendFileSync(this.timelinePath, line);
 
@@ -467,6 +472,8 @@ export class TimelineService {
 
     // Write to alerts file
     try {
+      const dir = path.dirname(this.alertsPath);
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
       const line = JSON.stringify(alertEntry) + '\n';
       fs.appendFileSync(this.alertsPath, line);
 

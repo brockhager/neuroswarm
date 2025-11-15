@@ -201,3 +201,32 @@ export const requireFounder = (req: Request, res: Response, next: NextFunction):
 
   next();
 };
+
+// Middleware to check for contributor role (or higher)
+export const requireContributor = (req: Request, res: Response, next: NextFunction): void => {
+  if (!req.user) {
+    res.status(401).json({ error: 'Authentication required' });
+    return;
+  }
+
+  const allowedRoles = ['contributor', 'admin', 'founder'];
+  if (!allowedRoles.includes(req.user.role)) {
+    logger.warn('Contributor permission required', {
+      userId: req.user.id,
+      role: req.user.role,
+      path: req.path
+    });
+
+    governanceLogger.log('permission_denied', {
+      userId: req.user.id,
+      role: req.user.role,
+      required: 'contributor',
+      path: req.path
+    });
+
+    res.status(403).json({ error: 'Contributor or higher role required' });
+    return;
+  }
+
+  next();
+};

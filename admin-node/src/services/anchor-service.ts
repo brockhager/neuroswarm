@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { logger } from '../index';
 import { governanceLogger } from './governance-logger';
 import { timelineService } from './timeline-service';
+import { getGovernanceTimelinePath, getWorkspaceRoot } from '../utils/paths';
 
 export interface AnchorStatus {
   timestamp: string;
@@ -38,7 +39,7 @@ export class AnchorService {
     } else {
       this.genesisFile = path.join(process.cwd(), '..', 'docs', 'admin-genesis.json');
     }
-    this.logFile = path.join(process.cwd(), '..', 'governance-timeline.jsonl');
+    this.logFile = getGovernanceTimelinePath();
     this.scriptsDir = path.join(process.cwd(), '..', 'scripts');
     if (logger && typeof (logger as any).info === 'function') {
       (logger as any).info(`AnchorService initialized - genesisFile: ${this.genesisFile}, logFile: ${this.logFile}`);
