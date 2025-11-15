@@ -19,6 +19,9 @@
     "discord-status": "ts-node ../discord/src/discord-status.ts",
     "organize-discord": "ts-node ../discord/src/organize-discord.ts",
     "verify-governance": "ts-node scripts/verify-governance.ts"
+    ,
+    "e2e": "playwright test --project=chromium",
+    "e2e:ci": "playwright test --project=chromium --reporter=github"
   },
   "dependencies": {
     "@solana/web3.js": "^1.87.6",
@@ -51,6 +54,8 @@
     "supertest": "^6.3.4",
     "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
+    "@playwright/test": "1.56.1",
+    "cross-env": "^7.0.3",
     "typescript": "^5.3.3"
   },
   "keywords": [
@@ -72,6 +77,7 @@
       "src/**/*.ts",
       "!src/**/*.d.ts"
     ],
-    "forceExit": true
+    "forceExit": true,
+    "testPathIgnorePatterns": ["<rootDir>/e2e/"]
   }
 }
