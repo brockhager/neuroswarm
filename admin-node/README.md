@@ -33,12 +33,23 @@ The Admin Node provides a secure, founder-only interface for monitoring NeuroSwa
 - `POST /v1/admin/restore` - Emergency system restore
 - `GET /v1/admin/logs` - Recent governance logs
 - `POST /v1/admin/config` - Update system configuration
+- `POST /v1/admin/anchor-genesis` - Execute genesis anchoring (API)
+- `GET /v1/admin/verify-genesis/:txSig` - Execute genesis verification (API)
+- `POST /v1/admin/rotate-founder-key` - Execute founder key rotation (API)
+- `GET /v1/admin/validate-genesis-config` - Validate genesis configuration integrity (API)
 
 ### Observability (Admin Access)
 - `GET /v1/observability/consensus` - Consensus monitoring data
 - `GET /v1/observability/tokenomics` - Tokenomics monitoring data
 - `GET /v1/observability/communication` - Agent communication monitoring
 - `GET /v1/observability/metrics` - General system metrics
+- `GET /v1/observability/anchor-status` - Blockchain anchor verification status
+- `GET /v1/observability/nodes` - Network nodes overview
+- `GET /v1/observability/governance-anchoring` - Governance anchoring status
+- `GET /v1/observability/governance-timeline` - Governance anchoring timeline
+- `GET /v1/observability/governance-alerts` - Governance alerts and notifications
+- `POST /v1/observability/governance-alerts/:alertId/resolve` - Resolve governance alerts
+- `POST /v1/observability/check-alerts` - Manually trigger alert checking
 
 ## Security Model
 
@@ -113,33 +124,208 @@ Example output:
 🚀 Admin Node is ready to start!
 ```
 
-### Genesis Anchoring (Blockchain Verification)
+### Governance Anchoring (Blockchain Verification)
 
-NeuroSwarm anchors founder keys and genesis configuration to Solana blockchain for public verification:
+NeuroSwarm implements a comprehensive governance ritual system that anchors all critical governance actions to the Solana blockchain for public verification and transparency.
 
-#### Generate Fingerprints
+#### Supported Anchor Types
+
+- **Genesis**: Founder keys and genesis configuration
+- **Key Rotation**: Cryptographic key updates and transitions
+- **Policy Update**: Governance policy and configuration changes
+
+#### Governance Ritual Commands
+
+```bash
+# Genesis anchoring (initial setup)
+npm run anchor-governance genesis
+
+# Key rotation anchoring
+npm run anchor-governance key-rotation --new-key=./new-key.pem --old-key=./old-key.pem
+
+# Policy update anchoring
+npm run anchor-governance policy-update --policy-file=./policy.json
+```
+
+#### Verification Workflow
+
+Contributors can independently verify any governance action:
+
+```bash
+# Verify genesis integrity
+npm run verify-governance <TRANSACTION_SIGNATURE> genesis
+
+# Verify key rotation
+npm run verify-governance <TRANSACTION_SIGNATURE> key-rotation --new-key=./new-key.pem --old-key=./old-key.pem
+
+# Verify policy update
+npm run verify-governance <TRANSACTION_SIGNATURE> policy-update --policy-file=./policy.json
+```
+
+#### Ritual Process
+
+1. **Preparation**: Generate fingerprints for the governance action
+2. **Anchoring**: Execute Solana memo transaction with fingerprints
+3. **Logging**: Record action in governance logs with transaction signature
+4. **Verification**: Contributors verify fingerprints match blockchain data
+5. **Transparency**: All actions publicly auditable on Solana explorer
+
+#### Dashboard Integration
+
+The admin dashboard provides:
+- Real-time anchoring status for all governance actions
+- One-click verification command copying
+- Interactive anchoring workflow buttons
+- Alert system for failed or stale anchors
+- **Key Rotation**: Automated key rotation workflow with new keypair generation
+- **Config Validation**: Real-time genesis configuration integrity checking
+- **Governance Timeline**: Complete history of all anchoring events with verification status
+- **Automated Alerts**: Real-time notifications for verification failures and system issues
+
+#### Dashboard Tabs
+
+**Anchor Status**: Current blockchain anchor verification status and system health
+**Governance Timeline**: Historical view of all governance anchoring events with filtering and verification
+**Alerts**: Active alerts with resolution workflow and severity indicators  
+**Governance Anchoring**: Active anchoring operations and available actions
+**Node Overview**: Network node status and connectivity information
+
+#### Dashboard-Based Anchoring (Recommended)
+
+The admin dashboard provides one-click anchoring and verification:
+
+**Genesis Anchoring:**
+1. Navigate to "Governance Anchoring" tab
+2. Click "🏛️ Anchor Genesis" button
+3. Execute the displayed Solana CLI command manually
+4. Update governance logs with transaction signature
+
+**Genesis Verification:**
+1. Click "✅ Verify Genesis" button
+2. Enter transaction signature when prompted
+3. View verification results and Solana Explorer link
+
+**Key Rotation:**
+1. Click "🔄 Rotate Founder Key" button
+2. Execute the displayed Solana CLI command manually
+3. Update governance logs with transaction signature
+4. Update environment configuration with new key paths
+
+**Config Validation:**
+1. Click "🔍 Validate Config" button
+2. Review validation results and field-by-field analysis
+3. Address any configuration issues identified
+
+#### Governance Timeline
+
+The Governance Timeline provides a complete, immutable history of all anchoring events:
+
+**Features:**
+- Chronological display of all governance actions (genesis, key rotations, policy updates)
+- Verification status tracking (verified, failed, pending, error)
+- Actor identification and timestamp logging
+- Direct Solana Explorer links for each transaction
+- One-click verification for any timeline entry
+- Filtering by action type, actor, and verification status
+
+**Timeline Data Structure:**
+```json
+{
+  "id": "uuid",
+  "timestamp": "2025-11-14T10:30:00Z",
+  "action": "genesis",
+  "actor": "founder",
+  "txSignature": "abc123...",
+  "memoContent": "NeuroSwarm Genesis Anchor",
+  "fingerprints": {
+    "genesis_sha256": "a1b2c3...",
+    "founder_pub_sha256": "d4e5f6..."
+  },
+  "verificationStatus": "verified",
+  "explorerUrl": "https://explorer.solana.com/tx/abc123",
+  "details": { "scriptOutput": "...", "operation": "anchor_genesis" },
+  "signature": "signature..."
+}
+```
+
+#### Automated Alerts System
+
+The alerts system provides proactive monitoring and notification of governance issues:
+
+**Alert Types:**
+- **Verification Failures**: Hash mismatches or blockchain verification errors
+- **Configuration Errors**: Missing or invalid genesis configuration files
+- **Security Alerts**: Unauthorized anchoring attempts or key validation failures
+- **System Warnings**: Stale anchors, connectivity issues, or performance degradation
+
+**Alert Severities:**
+- **Critical**: Immediate action required (verification failures, security breaches)
+- **Warning**: Attention needed (stale data, configuration issues)
+- **Info**: Informational notifications (system events, status updates)
+
+**Alert Resolution Workflow:**
+1. Alerts appear in the "Alerts" dashboard tab with severity indicators
+2. Click "✅ Mark as Resolved" to resolve alerts with optional resolution notes
+3. Resolved alerts are archived but remain in the timeline for audit purposes
+4. Manual alert checking available via "🔄 Check for New Alerts" button
+
+**Automatic Alert Triggers:**
+- Genesis anchor verification failures
+- Missing genesis configuration files
+- Anchors older than 30 days (stale anchor warnings)
+- System health check failures
+- Unauthorized access attempts
+
+#### CLI-Based Anchoring (Advanced)
+
+For direct CLI usage, the scripts are still available:
+
 ```bash
 npm run anchor-genesis
-```
-
-This creates SHA-256 fingerprints of:
-- Founder public key (founder.jwt.pub)
-- Admin Node public key (admin-node.jwt.pub)
-- Genesis configuration (admin-genesis.json)
-
-#### Manual Blockchain Anchoring
-Execute the generated Solana CLI command:
-```bash
-solana transfer --allow-unfunded-recipient --memo "<fingerprint_json>" <FOUNDER_KEYPAIR> <RECIPIENT> 0.000000001
-```
-
-#### Verify Genesis Integrity
-Contributors can verify fingerprints against blockchain:
-```bash
 npm run verify-genesis <TRANSACTION_SIGNATURE>
 ```
 
-This fetches the memo from Solana and compares hashes locally.
+#### Key Rotation Workflow
+
+1. Generate new key pair with `generate-admin-node-keys.js`
+2. Test new keys in staging environment
+3. Run key rotation anchoring: `npm run anchor-governance key-rotation --new-key=./new-key.pem --old-key=./old-key.pem`
+4. Execute Solana transaction and update governance logs
+5. Update `.env` with new key paths
+6. Restart admin node with `npm run health-check`
+7. Verify rotation: `npm run verify-governance <TX_SIG> key-rotation`
+
+#### Recovery Procedures
+
+**If anchoring fails:**
+1. Check Solana CLI configuration: `solana config get`
+2. Verify funded account: `solana balance`
+3. Retry anchoring with same command
+4. If persistent, check key file permissions and formats
+
+**If verification fails:**
+1. Regenerate local fingerprints
+2. Compare with blockchain data manually
+3. Check for file corruption or tampering
+4. Contact NeuroSwarm team if mismatch persists
+
+#### Contributor Checklist
+
+- [ ] Run `npm run health-check` before any governance action
+- [ ] Execute anchoring command and complete Solana transaction
+- [ ] Update governance logs with actual transaction signature
+- [ ] Run `npm run verify-governance <TX_SIG> <TYPE>` to confirm
+- [ ] Run config validation to ensure genesis integrity
+- [ ] Share verification results with the community
+
+#### Transparency Standards
+
+All governance actions are recorded with:
+- SHA-256 fingerprints of all affected files/keys
+- Complete transaction signatures on Solana mainnet
+- Cryptographically signed governance log entries
+- Public verification commands for all contributors
+- Timestamped audit trails for forensic analysis
 
 ### Testing
 ```bash
@@ -164,12 +350,25 @@ All admin actions are logged to `wp_publish_log.jsonl` with:
 - Admin and observability route structures
 - Secure configuration management
 - Health check and error handling
+- **Genesis anchoring and verification API endpoints**
+- **Founder key rotation workflow API**
+- **Genesis configuration validation API**
+- **Dashboard UI with governance ritual controls**
+- **Governance timeline service with persistent storage**
+- **Automated alerts system with severity levels**
+- **Timeline and alerts dashboard tabs**
+- **One-click verification and alert resolution**
 
 🔄 **In Progress:**
 - HSM client integration for key operations
-- Dashboard UI framework implementation
 - Real-time data stream integration
-- Comprehensive testing and validation
+- Email/Slack alert notifications
+- Advanced timeline filtering and search
+- **Comprehensive testing and validation** ✅
+- Email/Slack alert notifications
+- Advanced timeline filtering and search
+- Multi-anchor history timeline view
+- Automated alerts system for verification failures
 
 ## Deployment
 

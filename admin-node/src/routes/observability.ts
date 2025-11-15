@@ -3,6 +3,7 @@ import { requireAdmin } from '../middleware/auth';
 import { governanceLogger } from '../services/governance-logger';
 import { logger } from '../index';
 import { anchorService } from '../services/anchor-service';
+import { timelineService } from '../services/timeline-service';
 
 const router = Router();
 
@@ -268,6 +269,207 @@ router.get('/nodes', requireAdmin, async (req: Request, res: Response) => {
     logger.error('Nodes observability error:', error);
     res.status(500).json({
       error: 'Failed to retrieve nodes data',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// GET /v1/observability/governance-anchoring - Governance anchoring status
+router.get('/governance-anchoring', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+
+    governanceLogger.logAdminAction('observability_query', userId, {
+      stream: 'governance-anchoring',
+      endpoint: '/v1/observability/governance-anchoring',
+    });
+
+    // Get governance anchoring data from service
+    const anchoringData = await anchorService.getGovernanceAnchoringStatus();
+
+    res.json(anchoringData);
+  } catch (error) {
+    logger.error('Governance anchoring observability error:', error);
+    res.status(500).json({
+      error: 'Failed to retrieve governance anchoring data',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// GET /v1/observability/governance-timeline - Governance anchoring timeline
+router.get('/governance-timeline', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+
+    governanceLogger.logAdminAction('observability_query', userId, {
+      stream: 'governance-timeline',
+      endpoint: '/v1/observability/governance-timeline',
+    });
+
+    // Parse query parameters
+    const options = {
+      limit: req.query.limit ? parseInt(req.query.limit as string) : 50,
+      offset: req.query.offset ? parseInt(req.query.offset as string) : 0,
+      action: req.query.action as string,
+      actor: req.query.actor as string,
+      verificationStatus: req.query.verificationStatus as string,
+      startDate: req.query.startDate as string,
+      endDate: req.query.endDate as string,
+    };
+
+    // Get timeline entries
+    const timelineEntries = timelineService.getTimelineEntries(options);
+
+    // Get summary statistics
+    const allEntries = timelineService.getTimelineEntries({ limit: 1000 });
+    const summary = {
+      total: allEntries.length,
+      verified: allEntries.filter(e => e.verificationStatus === 'verified').length,
+      failed: allEntries.filter(e => e.verificationStatus === 'failed').length,
+      pending: allEntries.filter(e => e.verificationStatus === 'pending').length,
+      byAction: {} as Record<string, number>,
+    };
+
+    // Count by action type
+    allEntries.forEach(entry => {
+      summary.byAction[entry.action] = (summary.byAction[entry.action] || 0) + 1;
+    });
+
+    const response = {
+      timestamp: new Date().toISOString(),
+      summary,
+      entries: timelineEntries,
+      pagination: {
+        limit: options.limit,
+        offset: options.offset,
+        hasMore: timelineEntries.length === options.limit,
+      },
+    };
+
+    res.json(response);
+  } catch (error) {
+    logger.error('Governance timeline observability error:', error);
+    res.status(500).json({
+      error: 'Failed to retrieve governance timeline',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// GET /v1/observability/governance-alerts - Governance alerts
+router.get('/governance-alerts', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+
+    governanceLogger.logAdminAction('observability_query', userId, {
+      stream: 'governance-alerts',
+      endpoint: '/v1/observability/governance-alerts',
+    });
+
+    // Parse query parameters
+    const options = {
+      limit: req.query.limit ? parseInt(req.query.limit as string) : 50,
+      offset: req.query.offset ? parseInt(req.query.offset as string) : 0,
+      type: req.query.type as string,
+      severity: req.query.severity as string,
+      resolved: req.query.resolved ? req.query.resolved === 'true' : undefined,
+      startDate: req.query.startDate as string,
+      endDate: req.query.endDate as string,
+    };
+
+    // Get alerts
+    const alerts = timelineService.getAlerts(options);
+
+    // Get summary
+    const summary = timelineService.getActiveAlertsSummary();
+
+    const response = {
+      timestamp: new Date().toISOString(),
+      summary,
+      alerts,
+      pagination: {
+        limit: options.limit,
+        offset: options.offset,
+        hasMore: alerts.length === options.limit,
+      },
+    };
+
+    res.json(response);
+  } catch (error) {
+    logger.error('Governance alerts observability error:', error);
+    res.status(500).json({
+      error: 'Failed to retrieve governance alerts',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// POST /v1/observability/governance-alerts/:alertId/resolve - Resolve an alert
+router.post('/governance-alerts/:alertId/resolve', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+    const { alertId } = req.params;
+    const { resolution } = req.body;
+
+    governanceLogger.logAdminAction('alert_resolution', userId, {
+      endpoint: '/v1/observability/governance-alerts/:alertId/resolve',
+      alertId,
+      resolution,
+    });
+
+    // Resolve the alert
+    const success = timelineService.resolveAlert(alertId, resolution);
+
+    if (!success) {
+      return res.status(404).json({
+        error: 'Alert not found',
+        alertId,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    res.json({
+      success: true,
+      operation: 'resolve_alert',
+      alertId,
+      resolution,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Alert resolution error:', error);
+    res.status(500).json({
+      error: 'Failed to resolve alert',
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
+// POST /v1/observability/check-alerts - Manually trigger alert checking
+router.post('/check-alerts', requireAdmin, async (req: Request, res: Response) => {
+  try {
+    const userId = req.user!.id;
+
+    governanceLogger.logAdminAction('alert_check_triggered', userId, {
+      endpoint: '/v1/observability/check-alerts',
+    });
+
+    // Run automatic alert checking
+    timelineService.checkForAutomaticAlerts();
+
+    // Get updated alerts summary
+    const summary = timelineService.getActiveAlertsSummary();
+
+    res.json({
+      success: true,
+      operation: 'check_alerts',
+      summary,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('Alert checking error:', error);
+    res.status(500).json({
+      error: 'Failed to check alerts',
       timestamp: new Date().toISOString(),
     });
   }
