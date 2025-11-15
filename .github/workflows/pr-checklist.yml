@@ -7,6 +7,10 @@ on:
       - '.github/**'
       - 'docs/**'
 
+permissions:
+  contents: write
+  pages: write
+
 jobs:
   run-pr-checklist:
     runs-on: ubuntu-latest
@@ -93,3 +97,47 @@ jobs:
             await github.rest.issues.createComment({ owner, repo, issue_number: prNumber, body: commentBody });
 
     timeout-minutes: 30
+
+  deploy-to-pages:
+    runs-on: ubuntu-latest
+    needs: run-pr-checklist
+    name: Deploy Playwright HTML report to GitHub Pages
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Playwright report artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report
+        continue-on-error: true
+
+      - name: Prepare site folder
+        run: |
+          rm -rf temp-site || true
+          mkdir -p temp-site/playwright-reports/${{ github.run_id }}
+          if [ -d "playwright-report" ]; then
+            cp -r playwright-report/* temp-site/playwright-reports/${{ github.run_id }} || true
+          fi
+
+      - name: Publish Playwright report to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          personal_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: gh-pages
+          publish_dir: temp-site
+
+      - name: Comment PR with GitHub Pages report link
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const runId = context.runId;
+            const prNumber = context.payload.pull_request.number;
+            const pagesUrl = `https://${owner}.github.io/${repo}/playwright-reports/${runId}/index.html`;
+            const body = `:robot: Playwright HTML report published to GitHub Pages: ${pagesUrl}`;
+            await github.rest.issues.createComment({ owner, repo, issue_number: prNumber, body });
