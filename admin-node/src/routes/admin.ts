@@ -253,7 +253,7 @@ router.post('/anchor-genesis', requireFounder, async (req: Request, res: Respons
         // Parse the output to extract transaction info
         const lines = stdout.split('\n');
         let txSignature = null;
-        let memoContent = null;
+        let memoContent: string | undefined;
 
         // Look for the manual execution command in output
         for (const line of lines) {
@@ -271,11 +271,11 @@ router.post('/anchor-genesis', requireFounder, async (req: Request, res: Respons
           timestamp: new Date().toISOString(),
           action: 'genesis',
           actor: userId,
-          txSignature: null,
+          txSignature: undefined,
           memoContent,
           fingerprints: {},
           verificationStatus: 'pending',
-          explorerUrl: null,
+          explorerUrl: undefined,
           details: {
             scriptOutput: stdout,
             operation: 'anchor_genesis',
@@ -527,7 +527,7 @@ router.post('/rotate-founder-key', requireFounder, async (req: Request, res: Res
       if (code === 0) {
         // Parse the output to extract transaction info
         const lines = stdout.split('\n');
-        let memoContent = null;
+        let memoContent: string | undefined;
 
         // Look for the manual execution command in output
         for (const line of lines) {
