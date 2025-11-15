@@ -26,6 +26,13 @@ Each backlog item must meet ALL criteria before moving to Ready:
 - [ ] Design decentralized consensus mechanism for AI agent validation (Priority: HIGH, Estimate: L, Assignee: Core Infrastructure Team)
 - [ ] Create tokenomics model with quadratic funding integration (Priority: HIGH, Estimate: M, Assignee: Token Economics Team)
 - [ ] Implement core swarm intelligence coordination algorithms (Priority: HIGH, Estimate: XL, Assignee: AI Integration Team)
+ - [x] Harden Admin Node anchor lifecycle and timeline handling (Priority: HIGH, Estimate: M, Assignee: Core Infrastructure Team)
+	 - Completed: `getLatestAnchor`, `getLatestAnchorByType`, improved `findLatestAnchor` logic to require txSignature
+	 - Files: `src/services/anchor-service.ts`, `src/services/timeline-service.ts`, `src/routes/admin.ts`, `src/routes/observability.ts`
+ - [x] Admin Node UI: Latest Anchor modal, inline card, and non-blocking toasts (Priority: MEDIUM, Estimate: L, Assignee: Developer Experience)
+	 - Completed: `public/dashboard.html` updated with modal, toasts, improved accessibility, and `data-testid` attributes
+ - [x] E2E: Playwright tests for latest anchor modal and actions (Priority: MEDIUM, Estimate: L)
+	 - Completed: `e2e/playwright.config.ts`, `e2e/tests/latestAnchor.spec.ts` — tests include copy-to-clipboard, founder/admin permission checks, mark verified, modal close
 
 ## Done
 
@@ -59,6 +66,8 @@ Each backlog item must meet ALL criteria before moving to Ready:
 - [x] Update governance dashboard with improved test coverage metrics
 - [x] Implement AI agent registration and discovery protocol (Priority: HIGH, Estimate: M, Assignee: AI Integration Team)
 - [x] Implement secure inter-agent communication framework (Priority: HIGH, Estimate: L, Assignee: AI Integration Team)
+ - [x] Add Playwright E2E integration and CI job for admin-node (Priority: MEDIUM, Estimate: L)
+ - [x] Add cross-platform `webServer` command for Playwright and `cross-env` in `package.json` for consistent CI on Linux and local Windows dev
 
 ## Backlog (to be done)
 
@@ -78,6 +87,8 @@ Each backlog item must meet ALL criteria before moving to Ready:
 - [ ] Design emergency shutdown protocols for swarm safety
 - [ ] Implement cross-chain interoperability for token transfers
 - [ ] Create dispute resolution mechanism for governance conflicts
+ - [ ] CI / Lockfile Reproducibility: Pin Playwright/browsers in lockfile and use `npm ci` in e2e job (Priority: MEDIUM, Estimate: S, Assignee: DevOps)
+ - [ ] Expand Playwright e2e coverage for the Admin UI (copy behavior, Mark Verified transitions, timeline updates, accessibility checks) (Priority: MEDIUM, Estimate: M, Assignee: QA)
 
 ### LOW Priority
 - [ ] Design mobile application for swarm monitoring

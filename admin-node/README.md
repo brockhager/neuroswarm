@@ -35,8 +35,42 @@ The Admin Node provides a secure, founder-only interface for monitoring NeuroSwa
 - `POST /v1/admin/config` - Update system configuration
 - `POST /v1/admin/anchor-genesis` - Execute genesis anchoring (API)
 - `GET /v1/admin/verify-genesis/:txSig` - Execute genesis verification (API)
+ - `GET /v1/admin/verify-genesis/:txSig` - Execute genesis verification (founder-only)
 - `POST /v1/admin/rotate-founder-key` - Execute founder key rotation (API)
 - `GET /v1/admin/validate-genesis-config` - Validate genesis configuration integrity (API)
+- `GET /v1/admin/latest-anchor` - Return the most recent governance anchor (admin access)
+ - `GET /v1/admin/latest-anchor` - Return the most recent governance anchor (founder-only access)
+ - `GET /v1/observability/latest-anchor` - Read-only observability endpoint for dashboards and contributors (no auth required)
+
+#### GET /v1/admin/latest-anchor
+Return the most recent governance anchor recorded in the timeline. Intended for admin and founder users to fetch the latest anchor quickly.
+
+Sample response:
+
+```json
+{
+   "success": true,
+   "anchor": {
+      "txSignature": "INTEG_SIG",
+      "hash": "b6e200c7ec732caf...",
+      "timestamp": "2025-11-15T15:58:29.561Z"
+   },
+   "timestamp": "2025-11-15T15:58:29.660Z"
+}
+```
+
+If no anchor is found, a 404 response with a descriptive error is returned:
+
+```json
+{
+   "error": "No anchor found",
+   "timestamp": "2025-11-15T..."
+}
+```
+
+Query parameters:
+- `action` (optional): Filter by anchor action type (e.g., `genesis`, `key-rotation`). Example: `/v1/admin/latest-anchor?action=genesis`
+
 
 ### Observability (Admin Access)
 - `GET /v1/observability/consensus` - Consensus monitoring data
@@ -176,6 +210,55 @@ The admin dashboard provides:
 - Real-time anchoring status for all governance actions
 - One-click verification command copying
 - Interactive anchoring workflow buttons
+- Latest anchor quick lookup endpoint and dashboard modal (`GET /v1/admin/latest-anchor` and a "Latest Anchor" button in the dashboard)
+
+#### E2E Testing (Playwright)
+
+We use Playwright to validate the dashboard's latest anchor modal and founder/admin flows.
+
+Run locally (requires Playwright to be installed):
+
+```bash
+cd admin-node
+npm ci
+npx playwright install
+npm run e2e
+```
+
+CI: Playwright e2e tests are executed in `.github/workflows/admin-node-integration.yml` in the `e2e-tests` job.
+
+Reproducible E2E setup:
+- Use `npm ci` to ensure `package-lock.json` is used for deterministic installs.
+- Install Playwright browsers with `npx playwright install --with-deps` after dependency install.
+- When contributing, run these steps to validate: `npm ci && npx playwright install && npm run e2e`.
+
+UI polish & e2e coverage notes:
+- The dashboard now features non-blocking toast notifications for key actions (copy-to-clipboard, mark verified, set tx signature) to improve UX.
+- The latest anchor modal now supports overlay click-to-close and a close button with `data-testid` attributes for robust E2E targeting.
+- Playwright tests were extended to validate copy-to-clipboard behavior, mark-verified flow, modal open/close, and founder vs admin permission checks.
+
+#### Running Unit & Integration Tests
+
+Run the project's unit and integration tests locally with the standard test runner:
+
+```bash
+cd admin-node
+npm ci
+npm test
+```
+
+To run a single integration test or a subset by name, pass Jest `-t`:
+
+```bash
+npm run integration -- -t "Anchor lifecycle integration"
+```
+
+For targeted unit tests (useful while iterating):
+
+```bash
+npm test -- -t "AnchorService.getLatestAnchor"
+```
+
 - Alert system for failed or stale anchors
 - **Key Rotation**: Automated key rotation workflow with new keypair generation
 - **Config Validation**: Real-time genesis configuration integrity checking
