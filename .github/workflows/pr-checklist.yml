@@ -195,12 +195,15 @@ jobs:
                 title=$(jq -r '.runId' $meta)
                 pr=$(jq -r '.prNumber' $meta)
                 ts=$(jq -r '.timestamp' $meta)
+                passed=$(jq -r '.passed // empty' $meta)
+                failed=$(jq -r '.failed // empty' $meta)
+                skipped=$(jq -r '.skipped // empty' $meta)
               else
                 title=$d
                 pr=""
                 ts=""
               fi
-              echo "<li><a href=\"playwright-reports/$d/index.html\">$title</a> - PR: $pr - $ts</li>" >> index.html
+              echo "<li><a href=\"playwright-reports/$d/index.html\">$title</a> - PR: $pr - $ts - ${passed:-0} passed/${failed:-0} failed/${skipped:-0} skipped</li>" >> index.html
             fi
           done
           echo "</ul></body></html>" >> index.html
