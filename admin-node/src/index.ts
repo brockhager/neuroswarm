@@ -18,6 +18,7 @@ import { adminRoutes } from './routes/admin';
 import { createSubmissionsRouter } from '../../submissions/src/index';
 import { requireContributor } from './middleware/auth';
 import { observabilityRoutes } from './routes/observability';
+import { chatRoutes } from './routes/chat';
 import { anchorService } from './services/anchor-service';
 import { createGovernanceLogger, governanceLogger } from './services/governance-logger';
 import { discordService } from './services/discord-service';
@@ -94,6 +95,8 @@ app.use('/v1/admin', authMiddleware, adminRoutes);
 // Submissions router under /v1/brain
 import { reputationService } from './services/reputation-service';
 app.use('/v1/brain', authMiddleware, requireContributor, createSubmissionsRouter({ safetyService, timelineService, anchorService, governanceLogger, logger, reputationService }));
+// Chat endpoints
+app.use('/v1/chat', authMiddleware, chatRoutes);
 
 // Observability routes (protected)
 // Public observability endpoints (registered before auth middleware)
