@@ -92,7 +92,8 @@ app.get('/health', (req, res) => {
 app.use('/v1/admin', authMiddleware, adminRoutes);
 
 // Submissions router under /v1/brain
-app.use('/v1/brain', authMiddleware, requireContributor, createSubmissionsRouter({ safetyService, timelineService, anchorService, governanceLogger, logger }));
+import { reputationService } from './services/reputation-service';
+app.use('/v1/brain', authMiddleware, requireContributor, createSubmissionsRouter({ safetyService, timelineService, anchorService, governanceLogger, logger, reputationService }));
 
 // Observability routes (protected)
 // Public observability endpoints (registered before auth middleware)
