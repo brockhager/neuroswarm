@@ -31,3 +31,12 @@ npx playwright test -c e2e/playwright.config.ts --project=chromium --workers=1
 
 Write-Host "PR checklist validation completed successfully"
 Set-Location -Path $scriptDir
+Write-Host "Generate Playwright HTML report (if tests produced results)"
+Set-Location $adminRoot
+if (Test-Path -Path "playwright-report") {
+    Write-Host "playwright-report already exists";
+} else {
+    Write-Host "Attempting to generate Playwright HTML report";
+    npx playwright show-report || Write-Host "Playwright HTML report generation failed or no report found";
+}
+Set-Location -Path $scriptDir

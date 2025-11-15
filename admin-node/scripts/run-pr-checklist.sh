@@ -29,3 +29,10 @@ echo "Run Playwright e2e tests in serial"
 npx playwright test -c e2e/playwright.config.ts --project=chromium --workers=1
 
 echo "PR checklist validation completed successfully"
+echo "Generate Playwright HTML report (if tests produced results)"
+if [ -d "playwright-report" ]; then
+  echo "playwright-report already exists";
+else
+  echo "Attempting to generate Playwright HTML report"
+  npx playwright show-report || true
+fi
