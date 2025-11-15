@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import { validateSubmissionPayload } from '../services/validation';
 
 export function createSubmissionRouter(deps: any): Router {
-  const { safetyService, timelineService, anchorService, governanceLogger, logger } = deps;
+  const { safetyService, timelineService, anchorService, governanceLogger, logger, reputationService } = deps;
   const router = Router();
 
   router.post('/', async (req: Request, res: Response) => {
@@ -69,6 +69,13 @@ export function createSubmissionRouter(deps: any): Router {
 
       // Prepare submission anchor (this will create an anchor timeline entry handled by founder)
       const anchorResult = anchorService.prepareSubmissionAnchor(sha256, contributorId, submissionType, metadata, timelineId);
+
+      // Update contributor reputation for submission
+      try {
+        reputationService?.addReputation(contributorId, 10, 'submission');
+      } catch (err) {
+        logger?.warn('Failed to update reputation for contributor', err);
+      }
 
       // Return response
       res.json({
