@@ -94,6 +94,7 @@ Ready to contribute? Here's your pathway forward:
 - [Project Board](https://github.com/brockhager/neuro-infra/projects)
 - [Issues](https://github.com/brockhager/neuro-infra/issues)
 - [Discussions](https://github.com/brockhager/neuro-infra/discussions)
+ - [Project Wiki](https://github.com/brockhager/neuro-infra/wiki)
 
 ## Contributing
 New to the project? Start with our [Getting Started Guide](../website/kb/getting-started.md).
