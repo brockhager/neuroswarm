@@ -163,7 +163,14 @@ jobs:
           fi
           PR_NUMBER=${PR_NUMBER:-}
           TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          echo "{\"runId\": \"${RUN_ID}\", \"prNumber\": \"${PR_NUMBER}\", \"timestamp\": \"${TIMESTAMP}\"}" > temp-site/playwright-reports/${RUN_ID}/meta.json
+          if [ -f "temp-site/playwright-reports/${RUN_ID}/summary.json" ]; then
+            passed=$(jq -r '.passed' temp-site/playwright-reports/${RUN_ID}/summary.json)
+            failed=$(jq -r '.failed' temp-site/playwright-reports/${RUN_ID}/summary.json)
+            skipped=$(jq -r '.skipped' temp-site/playwright-reports/${RUN_ID}/summary.json)
+            echo "{\"runId\": \"${RUN_ID}\", \"prNumber\": \"${PR_NUMBER}\", \"timestamp\": \"${TIMESTAMP}\", \"passed\": ${passed}, \"failed\": ${failed}, \"skipped\": ${skipped}}" > temp-site/playwright-reports/${RUN_ID}/meta.json
+          else
+            echo "{\"runId\": \"${RUN_ID}\", \"prNumber\": \"${PR_NUMBER}\", \"timestamp\": \"${TIMESTAMP}\"}" > temp-site/playwright-reports/${RUN_ID}/meta.json
+          fi
 
       - name: Merge and purge old reports on gh-pages
         env:
