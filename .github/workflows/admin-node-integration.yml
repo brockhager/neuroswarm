@@ -251,6 +251,10 @@ jobs:
           TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           echo "{\"runId\": \"${RUN_ID}\", \"prNumber\": \"${PR_NUMBER}\", \"timestamp\": \"${TIMESTAMP}\"}" > temp-site/playwright-reports/${RUN_ID}/meta.json
 
+      - name: Install jq
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq
+
       - name: Merge and purge old reports on gh-pages
         env:
           KEEP_LAST: 30
