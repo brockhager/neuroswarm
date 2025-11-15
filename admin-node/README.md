@@ -59,6 +59,7 @@ The Admin Node provides a secure, founder-only interface for monitoring NeuroSwa
 ```bash
 npm install
 npm run build
+npm run health-check  # Verify configuration before starting
 npm start
 ```
 
@@ -67,6 +68,78 @@ npm start
 - `JWT_SECRET`: JWT signing secret
 - `GOVERNANCE_PRIVATE_KEY_PATH`: Path to governance signing key
 - `ALLOWED_ORIGINS`: CORS allowed origins (comma-separated)
+
+### Pre-Startup Health Check
+Before starting the Admin Node, run the health check to verify configuration:
+
+```bash
+npm run health-check
+```
+
+This validates:
+- ✅ dotenv configuration loads correctly
+- ✅ Required environment variables are defined
+- ✅ Key files exist and have correct PEM format
+- ✅ Governance signing is enabled
+
+Example output:
+```
+🔍 Admin Node Health Check
+==========================
+
+1. Checking dotenv configuration...
+✅ dotenv loaded successfully (90 environment variables)
+
+2. Checking environment variables...
+✅ SERVICE_JWT_PRIVATE_KEY_PATH: secrets/admin-node.jwt.key
+✅ FOUNDER_PUBLIC_KEY_PATH: secrets/founder.jwt.pub
+✅ GOVERNANCE_PRIVATE_KEY_PATH: secrets/founder.jwt.key
+
+3. Validating key files...
+✅ Admin Node JWT Private Key: Valid private key
+✅ Founder Public Key: Valid public key
+✅ Governance Private Key: Valid private key
+
+4. Governance signing readiness...
+✅ Governance signing enabled - logs will be cryptographically signed
+
+🎉 Health Check Complete!
+========================
+✅ dotenv configuration: OK
+✅ Environment variables: OK
+✅ Key files: OK
+✅ Governance signing: ENABLED
+
+🚀 Admin Node is ready to start!
+```
+
+### Genesis Anchoring (Blockchain Verification)
+
+NeuroSwarm anchors founder keys and genesis configuration to Solana blockchain for public verification:
+
+#### Generate Fingerprints
+```bash
+npm run anchor-genesis
+```
+
+This creates SHA-256 fingerprints of:
+- Founder public key (founder.jwt.pub)
+- Admin Node public key (admin-node.jwt.pub)
+- Genesis configuration (admin-genesis.json)
+
+#### Manual Blockchain Anchoring
+Execute the generated Solana CLI command:
+```bash
+solana transfer --allow-unfunded-recipient --memo "<fingerprint_json>" <FOUNDER_KEYPAIR> <RECIPIENT> 0.000000001
+```
+
+#### Verify Genesis Integrity
+Contributors can verify fingerprints against blockchain:
+```bash
+npm run verify-genesis <TRANSACTION_SIGNATURE>
+```
+
+This fetches the memo from Solana and compares hashes locally.
 
 ### Testing
 ```bash
