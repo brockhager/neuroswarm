@@ -57,4 +57,25 @@ jobs:
             admin-node/**/screenshot*
             admin-node/**/screenshots
 
+      - name: Comment PR with Playwright report link
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const runId = context.runId;
+            const resp = await github.rest.actions.listWorkflowRunArtifacts({ owner, repo, run_id: runId });
+            const artifact = resp.data.artifacts.find(a => a.name === 'playwright-report');
+            if (!artifact) {
+              core.info('No playwright-report artifact found to comment.');
+              return;
+            }
+            const uiUrl = `https://github.com/${owner}/${repo}/suites/${runId}/artifacts/${artifact.id}`;
+            const downloadUrl = artifact.archive_download_url;
+            const prNumber = context.payload.pull_request.number;
+            const commentBody = `:robot: Playwright report uploaded for this run:\n- [View artifact in UI](${uiUrl})\n- [Download ZIP](${downloadUrl})`;
+            await github.rest.issues.createComment({ owner, repo, issue_number: prNumber, body: commentBody });
+
     timeout-minutes: 30
