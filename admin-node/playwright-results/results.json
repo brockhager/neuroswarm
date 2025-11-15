@@ -1,0 +1,343 @@
+{
+  "config": {
+    "configFile": "C:\\JS\\ns\\neuroswarm\\admin-node\\e2e\\playwright.config.ts",
+    "rootDir": "C:/JS/ns/neuroswarm/admin-node/e2e/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "C:/JS/ns/neuroswarm/admin-node/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/JS/ns/neuroswarm/admin-node/e2e/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 1,
+    "webServer": {
+      "command": "node ../scripts/generate-jwt-keys.js && node ../scripts/seed-e2e-timeline.js && cross-env PORT=3000 SERVICE_JWT_PRIVATE_KEY_PATH=secrets/admin-node.jwt.key FOUNDER_PUBLIC_KEY_PATH=secrets/founder.jwt.pub npm run dev",
+      "port": 3000,
+      "reuseExistingServer": false,
+      "timeout": 60000
+    }
+  },
+  "suites": [
+    {
+      "title": "accessibility.spec.ts",
+      "file": "accessibility.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Dashboard Accessibility",
+          "file": "accessibility.spec.ts",
+          "line": 3,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Important elements have ARIA or accessible attributes and keyboard navigation works",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 703,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-15T19:35:01.387Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "ddd864604af8a6a0198f-c2dfb461d063702696b5",
+              "file": "accessibility.spec.ts",
+              "line": 4,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "anchor-mismatch.spec.ts",
+      "file": "anchor-mismatch.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Anchor mismatch behaviors",
+          "file": "anchor-mismatch.spec.ts",
+          "line": 6,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Setting tx-signature with wrong genesis hash does not verify anchor",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 347,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-15T19:35:02.330Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "e9025d3bb652f5b84753-28e6b9cba71c1f2f836e",
+              "file": "anchor-mismatch.spec.ts",
+              "line": 15,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "latestAnchor.spec.ts",
+      "file": "latestAnchor.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Latest Anchor Modal and Actions",
+          "file": "latestAnchor.spec.ts",
+          "line": 15,
+          "column": 6,
+          "specs": [
+            {
+              "title": "public latest anchor modal and founder vs admin mark verified & copy",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4253,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "E2E: Found tx signature in modal: E2E_SIG genesis: b6e200c7ec732caf9566002e9d9f90dce8dd58d33299d8762e8c0b591421c366\n"
+                        },
+                        {
+                          "text": "E2E: Found tx signature in modal: E2E_SIG\n"
+                        },
+                        {
+                          "text": "E2E: Poll 0: status=200, anchors count=2\n"
+                        },
+                        {
+                          "text": "E2E: First anchor: {\n  \"action\": \"genesis\",\n  \"timestamp\": \"2025-11-15T19:34:55.628Z\",\n  \"txSignature\": \"E2E_SIG\",\n  \"verificationStatus\": \"verified\",\n  \"fingerprints\": {\n    \"genesis_sha256\": \"b6e200c7ec732caf9566002e9d9f90dce8dd58d33299d8762e8c0b591421c366\"\n  },\n  \"explorerUrl\": \"https://explorer.solana.com/tx/E2E_SIG\"\n}\n"
+                        },
+                        {
+                          "text": "E2E: Found matching anchor: {\n  \"action\": \"genesis\",\n  \"timestamp\": \"2025-11-15T19:34:55.628Z\",\n  \"txSignature\": \"E2E_SIG\",\n  \"verificationStatus\": \"verified\",\n  \"fingerprints\": {\n    \"genesis_sha256\": \"b6e200c7ec732caf9566002e9d9f90dce8dd58d33299d8762e8c0b591421c366\"\n  },\n  \"explorerUrl\": \"https://explorer.solana.com/tx/E2E_SIG\"\n}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-15T19:35:02.690Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "63ced8e2285e3c116bd4-c712bc0f97c7d976d498",
+              "file": "latestAnchor.spec.ts",
+              "line": 19,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "shutdown-e2e.spec.ts",
+      "file": "shutdown-e2e.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Shutdown E2E behavior",
+          "file": "shutdown-e2e.spec.ts",
+          "line": 6,
+          "column": 15,
+          "specs": [
+            {
+              "title": "Mark Verified is blocked in shutdown mode",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 430,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-11-15T19:35:06.955Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "57187bb196f12af56620-061ca546c40618569365",
+              "file": "shutdown-e2e.spec.ts",
+              "line": 15,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "timeline.spec.ts",
+      "file": "timeline.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Governance Timeline and Anchoring",
+          "file": "timeline.spec.ts",
+          "line": 5,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Timeline shows seeded anchor and verification status",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 280,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "buffer": ""
+                        }
+                      ],
+                      "retry": 0,
+                      "startTime": "2025-11-15T19:35:07.398Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "b06e59072d3cdab898f7-1fa93ece1a7cc5260487",
+              "file": "timeline.spec.ts",
+              "line": 20,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2025-11-15T19:34:55.468Z",
+    "duration": 12424.096,
+    "expected": 5,
+    "skipped": 0,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}
