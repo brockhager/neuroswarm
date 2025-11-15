@@ -296,21 +296,17 @@ export class AnchorService {
 
       // Process each anchor
       for (const anchor of allAnchors) {
+        // Read txSignature from multiple possible locations
+        const txSig = anchor.txSignature || anchor.tx_signature || anchor.details?.tx_signature || anchor.details?.txSignature || null;
+        
         const anchorStatus = {
           action: anchor.action,
           timestamp: anchor.timestamp,
-          txSignature: anchor.details?.tx_signature || null,
-          verificationStatus: 'pending' as 'verified' | 'failed' | 'pending',
-          fingerprints: anchor.details?.fingerprints || {},
-          explorerUrl: anchor.details?.tx_signature ?
-            `https://explorer.solana.com/tx/${anchor.details.tx_signature}` : null,
+          txSignature: txSig,
+          verificationStatus: anchor.verificationStatus || (txSig ? 'verified' : 'pending') as 'verified' | 'failed' | 'pending',
+          fingerprints: anchor.fingerprints || anchor.details?.fingerprints || {},
+          explorerUrl: txSig ? `https://explorer.solana.com/tx/${txSig}` : null,
         };
-
-        // For now, mark as verified if transaction exists
-        // In production, this would verify against blockchain
-        if (anchorStatus.txSignature) {
-          anchorStatus.verificationStatus = 'verified';
-        }
 
         status.anchors.push(anchorStatus);
       }
