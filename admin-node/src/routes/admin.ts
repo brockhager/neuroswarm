@@ -7,6 +7,8 @@ import path from 'path';
 import { timelineService } from '../services/timeline-service';
 import { anchorService } from '../services/anchor-service';
 import { safetyService } from '../services/safety-service';
+import { createSubmissionsRouter } from '../../submissions/src/index';
+import { requireContributor } from '../middleware/auth';
 
 const router = Router();
 
@@ -785,6 +787,9 @@ router.post('/set-tx-signature', requireFounder, async (req: Request, res: Respo
     res.status(500).json({ error: 'Failed to set tx signature', timestamp: new Date().toISOString() });
   }
 });
+
+// Mount submissions router under `/v1/brain`
+router.use('/brain', requireContributor, createSubmissionsRouter({ safetyService, timelineService, anchorService, governanceLogger, logger }));
 
 export { router as adminRoutes };
 
