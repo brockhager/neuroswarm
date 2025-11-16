@@ -1,0 +1,42 @@
+name: Publish Update
+
+on:
+  workflow_dispatch:
+    inputs:
+      title:
+        description: 'Title for the update'
+        required: true
+      body:
+        description: 'Body content for the update (plain text or markdown)'
+        required: true
+      author:
+        description: 'Author name'
+        required: false
+      push:
+        description: 'Whether to commit/push update to the repo'
+        required: false
+        default: 'true'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run publishUpdate script
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          set -e
+          ARGS=(--title "${{ github.event.inputs.title }}" --body "${{ github.event.inputs.body }}")
+          if [ -n "${{ github.event.inputs.author }}" ]; then ARGS+=(--author "${{ github.event.inputs.author }}"); fi
+          if [ "${{ github.event.inputs.push }}" = 'true' ]; then ARGS+=(--push); fi
+          node neuroswarm/scripts/publishUpdate.js "${ARGS[@]}"

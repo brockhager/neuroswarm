@@ -7,17 +7,37 @@ NeuroSwarm is a decentralized AI platform where personal AI agents run locally o
 
 ## What it does
 
-- Agents learn and personalize locally.
-- Agents can propose knowledge (facts, updates, small model deltas) to the network.
-- Proposals are validated by a decentralized consensus of validators and, if accepted, added to the Global Brain.
-- Participants earn rewards (tokens and reputation) for useful, verifiable contributions.
 
-## Who can participate
+# NeuroSwarm coordination and documentation
+
+## Updates Page & Discord integration
+
+We maintain an `Updates.md` page in the `neuroswarm/wiki/` folder for project updates.
+To post updates to both the wiki and a Discord channel at the same time, use the `publish-update` GitHub Action in `.github/workflows/publish-update.yml`.
+
+Quick steps:
+
+1. Create a Discord channel and add a webhook. Copy the webhook URL.
+2. Add the webhook URL to your repository secrets under `DISCORD_WEBHOOK`.
+3. From the Actions UI, run the `Publish Update` workflow and provide a `title` and `body`.
+4. The workflow will append the update to `neuroswarm/wiki/Updates.md` and post it to the configured Discord webhook URL.
+
+Local usage / demo:
+
+You can test locally by running:
+
+```bash
+node neuroswarm/scripts/publishUpdate.js --title "My Update" --body "This is the update content" --author "Your Name"
+```
+
+To push the change back to the repository, use `--push` and ensure you have credentials to push:
+
+```bash
+node neuroswarm/scripts/publishUpdate.js --title "Release" --body "New release notes" --author "Release Bot" --push
+```
+
 
 - Anyone can run their own Personal AI locally.
-- Users may opt in to submit proposals, stake tokens, act as validators, or provide compute and services.
-- Participation is open to individuals, researchers, and organizations that follow the protocol rules.
-
 ## Documentation
 
 Key design and developer docs (in the `docs/` folder):

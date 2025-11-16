@@ -1,3 +1,22 @@
+# Discord Updates Channel
+
+This directory contains instructions and optional helper scripts to integrate a Discord channel for project updates.
+
+How to create an updates channel and webhook:
+
+1. In your Discord server, create a new channel (e.g., `#project-updates`).
+2. Go to channel settings → Integrations → Create Webhook and copy the webhook URL.
+3. Store the webhook URL as a GitHub Secret in your repository named `DISCORD_WEBHOOK`.
+
+Posting updates
+----------------
+You can use the repository workflow `neuroswarm/.github/workflows/publish-update.yml` to publish an update. It will:
+
+- Append a new entry to `neuroswarm/wiki/Updates.md`.
+- Post a message to the `DISCORD_WEBHOOK`.
+
+If you prefer to use a bot to create channels programmatically, add a bot to the server and use bot token and the `createChannel.js` helper in `scripts/` (example not included by default).
+ * If you prefer to programmatically create a channel, add a bot to your server and grant it `MANAGE_CHANNELS`, set `DISCORD_BOT_TOKEN` and `GUILD_ID`, and run `node neuroswarm/scripts/createDiscordChannel.js --name 'project-updates' --type text`.
 # NeuroSwarm Discord Integration
 
 This directory contains the Discord bot integration for NeuroSwarm governance notifications and server management.
