@@ -43,11 +43,11 @@ find . -name "*.test.ts" -o -name "*.spec.ts"
 }
 ```
 
-### 1.3 Run Existing Tests
+### 3.3 Run Existing Tests
 ```bash
-npm test
-npm run test:watch
-npm run test:coverage
+pnpm -C neuro-services test
+pnpm -C neuro-services run test:watch
+pnpm -C neuro-services run test:coverage
 ```
 
 ## Step 2: Plan Your Test Coverage
@@ -539,10 +539,10 @@ describe('Authentication Module', () => {
 ### 8.2 Test Maintenance
 ```bash
 # Run tests on file changes
-npm run test:watch
+pnpm -C neuro-services run test:watch
 
 # Update snapshots (if using snapshot testing)
-npm run test -- --updateSnapshot
+pnpm -C neuro-services test -- --updateSnapshot
 
 # Check for flaky tests
 npm run test -- --testNamePattern="flaky" --verbose

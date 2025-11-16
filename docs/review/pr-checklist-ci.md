@@ -4,11 +4,11 @@ Use this checklist when reviewing PRs that change CI, tests, E2E, or runtime saf
 Reviewers should validate each item locally or confirm CI runs the checks and returns clean results.
 
  ## 1. Install & Setup
-- [ ] Run `npm ci` in `admin-node` and confirm the lockfile did not change:
+ - [ ] Run `pnpm -C admin-node install --frozen-lockfile` in `admin-node` and confirm the lockfile did not change:
   ```powershell
   cd admin-node
-  npm ci
-  git diff --exit-code package-lock.json || (echo "Lockfile changed: check dependencies" && exit 1)
+  pnpm -C admin-node install --frozen-lockfile
+  git diff --exit-code pnpm-lock.yaml || (echo "Lockfile changed: check dependencies" && exit 1)
   ```
 
 - [ ] Verify Playwright browsers are installed:
@@ -24,9 +24,9 @@ Local helper scripts
 Run the preferred script from the repo root to validate the PR checklist locally. They run the same steps as the CI job.
 
 ## 2. Unit & Integration Tests
-- [ ] Run all unit and integration tests:
+ - [ ] Run all unit and integration tests:
   ```powershell
-  NODE_ENV=test npm test
+  NODE_ENV=test pnpm -C admin-node test
   ```
 
 - [ ] Confirm `SafetyService` unit test passes:
@@ -54,7 +54,7 @@ Run the preferred script from the repo root to validate the PR checklist locally
 - [ ] Confirm `seed-e2e-timeline` step runs before Playwright e2e tests in `neuroswarm/.github/workflows/admin-node-integration.yml`.
 - [ ] Confirm the e2e step uses `--workers=1` or an equivalent to avoid global state conflicts.
 - [ ] Check CI logs for:
-  - Lockfile drift detection after `npm ci` (error/exit if mutated).
+  - Lockfile drift detection after `pnpm -C admin-node install --frozen-lockfile` (error/exit if mutated).
   - Playwright browser installation success; `npx playwright show-browsers` should list chromium/firefox/webkit.
 
 ## 5. Documentation & Changelog

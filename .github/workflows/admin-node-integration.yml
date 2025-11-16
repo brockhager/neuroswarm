@@ -25,16 +25,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          cache: 'pnpm'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (pnpm)
+        run: |
+          npm install -g pnpm@8
+          pnpm -C admin-node install --frozen-lockfile
         working-directory: ./admin-node
 
-      - name: Validate npm ci used the lockfile
+      - name: Validate pnpm install used the lockfile (no drift)
         run: |
-          # Ensure package-lock.json wasn't modified by npm ci, to detect lockfile drift
-          git diff --exit-code package-lock.json || (echo "Lockfile changed after npm ci" && exit 1)
+          # Ensure pnpm-lock.yaml wasn't modified by pnpm install, to detect lockfile drift
+          git diff --exit-code admin-node/pnpm-lock.yaml || (echo "Lockfile changed after pnpm install" && exit 1)
         working-directory: ./admin-node
 
       - name: Run tests (unit + integration)
@@ -46,7 +48,7 @@ jobs:
             export SIMULATED_CHAIN=false;
           fi
 
-          NODE_ENV=test DISCORD_BOT_TOKEN="" PORT=0 npm test --silent
+          NODE_ENV=test DISCORD_BOT_TOKEN="" PORT=0 pnpm -C admin-node test --silent
         working-directory: ./admin-node
 
   e2e-tests:
@@ -60,10 +62,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: 'pnpm'
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Install dependencies (pnpm)
+        run: |
+          npm install -g pnpm@8
+          pnpm -C admin-node install --frozen-lockfile
         working-directory: ./admin-node
 
       - name: Install Playwright browsers
@@ -75,7 +79,7 @@ jobs:
         with:
           path: |
             ~/.cache/ms-playwright
-          key: ${{ runner.os }}-ms-playwright-${{ hashFiles('admin-node/package-lock.json') }}
+          key: ${{ runner.os }}-ms-playwright-${{ hashFiles('admin-node/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-ms-playwright-
 
@@ -98,7 +102,7 @@ jobs:
           # Run Playwright tests producing both JSON (results) and HTML report.
           mkdir -p playwright-results
           set +e
-          NODE_ENV=test DISCORD_BOT_TOKEN="" npm run e2e:ci -- --workers=1 -- --reporter=json > playwright-results/results.json
+          NODE_ENV=test DISCORD_BOT_TOKEN="" pnpm -C admin-node run e2e:ci -- --workers=1 -- --reporter=json > playwright-results/results.json
           E2E_EXIT_CODE=$?
           set -e
           # Generate HTML report (if Playwright produced report directory)

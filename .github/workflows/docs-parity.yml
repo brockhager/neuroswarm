@@ -1,0 +1,57 @@
+name: Docs Parity Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+jobs:
+  docs-parity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies (pnpm)
+        run: |
+          npm install -g pnpm@8
+          pnpm install -w
+
+      - name: Run docs parity check and save results
+        run: |
+          npm install -g pnpm@8
+          node neuroswarm/scripts/checkDocsParity.mjs --docs neuroswarm/docs --wiki neuroswarm/wiki > docs-parity.json || true
+
+      - name: Parse docs parity results and comment on PR if divergence
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = 'docs-parity.json';
+            if (!fs.existsSync(path)) { console.log('No parity file produced'); return; }
+            const data = JSON.parse(fs.readFileSync(path, 'utf8'));
+            const { missingInDocs, missingInWiki, diffed } = data;
+            if ((missingInDocs && missingInDocs.length) || (missingInWiki && missingInWiki.length) || (diffed && diffed.length)) {
+              let body = ':warning: Docs parity check detected differences between `docs/` and `wiki/`.';
+              body += '\n\n**Missing in wiki**:\n' + (missingInWiki && missingInWiki.length ? missingInWiki.slice(0,10).map(x => `- ${x.name}`).join('\n') : '*none*');
+              body += '\n\n**Missing in docs**:\n' + (missingInDocs && missingInDocs.length ? missingInDocs.slice(0,10).map(x => `- ${x.name}`).join('\n') : '*none*');
+              body += '\n\n**Diffed**:\n' + (diffed && diffed.length ? diffed.slice(0,10).map(x => `- ${x.name}`).join('\n') : '*none*');
+              const prNumber = context.payload.pull_request.number;
+              await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: prNumber, body });
+              throw new Error('Docs parity check failed; please sync docs and wiki or update PR.');
+            } else {
+              console.log('No docs parity differences detected');
+            }
+      - name: Upload docs parity JSON
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-parity
+          path: docs-parity.json

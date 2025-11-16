@@ -1,0 +1,109 @@
+name: Run Nodes Integration Tests
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+jobs:
+  run-nodes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies (pnpm)
+        run: |
+          npm install -g pnpm@8
+          pnpm install -w
+
+      - name: Start ns-node (3000)
+        run: |
+          node neuroswarm/ns-node/server.js > ns.log 2> ns.err & echo $! > ns.pid
+
+      - name: Wait for ns-node health
+        run: |
+          set -ex
+          for i in 1 2 3 4 5; do
+            if curl --silent --fail http://localhost:3000/health; then exit 0; fi
+            sleep 1
+          done
+          echo 'ns-node failed to become healthy' && exit 1
+
+      - name: Start gateway-node (8080)
+        env:
+          NS_CHECK_EXIT_ON_FAIL: 'false'
+          NS_NODE_URL: 'http://localhost:3000'
+        run: |
+          node neuroswarm/gateway-node/server.js > gw.log 2> gw.err & echo $! > gw.pid
+
+      - name: Wait for gateway health
+        run: |
+          set -ex
+          for i in 1 2 3 4 5; do
+            if curl --silent --fail http://localhost:8080/health; then exit 0; fi
+            sleep 1
+          done
+          echo 'gateway failed to become healthy' && exit 1
+
+      - name: Start vp-node (4000)
+        env:
+          NS_NODE_URL: 'http://localhost:3000'
+        run: |
+          node neuroswarm/vp-node/server.js > vp.log 2> vp.err & echo $! > vp.pid
+
+      - name: Wait for vp-node registration (validator list)
+        run: |
+          set -ex
+          for i in 1 2 3 4 5 6 7 8 9 10; do
+            if curl --silent --fail http://localhost:3000/validators; then exit 0; fi
+            sleep 1
+          done
+          echo 'vp-node failed to register validator' && exit 1
+
+      - name: Run connectivity script (CI)
+        run: |
+          node neuroswarm/scripts/checkNodeConnectivityClean.mjs --ns http://localhost:3000 --gateway http://localhost:8080 --timeout 2000 --ci
+
+      - name: Run consensus tests (neuro-services) - unit
+        run: |
+          pnpm -C neuro-services test:ci
+
+      - name: Run PoS integration tests (neuro-services) - specific
+        run: |
+          pnpm -C neuro-services test -- tests/pos-multi-equivocation.test.ts tests/pos-signature-verify.test.ts --runInBand || true
+        continue-on-error: true
+
+      - name: Upload PoS test results (if exists)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pos-test-logs
+          path: |
+            neuro-services/test-results
+            neuro-services/coverage
+
+      - name: Upload logs (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nodes-logs
+          path: |
+            ns.log
+            ns.err
+            gw.log
+            gw.err
+            vp.log
+            vp.err
+
+      - name: Teardown
+        if: always()
+        run: |
+          if [ -f ns.pid ]; then kill $(cat ns.pid) || true; fi
+          if [ -f gw.pid ]; then kill $(cat gw.pid) || true; fi
+          if [ -f vp.pid ]; then kill $(cat vp.pid) || true; fi
