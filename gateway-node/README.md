@@ -1,3 +1,14 @@
+Gateway Node - Startup and configuration
+
+The gateway node forwards `v1` requests and forwards transactions to `ns-node`. To configure startup behavior, set the following environment variables:
+
+- `NS_NODE_URL` - the `ns-node` base URL (e.g., `http://localhost:3000`). If not set, the gateway will not attempt to check NS health.
+- `NS_CHECK_RETRIES` - number of times to retry connecting to `ns-node` (default: `5`).
+- `NS_CHECK_INITIAL_DELAY_MS` - initial backoff in ms between retries (default: `500`).
+- `NS_CHECK_MAX_DELAY_MS` - maximum backoff in ms for retries (default: `30000`).
+- `NS_CHECK_EXIT_ON_FAIL` - set to `true` to force the gateway to exit if `ns-node` is unreachable after retries; otherwise it continues running with degraded functionality (default: `false`).
+
+Note: the gateway includes `GET /debug/peers` which reports whether the configured `ns-node` is reachable (`nsOk`), aiding debugging in CI and local dev.
 Gateway Node (local test harness)
 ================================
 
