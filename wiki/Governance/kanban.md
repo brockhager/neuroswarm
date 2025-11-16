@@ -20,7 +20,7 @@ Every Kanban card must have a **documentation anchor** linking to relevant gover
 | Card Type | Required Documentation Links |
 |-----------|------------------------------|
 | **Feature Request** | [Governance Charter](./governance-charter.md#feature-proposals) |
-| **Bug Fix** | [Security Guidelines](../../misc/SECURITY-TRUST.md) |
+| **Bug Fix** | [Security Guidelines (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Security/Overview) |
 | **Infrastructure** | [Development Standards](../../misc/development.md) |
 | **Governance Change** | [Voting Procedures](./how-to-vote.md) |
 | **Documentation** | [Documentation Standards](../../misc/development.md#documentation) |
@@ -33,7 +33,7 @@ Every Kanban card must include these governance cross-references:
 ## Governance Links
 - **Approval Process**: [Governance Charter](./governance-charter.md#decision-framework)
 - **Quality Standards**: [Development Guide](../../misc/development.md#quality-gates)
-- **Security Review**: [Security Guidelines](../../misc/SECURITY-TRUST.md)
+- **Security Review**: [Security Guidelines (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Security/Overview)
 - **Documentation**: [Relevant docs](../README.md)
 ```
 

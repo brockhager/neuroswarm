@@ -1,3 +1,6 @@
+# Step 6: Make Your First Contribution
+
+# Step 7: Join the Community
 # Getting Started with NeuroSwarm
 
 Welcome to NeuroSwarm! This guide will walk you through setting up your development environment and running your first test. Whether you're a new contributor or returning developer, follow these steps to get up and running quickly.
@@ -233,12 +236,19 @@ git push origin feature/your-feature-name
 
 6. Create a Pull Request on GitHub
 
-## Step 7: Join the Community
+# Step 7: Join the Community
 
 - **Discussions**: Join [GitHub Discussions](https://github.com/brockhager/neuro-infra/discussions) for questions
 - **Issues**: Report bugs or request features via [GitHub Issues](https://github.com/brockhager/neuro-infra/issues)
-- **Governance**: Participate in governance decisions through our [voting system](governance/how-to-vote.md)
-- **Weekly Rituals**: Join our [weekly refinement sessions](governance/rituals.md)
+- **Governance**: Participate in governance decisions through our [voting system](https://github.com/brockhager/neuro-infra/wiki/Governance/how-to-vote)
+- **Weekly Rituals**: Join our [weekly refinement sessions](https://github.com/brockhager/neuro-infra/wiki/Governance/rituals)
+# Step 8: Crosslinks & references
+
+# Troubleshooting
+# Crosslinks
+
+# 1. Check our [FAQ](misc/FAQ.md)
+1. Check our [FAQ (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Getting-Started#faq)
 
 ## Troubleshooting
 

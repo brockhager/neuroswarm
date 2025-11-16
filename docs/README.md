@@ -122,6 +122,7 @@ Welcome to the comprehensive documentation for the NeuroSwarm decentralized AI e
 - [misc/playbooks/writing-tests.md](misc/playbooks/writing-tests.md) - Testing guide for code quality
 - [misc/proposals/README.md](misc/proposals/README.md) - Governance proposals index
 - [misc/SECURITY-TRUST.md](misc/SECURITY-TRUST.md) - Security and trust policies
+- [Security & Trust (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Security/Overview) - Security and trust overview on the canonical wiki
 - [misc/STORY-REFINEMENT-CHECKLIST.md](misc/STORY-REFINEMENT-CHECKLIST.md) - Quality checklist for tasks
 - [misc/TERMS.md](misc/TERMS.md) - Terms and legal definitions
 - [misc/TOKENOMICS.md](misc/TOKENOMICS.md) - Tokenomics implementation details
