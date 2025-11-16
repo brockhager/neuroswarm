@@ -1,5 +1,7 @@
 # Run Nodes (Standalone & Integrated)
 
+> NOTE: This doc is synced to the project Wiki and the GitHub Wiki is the canonical source for contributors and users: https://github.com/brockhager/neuro-infra/wiki
+
 This document describes how to run the NeuroSwarm nodes (ns-node, gateway-node, vp-node) individually and together, how to validate connectivity, log outputs, and run basic consensus/PoS tests.
 
 Prerequisites

@@ -96,19 +96,18 @@ Notes:
 - Anyone can run their own Personal AI locally.
 ## Documentation
 
-Key design and developer docs (in the `docs/` folder):
+Key design and developer docs (canonical pages are on the `Wiki`):
 
-- [Docs index](docs/README.md)
- - [Contributor onboarding](docs/onboarding/contributor-onboarding.md)
- - [Project Wiki (living docs)](https://github.com/brockhager/neuro-infra/wiki)
- - [Getting Started (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Getting-Started)
- - [Data flow architecture](docs/data-flow-architecture.md)
+- [Home — Wiki](https://github.com/brockhager/neuro-infra/wiki)
+- [Contributor onboarding — Wiki](https://github.com/brockhager/neuro-infra/wiki/Contributor-Onboarding)
+- [Getting Started (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Getting-Started)
+- [Data flow architecture — Wiki](https://github.com/brockhager/neuro-infra/wiki/Data-Flow-Architecture)
  - [Data flow architecture (Wiki)](wiki/data-flow-architecture.md)
 
 Run the nodes
 ------------
 
-To run nodes individually or as a network, follow the step-by-step runbook in `docs/run-nodes.md` which contains details for environment variables, ports, and health checks.
+To run nodes individually or as a network, follow the step-by-step runbook on the wiki: `https://github.com/brockhager/neuro-infra/wiki/Running-Nodes` which contains details for environment variables, ports, and health checks.
 
 Quick start:
 
@@ -135,6 +134,10 @@ Download & Run
 Pre-built installers for `ns-node`, `gateway-node`, and `vp-node` are available on GitHub Releases under the "Assets" section of the release. Each installer is a ZIP file and contains a platform-appropriate binary and a start script. See the "Installation" wiki page for one-click install & run instructions:
 
  - https://github.com/brockhager/neuro-infra/wiki/Installation
+ - https://github.com/brockhager/neuro-infra/wiki/Running-Nodes
+ - https://github.com/brockhager/neuro-infra/wiki/Data-Flow-Architecture
+ - https://github.com/brockhager/neuro-infra/wiki/Contributor-Policy
+ - https://github.com/brockhager/neuro-infra/wiki/Updates
 
 
 Submissions package:

@@ -16,6 +16,9 @@ New to NeuroSwarm? Start here to get up and running quickly.
 
 Begin by cloning the repository, installing dependencies, and running your first build and test cycle.
 
+> NOTE: The definitive, user-facing docs are on the GitHub Wiki: https://github.com/brockhager/neuro-infra/wiki
+> Use the Wiki for quick navigation and contributor onboarding.
+
 ## Contributor Experience
 
 Learn how to contribute effectively to NeuroSwarm's development.

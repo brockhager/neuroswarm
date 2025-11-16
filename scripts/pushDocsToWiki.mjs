@@ -14,7 +14,7 @@ if (!token && !opts.dry) { console.error('GITHUB_TOKEN required unless --dry-run
 const [owner, name] = repo.split('/');
 const wikiUrl = `https://x-access-token:${token}@github.com/${owner}/${name}.wiki.git`;
 const tmpDir = path.join(process.cwd(), 'tmp', 'wiki-clone');
-if (fs.existsSync(tmpDir)) { execSync(`rm -rf ${tmpDir}`); }
+if (fs.existsSync(tmpDir)) { try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch(e) { execSync(`rm -rf ${tmpDir}`); } }
 fs.mkdirSync(tmpDir, { recursive: true });
 if (!opts.dry) {
   console.log('Cloning wiki repo', wikiUrl);
@@ -27,7 +27,11 @@ const mapping = [
   { src: path.join(process.cwd(), 'neuroswarm', 'docs', 'run-nodes.md'), dst: 'Running-Nodes.md' },
   { src: path.join(process.cwd(), 'neuroswarm', 'docs', 'data-flow-architecture.md'), dst: 'Data-Flow-Architecture.md' },
   { src: path.join(process.cwd(), 'neuroswarm', 'docs', 'pnpm-policy.md'), dst: 'Contributor-Policy.md' },
-    { src: path.join(process.cwd(), 'neuroswarm', 'docs', 'node-installation.md'), dst: 'Installation.md' }
+  { src: path.join(process.cwd(), 'neuroswarm', 'docs', 'node-installation.md'), dst: 'Installation.md' },
+  // Home page: canonical front page for the wiki
+  { src: path.join(process.cwd(), 'neuroswarm', 'docs', 'wiki', 'Home.md'), dst: 'Home.md' },
+  // Sync Updates page if present (changelog/Updates.md)
+  { src: path.join(process.cwd(), 'neuroswarm', 'wiki', 'Updates.md'), dst: 'Updates.md' }
 ];
 
 let changed = false;
