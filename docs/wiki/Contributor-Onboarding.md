@@ -38,7 +38,7 @@ Onboarding tasks & First PR ideas
 - Add a `data-testid` or a more reliable selector for a brittle UI element
 
 References
-- `docs/CONTRIBUTOR-GUIDE.md`
+- [Contributor Guide (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Contributor-Guide)
 - `docs/onboarding/contributor-onboarding.md`
 - `docs/review/pr-checklist-ci.md`
 

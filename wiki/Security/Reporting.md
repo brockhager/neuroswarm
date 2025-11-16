@@ -53,6 +53,10 @@ For security-related questions or concerns:
 - **Response Time**: Within 48 hours for vulnerability reports
 - **Disclosure**: Coordinated disclosure process for responsible disclosure
 
+**Alternatively**, you can also open a private GitHub Security Advisory for confidential reports:
+
+- https://github.com/brockhager/neuro-infra/security/advisories
+
 ## Recognition
 
 We appreciate security researchers who help keep NeuroSwarm safe. Contributors who report valid security vulnerabilities may be eligible for bounties and public recognition (with permission).

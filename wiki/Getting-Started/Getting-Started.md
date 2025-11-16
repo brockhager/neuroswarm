@@ -154,16 +154,16 @@ Now that you're set up, let's explore the project structure:
 
 ```bash
 # View the main documentation index
-cat docs/index.md
+See the canonical Docs index on the wiki: https://github.com/brockhager/neuro-infra/wiki/Index
 
 # Check available scripts
-cat docs/scripts/README.md
+See the canonical Scripts documentation on the wiki: https://github.com/brockhager/neuro-infra/wiki/Scripts
 
 # Review governance documentation
-cat docs/governance/governance.md
+See the canonical Governance documentation on the wiki: https://github.com/brockhager/neuro-infra/wiki/Governance
 
 # Look at the contributor guide
-cat docs/CONTRIBUTOR-GUIDE.md
+See the canonical Contributor Guide on the wiki: https://github.com/brockhager/neuro-infra/wiki/Contributor-Guide
 ```
 
 ## Step 6: Make Your First Contribution

@@ -1,3 +1,6 @@
+# ⚠️ This document has moved
+> **This document has moved to the NeuroSwarm Wiki.** Please see the canonical Getting Started guide on the wiki: https://github.com/brockhager/neuro-infra/wiki/Getting-Started
+
 # Getting Started
 
 Welcome to NeuroSwarm! This guide will help you get up and running with the project quickly.
