@@ -1,6 +1,3 @@
-# ⚠️ This document has moved
-> **This document has moved to the NeuroSwarm Wiki.** Please see the canonical Quickstart on the wiki: https://github.com/brockhager/neuro-infra/wiki/Getting-Started
-
 # Interactive Quickstart
 
 ## ⚡ Get NeuroSwarm Running in 5 Minutes
@@ -161,16 +158,14 @@ npm run update:all
 
 ## 📚 **Learn More**
 
-
 This quickstart got you running, but to become an expert:
 
-- **Full Getting Started Guide (Wiki)**: https://github.com/brockhager/neuro-infra/wiki/Getting-Started
-- **Contributor Pathways (Wiki)**: https://github.com/brockhager/neuro-infra/wiki/Getting-Started#contributor-pathways
-- **Governance Rituals (Wiki)**: https://github.com/brockhager/neuro-infra/wiki/Governance/rituals
-- **Technical Deep Dives (Wiki)**: https://github.com/brockhager/neuro-infra/wiki/Architecture/program-architecture
+- **[Full Getting Started Guide](Getting-Started.md)** - Detailed explanations
+- **[Contributor Pathways](../Contributor-Onboarding.md)** - Growth roadmap
+- **[Governance Rituals](../Governance/rituals.md)** - Weekly ceremonies
+- **[Technical Deep Dives](../Architecture/program-architecture.md)** - System architecture
 
 ---
-
 
 ## 💬 **Need Help?**
 
@@ -178,6 +173,4 @@ This quickstart got you running, but to become an expert:
 - **Issues:** Report bugs on [GitHub Issues](https://github.com/brockhager/neuro-infra/issues)
 - **Discussions:** Ask questions in [GitHub Discussions](https://github.com/brockhager/neuro-infra/discussions)
 
-**Pro tip:** Most questions are answered in our [FAQ](https://github.com/brockhager/neuro-infra/wiki/Getting-Started#faq) or [Troubleshooting Guide (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Getting-Started#troubleshooting).
-
-**Pro tip:** Most questions are answered in our [FAQ](faq.md) or [Troubleshooting Guide](/docs/misc/troubleshooting.md).
+**Pro tip:** Most questions are answered in our [FAQ](FAQ.md) or [Troubleshooting Guide](../misc/troubleshooting.md).

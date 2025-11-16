@@ -1,3 +1,6 @@
+# ⚠️ This content has been moved
+> **This knowledge base content has moved to the NeuroSwarm Wiki (canonical).** For the canonical resources, please use our wiki: https://github.com/brockhager/neuro-infra/wiki/Index
+
 # NeuroSwarm Knowledge Base
 
 ## Welcome to NeuroSwarm
@@ -27,8 +30,8 @@ Learn how to contribute effectively to NeuroSwarm's development.
 - **[Contributor Pathways](pathways.md)** - Visual roadmap from newcomer to governance leader
 - **[Community Showcase](showcase.md)** - Featured contributor stories and achievements
 - **[Full KB Index](index.md)** - Complete table of contents for all documentation
-- **[File Organization Rules](/docs/CONTRIBUTOR-GUIDE.md#file-placement)** - Understanding our monorepo structure and hygiene enforcement
-- **[Kanban Workflow](/docs/governance/rituals.md)** - Ready → In Progress → Done process for task management
+- **[File Organization Rules](https://github.com/brockhager/neuro-infra/wiki/Contributor-Guide#file-placement)** - Understanding our monorepo structure and hygiene enforcement
+- **[Kanban Workflow](https://github.com/brockhager/neuro-infra/wiki/Governance/rituals)** - Ready → In Progress → Done process for task management
 - **[Automation Scripts](/docs/scripts/README.md)** - Available tools for development and deployment
 - **[Testing Guidelines](/docs/tests/README.md)** - How we ensure code quality and reliability
 
@@ -36,14 +39,14 @@ Our contributor experience emphasizes clear communication, automated validation,
 
 ## Governance & Transparency
 - **[Governance Model](/docs/governance/governance.md)** - Off-chain community governance vs. on-chain protocol governance
-- **[Weekly Rituals](/docs/governance/rituals.md)** - Structured ceremonies for refinement, dependency reviews, and progress updates
+- **[Weekly Rituals](https://github.com/brockhager/neuro-infra/wiki/Governance/rituals)** - Structured ceremonies for refinement, dependency reviews, and progress updates
 - **[Governance Events](/wp_publish_log.jsonl)** - All governance actions logged in our transparency record
 
 Every decision, from code changes to protocol updates, is recorded and auditable through our governance logging system.
  - **[Governance Events](/governance/logs/wp_publish_log.jsonl)** - All governance actions logged in our transparency record
 
 ### Core Systems
-- **[Program Architecture](/docs/program/architecture.md)** - Solana program foundation and PDA constants
+- **[Program Architecture](https://github.com/brockhager/neuro-infra/wiki/Architecture/program-architecture)** - Solana program foundation and PDA constants
 - **[Shared Libraries](/docs/shared/README.md)** - Common utilities and interfaces
 - **[Services Layer](/docs/services/README.md)** - Backend services and APIs
 - **[Infrastructure](/docs/infra/README.md)** - Deployment and scaling infrastructure
@@ -54,7 +57,7 @@ Every decision, from code changes to protocol updates, is recorded and auditable
 - **[IPFS Storage](/docs/services/IPFS-storage.md)** - Decentralized file storage
 - **[Extensions System](/docs/services/EXTENSIONS.md)** - Plugin architecture
 - **[Global Brain Design](/docs/misc/global-brain-design.md)** - AI coordination patterns
-- **[Security & Trust](/docs/misc/SECURITY-TRUST.md)** - Cryptographic and trust models
+- **[Security & Trust](https://github.com/brockhager/neuro-infra/wiki/Security/Overview)** - Cryptographic and trust models
 
 ## FAQ / Troubleshooting
 
@@ -63,7 +66,7 @@ Common questions and solutions for contributors.
 - **[Frequently Asked Questions](faq.md)** - Answers to common setup, build, and contribution questions
 - **Build Errors** - Check [Getting Started](/docs/getting-started.md#troubleshooting) for common build issues
 - **Sync Agent Issues** - Debug automation problems in [Scripts](/docs/scripts/README.md)
-- **CI/CD Failures** - Understand enforcement rules in [Contributor Guide](/docs/CONTRIBUTOR-GUIDE.md)
+- **CI/CD Failures** - Understand enforcement rules in [Contributor Guide](https://github.com/brockhager/neuro-infra/wiki/Contributor-Guide)
 
 ## Next Steps
 
@@ -79,7 +82,7 @@ Ready to contribute? Here's your pathway forward:
 **Quick Links:**
 - [📋 Open Issues](https://github.com/brockhager/neuro-infra/issues)
 - [💬 Governance Discussions](https://github.com/brockhager/neuro-infra/discussions)
-- [🤝 Contribution Guidelines](/docs/CONTRIBUTOR-GUIDE.md)
+- [🤝 Contribution Guidelines](https://github.com/brockhager/neuro-infra/wiki/Contributor-Guide)
 - **[Community Showcase](showcase.md)** - See contributor stories and get inspired
 
 ## Governance & Transparency
