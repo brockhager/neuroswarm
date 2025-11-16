@@ -152,6 +152,19 @@ app.get('/debug/gateways', (req, res) => {
   res.json({ gateways: GATEWAY_CONFIG.map(g => ({ url: g.url, reachable: g.reachable, lastError: g.lastError })) });
 });
 
+// Peers endpoint: show known gateway peers & validator peers for simple connectivity checks
+app.get('/debug/peers', (req, res) => {
+  try {
+    const peers = {
+      gateways: GATEWAY_CONFIG.map(g => ({ url: g.url, reachable: g.reachable, lastError: g.lastError })),
+      validators: Array.from(validators.entries()).map(([id, v]) => ({ validatorId: id, stake: v.stake, slashed: !!v.slashed }))
+    };
+    res.json({ peers });
+  } catch (e) {
+    res.json({ peers: null, error: e.message });
+  }
+});
+
 // For tests, return headers recorded in last message
 app.get('/debug/last-headers', (req, res) => {
   // read last response in history and surface headers if present
