@@ -233,3 +233,19 @@ Steps to extend the flow (e.g., Reputation, Attestation, or Off-chain Proofs):
 - Add replayable audit trail (e.g., append-only event log) for governance actions, slashes, and important snapshots; consider a small indexing service to allow queryable timelines.
 
 For questions: see contributors' guide in the repo, or contact the maintainers as listed in `README.md`. This document should be used as the design reference for future changes to the system and as an onboarding guide for new contributors working on data flows.
+
+### Gateway Node Environment: NS health check params
+Gateway node supports configuration for how it checks the `ns-node` health on startup. Set these environment variables to tune behavior for CI or local dev:
+
+- `NS_NODE_URL` (string): URL for the NS node to forward to (default: no check performed if not set)
+- `NS_CHECK_RETRIES` (number): How many retry attempts to make before giving up (default: 5)
+- `NS_CHECK_INITIAL_DELAY_MS` (number): Initial backoff delay between retries in ms (default: 500)
+- `NS_CHECK_MAX_DELAY_MS` (number): Maximum backoff delay (default: 30000)
+- `NS_CHECK_EXIT_ON_FAIL` (bool/string): If `true`, the gateway exits if `ns-node` remains unreachable after retries (default: `false`)
+
+Example: start gateway tolerantly and do not exit on missing ns-node:
+
+```bash
+NS_NODE_URL=http://localhost:3000 NS_CHECK_RETRIES=10 NS_CHECK_EXIT_ON_FAIL=false node gateway-node/server.js
+```
+
