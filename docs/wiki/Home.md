@@ -5,7 +5,7 @@ NeuroSwarm is building a decentralized AI platform that emphasizes transparent g
 
 ## Quick Start
 1. Check out our contributor onboarding guide: [Contributor Onboarding](Contributor-Onboarding.md)
-2. Set up your dev environment: `npm ci` and run the Admin Node tests (see [CI/CD & Testing](CI-CD-and-Testing.md))
+2. Set up your dev environment: `pnpm install -w` and run the Admin Node tests (see [CI-CD-and-Testing](CI-CD-and-Testing.md))
 3. For governance rituals and proposer flow: [Governance & Anchoring](Governance-Anchoring.md)
 
 ## Contributor Quick Links

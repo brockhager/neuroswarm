@@ -189,3 +189,6 @@ admin-node/playwright-results/
 secrets/
 *.key
 *.pem
+
+# PNPM workspace lockfile alternative: ignore package-lock.json to prevent accidental npm commits in pnpm workspace
+**/package-lock.json

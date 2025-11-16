@@ -10,12 +10,13 @@ SCRIPT_DIR=$(dirname "$(realpath "$0")")
 ADMIN_ROOT=$(dirname "$SCRIPT_DIR")
 cd "$ADMIN_ROOT"
 
-echo "Running npm ci"
-npm ci
+echo "Running pnpm install for admin-node (frozen lockfile)"
+npm install -g pnpm@8
+pnpm -C . install --frozen-lockfile
 
 echo "Checking lockfile for uncommitted changes"
-if ! git diff --name-only --exit-code package-lock.json; then
-  echo "package-lock.json has changed. Run 'npm ci' locally and commit the updated lockfile or revert package changes."
+if ! git diff --name-only --exit-code pnpm-lock.yaml; then
+  echo "pnpm-lock.yaml has changed. Run 'pnpm -C . install --frozen-lockfile' locally and commit the updated lockfile or revert package changes."
   exit 1
 fi
 

@@ -105,6 +105,28 @@ Key design and developer docs (in the `docs/` folder):
  - [Data flow architecture](docs/data-flow-architecture.md)
  - [Data flow architecture (Wiki)](wiki/data-flow-architecture.md)
 
+Run the nodes
+------------
+
+To run nodes individually or as a network, follow the step-by-step runbook in `docs/run-nodes.md` which contains details for environment variables, ports, and health checks.
+
+Quick start:
+
+```powershell
+# Start ns-node on 3000
+cd neuroswarm
+PORT=3000 node ns-node/server.js > tmp/ns.log 2> tmp/ns.err & echo $! > tmp/ns.pid
+
+# Start gateway on 8080 (point to ns)
+PORT=8080 NS_NODE_URL=http://127.0.0.1:3000 NS_CHECK_EXIT_ON_FAIL=false node gateway-node/server.js > tmp/gw.log 2> tmp/gw.err & echo $! > tmp/gw.pid
+
+# Start vp-node on 4000 (point to ns)
+PORT=4000 NS_NODE_URL=http://127.0.0.1:3000 node vp-node/server.js > tmp/vp.log 2> tmp/vp.err & echo $! > tmp/vp.pid
+
+# Run a quick connectivity check
+node neuroswarm/scripts/checkNodeConnectivityClean.mjs --ns http://localhost:3000 --gateway http://localhost:8080 --ci
+```
+
 Submissions package:
 - `submissions/` — contains submission router, CLI, and validation for contributors to submit data (fingerprint + metadata) to the NeuroSwarm Brain. Mounts at `/v1/brain/submit`.
 

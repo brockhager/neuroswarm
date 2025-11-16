@@ -2,7 +2,7 @@ CI/E2E: Stabilize Admin Node tests, add SafetyService, and enforce reproducible 
 
 This PR addresses stability issues surrounding Admin Node e2e tests and CI reproducibility. Key changes include:
 - Pin Playwright to a stable version for test stability.
-- Enforce deterministic installs using `npm ci` with a CI lockfile validation step.
+- Enforce deterministic installs using `pnpm -C admin-node install --frozen-lockfile` with a CI lockfile validation step (check `pnpm-lock.yaml`).
 - Update seed scripts to compute and write the real `genesisSha256` to `governance-timeline.jsonl` (repo root) and `admin-node` copy so admin observability endpoints match seeded data.
 - Add `SafetyService` (safe mode + `POST /v1/admin/shutdown`) to protect mutating endpoints under maintenance.
 - Improve `AnchorService` to respect `verificationStatus` and support multiple txSignature fields returned by observability.
@@ -13,7 +13,7 @@ This PR addresses stability issues surrounding Admin Node e2e tests and CI repro
 
 Files/areas changed (high-level):
 - `admin-node/` — safety service, seed script updates, services, routes, unit/integration tests, e2e tests.
-- `.github/workflows/admin-node-integration.yml` and `.github/workflows/pr-checklist.yml` — enforced `npm ci`, Playwright validation, seed timeline step, serial e2e tests (`--workers=1`).
+.github/workflows/admin-node-integration.yml and `.github/workflows/pr-checklist.yml` — enforced pnpm install, Playwright validation, seed timeline step, serial e2e tests (`--workers=1`).
 - `docs/review/` — PR checklist (`pr-checklist-ci.md`), PR body (`pr-body-ci.md`), and PR commit message (`pr-commit-message.txt`).
 
 Why this matters
@@ -26,7 +26,7 @@ Quick commands:
 1) Local unit & integration tests
 ```powershell
 cd admin-node
-npm ci
+pnpm -C admin-node install --frozen-lockfile
 npm test
 ```
 2) Playwright E2E (serial for deterministic results)

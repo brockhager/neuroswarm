@@ -10,13 +10,14 @@ $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $adminRoot = Split-Path -Parent $scriptDir
 Set-Location $adminRoot
 
-Write-Host "Running npm ci"
-npm ci
+Write-Host "Running pnpm install for admin-node (frozen lockfile)"
+npm install -g pnpm@8
+pnpm -C . install --frozen-lockfile
 
 Write-Host "Checking lockfile for uncommitted changes"
-git diff --name-only --exit-code package-lock.json
+git diff --name-only --exit-code pnpm-lock.yaml
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "package-lock.json has changed. Run 'npm ci' locally and commit the updated lockfile or revert package changes."
+    Write-Error "pnpm-lock.yaml has changed. Run 'pnpm -C . install --frozen-lockfile' locally and commit the updated lockfile or revert package changes."
     exit 1
 }
 
