@@ -3,7 +3,7 @@
 
 Overview
 
-This page explains how contributors can update the Wiki content kept under `docs/wiki/` in the repository.
+This page explains how contributors can update the Wiki content kept under `neuroswarm/wiki/` in the repository.
 
 Style guide & structure
 - Keep pages small and focused: Overview → Details → How‑to → References
@@ -12,7 +12,7 @@ Style guide & structure
 
 How-to edit the wiki files (preferred flow)
 1. Create a branch: `git checkout -b feat/wiki/YOUR_TOPIC`
-2. Update or add a page under `docs/wiki/<Page-name>.md` with the structure described above.
+2. Update or add a page under `neuroswarm/wiki/<Page-name>.md` with the structure described above.
 3. Run the local checks if you changed docs or workflows:
    - Run `./admin-node/scripts/run-pr-checklist.ps1` or the bash script for tests and validation
 4. Open a PR with a short title describing the changes and add reviewers.
@@ -34,7 +34,7 @@ Review process
 - If you are changing sensitive endpoints, include a code review, test evidence, and a security check.
 
 How to sync to GitHub wiki (automated)
-- The GitHub Action `sync-wiki.yml` (added) will automatically copy `docs/wiki/` to the GitHub wiki (repository.wiki.git) on merges to `main`.
+- The GitHub Action `sync-wiki.yml` (added) will automatically copy `neuroswarm/wiki/` to the GitHub wiki (repository.wiki.git) on merges to `main`.
 
 References
 - `docs/review/pr-checklist-ci.md`

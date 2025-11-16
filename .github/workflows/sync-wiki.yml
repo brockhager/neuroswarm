@@ -49,7 +49,7 @@ jobs:
         run: |
           rm -rf wiki-repo/* || true
           # Update Last updated timestamps in each wiki source file based on last commit date
-          for f in docs/wiki/*.md; do
+          for f in neuroswarm/wiki/*.md; do
             # Get ISO 8601 commit date for the file's last commit
             d=$(git log -1 --format=%cI -- "$f" || true)
             if [ -z "$d" ]; then
@@ -62,7 +62,7 @@ jobs:
               echo -e "\nLast updated: $d" >> "$f"
             fi
           done
-          cp -r docs/wiki/* wiki-repo/
+          cp -r neuroswarm/wiki/* wiki-repo/
 
       - name: Commit and push
         working-directory: wiki-repo
@@ -72,7 +72,7 @@ jobs:
             echo "No wiki changes detected"
             exit 0
           fi
-          git commit -m "chore(wiki): sync docs/wiki content (automated)"
+          git commit -m "chore(wiki): sync neuroswarm/wiki content (automated)"
           git push
 
     permissions:

@@ -61,7 +61,7 @@ Run the preferred script from the repo root to validate the PR checklist locally
 - [ ] Confirm `README.md` references the onboarding doc and e2e setup.
 - [ ] Confirm `docs/changelog/changelog-112025.md` or `PR-CI-E2E-SAFETY.md` accurately describes the PR changes.
 - [ ] Confirm `.github/PULL_REQUEST_TEMPLATE.md` is present and references key tests or a link to this checklist.
-- [ ] If docs or endpoints changed, update the `docs/wiki/*` page(s) or the wiki with the appropriate change; reference the wiki change in your PR.
+- [ ] If docs or endpoints changed, update the `neuroswarm/wiki/*` page(s) or the wiki with the appropriate change; reference the wiki change in your PR.
 
 ---
 

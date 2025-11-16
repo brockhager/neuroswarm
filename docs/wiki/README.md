@@ -1,4 +1,4 @@
-# NeuroSwarm Knowledge Base (docs/wiki)
+# NeuroSwarm Knowledge Base (neuroswarm/wiki)
 
 This folder contains the markdown pages that populate the project’s GitHub wiki. Pages under this folder are automatically synced to the repository’s GitHub Wiki after merges to `main` using `.github/workflows/sync-wiki.yml`.
 
@@ -9,7 +9,7 @@ Standards
 - Use `Index.md` as the top-level navigation.
 
 How to use
-- Edit pages under `docs/wiki` and open a PR using the `pr-checklist.yml` workflow to validate.
+- Edit pages under `neuroswarm/wiki` and open a PR using the `pr-checklist.yml` workflow to validate.
 - After merge, `sync-wiki` will update the `repo.wiki` content automatically.
 
 Support
