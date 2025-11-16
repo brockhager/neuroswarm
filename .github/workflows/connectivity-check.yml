@@ -1,0 +1,60 @@
+name: Connectivity Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+jobs:
+  connectivity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies (pnpm)
+        run: |
+          npm install -g pnpm@8
+          pnpm install -w
+
+      - name: Start ns-node
+        run: |
+          sed -n '1,120p' neuroswarm/ns-node/server.js > /dev/null
+          node neuroswarm/ns-node/server.js > ns.log 2> ns.err & echo $! > ns.pid
+
+      - name: Wait for ns-node health
+        run: |
+          set -ex
+          for i in 1 2 3 4 5; do
+            if curl --silent --fail http://localhost:3000/health; then exit 0; fi
+            sleep 1
+          done
+          echo 'ns-node failed to become healthy' && exit 1
+
+      - name: Start gateway
+        run: |
+          node neuroswarm/gateway-node/server.js > gw.log 2> gw.err & echo $! > gw.pid
+
+      - name: Wait for gateway health
+        run: |
+          set -ex
+          for i in 1 2 3 4 5; do
+            if curl --silent --fail http://localhost:8080/health; then exit 0; fi
+            sleep 1
+          done
+          echo 'gateway failed to become healthy' && exit 1
+
+      - name: Run connectivity script (CI)
+        run: |
+          node neuroswarm/scripts/checkNodeConnectivityClean.mjs --ns http://localhost:3000 --gateway http://localhost:8080 --timeout 2000 --ci
+
+      - name: Teardown
+        if: always()
+        run: |
+          if [ -f ns.pid ]; then kill $(cat ns.pid) || true; fi
+          if [ -f gw.pid ]; then kill $(cat gw.pid) || true; fi
