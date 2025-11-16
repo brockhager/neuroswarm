@@ -102,6 +102,8 @@ Key design and developer docs (in the `docs/` folder):
  - [Contributor onboarding](docs/onboarding/contributor-onboarding.md)
  - [Project Wiki (living docs)](https://github.com/brockhager/neuro-infra/wiki)
  - [Getting Started (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Getting-Started)
+ - [Data flow architecture](docs/data-flow-architecture.md)
+ - [Data flow architecture (Wiki)](wiki/data-flow-architecture.md)
 
 Submissions package:
 - `submissions/` — contains submission router, CLI, and validation for contributors to submit data (fingerprint + metadata) to the NeuroSwarm Brain. Mounts at `/v1/brain/submit`.
