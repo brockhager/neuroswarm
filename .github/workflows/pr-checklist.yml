@@ -6,6 +6,7 @@ on:
       - 'admin-node/**'
       - '.github/**'
       - 'docs/**'
+      - 'neuroswarm/wiki/**'
 
 permissions:
   contents: write

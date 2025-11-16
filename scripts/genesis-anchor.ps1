@@ -5,8 +5,10 @@ param(
     [string]$GenesisFile = "admin-genesis.json",
     [string]$FounderWallet = $env:FOUNDER_WALLET,
     [string]$SolanaRpc = $env:SOLANA_RPC,
-    [string]$LogFile = "../wp_publish_log.jsonl"
+    [string]$LogFile = $env:WP_PUBLISH_LOG_PATH
 )
+
+if (-not $LogFile) { $LogFile = "../governance/logs/wp_publish_log.jsonl" }
 
 # Default values
 if (-not $SolanaRpc) { $SolanaRpc = "https://api.mainnet-beta.solana.com" }
