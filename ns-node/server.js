@@ -290,6 +290,19 @@ app.post('/blocks/produce', (req, res) => {
   res.json({ ok: true, blockHash: result.blockHash });
 });
 
+// Debug endpoint: verify header signature (canonicalize used same way as in produce)
+app.post('/debug/verifyHeader', (req, res) => {
+  const { header, signature, publicKey } = req.body || {};
+  if (!header || !signature || !publicKey) return res.status(400).json({ error: 'header/signature/publicKey required' });
+  try {
+    const data = canonicalize({ ...header, signature: undefined });
+    const ok = verifyEd25519(publicKey, data, signature);
+    return res.json({ ok, data });
+  } catch (e) {
+    return res.status(400).json({ ok: false, error: e.message });
+  }
+});
+
 app.get('/blocks/latest', (req, res) => {
   const b = canonicalTipHash ? blockMap.get(canonicalTipHash) : null;
   res.json({ block: b });
@@ -437,12 +450,20 @@ function performReorg(oldTipHash, newTipHash) {
   const rollbackHashes = [];
   if (oldTipHash) {
     let h = oldTipHash;
-    while (h && h !== ancestor) { rollbackHashes.push(h); h = blockMap.get(h).parentHash; }
+    while (h && h !== ancestor) {
+      if (!blockMap.has(h)) break;
+      rollbackHashes.push(h);
+      h = blockMap.get(h).parentHash;
+    }
   }
   // accumulate apply chain from ancestor's child to new tip
   const applyHashes = [];
   let h = newTipHash;
-  while (h && h !== ancestor) { applyHashes.push(h); h = blockMap.get(h).parentHash; }
+  while (h && h !== ancestor) {
+    if (!blockMap.has(h)) break;
+    applyHashes.push(h);
+    h = blockMap.get(h).parentHash;
+  }
   applyHashes.reverse();
   // rollback: we will restore validator state to ancestor snapshot if ancestor exists, else genesis
   if (ancestor) {
@@ -451,9 +472,9 @@ function performReorg(oldTipHash, newTipHash) {
     validators.clear();
     for (const [id, v] of snapArr) validators.set(id, { stake: Number(v.stake), publicKey: v.publicKey });
   } else {
-    // genesis, clear validators
-    validators.clear();
-    totalStake = 0;
+    // ancestor is null (genesis): do not clear global validator registrations here.
+    // Keep global validators (registrations) as they are; snapshots are used only
+    // for branch-local state during reorgs.
   }
   // rebuild txIndex and mempool: collect txs removed by rollback, clear mempool, then replay canonical chain
   txIndex.clear();
