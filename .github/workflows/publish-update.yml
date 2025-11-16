@@ -16,6 +16,30 @@ on:
         description: 'Whether to commit/push update to the repo'
         required: false
         default: 'true'
+      pr:
+        description: 'Create a new branch and push the update as a PR branch instead of committing to main'
+        required: false
+        default: 'false'
+      open_pr:
+        description: 'Open a PR automatically after pushing the branch'
+        required: false
+        default: 'false'
+      base:
+        description: 'Base branch to target for the PR (only used if pr=true)'
+        required: false
+        default: 'main'
+      template:
+        description: 'Template for PR and wiki entry (plain|full)'
+        required: false
+      template_file:
+        description: 'Path to a custom template file to use for PR body and wiki entry (optional)'
+        required: false
+      labels:
+        description: 'Comma-separated list of labels to add to PR (only used if pr=true)'
+        required: false
+      reviewers:
+        description: 'Comma-separated list of usernames to request review from (only used if pr=true)'
+        required: false
 
 jobs:
   publish:
@@ -31,12 +55,21 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Run publishUpdate script
+      - name: Run publishUpdate script (ESM)
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
           set -e
           ARGS=(--title "${{ github.event.inputs.title }}" --body "${{ github.event.inputs.body }}")
           if [ -n "${{ github.event.inputs.author }}" ]; then ARGS+=(--author "${{ github.event.inputs.author }}"); fi
           if [ "${{ github.event.inputs.push }}" = 'true' ]; then ARGS+=(--push); fi
-          node neuroswarm/scripts/publishUpdate.js "${ARGS[@]}"
+          if [ "${{ github.event.inputs.pr }}" = 'true' ]; then ARGS+=(--pr); fi
+          if [ "${{ github.event.inputs.open_pr }}" = 'true' ]; then ARGS+=(--open-pr); fi
+          if [ -n "${{ github.event.inputs.base }}" ]; then ARGS+=(--base "${{ github.event.inputs.base }}"); fi
+          if [ -n "${{ github.event.inputs.template }}" ]; then ARGS+=(--template "${{ github.event.inputs.template }}"); fi
+          if [ -n "${{ github.event.inputs.template_file }}" ]; then ARGS+=(--template-file "${{ github.event.inputs.template_file }}"); fi
+          if [ -n "${{ github.event.inputs.labels }}" ]; then ARGS+=(--labels "${{ github.event.inputs.labels }}"); fi
+          if [ -n "${{ github.event.inputs.reviewers }}" ]; then ARGS+=(--reviewers "${{ github.event.inputs.reviewers }}"); fi
+          node neuroswarm/scripts/publishUpdate.mjs "${ARGS[@]}"

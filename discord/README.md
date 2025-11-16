@@ -16,7 +16,34 @@ You can use the repository workflow `neuroswarm/.github/workflows/publish-update
 - Post a message to the `DISCORD_WEBHOOK`.
 
 If you prefer to use a bot to create channels programmatically, add a bot to the server and use bot token and the `createChannel.js` helper in `scripts/` (example not included by default).
- * If you prefer to programmatically create a channel, add a bot to your server and grant it `MANAGE_CHANNELS`, set `DISCORD_BOT_TOKEN` and `GUILD_ID`, and run `node neuroswarm/scripts/createDiscordChannel.js --name 'project-updates' --type text`.
+	* If you prefer to programmatically create a channel, add a bot to your server and grant it `MANAGE_CHANNELS`, set `DISCORD_BOT_TOKEN` and `GUILD_ID`, and run `node neuroswarm/scripts/createDiscordChannel.js --name 'project-updates' --type text`.
+
+Note: To publish an update that appends to the wiki and posts to Discord, call the ESM script `neuroswarm/scripts/publishUpdate.mjs` using Node. For example:
+
+```bash
+node neuroswarm/scripts/publishUpdate.mjs --title "New Update" --body "Update body" --author "Bot"
+```
+You can override the webhook URL on the command line for testing with `--webhook`:
+
+```bash
+node neuroswarm/scripts/publishUpdate.mjs --title "Testing webhook" --body "Testing" --webhook "https://discord.com/api/webhooks/..."
+
+Templates and custom PR body
+---------------------------
+If you'd like structured PRs, use the built-in `--template full` option to generate a PR body with Summary/Impact/Next Steps and add Update metadata to the wiki entry. You can also supply `--template-file <path>` and include placeholders such as `{{title}}`, `{{body}}`, `{{author}}`, `{{date}}`, `{{labels}}`, and `{{reviewers}}`.
+
+Example:
+
+```bash
+node neuroswarm/scripts/publishUpdate.mjs --title "New Update" --body "Summary..." --pr --open-pr --template full --labels "ops" --reviewers "alice"
+```
+
+If you want to request reviewers or add repo labels when creating a PR from the script, you can use `--reviewers` and `--labels`:
+
+```bash
+node neuroswarm/scripts/publishUpdate.mjs --title "New Update" --body "Update body" --author "Bot" --pr --open-pr --labels "ops,release" --reviewers "alice,bob"
+```
+```
 # NeuroSwarm Discord Integration
 
 This directory contains the Discord bot integration for NeuroSwarm governance notifications and server management.
