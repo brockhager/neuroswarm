@@ -256,7 +256,7 @@ jobs:
           node-version: '18'
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install -w
 
       - name: Generate API docs
         run: npm run docs:generate

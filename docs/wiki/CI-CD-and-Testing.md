@@ -8,8 +8,8 @@ This page documents the project's CI/CD and Playwright e2e testing strategy and 
 Key pieces
 - GitHub Actions workflows:
   - `admin-node-integration.yml`: unit, integration, and Playwright e2e tests.
-  - `pr-checklist.yml`: PR-level validation that runs `npm ci`, unit tests and a PR e2e smoke run
-- Lockfile enforcement: CI uses `npm ci` and validates `package-lock.json` to prevent drift
+  - `pr-checklist.yml`: PR-level validation that runs `pnpm install -w`, unit tests and a PR e2e smoke run
+- Lockfile enforcement: CI uses `pnpm install -w` and validates `pnpm-lock.yaml` to prevent drift
 - Playwright: pinned version and local/CI scripts to run E2E in serial mode (`--workers=1`) while tests rely on global state like `shutdown`.
 
 How-to
@@ -21,7 +21,7 @@ How-to
 3. If adding tests that require a seeded timeline, extend `scripts/seed-e2e-timeline.js` or call it from test fixtures.
 
 Checklist for PR Reviewers
-- [ ] `npm ci` does not change the lockfile
+- [ ] `pnpm install -w` does not change the lockfile
 - [ ] Unit and integration tests pass locally and in CI
 - [ ] Playwright e2e runs pass (or failures are recorded and saved as artifacts)
 - [ ] Playwright HTML report and traces are uploaded to the workflow artifacts

@@ -42,6 +42,6 @@ Configuration:
 Usage:
 ```
 cd gateway-node
-npm ci
-npm start
+pnpm -C gateway-node install --frozen-lockfile
+pnpm -C gateway-node start
 ```

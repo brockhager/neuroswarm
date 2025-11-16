@@ -8,9 +8,9 @@
 
 ```bash
 cd admin-node
-npm ci
+pnpm -C admin-node install --frozen-lockfile
 npx playwright install --with-deps
-NODE_ENV=test npm test
+NODE_ENV=test pnpm -C admin-node test
 npx playwright test -c e2e/playwright.config.ts --project=chromium
 ```
 

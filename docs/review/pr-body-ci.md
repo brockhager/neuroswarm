@@ -3,7 +3,7 @@ PR Title: CI/E2E: Stabilize Admin Node tests, add SafetyService, and enforce rep
 Overview
 - This PR addresses stability issues surrounding the Admin Node e2e tests and CI reproducibility. Key changes include:
   - Pin Playwright to a stable version used locally to reduce test flakiness.
-  - Enforce deterministic installs using `npm ci` with a CI lockfile validation step.
+  - Enforce deterministic installs using `pnpm -C admin-node install --frozen-lockfile` with a CI lockfile validation step (check `pnpm-lock.yaml`).
   - Update seed scripts to compute and write the real `genesisSha256` to `governance-timeline.jsonl` in the repository root and `admin-node` copy so the observability endpoints match seeded data.
   - Add `SafetyService` (safe mode + `POST /v1/admin/shutdown`) to protect mutating endpoints under maintenance.
   - Improve `AnchorService` to honor verification state and multiple txSignature fields reported by observability.
@@ -11,7 +11,7 @@ Overview
 
 Files/areas changed (high-level):
 - `admin-node/` — safety service, seed script updates, services, routes, unit/integration tests, e2e tests
-- `.github/workflows/admin-node-integration.yml` — enforced `npm ci`, Playwright validation, seed timeline step, serial e2e tests (`--workers=1`)
+ - `.github/workflows/admin-node-integration.yml` — enforced pnpm install, Playwright validation, seed timeline step, serial e2e tests (`--workers=1`)
 - `docs/review/` — added PR checklist & PR helper docs
 
 Why this matters
@@ -26,8 +26,8 @@ Validation steps and reviewer tips
   - Or run the commands manually:
     ```powershell
     cd admin-node
-    npm ci
-    git diff --exit-code package-lock.json || (echo "Lockfile changed"; exit 1)
+    pnpm -C admin-node install --frozen-lockfile
+    git diff --exit-code pnpm-lock.yaml || (echo "Lockfile changed"; exit 1)
     npx playwright install --with-deps
     npm test
     npx playwright test -c e2e/playwright.config.ts --project=chromium --workers=1

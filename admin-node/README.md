@@ -220,17 +220,17 @@ Run locally (requires Playwright to be installed):
 
 ```bash
 cd admin-node
-npm ci
+pnpm -C admin-node install --frozen-lockfile
 npx playwright install
-npm run e2e
+pnpm -C admin-node run e2e
 ```
 
 CI: Playwright e2e tests are executed in `.github/workflows/admin-node-integration.yml` in the `e2e-tests` job.
 
 Reproducible E2E setup:
-- Use `npm ci` to ensure `package-lock.json` is used for deterministic installs.
+- Use `pnpm -C admin-node install --frozen-lockfile` to ensure deterministic installs (`pnpm-lock.yaml`).
 - Install Playwright browsers with `npx playwright install --with-deps` after dependency install.
-- When contributing, run these steps to validate: `npm ci && npx playwright install && npm run e2e`.
+- When contributing, run these steps to validate: `pnpm -C admin-node install --frozen-lockfile && npx playwright install && pnpm -C admin-node run e2e`.
 
 UI polish & e2e coverage notes:
 - The dashboard now features non-blocking toast notifications for key actions (copy-to-clipboard, mark verified, set tx signature) to improve UX.
@@ -243,8 +243,8 @@ Run the project's unit and integration tests locally with the standard test runn
 
 ```bash
 cd admin-node
-npm ci
-npm test
+pnpm -C admin-node install --frozen-lockfile
+pnpm -C admin-node test
 ```
 
 To run a single integration test or a subset by name, pass Jest `-t`:

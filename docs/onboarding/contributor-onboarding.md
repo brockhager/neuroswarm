@@ -17,7 +17,7 @@ This document outlines the recommended contributor onboarding flow, a minimal sk
 
 ## Assessment (Suggested)
 - Basics:
-  - Fork repo, run `npm ci`, `npm run test`, `npm run lint`.
+  - Fork repo, run `pnpm install -w`, `pnpm -C neuro-services test`, `pnpm -C neuro-services run lint`.
   - Create PR that fixes a minor doc or test bug.
 - Developer tasks:
   - Implement a small Playwright test or add an e2e check to an existing spec.

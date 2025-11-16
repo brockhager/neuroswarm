@@ -15,7 +15,7 @@ How-to
    ```bash
    git clone https://github.com/brockhager/neuroswarm.git
    cd neuroswarm
-   npm ci
+   pnpm install -w
    ```
 2. Run unit and integration tests:
    ```bash
