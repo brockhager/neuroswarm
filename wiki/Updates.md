@@ -37,4 +37,7 @@ Testing branch message
 Testing branch message
 
 ---
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
