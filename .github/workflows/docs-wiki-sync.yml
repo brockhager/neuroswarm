@@ -1,0 +1,29 @@
+name: Sync docs to Wiki
+
+on:
+  push:
+    paths:
+      - 'neuroswarm/docs/**'
+  workflow_dispatch:
+
+jobs:
+  push-wiki:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm@8
+
+      - name: Run docs to wiki script
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          node neuroswarm/scripts/pushDocsToWiki.mjs

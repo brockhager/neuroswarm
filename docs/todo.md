@@ -108,8 +108,8 @@ Each backlog item must meet ALL criteria before moving to Ready:
 - [ ] Design emergency shutdown protocols for swarm safety
 - [ ] Implement cross-chain interoperability for token transfers
 - [ ] Create dispute resolution mechanism for governance conflicts
- - [x] CI / Lockfile Reproducibility: Pin Playwright/browsers in lockfile and use `npm ci` in e2e job (Priority: MEDIUM, Estimate: S, Assignee: DevOps)
-	 - Completed: `.github/workflows/admin-node-integration.yml` updated to use `npm ci` for e2e job; `package.json` Playwright pinned to `1.56.1`; README updated with reproducible e2e steps.
+ - [x] CI / Lockfile Reproducibility: Pin Playwright/browsers in lockfile and use `pnpm install -w` in e2e job (Priority: MEDIUM, Estimate: S, Assignee: DevOps)
+ 	 - Completed: `.github/workflows/admin-node-integration.yml` updated to use `pnpm install -w` for e2e job; `package.json` Playwright pinned to `1.56.1`; README updated with reproducible e2e steps.
 
 ### LOW Priority
 - [ ] Design mobile application for swarm monitoring

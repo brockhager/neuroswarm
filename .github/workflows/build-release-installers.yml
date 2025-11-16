@@ -1,0 +1,78 @@
+name: Build & Publish Installers
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm@8
+
+      - name: Install dependencies
+        run: pnpm install -w
+
+      - name: Build binary for target OS
+        run: |
+          set -ex
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then OSNAME=linux; fi
+          if [[ "${{ matrix.os }}" == "macos-latest" ]]; then OSNAME=macos; fi
+          if [[ "${{ matrix.os }}" == "windows-latest" ]]; then OSNAME=win; fi
+          node neuroswarm/scripts/package-binaries.mjs --os $OSNAME
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.os }}
+          path: dist/*.zip
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: installers-ubuntu-latest
+          path: installers-linux
+        continue-on-error: true
+      - name: Download mac artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: installers-macos-latest
+          path: installers-macos
+        continue-on-error: true
+      - name: Download windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: installers-windows-latest
+          path: installers-win
+        continue-on-error: true
+      - name: List installers
+        run: |
+          ls -la installers-linux || true
+          ls -la installers-macos || true
+          ls -la installers-win || true
+      - name: Create or update GitHub Release and upload installers
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            installers-linux/*.zip
+            installers-macos/*.zip
+            installers-win/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

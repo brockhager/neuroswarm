@@ -145,6 +145,53 @@ Follow this sequence to start an integrated environment and run simple connectiv
 
 7. Verify the block was accepted by ns (we assume server return `ok: true` or a 200 status) and check logs for SPV proof generation.
 
+Using the installers
+--------------------
+
+For end users: download the ZIP for your platform from the GitHub Release page for the project. Extract the ZIP and run the bundled `start.sh` or `start.bat` file. The default gateway installer will attempt to open your browser at `http://localhost:8080` when the gateway is ready.
+
+Building installers locally (advanced)
+-------------------------------------
+
+Developers can reproduce installers locally by running the packaging script (requires Node 20 and pnpm installed):
+
+```bash
+pnpm -C neuroswarm package:bins -- --os linux
+pnpm -C neuroswarm package:bins -- --os macos
+pnpm -C neuroswarm package:bins -- --os win
+```
+
+The packaged ZIP files will be in `neuroswarm/dist/` after the build.
+
+
+Reverse start order (Gateway first)
+-----------------------------------
+
+To validate gateway startup tolerance (so nodes can be started in any order, or gateway starts before ns):
+
+1. Start gateway without ns up and ensure it stays alive (must set `NS_CHECK_EXIT_ON_FAIL=false`):
+
+  ```powershell
+  PORT=8080 NS_NODE_URL=http://127.0.0.1:3000 NS_CHECK_EXIT_ON_FAIL=false node gateway-node/server.js > tmp/gw.log 2> tmp/gw.err & echo $! > tmp/gw.pid
+  curl -s http://localhost:8080/health
+  ```
+
+2. Start ns-node afterwards:
+
+  ```powershell
+  PORT=3000 node ns-node/server.js > tmp/ns.log 2> tmp/ns.err & echo $! > tmp/ns.pid
+  curl -s http://localhost:3000/health
+  ```
+
+3. Validate the gateway sees ns via `GET /debug/peers` and `nsOk: true`:
+
+  ```powershell
+  curl -s http://localhost:8080/debug/peers
+  ```
+
+4. Start vp-node and validate registration and block production as above.
+
+
 Validation & Tests (Local)
 -------------------------
 - Run connectivity smoke test:
@@ -175,6 +222,8 @@ Use the `neuroswarm/.github/workflows/run-nodes-integration.yml` (or equivalent)
 - Wait for `/health` endpoints
 - Run `node neuroswarm/scripts/checkNodeConnectivityClean.mjs --ci` to validate forwarding
 - Run `pnpm -w --filter neuro-services test:ci` (or `pnpm -C neuro-services test:ci`) to run consensus tests (CI-friendly)
+
+Note: PoS test suite (`neuro-services` PoS integration tests) are now required in CI. If these tests fail in integration runs, the CI job will fail and block merges until fixed. Use the locally available tests (e.g., `pnpm -C neuro-services test -- tests/pos-*.test.ts`) to reproduce issues locally and inspect `neuroswarm/tmp/logs` for detailed node logs.
 - Capture logs and upload as artifacts if tests fail
 
 Notes & Troubleshooting

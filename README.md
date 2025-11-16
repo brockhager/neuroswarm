@@ -127,6 +127,16 @@ PORT=4000 NS_NODE_URL=http://127.0.0.1:3000 node vp-node/server.js > tmp/vp.log 
 node neuroswarm/scripts/checkNodeConnectivityClean.mjs --ns http://localhost:3000 --gateway http://localhost:8080 --ci
 ```
 
+Note: This repository adopts a pnpm-only workflow. CI enforces that no `package-lock.json` files are checked in — use `pnpm install -w` and `pnpm -C <pkg>` for per-package installs.
+
+Download & Run
+--------------
+
+Pre-built installers for `ns-node`, `gateway-node`, and `vp-node` are available on GitHub Releases under the "Assets" section of the release. Each installer is a ZIP file and contains a platform-appropriate binary and a start script. See the "Installation" wiki page for one-click install & run instructions:
+
+ - https://github.com/brockhager/neuro-infra/wiki/Installation
+
+
 Submissions package:
 - `submissions/` — contains submission router, CLI, and validation for contributors to submit data (fingerprint + metadata) to the NeuroSwarm Brain. Mounts at `/v1/brain/submit`.
 

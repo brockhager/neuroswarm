@@ -501,7 +501,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '18'
-      - run: npm ci
+      - run: pnpm install -w
       - run: npm run lint
       - run: npm test
       - run: npm run test:coverage

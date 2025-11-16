@@ -4,6 +4,7 @@
   "description": "NeuroSwarm coordination and documentation",
   "main": "dist/index.js",
   "scripts": {
+    "package:bins": "node ./scripts/package-binaries.mjs",
     "build": "tsc --project config",
     "test": "node tests/governance/test-quorum-validation.ts",
     "submit-proposals": "node scripts/governance/submit-bootstrap-proposals.ts",
@@ -15,6 +16,10 @@
     "@solana/web3.js": "^1.87.6"
   },
   "devDependencies": {
+    "open": "^9.0.0",
+    "node-fetch": "^3.3.1",
+    "pkg": "^5.8.0",
+    "archiver": "^5.3.1",
     "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^8.46.4",
     "@typescript-eslint/parser": "^8.46.4",
