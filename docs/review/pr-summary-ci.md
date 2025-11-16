@@ -6,7 +6,7 @@ Short summary:
 Why this change:
 - Fixes flaky Playwright e2e tests by ensuring seeded governance timeline entries are consumed by the Admin Node observability endpoints.
 - Adds safe-mode (maintenance) features for controlled mutating operations and tests to ensure these APIs do not alter state during safe mode.
-- Improves CI reproducibility via `npm ci` and lockfile validation.
+- Improves CI reproducibility via `pnpm install -w` and lockfile validation.
 
 Validation steps (quick):
 1. Local unit tests

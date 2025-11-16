@@ -1,5 +1,5 @@
 # PowerShell script to validate PR checklist
-# Runs npm ci, validates lockfile is unchanged, installs Playwright browsers, runs unit/integration tests and Playwright e2e tests in serial.
+# Runs pnpm install, validates lockfile is unchanged, installs Playwright browsers, runs unit/integration tests and Playwright e2e tests in serial.
 
 $ErrorActionPreference = 'Stop'
 
