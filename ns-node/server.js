@@ -44,6 +44,7 @@ app.post('/chat', (req, res) => {
   const body = req.body || {};
   const sender = body.sender || 'user';
   const content = body.content || '';
+  const auth = req.header('authorization') || '';
 
   if (!content) return res.status(400).json({ error: 'content is required' });
 
@@ -60,11 +61,85 @@ app.post('/chat', (req, res) => {
   };
 
   const history = loadHistory();
-  history.push({ direction: 'in', ...inMsg });
-  history.push({ direction: 'out', ...response });
+  history.push({ direction: 'in', ...inMsg, headers: { authorization: auth } });
+  history.push({ direction: 'out', ...response, headers: { authorization: auth } });
   saveHistory(history);
 
+  // Try to publish message to configured gateways in order (primary first)
+  publishToGateways({ id: response.id, sender: response.sender, content: response.content, timestamp: response.timestamp })
+    .catch((err) => {
+      console.error('Failed to publish to gateways:', err);
+    });
+
   res.json(response);
+});
+
+// Gateways config
+const GATEWAY_CONFIG = loadGatewayConfig();
+
+function loadGatewayConfig() {
+  try {
+    // Priority: full JSON config in env var GATEWAY_CONFIG (JSON array), else GATEWAY_URLS comma-separated, else default local gateway
+    const cfgEnv = process.env.GATEWAY_CONFIG;
+    if (cfgEnv) {
+      const arr = JSON.parse(cfgEnv);
+      return arr.map((item) => ({ url: item.url, auth: item.auth || null, reachable: false, lastError: null }));
+    }
+    const urls = (process.env.GATEWAY_URLS || '').split(',').map(s => s.trim()).filter(Boolean);
+    const objs = urls.length > 0 ? urls.map(u => ({ url: u, auth: null, reachable: false, lastError: null })) : [{ url: 'http://localhost:3000', auth: null, reachable: false, lastError: null }];
+    return objs;
+  } catch (e) {
+    return [{ url: 'http://localhost:3000', auth: null, reachable: false, lastError: String(e) }];
+  }
+}
+
+async function publishToGateways(message) {
+  const correlationId = uuidv4();
+  let lastError = null;
+  for (const gw of GATEWAY_CONFIG) {
+    const url = gw.url.replace(/\/$/, '') + '/v1/chat';
+    try {
+      const headers = { 'Content-Type': 'application/json', 'X-Correlation-ID': correlationId };
+      if (gw.auth) {
+        if (gw.auth.type === 'jwt') headers['Authorization'] = `Bearer ${gw.auth.token}`;
+        if (gw.auth.type === 'apiKey') headers['X-API-Key'] = gw.auth.key;
+      }
+      console.log(`[NS-NODE] Publishing message ${message.id} to gateway ${gw.url} correlation=${correlationId}`);
+      const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(message) });
+      if (res.ok) {
+        gw.reachable = true;
+        gw.lastError = null;
+        return { gateway: gw.url, status: 'ok' };
+      } else {
+        gw.reachable = false;
+        gw.lastError = `HTTP ${res.status}`;
+        lastError = gw.lastError;
+      }
+    } catch (err) {
+      gw.reachable = false;
+      gw.lastError = String(err);
+      lastError = gw.lastError;
+      console.error(`[NS-NODE] Gateway ${gw.url} failed: ${err}`);
+    }
+  }
+  throw new Error(`All gateways failed; lastError=${lastError}`);
+}
+
+// Debug gateways endpoint
+app.get('/debug/gateways', (req, res) => {
+  res.json({ gateways: GATEWAY_CONFIG.map(g => ({ url: g.url, reachable: g.reachable, lastError: g.lastError })) });
+});
+
+// For tests, return headers recorded in last message
+app.get('/debug/last-headers', (req, res) => {
+  // read last response in history and surface headers if present
+  try {
+    const history = loadHistory();
+    const last = history[history.length - 1] || {};
+    res.json({ lastHeaders: last.headers || null });
+  } catch (e) {
+    res.json({ lastHeaders: null });
+  }
 });
 
 app.get('/history', (req, res) => {
