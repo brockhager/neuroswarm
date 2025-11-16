@@ -268,6 +268,8 @@ app.post('/blocks/produce', (req, res) => {
   const { header, txs, signature } = req.body || {};
   if (!header || !header.validatorId) return res.status(400).json({ error: 'invalid header' });
   if (!validators.has(header.validatorId)) return res.status(400).json({ error: 'unknown validator' });
+  const maybeSlashed = validators.get(header.validatorId) && validators.get(header.validatorId).slashed;
+  if (maybeSlashed) return res.status(400).json({ error: 'validator_slashed' });
   const v = validators.get(header.validatorId);
   // verify signature (HMAC for now)
   const data = canonicalize({ ...header, signature: undefined });
