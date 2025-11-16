@@ -1,4 +1,3 @@
-#!/usr/bin/env markdown
 # NeuroSwarm Data Flow Architecture (Wiki)
 
 Version: 2025-11-16
