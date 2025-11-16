@@ -1,0 +1,63 @@
+name: Validate Packaging & Wiki Sync
+
+on:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    strategy:
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            os: linux
+          - runner: macos-latest
+            os: macos
+          - runner: windows-latest
+            os: win
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm@8
+
+      - name: Install dependencies
+        run: pnpm install -w
+
+      - name: Build installers for ${{ matrix.os }}
+        run: |
+          set -ex
+          pnpm -C neuroswarm package:bins -- --os ${{ matrix.os }}
+
+      - name: List generated artifacts
+        run: |
+          set -ex
+          ls -la neuroswarm/dist || true
+
+      - name: Validate archives contain start scripts and binaries
+        run: |
+          set -ex
+          for z in neuroswarm/dist/*.zip; do
+            echo "Checking $z";
+            if [[ "${{ matrix.os }}" == "win" ]]; then
+              powershell -NoProfile -Command "Write-Host 'Listing archive via PowerShell'; Expand-Archive -Path $z -DestinationPath ./tmp-unzip -Force; Get-ChildItem -Recurse -Path ./tmp-unzip"
+            else
+              unzip -l $z
+            fi
+          done
+
+      - name: Run docs sync dry-run
+        run: |
+          node neuroswarm/scripts/pushDocsToWiki.mjs --dry-run
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: validate-installers-${{ matrix.os }}
+          path: neuroswarm/dist/*.zip
