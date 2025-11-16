@@ -37,6 +37,12 @@ Testing branch message
 Testing branch message
 
 ---
+
+## Data Flow Architecture - 2025-11-16T07:50:00.000Z - by Neuroswarm
+
+Added `data-flow-architecture.md` to the wiki and `docs/` directory outlining ingress/egress, consensus, and audit hooks. Includes validation checklist and tracing recommendations for contributors.
+
+---
 <<<<<<< Updated upstream
 >>>>>>> Stashed changes
 =======

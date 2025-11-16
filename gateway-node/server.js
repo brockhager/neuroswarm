@@ -105,6 +105,18 @@ app.get('/debug/last-message', (req, res) => {
   }
 });
 
+// Peers endpoint: report ns-node url and its health
+app.get('/debug/peers', async (req, res) => {
+  try {
+    const ns = NS_NODE_URL || null;
+    let nsOk = false;
+    if (ns) nsOk = await checkNsNodeHealth(ns, 1);
+    res.json({ peers: { nsNode: ns, nsOk }, mempoolSize: gwMempool.size });
+  } catch (e) {
+    res.json({ peers: null, error: e.message });
+  }
+});
+
 app.get('/history', (req, res) => {
   res.json(loadHistory());
 });
