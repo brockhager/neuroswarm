@@ -1,3 +1,33 @@
+/**
+ * Deprecated CommonJS wrapper for publishUpdate.
+ * Use `publishUpdate.mjs` (ESM) instead. This file only prints a message.
+ */
+console.error('publishUpdate.js (CommonJS) is deprecated. Please use publishUpdate.mjs (ESM).');
+process.exit(1);
+
+  if (opts.push) {
+    try {
+      child_process.execSync('git add ' + updatesFile, { stdio: 'inherit' });
+      const msg = `Update: ${opts.title}`;
+      child_process.execSync('git commit -m ' + JSON.stringify(msg), { stdio: 'inherit' });
+      child_process.execSync('git push', { stdio: 'inherit' });
+      console.log('Pushed update commit to remote.');
+    } catch (e) {
+      console.error('Failed to push update commit:', e.message);
+    }
+  }
+
+  const webhook = process.env.DISCORD_WEBHOOK;
+  if (webhook) {
+    const payload = { content: `**${opts.title}**\n${opts.body}\n_by ${author} at ${now}_` };
+    const resp = await postDiscord(webhook, payload);
+    console.log('Discord post result:', resp);
+  } else {
+    console.log('No DISCORD_WEBHOOK set; skipped posting to Discord.');
+  }
+}
+
+main().catch(e => { console.error('publishUpdate failed:', e); process.exit(1); });
 #!/usr/bin/env node
 "use strict";
 // publishUpdate.js (CommonJS)
