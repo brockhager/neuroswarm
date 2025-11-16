@@ -10,6 +10,7 @@ function parseArgs() {
     if (a === '--ns') opts.ns = args[++i];
     else if (a === '--gateway') opts.gateway = args[++i];
     else if (a === '--timeout') opts.timeout = Number(args[++i]);
+    else if (a === '--ci') opts.ci = true;
   }
   opts.timeout = opts.timeout || 5000;
   return opts;
@@ -57,6 +58,20 @@ async function main() {
     }
   }
   console.log(JSON.stringify({ checked: opts, results }, null, 2));
+  // For CI usage, set non-zero exit code if any check failed
+  if (opts.ci) {
+    const failed = results.some(r => {
+      const v = Object.values(r)[0];
+      if (!v) return true;
+      if (v.ok === false) return true;
+      if (typeof v === 'object' && 'ok' in v) return !v.ok;
+      return false;
+    });
+    if (failed) {
+      console.error('One or more connectivity checks failed; exiting with non-zero code for CI.');
+      process.exit(1);
+    }
+  }
 }
 
 main().catch(e => { console.error('checkNodeConnectivity failed', e); process.exit(1); });
