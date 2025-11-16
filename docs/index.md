@@ -20,28 +20,21 @@ Begin by cloning the repository, installing dependencies, and running your first
 
 Learn how to contribute effectively to NeuroSwarm's development.
 
-- **[Full KB Index](index.md)** - Complete table of contents for all documentation
-- **[File Organization Rules](CONTRIBUTOR-GUIDE.md#file-placement)** - Understanding our monorepo structure and hygiene enforcement
-- **[Kanban Workflow](governance/rituals.md)** - Ready → In Progress → Done process for task management
-- **[Automation Scripts](scripts/README.md)** - Available tools for development and deployment
-- **[Testing Guidelines](tests/README.md)** - How we ensure code quality and reliability
+- **[File Organization Rules (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Contributor-Guide#file-placement)** - Understanding our monorepo structure and hygiene enforcement
 
 Our contributor experience emphasizes clear communication, automated validation, and progressive skill-building.
 
 ## Governance & Transparency
 
 NeuroSwarm operates through transparent, community-driven governance.
-
-- **[Governance Dashboard](../website/kb/governance-dashboard.md)** - Live view of all governance activities and decisions
-- **[Governance Model](governance/governance.md)** - Off-chain community governance vs. on-chain protocol governance
+- **[Program Architecture (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Architecture/program-architecture)** - Solana program foundation and PDA constants
 - **[Weekly Rituals](governance/rituals.md)** - Structured ceremonies for refinement, dependency reviews, and progress updates
  - **[Governance Events](governance/logs/wp_publish_log.jsonl)** - All governance actions logged in our transparency record
 
-Every decision, from code changes to protocol updates, is recorded and auditable through our governance logging system.
-
-## Technical Deep Dives
+- **[Frequently Asked Questions (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Getting-Started#faq)** - Answers to common setup, build, and contribution questions
 
 Explore NeuroSwarm's architecture and subsystems.
+- Experienced contributor? Check our [Contributor Guide (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Contributor-Guide) for best practices.
 
 ### Core Systems
 - **[Program Architecture](program/architecture.md)** - Solana program foundation and PDA constants

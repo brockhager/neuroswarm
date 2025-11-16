@@ -323,5 +323,5 @@ Contributing to NeuroSwarm follows a structured workflow that integrates plannin
 
 - [Architecture Overview](../program/architecture.md)
 - [API Documentation](../services/)
-- [Security Guidelines](./SECURITY-TRUST.md)
+- [Security Guidelines (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Security/Overview)
 - [Kanban Board](../governance/kanban.md)
