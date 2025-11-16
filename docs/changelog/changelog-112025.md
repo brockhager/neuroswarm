@@ -49,6 +49,78 @@ Key outcomes:
 
 - Seed script fix: `admin-node/scripts/seed-e2e-timeline.js` now computes the actual `genesisSha256` from `docs/admin/admin-genesis.json` to produce timeline entries with the correct fingerprint.
 
+---
+
+## Neuro Services — Test harness & cleanup (2025-11-15)
+
+Key outcomes:
+- Stabilized unit and integration test teardown across `neuro-services` to avoid Jest open handle warnings.
+- Ensured services do not start background timers or servers automatically during tests.
+- Added explicit `destroy()` and shutdown semantics for services that used background intervals or event listeners.
+
+What changed:
+- `neuro-services/src/index.ts`:
+  - Prevent server from auto-starting during `NODE_ENV='test'` and export `server` for tests to manage lifecycle.
+  - Prevent Prometheus `collectDefaultMetrics()` from starting timers in test runs.
+  - Only create the global `agentRegistryCleanupInterval` in non-test environments; set/clear it with `agentRegistryCleanupInterval` variable and include it in `shutdown()` logic.
+  - Enhanced `shutdown()` to call destroy on `agentRegistry`, `secureCommunication`, `consensusEngine`, `tokenomicsEngine`, and `swarmCoordinator` and to close the `server` when present.
+
+- `neuro-services/src/agent-registry/agent-registry.ts`:
+  - Added maps to track `registrationTimeouts` and `swarmTimeouts` for setTimeout handlers and store the timer handles.
+  - When removing agents or swarms, clear outstanding timers to avoid dangling setTimeout handles.
+  - Implemented `destroy()` that clears all pending timers and internal maps; updated tests to call `registry.destroy()` in `afterEach()`.
+
+- `neuro-services/src/swarm-intelligence/swarm-coordinator.ts`:
+  - Kept a handle to the coordination interval and message listener; added `destroy()` to clear interval and message handler.
+  - Added a lifecycle test to assert `destroy()` stops the periodic coordination cycles which prevents open handles.
+
+- `neuro-services/src/consensus/consensus-engine.ts`:
+  - Added `cleanupInterval` handle and `onMessageHandler` to enable removal in `destroy()` and avoid long-running intervals in tests.
+
+- `neuro-services/src/communication/secure-communication.ts`:
+  - Added `destroy()` semantics to clear heartbeat interval and channels; ensured tests call `destroy()` in `afterEach`.
+
+- `neuro-services/src/tokenomics/tokenomics-engine.ts`:
+  - Added `onMessageHandler` and `destroy()` to remove listeners and clear data.
+
+- Tests updated:
+  - Updated many test suites (`index.test.ts`, `tokenomics-engine.test.ts`, `consensus-engine.test.ts`, `swarm-coordinator.test.ts`, `agent-registry.test.ts`, `secure-communication.test.ts`) to call `destroy()` on services and registries in `afterEach` / `afterAll` hooks.
+  - Rewrote server shutdown in `tests/index.test.ts` to await `server.close()` and `shutdown()` properly (no `done` callback mix).
+  - Updated or added lifecycle tests that verify `destroy()` properly stops intervals and clears message listeners.
+
+- `neuro-services/package.json` and NI repo config:
+  - Removed `--forceExit` flags from test scripts and Jest config to allow tests to exit normally.
+  - Added an e2e CI step in `neuro-services/.github/workflows/e2e-chat.yml` to run unit tests with `--detectOpenHandles` prior to E2E execution.
+  - Added `run-tests` job in repository-level CI workflow to execute critical packages' tests and fail CI when any open handles are detected.
+
+Why this was necessary:
+- Several test suites surfaced open handles (Timeout, TCPSERVERWRAP, ChildProcess or EventEmitter) that caused Jest to hang or forced CI to use `--forceExit`.
+- The root-cause was a mix of background interval timers, message listeners not removed, and unguarded server/timer initialization during module import in tests.
+- These changes centralize cleanup logic so tests will not leak timers or event listeners, allowing Jest to exit cleanly and preventing CI flakiness.
+
+Files changed (high-level):
+- `neuro-services/src/index.ts` — Server/metrics/test mode guard, shutdown updates
+- `neuro-services/src/agent-registry/agent-registry.ts` — added timers tracking and `destroy()`
+- `neuro-services/src/swarm-intelligence/swarm-coordinator.ts` — added interval/message listener cleanup
+- `neuro-services/src/consensus/consensus-engine.ts` — added cleanup interval & destroy()
+- `neuro-services/src/communication/secure-communication.ts` — added destroy(), cleared heartbeat interval
+- `neuro-services/src/tokenomics/tokenomics-engine.ts` — added destroy()
+- Multiple tests — updated to call `destroy()` and await shutdown, add lifecycle checks
+
+Tests & results:
+- After these changes, numerous tests pass locally. Remaining open handle traces were resolved by adding missing `destroy()` calls and by preventing timers from starting in test environments.
+- Run tests locally with:
+  ```powershell
+  cd C:\JS\ns\neuro-services
+  npm ci
+  npm test -- --runInBand --detectOpenHandles
+  ```
+
+Next steps:
+- Re-run the full workspace tests locally and in CI; if any additional open handle warnings appear, identify and add cleanup or `destroy()` accordingly.
+- Consider adding a dev tooling utility or a Jest helper (in test setup/teardown) that verifies there are no leftover timers/handles to prevent regressions.
+
+
 ### CI & Developer Experience (follow-ups in this PR)
 - Added `docs/review/pr-checklist-ci.md`, `docs/review/pr-body-ci.md` and `docs/review/pr-commit-message.txt` to provide reviewers a concise validation checklist and PR body templates.
 - Added helper scripts `admin-node/scripts/run-pr-checklist.ps1` and `admin-node/scripts/run-pr-checklist.sh` to run the checklist locally.

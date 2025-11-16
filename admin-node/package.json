@@ -77,7 +77,7 @@
       "src/**/*.ts",
       "!src/**/*.d.ts"
     ],
-    "forceExit": true,
+    
     "testPathIgnorePatterns": ["<rootDir>/e2e/"]
   }
 }
