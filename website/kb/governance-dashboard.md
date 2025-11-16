@@ -1,3 +1,6 @@
+# ⚠️ This document has moved
+> **This document has moved to the NeuroSwarm Wiki.** Please see our canonical Governance Dashboard in the wiki: https://github.com/brockhager/neuro-infra/wiki/Governance/governance
+
 # Governance Events Dashboard
 
 Welcome to the NeuroSwarm Governance Transparency Dashboard! This page provides real-time visibility into governance actions, structural hygiene enforcement, and community decisions that shape our project.

@@ -1,3 +1,6 @@
+# ⚠️ This document has moved
+> **This document has moved to the NeuroSwarm Wiki.** Please see the canonical Contributor Pathways on the wiki: https://github.com/brockhager/neuro-infra/wiki/Getting-Started#contributor-pathways
+
 # Contributor Pathways
 
 ## Your Journey to NeuroSwarm Impact

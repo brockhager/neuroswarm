@@ -1,6 +1,3 @@
-# ⚠️ This document has moved
-> **This document has moved to the NeuroSwarm Wiki.** Please see the canonical FAQ on the wiki: https://github.com/brockhager/neuro-infra/wiki/Getting-Started#faq
-
 # NeuroSwarm FAQ
 
 ## Getting Started
@@ -13,14 +10,14 @@
 - A GitHub account for collaboration
 
 ### Q: How do I set up my development environment?
-**A:** Follow our [Getting Started Guide (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Getting-Started) for step-by-step instructions. We also provide automated setup scripts in the `/scripts/` directory.
+**A:** Follow our [Getting Started Guide](Getting-Started.md) for step-by-step instructions. We also provide automated setup scripts in the `/scripts/` directory.
 
 ### Q: I'm getting build errors. What should I do?
 **A:** Check these common solutions:
 1. Ensure all prerequisites are installed
 2. Run `npm install` in all package directories
 3. Check for missing environment variables
-4. Review the [troubleshooting section](getting-started.md#troubleshooting) in Getting Started
+4. Review the [troubleshooting section](Getting-Started.md#troubleshooting) in Getting Started
 
 ## Development
 
@@ -46,11 +43,12 @@ The hygiene checker will automatically enforce these rules.
 - `npm test` for JavaScript/TypeScript
 - `cargo test` for Rust
 - `Invoke-Pester` for PowerShell scripts
+- Integration tests for cross-system validation
 
 ## Governance
 
 ### Q: How do I participate in governance?
-**A:** Join our weekly rituals documented in [governance/rituals.md](../governance/rituals.md). All decisions are logged in our transparency record.
+**A:** Join our weekly rituals documented in [Governance/rituals.md](../Governance/rituals.md). All decisions are logged in our transparency record.
 
 ### Q: What's the difference between off-chain and on-chain governance?
 **A:** Off-chain governance handles community decisions and development direction. On-chain governance manages protocol parameters and smart contract updates.
@@ -77,7 +75,7 @@ The hygiene checker will automatically enforce these rules.
 1. `docs/todo.md` exists and is properly formatted
 2. GitHub CLI (`gh`) is authenticated
 3. The sync agent has proper permissions
-4. Check logs in `wp_publish_log.jsonl`
+4. Check logs in `governance/logs/wp_publish_log.jsonl`
 
 ### Q: CI/CD is failing. How do I fix it?
 **A:** Common issues:
@@ -87,7 +85,7 @@ The hygiene checker will automatically enforce these rules.
 4. Missing dependencies - check lockfiles
 
 ### Q: I can't access certain documentation. What now?
-**A:** Some docs may be work-in-progress. Check the [full KB index](../index.md) or ask in our governance discussions.
+**A:** Some docs may be work-in-progress. Check the [full KB index](../Index.md) or ask in our governance discussions.
 
 ## Getting Help
 
@@ -98,4 +96,4 @@ The hygiene checker will automatically enforce these rules.
 **A:** Create issues in the [GitHub repository](https://github.com/brockhager/neuro-infra/issues) with appropriate labels.
 
 ### Q: I want to contribute but don't know where to start.
-**A:** Start with the [Getting Started Guide](getting-started.md), then look for "good first issue" labels in our repository.
+**A:** Start with the [Getting Started Guide](Getting-Started.md), then look for "good first issue" labels in our repository.
