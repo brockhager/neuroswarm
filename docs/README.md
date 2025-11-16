@@ -142,13 +142,13 @@ Welcome to the comprehensive documentation for the NeuroSwarm decentralized AI e
 
 - [website/README.md](website/README.md) - Knowledge base and website documentation
 - [website/SEO-README.md](website/SEO-README.md) - SEO optimization guide
-- [website/kb/faq.md](website/kb/faq.md) - Frequently asked questions
-- [website/kb/getting-started.md](website/kb/getting-started.md) - Getting started guide
-- [website/kb/governance-dashboard.md](website/kb/governance-dashboard.md) - Governance dashboard guide
-- [website/kb/index.md](website/kb/index.md) - Knowledge base index
-- [website/kb/pathways.md](website/kb/pathways.md) - Learning pathways
-- [website/kb/quickstart.md](website/kb/quickstart.md) - Quick start guide
-- [website/kb/showcase.md](website/kb/showcase.md) - Project showcase
+- [neuroswarm/wiki/Faq.md](neuroswarm/wiki/Faq.md) - Frequently asked questions
+- [neuroswarm/wiki/Getting-Started.md](neuroswarm/wiki/Getting-Started.md) - Getting started guide
+- [neuroswarm/wiki/Governance-Dashboard.md](neuroswarm/wiki/Governance-Dashboard.md) - Governance dashboard guide
+- [neuroswarm/wiki/Home.md](neuroswarm/wiki/Home.md) - Knowledge base index
+- [neuroswarm/wiki/Pathways.md](neuroswarm/wiki/Pathways.md) - Learning pathways
+- [neuroswarm/wiki/Quickstart.md](neuroswarm/wiki/Quickstart.md) - Quick start guide
+- [neuroswarm/wiki/Showcase.md](neuroswarm/wiki/Showcase.md) - Project showcase
 
 ## Node1 Documentation
 

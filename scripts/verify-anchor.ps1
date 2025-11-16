@@ -5,8 +5,11 @@ param(
     [string]$GenesisFile = "admin-genesis.json",
     [string]$ExpectedTx = $env:EXPECTED_TX,
     [string]$SolanaRpc = $env:SOLANA_RPC,
-    [string]$LogFile = "../wp_publish_log.jsonl"
+    [string]$LogFile = $env:WP_PUBLISH_LOG_PATH
 )
+
+# Default fallback if environment var not set
+if (-not $LogFile) { $LogFile = "../governance/logs/wp_publish_log.jsonl" }
 
 # Default values
 if (-not $SolanaRpc) { $SolanaRpc = "https://api.mainnet-beta.solana.com" }

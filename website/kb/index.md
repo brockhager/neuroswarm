@@ -6,10 +6,7 @@
 
 **NeuroSwarm** is a decentralized AI coordination platform that enables secure, transparent, and collaborative machine learning across distributed networks. We combine blockchain-based governance with advanced AI orchestration to create a self-sustaining ecosystem where AI agents can collaborate, learn, and evolve while maintaining user sovereignty and data privacy.
 
-### Our Mission
-
-To democratize artificial intelligence by creating an open, decentralized platform where AI development is collaborative, transparent, and accessible to everyone. We believe AI should serve humanity's collective intelligence, not centralized interests.
-
+ - **[Governance Events](/governance/logs/wp_publish_log.jsonl)** - All governance actions logged in our transparency record
 ### Why We're Building It
 
 **The Problem:** Current AI development is dominated by centralized entities, creating black-box systems that prioritize profit over transparency, ethics, and user control. This concentration of power leads to biased algorithms, privacy violations, and unequal access to AI benefits.
@@ -18,26 +15,12 @@ To democratize artificial intelligence by creating an open, decentralized platfo
 - **Decentralization:** Power distributed across the network, not concentrated in corporations
 - **Transparency:** All AI decisions and training data auditable and verifiable
 - **Collaboration:** Open participation in AI development and governance
-- **Ethics:** Human values and safety built into the core architecture
-- **Accessibility:** AI tools available to individuals, not just institutions
-
-### Our Vision
-
-A future where AI is developed collectively by humanity, for humanity. Where every person can contribute to AI advancement, every AI decision is auditable, and every benefit is shared equitably. NeuroSwarm will become the foundation for a global brain - a distributed intelligence that enhances human potential while respecting individual sovereignty.
 
 ## Getting Started
-
-New to NeuroSwarm? Start your journey here.
-
-- **[NeuroSwarm Stories](/docs/stories.md)** - Platform vision, contributor journeys, and governance narrative
 - **[Interactive Quickstart](quickstart.md)** - Get running in 5 minutes with copy-paste commands
 - **[Getting Started Guide](getting-started.md)** - Complete walkthrough from environment setup to your first contribution
 - **[Prerequisites](getting-started.md#prerequisites)** - Required tools, accounts, and knowledge
 - **[Automated Setup](scripts/README.md)** - Use our setup scripts for faster onboarding
-
-Begin by cloning the repository, installing dependencies, and running your first build and test cycle.
-
-## Contributor Experience
 
 Learn how to contribute effectively to NeuroSwarm's development.
 
@@ -52,19 +35,12 @@ Learn how to contribute effectively to NeuroSwarm's development.
 Our contributor experience emphasizes clear communication, automated validation, and progressive skill-building.
 
 ## Governance & Transparency
-
-NeuroSwarm operates through transparent, community-driven governance.
-
-- **[Governance Dashboard](governance-dashboard.md)** - Live metrics, events, and community health indicators
 - **[Governance Model](/docs/governance/governance.md)** - Off-chain community governance vs. on-chain protocol governance
 - **[Weekly Rituals](/docs/governance/rituals.md)** - Structured ceremonies for refinement, dependency reviews, and progress updates
 - **[Governance Events](/wp_publish_log.jsonl)** - All governance actions logged in our transparency record
 
 Every decision, from code changes to protocol updates, is recorded and auditable through our governance logging system.
-
-## Technical Deep Dives
-
-Explore NeuroSwarm's architecture and subsystems.
+ - **[Governance Events](/governance/logs/wp_publish_log.jsonl)** - All governance actions logged in our transparency record
 
 ### Core Systems
 - **[Program Architecture](/docs/program/architecture.md)** - Solana program foundation and PDA constants
