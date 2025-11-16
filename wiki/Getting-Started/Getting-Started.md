@@ -2,34 +2,13 @@
 
 Welcome to NeuroSwarm! This guide will walk you through setting up your development environment and running your first test. Whether you're a new contributor or returning developer, follow these steps to get up and running quickly.
 
-# ⚠️ This document has moved
-> **This document has moved to the NeuroSwarm Wiki.** Please see the canonical Getting Started guide on the wiki: https://github.com/brockhager/neuro-infra/wiki/Getting-Started
-
-# Getting Started with NeuroSwarm
-
 ## 🗺️ Understanding Your Journey
-## Step 1: Clone the Repository
-
-Clone the NeuroSwarm monorepo to your local machine:
-
-```bash
-## Step 5: Explore the Codebase
-
-Now that you're set up, let's explore the project structure using the canonical wiki pages and repo docs where applicable:
-
-```bash
-# View the wiki index
-git ls-tree --name-only -r HEAD | grep "neuroswarm/wiki" || echo "See neuroswarm/wiki/Index.md"
-
-# Check scripts and docs (repo docs remain for module-level deep dives)
-cat docs/index.md
-```
 
 Before diving into technical setup, take a moment to understand your path in NeuroSwarm:
 
-- **[Contributor Journey Overview](../../docs/stories.md#contributor-journey)** - Learn about different contributor pathways and growth opportunities
-- **[Working Groups](../../docs/stories.md#working-groups)** - Discover specialized teams and their responsibilities
-- **[Success Stories](../../docs/stories.md#success-stories)** - Read about real contributor experiences and progression
+- **Contributor Journey Overview** - Learn about different contributor pathways and growth opportunities
+- **Working Groups** - Discover specialized teams and their responsibilities
+- **Success Stories** - Read about real contributor experiences and progression
 
 ## Prerequisites
 
@@ -44,6 +23,7 @@ Before you begin, ensure you have the following installed:
 ### Quick Setup Commands
 
 **Windows (PowerShell):**
+
 ```powershell
 # Install Node.js (if not already installed)
 winget install OpenJS.NodeJS.LTS
@@ -56,6 +36,7 @@ winget install --id GitHub.cli
 ```
 
 **macOS:**
+
 ```bash
 # Install Homebrew if not present
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
@@ -65,6 +46,7 @@ brew install node python git gh
 ```
 
 **Linux (Ubuntu/Debian):**
+
 ```bash
 # Update package list
 sudo apt update
@@ -237,8 +219,8 @@ git push origin feature/your-feature-name
 
 - **Discussions**: Join [GitHub Discussions](https://github.com/brockhager/neuro-infra/discussions) for questions
 - **Issues**: Report bugs or request features via [GitHub Issues](https://github.com/brockhager/neuro-infra/issues)
-- **Governance**: Participate in governance decisions through our [voting system](governance/how-to-vote.md)
-- **Weekly Rituals**: Join our [weekly refinement sessions](governance/rituals.md)
+- **Governance**: Participate in governance decisions through our [voting system](../Governance/how-to-vote.md)
+- **Weekly Rituals**: Join our [weekly refinement sessions](../Governance/rituals.md)
 
 ## Troubleshooting
 
@@ -266,18 +248,18 @@ git push origin feature/your-feature-name
 
 If you run into issues:
 
-1. Check our [FAQ](misc/FAQ.md)
+1. Check our [FAQ](FAQ.md)
 2. Search existing [GitHub Issues](https://github.com/brockhager/neuro-infra/issues)
 3. Ask in [GitHub Discussions](https://github.com/brockhager/neuro-infra/discussions)
-4. Review the [troubleshooting guide](misc/troubleshooting.md)
+4. Review the [troubleshooting guide](../misc/troubleshooting.md)
 
 ## Next Steps
 
 Now that you're set up:
 
-- 📖 Read the [Contributor Guide](CONTRIBUTOR-GUIDE.md)
-- 🏛️ Learn about [Governance](governance/governance.md)
-- 🛠️ Explore [Technical Architecture](program/architecture.md)
-- 🧪 Check out [Testing Guidelines](tests/README.md)
+- 📖 Read the [Contributor Guide](../Contributor-Guide.md)
+- 🏛️ Learn about [Governance](../Governance/governance.md)
+- 🛠️ Explore [Technical Architecture](../Architecture/program-architecture.md)
+- 🧪 Check out [Testing Guidelines](../CI-CD-and-Testing.md)
 
 Welcome to the NeuroSwarm community! 🚀
