@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 
 const PORT = process.env.PORT || 8080;
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -76,7 +77,7 @@ app.post('/v1/tx', async (req, res) => {
     }
   }
   // add to local mempool and forward to ns-node
-  const id = require('crypto').createHash('sha256').update(JSON.stringify({ ...tx, signature: undefined })).digest('hex');
+  const id = crypto.createHash('sha256').update(JSON.stringify({ ...tx, signature: undefined })).digest('hex');
   gwMempool.set(id, tx);
   // forward to ns-node if configured
   const NS_NODE_URL = process.env.NS_NODE_URL || 'http://localhost:3000';
@@ -166,17 +167,55 @@ async function checkNsNodeHealth(nsUrl, maxRetries = 5) {
 }
 
 const NS_NODE_URL = process.env.NS_NODE_URL || null;
+const NS_CHECK_RETRIES = Number(process.env.NS_CHECK_RETRIES || 5);
+const NS_CHECK_INITIAL_DELAY_MS = Number(process.env.NS_CHECK_INITIAL_DELAY_MS || 500);
+const NS_CHECK_MAX_DELAY_MS = Number(process.env.NS_CHECK_MAX_DELAY_MS || 30000);
+const NS_CHECK_EXIT_ON_FAIL = (process.env.NS_CHECK_EXIT_ON_FAIL === 'true');
+let nsReachable = false;
+
+function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
 async function startServer() {
   if (NS_NODE_URL) {
-    const ok = await checkNsNodeHealth(NS_NODE_URL, Number(process.env.NS_CHECK_RETRIES || 5));
-    if (!ok) {
-      console.error(`[GATEWAY] ns-node ${NS_NODE_URL} is unreachable after retries - exiting`);
-      process.exit(1);
+    // Attempt a quick initial check, but do not exit on failure: start the server and retry
+    nsReachable = await checkNsNodeHealth(NS_NODE_URL, 1);
+    if (!nsReachable) {
+      console.warn(`[GATEWAY] ns-node ${NS_NODE_URL} is unreachable initially; starting gateway and retrying with backoff (retries=${NS_CHECK_RETRIES}).`);
+    } else {
+      console.log(`[GATEWAY] ns-node ${NS_NODE_URL} is reachable`);
     }
   }
   app.listen(PORT, () => {
     console.log(`Gateway node listening on http://localhost:${PORT}`);
   });
+
+  // If ns not reachable, retry in background using exponential backoff
+  if (NS_NODE_URL && !nsReachable) {
+    (async () => {
+      let attempt = 0;
+      let delay = NS_CHECK_INITIAL_DELAY_MS;
+      while (attempt < NS_CHECK_RETRIES && !nsReachable) {
+        attempt += 1;
+        console.log(`[GATEWAY] Retry ${attempt}/${NS_CHECK_RETRIES} to check ns-node ${NS_NODE_URL} after ${delay}ms...`);
+        await sleep(delay);
+        nsReachable = await checkNsNodeHealth(NS_NODE_URL, 1);
+        if (nsReachable) {
+          console.log(`[GATEWAY] ns-node ${NS_NODE_URL} is now reachable`);
+          break;
+        }
+        delay = Math.min(delay * 2, NS_CHECK_MAX_DELAY_MS);
+      }
+      if (!nsReachable) {
+        const msg = `[GATEWAY] ns-node ${NS_NODE_URL} still unreachable after ${NS_CHECK_RETRIES} attempts.`;
+        if (NS_CHECK_EXIT_ON_FAIL) {
+          console.error(msg, 'Exiting due to NS_CHECK_EXIT_ON_FAIL=true');
+          process.exit(1);
+        } else {
+          console.warn(msg, 'Continuing with degraded functionality.');
+        }
+      }
+    })();
+  }
 }
 
 startServer();
