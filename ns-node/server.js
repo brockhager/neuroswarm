@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,6 +46,8 @@ app.post('/chat', (req, res) => {
   const sender = body.sender || 'user';
   const content = body.content || '';
   const auth = req.header('authorization') || '';
+  const forwardedFor = req.header('x-forwarded-for') || req.socket.remoteAddress || '';
+  const forwardedUser = req.header('x-forwarded-user') || '';
 
   if (!content) return res.status(400).json({ error: 'content is required' });
 
@@ -61,12 +64,15 @@ app.post('/chat', (req, res) => {
   };
 
   const history = loadHistory();
-  history.push({ direction: 'in', ...inMsg, headers: { authorization: auth } });
-  history.push({ direction: 'out', ...response, headers: { authorization: auth } });
+  const msgHeaders = { authorization: auth, 'x-forwarded-for': forwardedFor, 'x-forwarded-user': forwardedUser };
+  history.push({ direction: 'in', ...inMsg, headers: msgHeaders });
+  history.push({ direction: 'out', ...response, headers: msgHeaders });
   saveHistory(history);
 
   // Try to publish message to configured gateways in order (primary first)
-  publishToGateways({ id: response.id, sender: response.sender, content: response.content, timestamp: response.timestamp })
+  const incomingCorrelation = req.header('x-correlation-id') || uuidv4();
+  const forwardedHeaders = { authorization: auth, 'x-forwarded-for': forwardedFor, 'x-forwarded-user': forwardedUser, 'x-correlation-id': incomingCorrelation };
+  publishToGateways({ id: response.id, sender: response.sender, content: response.content, timestamp: response.timestamp }, forwardedHeaders)
     .catch((err) => {
       console.error('Failed to publish to gateways:', err);
     });
@@ -93,22 +99,38 @@ function loadGatewayConfig() {
   }
 }
 
-async function publishToGateways(message) {
-  const correlationId = uuidv4();
+function maskAuth(header) {
+  if (!header) return '';
+  const parts = (header || '').split(' ');
+  if (parts.length === 2) return `${parts[0]} ***`;
+  return '***';
+}
+
+async function publishToGateways(message, headers = {}) {
+  const correlationId = headers['x-correlation-id'] || uuidv4();
   let lastError = null;
   for (const gw of GATEWAY_CONFIG) {
     const url = gw.url.replace(/\/$/, '') + '/v1/chat';
     try {
-      const headers = { 'Content-Type': 'application/json', 'X-Correlation-ID': correlationId };
+      const forwardHeaders = { 'Content-Type': 'application/json', 'X-Correlation-ID': correlationId };
+      if (headers.authorization) forwardHeaders['Authorization'] = headers.authorization;
+      if (headers['x-forwarded-for']) forwardHeaders['X-Forwarded-For'] = headers['x-forwarded-for'];
+      if (headers['x-forwarded-user']) forwardHeaders['X-Forwarded-User'] = headers['x-forwarded-user'];
       if (gw.auth) {
-        if (gw.auth.type === 'jwt') headers['Authorization'] = `Bearer ${gw.auth.token}`;
-        if (gw.auth.type === 'apiKey') headers['X-API-Key'] = gw.auth.key;
+        if (gw.auth.type === 'jwt') forwardHeaders['Authorization'] = `Bearer ${gw.auth.token}`;
+        if (gw.auth.type === 'apiKey') forwardHeaders['X-API-Key'] = gw.auth.key;
       }
-      console.log(`[NS-NODE] Publishing message ${message.id} to gateway ${gw.url} correlation=${correlationId}`);
-      const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(message) });
+      const maskedAuth = maskAuth(forwardHeaders['Authorization']);
+      console.log(`[NS-NODE] Publishing message ${message.id} to gateway ${gw.url} correlation=${correlationId} auth=${maskedAuth}`);
+      const controller = new AbortController();
+      const timeoutMs = Number(process.env.GATEWAY_REQUEST_TIMEOUT_MS || 5000);
+      const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
+      const res = await fetch(url, { method: 'POST', headers: forwardHeaders, body: JSON.stringify(message), signal: controller.signal });
+      clearTimeout(timeoutHandle);
       if (res.ok) {
         gw.reachable = true;
         gw.lastError = null;
+        console.log(`[NS-NODE] Successfully published message ${message.id} to gateway ${gw.url} correlation=${correlationId}`);
         return { gateway: gw.url, status: 'ok' };
       } else {
         gw.reachable = false;
@@ -142,9 +164,570 @@ app.get('/debug/last-headers', (req, res) => {
   }
 });
 
+// Health endpoint
+let VERSION = 'dev';
+try {
+  const pkgPath = path.join(__dirname, 'package.json');
+  if (fs.existsSync(pkgPath)) {
+    const pj = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    VERSION = pj.version || VERSION;
+  }
+} catch (e) {
+  // ignore
+}
+
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', version: VERSION, uptime: process.uptime() });
+});
+
 app.get('/history', (req, res) => {
   res.json(loadHistory());
 });
+
+// Endpoints for validators & PoS
+app.post('/validators/register', (req, res) => {
+  const { validatorId, stake = 0, publicKey } = req.body || {};
+  if (!validatorId || !publicKey) return res.status(400).json({ error: 'validatorId/publicKey required' });
+  if (validators.has(validatorId)) return res.status(400).json({ error: 'already registered' });
+  validators.set(validatorId, { stake: Number(stake || 0), publicKey, slashed: false });
+  totalStake += Number(stake || 0);
+  res.json({ ok: true });
+});
+
+app.get('/validators', (req, res) => {
+  const arr = [];
+  for (const [id, v] of validators.entries()) arr.push({ validatorId: id, stake: v.stake, publicKey: v.publicKey, slashed: !!v.slashed, slashedAt: v.slashedAt || null });
+  res.json({ validators: arr, totalStake });
+});
+
+app.post('/validators/slash', (req, res) => {
+  const { validatorId, amount } = req.body || {};
+  if (!validatorId || !amount) return res.status(400).json({ error: 'validatorId/amount required' });
+  if (!validators.has(validatorId)) return res.status(400).json({ error: 'not found' });
+  const v = validators.get(validatorId);
+  const slash = Math.min(Number(amount), v.stake);
+  v.stake -= slash;
+  totalStake -= slash;
+  res.json({ ok: true, slashed: slash, newStake: v.stake });
+});
+
+// Submit tx to mempool
+app.post('/tx', (req, res) => {
+  const tx = req.body || {};
+  // Basic validation: require type and fee
+  if (!tx.type || typeof tx.fee !== 'number') return res.status(400).json({ error: 'type and fee required' });
+  // verify signature if tx.signedBy is validator
+  if (tx.signedBy && validators.has(tx.signedBy)) {
+    const v = validators.get(tx.signedBy);
+    const data = canonicalize({ ...tx, signature: undefined });
+    if (!verifyEd25519(v.publicKey, data, tx.signature)) return res.status(400).json({ error: 'invalid signature' });
+  }
+  const id = txIdFor(tx);
+  mempool.set(id, tx);
+  res.json({ ok: true, txId: id });
+});
+
+app.get('/mempool', (req, res) => {
+  const list = [];
+  for (const [id, tx] of mempool.entries()) list.push({ id, tx });
+  res.json({ mempool: list });
+});
+
+// Governance endpoints
+const proposals = new Map(); // id -> { title, yes: number, no: number }
+app.post('/governance/proposals', (req, res) => {
+  const { id, title } = req.body || {};
+  if (!id || !title) return res.status(400).json({ error: 'id and title required' });
+  if (proposals.has(id)) return res.status(400).json({ error: 'proposal exists' });
+  proposals.set(id, { title, yes: 0, no: 0 });
+  res.json({ ok: true });
+});
+
+app.post('/governance/vote', (req, res) => {
+  const { id, validatorId, yes } = req.body || {};
+  if (!id || !validatorId) return res.status(400).json({ error: 'id and validatorId required' });
+  if (!proposals.has(id)) return res.status(400).json({ error: 'proposal not found' });
+  if (!validators.has(validatorId)) return res.status(400).json({ error: 'validator not found' });
+  const v = validators.get(validatorId);
+  const weight = Number(v.stake || 0);
+  const p = proposals.get(id);
+  if (yes) p.yes += weight; else p.no += weight;
+  proposals.set(id, p);
+  res.json({ ok: true, tally: p });
+});
+
+app.get('/governance/proposals/:id', (req, res) => {
+  const { id } = req.params;
+  if (!proposals.has(id)) return res.status(404).json({ error: 'proposal not found' });
+  res.json({ proposal: proposals.get(id) });
+});
+
+
+// Endpoint to produce block proposals from validators (vp-node posts here)
+app.post('/blocks/produce', (req, res) => {
+  const { header, txs, signature } = req.body || {};
+  if (!header || !header.validatorId) return res.status(400).json({ error: 'invalid header' });
+  if (!validators.has(header.validatorId)) return res.status(400).json({ error: 'unknown validator' });
+  const v = validators.get(header.validatorId);
+  // verify signature (HMAC for now)
+  const data = canonicalize({ ...header, signature: undefined });
+  if (!verifyEd25519(v.publicKey, data, signature)) return res.status(400).json({ error: 'invalid header signature' });
+  // verify merkle root
+  const txIds = (txs || []).map(tx => txIdFor(tx));
+  const calcRoot = computeMerkleRoot(txIds);
+  if (calcRoot !== header.merkleRoot) return res.status(400).json({ error: 'bad merkle root' });
+  // verify prevHash references any known block (or genesis)
+  const parentHash = header.prevHash;
+  const genesisPrev = '0'.repeat(64);
+  if (parentHash !== genesisPrev && !blockMap.has(parentHash)) return res.status(400).json({ error: 'unknown prevHash' });
+  // apply block
+  header.signature = signature;
+  const block = { header, txs };
+  const result = applyBlock(block);
+  if (!result.ok) return res.status(400).json({ error: result.reason });
+  res.json({ ok: true, blockHash: result.blockHash });
+});
+
+app.get('/blocks/latest', (req, res) => {
+  const b = canonicalTipHash ? blockMap.get(canonicalTipHash) : null;
+  res.json({ block: b });
+});
+
+app.get('/headers/tip', (req, res) => {
+  const h = canonicalTipHash ? blockMap.get(canonicalTipHash).header : null;
+  res.json({ header: h });
+});
+
+app.get('/chain/height', (req, res) => {
+  res.json({ height: getCanonicalHeight() });
+});
+
+// SPV proof endpoint
+app.get('/proof/:txId', (req, res) => {
+  const { txId } = req.params;
+  if (!txIndex.has(txId)) return res.status(404).json({ error: 'not found' });
+  const { blockHash, txIndex: idx } = txIndex.get(txId);
+  const block = blockMap.get(blockHash);
+  const txIds = block.txs.map(tx => txIdFor(tx));
+  const proof = buildMerkleProof(txIds, txId);
+  res.json({ proof, blockHeader: block.header, txIndex: idx });
+});
+
+// Verify merkle proof POST {txId, proof, blockHeader}
+app.post('/verify/proof', (req, res) => {
+  const { txId, proof, blockHeader } = req.body || {};
+  if (!txId || !proof || !blockHeader) return res.status(400).json({ error: 'txId, proof, blockHeader required' });
+  // recompute merkle root
+  try {
+    let hBuf = Buffer.from(txId, 'hex');
+    for (const p of proof) {
+      const siblingBuf = Buffer.from(p.sibling, 'hex');
+      const combined = p.position === 'left' ? Buffer.concat([siblingBuf, hBuf]) : Buffer.concat([hBuf, siblingBuf]);
+      const hh = sha256Hex(combined);
+      hBuf = Buffer.from(hh, 'hex');
+    }
+    if (hBuf.toString('hex') === blockHeader.merkleRoot) return res.json({ ok: true });
+    return res.status(400).json({ ok: false, reason: 'merkle_mismatch' });
+  } catch (e) {
+    return res.status(400).json({ ok: false, reason: 'invalid_proof', message: e.message });
+  }
+});
+
+
+// Simple PoS blockchain state and helpers
+const mempool = new Map(); // txId -> tx
+const blockMap = new Map(); // blockHash -> block {header, txs, blockHash, parentHash, cumWeight, snapshot}
+const heads = new Set(); // blockHash candidates for chain tip
+let canonicalTipHash = null; // hash of current canonical chain tip
+const txIndex = new Map();
+const validators = new Map(); // validatorId -> { stake: number, publicKey: string, slashed?: boolean, slashedAt?: number }
+let totalStake = 0;
+
+function sha256Hex(buf) {
+  return crypto.createHash('sha256').update(buf).digest('hex');
+}
+
+function canonicalize(obj) {
+  if (typeof obj !== 'object' || obj === null) return JSON.stringify(obj);
+  if (Array.isArray(obj)) return '[' + obj.map(canonicalize).join(',') + ']';
+  const keys = Object.keys(obj).sort();
+  return '{' + keys.map(k => JSON.stringify(k) + ':' + canonicalize(obj[k])).join(',') + '}';
+}
+
+function txIdFor(tx) {
+  const copy = { ...tx };
+  delete copy.signature;
+  return sha256Hex(Buffer.from(canonicalize(copy), 'utf8'));
+}
+
+function verifyEd25519(publicKeyPem, data, sigBase64) {
+  try {
+    const pubKey = crypto.createPublicKey(publicKeyPem);
+    const sig = Buffer.from(sigBase64, 'base64');
+    return crypto.verify(null, Buffer.from(data, 'utf8'), pubKey, sig);
+  } catch (e) {
+    console.error('ed25519 verify error', e.message);
+    return false;
+  }
+}
+
+// compute merkle root over tx ids (hex strings)
+function computeMerkleRoot(txIds) {
+  if (!txIds || txIds.length === 0) return sha256Hex('');
+  let layer = txIds.map(id => Buffer.from(id, 'hex'));
+  while (layer.length > 1) {
+    if (layer.length % 2 === 1) layer.push(layer[layer.length - 1]);
+    const next = [];
+    for (let i = 0; i < layer.length; i += 2) {
+      const a = layer[i];
+      const b = layer[i + 1];
+      const hash = sha256Hex(Buffer.concat([a, b]));
+      next.push(Buffer.from(hash, 'hex'));
+    }
+    layer = next;
+  }
+  return layer[0].toString('hex');
+}
+
+function chooseCanonicalTipAndReorg() {
+  // pick head with maximum cumWeight
+  let bestHash = null;
+  let bestWeight = -1;
+  for (const h of heads) {
+    const b = blockMap.get(h);
+    if (!b) continue;
+    if (b.cumWeight > bestWeight) {
+      bestWeight = b.cumWeight; bestHash = h;
+    }
+  }
+  if (!bestHash) return;
+  if (canonicalTipHash === bestHash) return; // no change
+  // New canonical chain tip found: perform reorg from canonicalTipHash to bestHash
+  const oldTip = canonicalTipHash;
+  canonicalTipHash = bestHash;
+  performReorg(oldTip, bestHash);
+}
+
+function getBlockAncestors(hash) {
+  const ancestors = [];
+  let curr = hash;
+  while (curr && blockMap.has(curr)) {
+    ancestors.push(curr);
+    curr = blockMap.get(curr).parentHash;
+  }
+  return ancestors; // from child up to genesis
+}
+
+function findCommonAncestor(hashA, hashB) {
+  const aAnc = new Set(getBlockAncestors(hashA));
+  let curr = hashB;
+  while (curr && blockMap.has(curr)) {
+    if (aAnc.has(curr)) return curr;
+    curr = blockMap.get(curr).parentHash;
+  }
+  return null;
+}
+
+function performReorg(oldTipHash, newTipHash) {
+  if (!newTipHash) return;
+  const ancestor = findCommonAncestor(oldTipHash, newTipHash);
+  // rollback blocks from old tip down to ancestor (exclusive)
+  const rollbackHashes = [];
+  if (oldTipHash) {
+    let h = oldTipHash;
+    while (h && h !== ancestor) { rollbackHashes.push(h); h = blockMap.get(h).parentHash; }
+  }
+  // accumulate apply chain from ancestor's child to new tip
+  const applyHashes = [];
+  let h = newTipHash;
+  while (h && h !== ancestor) { applyHashes.push(h); h = blockMap.get(h).parentHash; }
+  applyHashes.reverse();
+  // rollback: we will restore validator state to ancestor snapshot if ancestor exists, else genesis
+  if (ancestor) {
+    const ancBlock = blockMap.get(ancestor);
+    const snapArr = ancBlock.snapshot && ancBlock.snapshot.validators ? ancBlock.snapshot.validators : [];
+    validators.clear();
+    for (const [id, v] of snapArr) validators.set(id, { stake: Number(v.stake), publicKey: v.publicKey });
+  } else {
+    // genesis, clear validators
+    validators.clear();
+    totalStake = 0;
+  }
+  // rebuild txIndex and mempool: collect txs removed by rollback, clear mempool, then replay canonical chain
+  txIndex.clear();
+  const removedTxIds = new Set();
+  if (rollbackHashes.length > 0) {
+    for (const rh of rollbackHashes) {
+      const rb = blockMap.get(rh);
+      if (!rb) continue;
+      for (const t of rb.txs) removedTxIds.add(txIdFor(t));
+    }
+  }
+  mempool.clear();
+  // replay blocks from genesis up to ancestor (if any)
+  const canonicalPath = [];
+  if (ancestor) {
+    // get ancestors of ancestor to genesis and reverse
+    let at = ancestor;
+    const ancestorsWithGen = [];
+    while (at) { ancestorsWithGen.push(at); at = blockMap.get(at).parentHash; }
+    ancestorsWithGen.reverse();
+    for (const bh of ancestorsWithGen) canonicalPath.push(bh);
+  }
+  // append applyHashes
+  canonicalPath.push(...applyHashes);
+  // reapply state along canonicalPath
+  for (const bh of canonicalPath) {
+    const b = blockMap.get(bh);
+    // process stake/unstake and txIndex
+    for (let i = 0; i < b.txs.length; i++) {
+      const tx = b.txs[i];
+      const id = txIdFor(tx);
+      txIndex.set(id, { blockHash: bh, txIndex: i });
+      // remove from mempool if present
+      mempool.delete(id);
+      if (tx.type === 'stake') {
+        if (!validators.has(tx.validatorId)) validators.set(tx.validatorId, { stake: 0, publicKey: tx.publicKey || 'unknown' });
+        const vv = validators.get(tx.validatorId);
+        vv.stake += Number(tx.amount);
+        totalStake += Number(tx.amount);
+      }
+      if (tx.type === 'unstake') {
+        if (validators.has(tx.validatorId)) {
+          const vv = validators.get(tx.validatorId);
+          const amt = Math.min(Number(tx.amount), vv.stake);
+          vv.stake -= amt;
+          totalStake -= amt;
+        }
+      }
+    }
+    // reward validator
+    const totalFees = b.txs.reduce((s, tx) => s + Number(tx.fee || 0), 0);
+    const baseReward = Number(process.env.BLOCK_REWARD || 10);
+    const reward = baseReward + totalFees;
+    const vv = validators.get(b.header.validatorId);
+    if (vv) { vv.stake += reward; totalStake += reward; }
+  }
+  // any removed txs that are NOT now part of the canonical chain should be re-added to mempool
+  for (const txId of removedTxIds) {
+    if (!txIndex.has(txId)) {
+      // we don't have original tx data reconstructed here; instead, leave placeholder or skip
+      // Attempt to find tx in blocks for data
+      let found = null;
+      for (const h of rollbackHashes) {
+        const rb = blockMap.get(h);
+        if (!rb) continue;
+        for (const tx of rb.txs) {
+          if (txIdFor(tx) === txId) { found = tx; break; }
+        }
+        if (found) break;
+      }
+      if (found) mempool.set(txId, found);
+    }
+  }
+  // update heads: remove tip of old chain and add newTip
+  if (oldTipHash) {
+    // find any heads from old chain that are no longer heads
+    // we'll cleanup by recomputing heads as blocks without children
+  }
+  // refresh heads set (blocks that have no children)
+  const childExists = new Set();
+  for (const [hsh, bl] of blockMap.entries()) {
+    if (bl.parentHash) childExists.add(bl.parentHash);
+  }
+  heads.clear();
+  for (const [hsh] of blockMap.entries()) if (!childExists.has(hsh)) heads.add(hsh);
+}
+
+function buildMerkleProof(txIds, targetIdHex) {
+  const idx = txIds.indexOf(targetIdHex);
+  if (idx === -1) return null;
+  let layer = txIds.map(id => Buffer.from(id, 'hex'));
+  let index = idx;
+  const proof = [];
+  while (layer.length > 1) {
+    if (layer.length % 2 === 1) layer.push(layer[layer.length - 1]);
+    const pairIndex = index ^ 1;
+    const sibling = layer[pairIndex];
+    proof.push({ sibling: sibling.toString('hex'), position: pairIndex % 2 === 0 ? 'left' : 'right' });
+    // compute next layer
+    const next = [];
+    for (let i = 0; i < layer.length; i += 2) {
+      const a = layer[i];
+      const b = layer[i + 1];
+      const hash = sha256Hex(Buffer.concat([a, b]));
+      next.push(Buffer.from(hash, 'hex'));
+    }
+    index = Math.floor(index / 2);
+    layer = next;
+  }
+  return proof;
+}
+
+function chooseValidator(prevHash, slot) {
+  // deterministic selection: seed = sha256(prevHash + slot)
+  const seed = sha256Hex(Buffer.from(String(prevHash) + String(slot), 'utf8'));
+  const seedNum = parseInt(seed.slice(0, 12), 16);
+  if (totalStake === 0) return null;
+  const r = seedNum % totalStake;
+  let acc = 0;
+  for (const [id, v] of validators.entries()) {
+    acc += Number(v.stake || 0);
+    if (r < acc) return id;
+  }
+  return null;
+}
+
+function getCanonicalHeight() {
+  let h = canonicalTipHash;
+  let height = 0;
+  while (h && blockMap.has(h)) {
+    height += 1;
+    h = blockMap.get(h).parentHash;
+  }
+  return height;
+}
+
+function applyBlock(block) {
+  // Verify merkle root
+  const txIds = block.txs.map(tx => txIdFor(tx));
+  const calcRoot = computeMerkleRoot(txIds);
+  if (calcRoot !== block.header.merkleRoot) return { ok: false, reason: 'bad_merkle' };
+  // verify validator registration
+  const validatorId = block.header.validatorId;
+  if (!validators.has(validatorId)) return { ok: false, reason: 'unknown_validator' };
+  const v = validators.get(validatorId);
+  // verify header signature using ed25519 public key
+  const headerData = canonicalize({ ...block.header, signature: undefined });
+  if (!verifyEd25519(v.publicKey, headerData, block.header.signature)) return { ok: false, reason: 'bad_sig' };
+  // verify prevHash references a known parent or genesis
+  const parentHash = block.header.prevHash;
+  const genesisPrev = '0'.repeat(64);
+  let parent = null;
+  if (parentHash !== genesisPrev) {
+    if (!blockMap.has(parentHash)) return { ok: false, reason: 'unknown_parent' };
+    parent = blockMap.get(parentHash);
+  }
+  // determine the slot based on parent height
+  const parentHeight = parent ? getBlockAncestors(parentHash).length : 0;
+  const slot = parentHeight + 1;
+  const eligible = chooseValidator(parentHash, slot);
+  if (eligible !== validatorId) {
+    console.warn(`[NS-NODE] Warning: validator ${validatorId} proposed block for slot ${slot} but deterministic selection was ${eligible}; accepting anyway (fork support)`);
+    // allow forks: do not reject; accept validly-signed blocks even if not selected
+  }
+  // compute block hash and parent
+  const blockHash = sha256Hex(Buffer.from(canonicalize(block.header), 'utf8'));
+  block.blockHash = blockHash;
+  block.parentHash = parentHash;
+  // compute cumulative weight with respect to parent's snapshot state
+  const parentWeight = parent ? parent.cumWeight : 0;
+  // compute snapshot base as parent's snapshot if available, else current validators
+  const baseSnapArr = parent ? JSON.parse(JSON.stringify(parent.snapshot.validators)) : JSON.parse(JSON.stringify(Array.from(validators.entries())));
+  // find validator stake from base snapshot
+  let vStake = 0;
+  for (const [id, vs] of baseSnapArr) {
+    if (id === validatorId) { vStake = Number(vs.stake || 0); break; }
+  }
+  block.cumWeight = parentWeight + (Number(vStake) || 0);
+  // copy snapshot without mutating global state for branch blocks
+  const snapshot = { validators: JSON.parse(JSON.stringify(baseSnapArr)) };
+  blockMap.set(blockHash, block);
+  heads.add(blockHash);
+  let totalFees = 0;
+  // determine if the block extends the current canonical tip (and therefore should update global state)
+  const extendsCanonical = (parentHash === canonicalTipHash);
+  for (let i = 0; i < block.txs.length; i++) {
+    const id = txIdFor(block.txs[i]);
+    if (extendsCanonical) {
+      txIndex.set(id, { blockHash, txIndex: i });
+      mempool.delete(id);
+    }
+    totalFees += Number(block.txs[i].fee || 0);
+    // process stake/unstake
+    const tx = block.txs[i];
+    if (tx.type === 'stake' && tx.validatorId && Number(tx.amount)) {
+      const target = tx.validatorId;
+      if (extendsCanonical) {
+        if (!validators.has(target)) validators.set(target, { stake: 0, publicKey: tx.publicKey || 'unknown' });
+        const vv = validators.get(target);
+        vv.stake += Number(tx.amount);
+        totalStake += Number(tx.amount);
+      } else {
+        // apply to snapshot validators
+        const idx = snapshot.validators.findIndex(([id]) => id === target);
+        if (idx === -1) snapshot.validators.push([target, { stake: Number(tx.amount), publicKey: tx.publicKey || 'unknown' }]);
+        else snapshot.validators[idx][1].stake += Number(tx.amount);
+      }
+    }
+    if (tx.type === 'unstake' && tx.validatorId && Number(tx.amount)) {
+      const target = tx.validatorId;
+      if (extendsCanonical) {
+        if (validators.has(target)) {
+          const vv = validators.get(target);
+          const amt = Math.min(Number(tx.amount), vv.stake);
+          vv.stake -= amt;
+          totalStake -= amt;
+        }
+      } else {
+        const idx = snapshot.validators.findIndex(([id]) => id === target);
+        if (idx !== -1) {
+          const vv = snapshot.validators[idx][1];
+          const amt = Math.min(Number(tx.amount), vv.stake);
+          vv.stake -= amt;
+        }
+      }
+    }
+  }
+  // reward validator
+  const baseReward = Number(process.env.BLOCK_REWARD || 10);
+  const reward = baseReward + totalFees;
+  if (extendsCanonical) {
+    v.stake += reward;
+    totalStake += reward;
+  } else {
+    // update snapshot validator
+    const idx = snapshot.validators.findIndex(([id]) => id === validatorId);
+    if (idx !== -1) snapshot.validators[idx][1].stake += reward;
+  }
+  // If this block extended canonical chain, update the stored snapshot to reflect post-block validators
+  if (extendsCanonical) {
+    block.snapshot = { validators: JSON.parse(JSON.stringify(Array.from(validators.entries()))) };
+  } else {
+    block.snapshot = snapshot;
+    // detect equivocation: if same validator produced another block with same parentHash
+    const equivocations = [];
+    for (const [h, bl] of blockMap.entries()) {
+      if (bl.parentHash === parentHash && bl.header && bl.header.validatorId === validatorId && bl.blockHash && bl.blockHash !== blockHash) {
+        equivocations.push(bl);
+      }
+    }
+    if (equivocations.length > 0) {
+      // slash the validator
+      const slashPct = Number(process.env.SLASH_PERCENT || 50);
+      function doSlash(id) {
+        if (!validators.has(id)) return;
+        const vv = validators.get(id);
+        if (vv.slashed) return; // only once
+        const toSlash = Math.min(vv.stake, Math.floor((vv.stake * slashPct) / 100));
+        vv.stake -= toSlash;
+        totalStake -= toSlash;
+        vv.slashed = true;
+        vv.slashedAt = Date.now();
+        console.warn(`[NS-NODE] Slashed validator ${id} by ${toSlash} (${slashPct}%) due to equivocation`);
+      }
+      doSlash(validatorId);
+      // also slash any other duplicated equivocation across the network (not typical)
+      for (const eq of equivocations) {
+        if (eq.header && eq.header.validatorId) doSlash(eq.header.validatorId);
+      }
+    }
+  }
+  // After applying, choose new canonical tip and possibly reorg
+  chooseCanonicalTipAndReorg();
+  return { ok: true, blockHash };
+}
+
 
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
