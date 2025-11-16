@@ -1,5 +1,18 @@
 # Project Updates
 
+All important updates will be tracked here. Each entry includes the title, author, timestamp, and a short summary.
+
+---
+
+This page is updated automatically using `scripts/publishUpdate.mjs`. When there are releases, governance updates, or notable changes, they will be reflected here. To propose a change to this log, open a PR that modifies `neuroswarm/docs/changelog/` or use the `publish-update` GitHub Action to append a new entry.
+
+---
+
+## Recent Updates (example)
+
+- Data Flow Architecture added (2025-11-16) — outlines ingress, consensus & audit hooks.
+# Project Updates
+
 All important updates will be tracked here. Each entry will include the title, author and timestamp, and a short summary of the change.
 
 ---

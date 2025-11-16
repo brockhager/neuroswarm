@@ -1,5 +1,7 @@
 # Installation & One-click Local Setup
 
+> NOTE: This document is synchronized to the project Wiki and the GitHub Wiki is the canonical source: https://github.com/brockhager/neuro-infra/wiki
+
 This document provides a one-click local install flow for end-users to run NeuroSwarm nodes and for developers to build installers.
 
 Sections:
