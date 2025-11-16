@@ -186,6 +186,14 @@ CI / Validation: recommended checks for the pipeline:
 - Use `checkNodeConnectivityClean.mjs` script to validate gateway -> ns forwarding and `debug/peers` endpoints.
 - Include tests that simulate forks and reorgs and verify mempool re-add behaviour.
 
+**New CI check**: We added a GitHub Action `connectivity-check.yml` to run the connectivity smoke test on PRs and fail the check if the nodes are not connectable. To run the same check locally, run:
+
+```bash
+node neuroswarm/scripts/checkNodeConnectivityClean.mjs --ns http://localhost:3000 --gateway http://localhost:8080 --ci --timeout 2000
+```
+
+The script will exit non-zero in CI mode (`--ci`) if any of the checks fail.
+
 ---
 
 ## Extensibility
