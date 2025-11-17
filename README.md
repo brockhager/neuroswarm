@@ -147,6 +147,13 @@ If you'd like to package installers that display live status messages in the con
 ```powershell
 pnpm -C neuroswarm package:bins -- --keep-open --status
 ```
+CI note — why the workflow uses separate folders
+------------------------------------------------
+
+The `validate-start-scripts` GitHub Action uses a pair of distinct folders when performing packaging and validation for `--status` vs `--status --keep-open`. This avoids nested or stale `dist/` content when copying artifacts and ensures the validation step always runs against a clean, specific package output. The action names the directories `dist-status-<target>-plain-<timestamp>` and `dist-status-<target>-keep-<timestamp>` to make it easy to debug artifacts for a specific workflow run.
+
+If you add or change the build outputs you can review the artifacts under those folders in the workflow logs or in job artifact uploads.
+
 
 This produces a `start.bat` that runs the node in the foreground so logs stream to the window and will append a pause only if the node exits with a non-zero exit code.
 

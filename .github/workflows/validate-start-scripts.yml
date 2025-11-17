@@ -32,16 +32,26 @@ jobs:
           if [ "${{ runner.os }}" == "macOS" ]; then TARGET=macos; fi
           if [ "${{ runner.os }}" == "Windows" ]; then TARGET=win; fi
           echo "Target set to $TARGET";
+          TS=$(date -u +%s)
+          PN=${TARGET}
+          # create a timestamped plain folder
+          PLAIN="dist-status-${PN}-plain-$TS"
+          KEEP="dist-status-${PN}-keep-$TS"
+
           pnpm package:bins -- --os $TARGET --status
-          rm -rf dist-status-${TARGET}-plain || true
-          mkdir -p dist-status-${TARGET}-plain
-          cp -R dist/* dist-status-${TARGET}-plain
+          rm -rf "$PLAIN" || true
+          mkdir -p "$PLAIN"
+          cp -R dist/* "$PLAIN"
+          node scripts/verify-dist-copy.mjs --dist "$PLAIN"
+
           pnpm package:bins -- --os $TARGET --status --keep-open
-          rm -rf dist-status-${TARGET}-keep || true
-          mkdir -p dist-status-${TARGET}-keep
-          cp -R dist/* dist-status-${TARGET}-keep
-          node scripts/test-start-scripts.mjs --dist dist-status-${TARGET}-plain --expect-status
-          node scripts/test-start-scripts.mjs --dist dist-status-${TARGET}-keep --expect-status --expect-keep-open
+          rm -rf "$KEEP" || true
+          mkdir -p "$KEEP"
+          cp -R dist/* "$KEEP"
+          node scripts/verify-dist-copy.mjs --dist "$KEEP"
+
+          node scripts/test-start-scripts.mjs --dist "$PLAIN" --expect-status
+          node scripts/test-start-scripts.mjs --dist "$KEEP" --expect-status --expect-keep-open
 
       - name: Run heartbeat smoke test on Linux
         if: runner.os == 'Linux'
