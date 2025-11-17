@@ -5,7 +5,7 @@ import open from 'open';
 import path from 'path';
 import fs from 'fs';
 
-// Usage: node neuroswarm/scripts/launch-node.mjs --node gateway|ns|vp --port 8080 --ns http://localhost:3000 --open
+// Usage: node neuroswarm/scripts/launch-node.mjs --node gateway|ns|vp --port 8080 --ns http://localhost:3000 --open [--status]
 const argv = process.argv.slice(2);
 const opts = {};
 for (let i = 0; i < argv.length; i++) {
@@ -13,6 +13,7 @@ for (let i = 0; i < argv.length; i++) {
   else if (argv[i] === '--port') opts.port = Number(argv[++i]);
   else if (argv[i] === '--ns') opts.ns = argv[++i];
   else if (argv[i] === '--open') opts.open = true;
+  else if (argv[i] === '--status') opts.status = true;
 }
 
 if (!opts.node || !opts.port) {
@@ -20,9 +21,14 @@ if (!opts.node || !opts.port) {
   process.exit(1);
 }
 
-const BIN_PATH = path.join(process.cwd(), 'dist', `${opts.node}`, `${opts.node}${process.platform === 'win32' ? '.exe' : ''}`);
-if (!fs.existsSync(BIN_PATH)) {
-  console.error('Cannot find binary at', BIN_PATH);
+// Determine platform-specific subfolder (created by package:bins)
+const osSub = process.platform === 'win32' ? 'win' : process.platform === 'darwin' ? 'macos' : 'linux';
+const BIN_DIR = path.join(process.cwd(), 'dist', `${opts.node}`, osSub);
+let BIN_PATH = path.join(BIN_DIR, `${opts.node}${process.platform === 'win32' ? '.exe' : ''}`);
+let isBinary = fs.existsSync(BIN_PATH);
+let hasServerJs = fs.existsSync(path.join(BIN_DIR, 'server.js'));
+if (!isBinary && !hasServerJs) {
+  console.error('Cannot find binary or server script at', BIN_DIR);
   process.exit(2);
 }
 
@@ -30,9 +36,16 @@ const env = { ...process.env };
 if (opts.ns) env.NS_NODE_URL = opts.ns;
 env.PORT = String(opts.port);
 if (!env.NS_CHECK_EXIT_ON_FAIL) env.NS_CHECK_EXIT_ON_FAIL = 'false';
+if (opts.status) env.STATUS = '1';
 
 console.log(`Starting ${opts.node} from ${BIN_PATH} with PORT=${opts.port} ${opts.ns ? 'NS:' + opts.ns : ''}`);
-const child = spawn(BIN_PATH, [], { env, stdio: 'inherit' });
+let child;
+if (isBinary) {
+  child = spawn(BIN_PATH, [], { env, stdio: 'inherit' });
+} else {
+  const serverJsPath = path.join(BIN_DIR, 'server.js');
+  child = spawn('node', [serverJsPath], { env, stdio: 'inherit' });
+}
 
 function closeAndExit(code = 0) {
   try { child.kill(); } catch (e) {}

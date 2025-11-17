@@ -152,6 +152,27 @@ Using the installers
 
 For end users: download the ZIP for your platform from the GitHub Release page for the project. Extract the ZIP and run the bundled `start.sh` or `start.bat` file. The default gateway installer will attempt to open your browser at `http://localhost:8080` when the gateway is ready.
 
+Start script behavior (Windows `start.bat`) and logging
+-------------------------------------------------------
+
+- The packaged `start.bat` script now runs the node in the foreground so logs stream into the current cmd window instead of launching a separate background window.
+- If you package using the `--keep-open` flag (or the installer includes the `start.bat` with this behavior), the `start.bat` script will append a `pause` only if the node process exits with a non-zero exit code (i.e., the script will not keep the window open on normal exit).
+- When packaged with the `--status` flag, the start scripts set the `STATUS=1` env var inside the script to enable periodic heartbeat messages and connection/disconnect logs from the node. Example packaging command with status logging and keep-open behavior:
+
+```bash
+pnpm -C neuroswarm package:bins -- --keep-open --status
+```
+
+With `--status` logs you will see timestamped lines such as:
+
+```
+[NS-NODE] [2025-11-17T12:00:00.000Z] Heartbeat: gateways=http://localhost:8080:OK validators=2 mempool=0 height=3
+[GATEWAY] [2025-11-17T12:00:05.100Z] Connected to ns-node http://localhost:3000
+[VP-NODE] [2025-11-17T12:00:30.000Z] Heartbeat: ns=http://localhost:3000 nsReachable=true lastProduceSuccess=true validator=val-xxx
+```
+
+These logs are human-readable, timestamped, and printed to stdout so they are visible in the `start.bat` cmd window.
+
 Building installers locally (advanced)
 -------------------------------------
 
