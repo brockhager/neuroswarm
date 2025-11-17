@@ -64,7 +64,8 @@ for (const node of nodes) {
     fs.writeFileSync(path.join(outFolder, 'start.bat'), startBat);
     fs.chmodSync(path.join(outFolder, 'start.sh'), 0o755);
     // package into zip
-    const zipName = `${node.name}-${t.os}.zip`;
+    const arch = t.target.split('-').slice(-1)[0] || 'x64';
+    const zipName = `${node.name}-${t.os}-${arch}.zip`;
     const zipPath = path.join(dist, zipName);
     const output = fs.createWriteStream(zipPath);
     const archive = archiver('zip', { zlib: { level: 9 } });
