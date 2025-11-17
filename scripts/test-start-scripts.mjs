@@ -34,7 +34,8 @@ if (!fs.existsSync(distDir)) {
   process.exit(1);
 }
 
-const nodes = fs.readdirSync(distDir).filter(n => fs.statSync(path.join(distDir, n)).isDirectory());
+const expectedNodes = ['ns-node', 'gateway-node', 'vp-node'];
+const nodes = expectedNodes.filter(n => fs.existsSync(path.join(distDir, n)) && fs.statSync(path.join(distDir, n)).isDirectory());
 for (const nodeName of nodes) {
   const nodeDir = path.join(distDir, nodeName);
   const osDirs = fs.readdirSync(nodeDir).filter(d => fs.statSync(path.join(nodeDir, d)).isDirectory());
