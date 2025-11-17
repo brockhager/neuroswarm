@@ -38,13 +38,13 @@ jobs:
           PLAIN="neuroswarm/dist-status-${PN}-plain-$TS"
           KEEP="neuroswarm/dist-status-${PN}-keep-$TS"
 
-          pnpm package:bins -- --os $TARGET --status
+          pnpm -C neuroswarm package:bins -- --os $TARGET --status
           rm -rf "$PLAIN" || true
           mkdir -p "$PLAIN"
           cp -R dist/* "$PLAIN"
           node "$GITHUB_WORKSPACE/scripts/verify-dist-copy.mjs" --dist "$PLAIN"
 
-          pnpm package:bins -- --os $TARGET --status --keep-open
+          pnpm -C neuroswarm package:bins -- --os $TARGET --status --keep-open
           rm -rf "$KEEP" || true
           mkdir -p "$KEEP"
           cp -R dist/* "$KEEP"
