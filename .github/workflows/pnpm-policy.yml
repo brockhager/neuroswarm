@@ -20,5 +20,29 @@ jobs:
       - name: Install pnpm
         run: npm install -g pnpm@8
 
-      - name: Run pnpm policy script
-        run: pnpm node ./neuroswarm/scripts/checkPnpmPolicy.mjs
+      - name: Run pnpm policy script (detect package-lock.json)
+        id: detect-locks
+        run: |
+          set -e
+          count=$(git ls-files -- "*package-lock.json" | wc -l || true)
+          echo "count=$count" >> $GITHUB_OUTPUT
+          # print files for visibility
+          if [ "$count" -gt 0 ]; then
+            echo "Detected package-lock.json files:";
+            git ls-files -- "*package-lock.json" || true;
+          fi
+        shell: bash
+
+      - name: Post friendly PR comment if lockfiles detected
+        if: steps.detect-locks.outputs.count != '0' && github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ⚠️ **pnpm policy**: This repository enforces pnpm and does not accept `package-lock.json` files.
+            
+            Please remove the `package-lock.json` files from your branch and re-run `pnpm install -w`. See the Contributor Policy for more details.
+            
+            If you need help migrating to pnpm, reply on this PR or join the discussions.

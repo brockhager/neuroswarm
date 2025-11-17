@@ -4,6 +4,8 @@ on:
   push:
     paths:
       - 'neuroswarm/docs/**'
+  schedule:
+    - cron: '0 2 * * *' # Run daily at 02:00 UTC to ensure wiki stays synced
   workflow_dispatch:
 
 jobs:
