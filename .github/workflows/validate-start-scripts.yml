@@ -9,7 +9,10 @@ on:
 
 jobs:
   validate-start-scripts:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        runner: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
       - name: Use Node 20
@@ -22,14 +25,59 @@ jobs:
         run: pnpm install -w
       - name: Build packages
         run: pnpm -C neuroswarm build || true
-      - name: Package & test for Linux
+      - name: Package & test for runner platform
         run: |
-          pnpm -C neuroswarm package:bins -- --os linux --status
+          if [ "${{ runner.os }}" == "Linux" ]; then TARGET=os=linux; fi
+          if [ "${{ runner.os }}" == "macOS" ]; then TARGET=os=macos; fi
+          if [ "${{ runner.os }}" == "Windows" ]; then TARGET=os=win; fi
+          echo "Target set to $TARGET";
+          pnpm -C neuroswarm package:bins -- --$TARGET --status
           cp -R neuroswarm/dist neuroswarm/dist-status-linux
-          pnpm -C neuroswarm package:bins -- --os linux --status --keep-open
-          cp -R neuroswarm/dist neuroswarm/dist-status-linux-keep
-          node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status-linux --expect-status
-          node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status-linux-keep --expect-status --expect-keep-open
+          pnpm -C neuroswarm package:bins -- --$TARGET --status --keep-open
+          cp -R neuroswarm/dist neuroswarm/dist-status-$TARGET
+          node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status-$TARGET --expect-status
+          node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status-$TARGET --expect-status --expect-keep-open
+
+      - name: Run heartbeat smoke test on Linux
+        if: runner.os == 'Linux'
+        run: |
+          set -e
+          DIST=neuroswarm/dist-status-linux
+          NODE=ns-node
+          cd $DIST/$NODE/linux
+          chmod +x start.sh || true
+          nohup ./start.sh > start.log 2>&1 &
+          sleep 5
+          for i in {1..30}; do if curl -s --fail http://localhost:3000/health >/dev/null; then break; fi; sleep 1; done
+          sleep 35
+          grep -q "Heartbeat" start.log
+
+      - name: Run heartbeat smoke test on macOS
+        if: runner.os == 'macOS'
+        run: |
+          set -e
+          DIST=neuroswarm/dist-status-macos
+          NODE=ns-node
+          cd $DIST/$NODE/macos
+          chmod +x start.sh || true
+          nohup ./start.sh > start.log 2>&1 &
+          sleep 5
+          for i in {1..30}; do if curl -s --fail http://localhost:3000/health >/dev/null; then break; fi; sleep 1; done
+          sleep 35
+          grep -q "Heartbeat" start.log
+
+      - name: Run heartbeat smoke test on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $DIST = 'neuroswarm/dist-status-win'
+          $NODE = 'ns-node'
+          Set-Location -Path "$DIST\$NODE\win"
+          Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', '.\start.bat > start.log 2>&1' -WorkingDirectory '.'
+          Start-Sleep -s 5
+          for ($i=0; $i -lt 30; $i++) { try { if ((Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:3000/health').StatusCode -eq 200) { break } } catch {}; Start-Sleep -s 1 }
+          Start-Sleep -s 35
+          Select-String -Path start.log -Pattern 'Heartbeat' | Out-Null
       - name: Package & test for macOS
         run: |
           pnpm -C neuroswarm package:bins -- --os macos --status
