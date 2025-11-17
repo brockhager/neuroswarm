@@ -29,6 +29,11 @@ for (let i = 0; i < args.length; i++) {
   else if (args[i] === '--status') { statusFlag = true; }
 }
 
+// Allow KEEP_OPEN to be set via environment variable for CI cross-platform reliability
+if (!keepOpen && (String(process.env.KEEP_OPEN || '').toLowerCase() === '1' || String(process.env.KEEP_OPEN || '').toLowerCase() === 'true')) {
+  keepOpen = true;
+}
+
 const dist = path.join(process.cwd(), 'dist');
 // Ensure a clean dist dir for each packaging run to avoid leftover files
 if (fs.existsSync(dist)) {
@@ -145,7 +150,7 @@ for (const node of nodes) {
     const startSh = shLines.join('\n');
     // Run in foreground: don't use `start` to preserve logs in the current console.
     const batStartCmd = builtBinary ? `"%~dp0\\${exeName}" %*` : `node "%~dp0\\server.js" %*`;
-    const startBat = `@echo off\nsetlocal\nset PORT=${node.port}\nset NS_NODE_URL=${process.env.NS_NODE_URL || 'http://localhost:3000'}\nset NS_CHECK_EXIT_ON_FAIL=false\n${statusFlag ? `set STATUS=1\n` : ''}\n:: Run binary if present, otherwise run server.js in the foreground so logs stream into this cmd window\nif exist "%~dp0\\${exeName}" (\n  "%~dp0\\${exeName}" %* || node "%~dp0\\server.js" %*\n) else (\n  ${batStartCmd}\n)\n`;
+    const startBat = `@echo off\nsetlocal\nset PORT=${node.port}\nset NS_NODE_URL=${process.env.NS_NODE_URL || 'http://localhost:3000'}\nset NS_CHECK_EXIT_ON_FAIL=false\n${statusFlag ? `set STATUS=1\n` : ''}\n:: Try to run compiled binary if present, otherwise run server.js\nif exist "%~dp0\\${exeName}" (\n  "%~dp0\\${exeName}" %*\n  set EXITCODE=%ERRORLEVEL%\n) else (\n  ${batStartCmd}\n  set EXITCODE=%ERRORLEVEL%\n)\nif %EXITCODE% NEQ 0 (\n  echo [%DATE% %TIME%] ${node.name} exited with code %EXITCODE%\n  ${keepOpen ? 'pause\n' : ''}\n)\nexit /b %EXITCODE%\n`;
     fs.writeFileSync(path.join(outFolder, 'start.sh'), startSh);
     fs.writeFileSync(path.join(outFolder, 'start.bat'), startBat);
     fs.chmodSync(path.join(outFolder, 'start.sh'), 0o755);
