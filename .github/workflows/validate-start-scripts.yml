@@ -33,11 +33,15 @@ jobs:
           if [ "${{ runner.os }}" == "Windows" ]; then TARGET=win; fi
           echo "Target set to $TARGET";
           pnpm package:bins -- --os $TARGET --status
-            cp -R dist dist-status-$TARGET
+          rm -rf dist-status-${TARGET}-plain || true
+          mkdir -p dist-status-${TARGET}-plain
+          cp -R dist/* dist-status-${TARGET}-plain
           pnpm package:bins -- --os $TARGET --status --keep-open
-            cp -R dist dist-status-$TARGET
-            node scripts/test-start-scripts.mjs --dist dist-status-$TARGET --expect-status
-            node scripts/test-start-scripts.mjs --dist dist-status-$TARGET --expect-status --expect-keep-open
+          rm -rf dist-status-${TARGET}-keep || true
+          mkdir -p dist-status-${TARGET}-keep
+          cp -R dist/* dist-status-${TARGET}-keep
+          node scripts/test-start-scripts.mjs --dist dist-status-${TARGET}-plain --expect-status
+          node scripts/test-start-scripts.mjs --dist dist-status-${TARGET}-keep --expect-status --expect-keep-open
 
       - name: Run heartbeat smoke test on Linux
         if: runner.os == 'Linux'
