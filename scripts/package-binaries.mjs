@@ -21,8 +21,10 @@ const targets = [
 
 const args = process.argv.slice(2);
 let filter = null;
+let keepOpen = false;
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--os' && args[i + 1]) { filter = args[i + 1]; i++; }
+  else if (args[i] === '--keep-open') { keepOpen = true; }
 }
 
 const dist = path.join(process.cwd(), 'dist');
@@ -57,7 +59,7 @@ for (const node of nodes) {
     const startCommand = builtBinary ? `./${exeName}` : `node server.js`;
     const startSh = `#!/usr/bin/env bash\nexport PORT=${node.port}\nexport NS_NODE_URL=${process.env.NS_NODE_URL || 'http://localhost:3000'}\nexport NS_CHECK_EXIT_ON_FAIL=false\n${startCommand} & PID=$!\n# wait for /health\nfor i in {1..30}; do\n  if curl --silent --fail http://localhost:${node.port}/health; then break; fi\n  sleep 1\ndone\n` + (node.name === 'gateway-node' ? `\n# open browser on gateway for convenience\nif command -v xdg-open >/dev/null; then xdg-open http://localhost:${node.port}; elif command -v open >/dev/null; then open http://localhost:${node.port}; fi\n` : '') + `\nwait $PID\n`;
     const startBatCmd = builtBinary ? `${exeName}` : `node server.js`;
-    const startBat = `@echo off\nset PORT=${node.port}\nset NS_NODE_URL=${process.env.NS_NODE_URL || 'http://localhost:3000'}\nset NS_CHECK_EXIT_ON_FAIL=false\nstart ${startBatCmd}\n` + (node.name === 'gateway-node' ? `\n:: wait for health and open browser (Windows)\nfor /L %%i in (1,1,30) do (\n  powershell -NoProfile -Command "try { (Invoke-WebRequest -UseBasicParsing -Uri http://localhost:${node.port}/health).StatusCode -eq 200 } catch { $false }" && (start http://localhost:${node.port} & goto :done) || timeout /t 1 > nul\n)\n:done\n` : '') + `\n`;
+    const startBat = `@echo off\nset PORT=${node.port}\nset NS_NODE_URL=${process.env.NS_NODE_URL || 'http://localhost:3000'}\nset NS_CHECK_EXIT_ON_FAIL=false\nstart ${startBatCmd}\n` + (node.name === 'gateway-node' ? `\n:: wait for health and open browser (Windows)\nfor /L %%i in (1,1,30) do (\n  powershell -NoProfile -Command "try { (Invoke-WebRequest -UseBasicParsing -Uri http://localhost:${node.port}/health).StatusCode -eq 200 } catch { $false }" && (start http://localhost:${node.port} & goto :done) || timeout /t 1 > nul\n)\n:done\n` : '') + `${keepOpen ? '\n:: keep console open for debugging\npause\n' : '\n'}`;
     fs.writeFileSync(path.join(outFolder, 'start.sh'), startSh);
     fs.writeFileSync(path.join(outFolder, 'start.bat'), startBat);
     fs.chmodSync(path.join(outFolder, 'start.sh'), 0o755);
