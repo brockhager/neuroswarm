@@ -1,57 +1,62 @@
-# NeuroSwarm — Wiki Home
+# NeuroSwarm Wiki (Canonical Home)
 
-Welcome to the NeuroSwarm documentation wiki. This is the canonical source for contributors and users — use the links below to find installation instructions, architecture details, tooling, governance and contributor resources.
-
-If you're contributing, start with "Getting Started" and the contributor resources section; if you're running nodes, go straight to "Installation & Running Nodes".
+Welcome to the NeuroSwarm Wiki. This is the canonical, single source of truth for installation, node operations, architecture, governance, and contributor workflow. If a README or code comment conflicts with the wiki, the wiki wins — please open an issue or PR to reconcile.
 
 ---
-
-🚀 Getting Started
-- [Installation (One-click installers)](Installation)
-- [Running Nodes (ns-node, gateway-node, vp-node)](Running-Nodes)
-- [pnpm Policy & Developer Workflow](Contributor-Policy)
-
-🧠 Architecture
-- [Data Flow Architecture](Data-Flow-Architecture)
-- Consensus & PoS (see `neuro-services` PoS tests in the repo)
-
-🔧 Tools & Scripts
-- [Connectivity Check (scripts/checkNodeConnectivityClean.mjs)](Running-Nodes#health--connectivity)
-- [Smoke produce script (scripts/smokeProduce.mjs)](Running-Nodes#smoke-produce)
-- Packaging/Installers (CI builds, `scripts/package-binaries.mjs`)
-- Updates & publish flow (`scripts/publishUpdate.mjs`, GitHub Releases)
-
-📜 Governance & Updates
-- [Project Updates (changelog / Updates page)](Updates)
-- PR flow, publishing & Discord integration (see `publish-update` action)
-
-🛠️ Contributor Resources
-- CI workflows (`.github/workflows/*`) including `run-nodes-integration.yml`, `connectivity-check.yml` and others
-- Test harness: `neuro-services/tests/*` (PoS, block production, equivocation, reorg, etc.)
-- Logs & artifacts: `tmp/logs/` for local testing; CI artifact uploads for PRs
+## Essential Pages
+- [Installation](Installation) – One‑click installers & manual setup.
+- [Running Nodes](Running-Nodes) – Operating `ns-node`, `gateway-node`, `vp-node` + health & logs.
+- [Data Flow Architecture](Data-Flow-Architecture) – End‑to‑end pipeline, consensus, reorg handling.
+- [Contributor Policy](Contributor-Policy) – pnpm only (no `package-lock.json`), branching & PR rules.
+- [Updates / Changelog](Updates) – Release notes, breaking changes, migration guidance.
 
 ---
+## Operator Quick Start
+1. Go to [Installation](Installation) and download platform-specific ZIPs.
+2. Unpack; run provided start script (`start-gateway`, `start-ns`, `start-vp`).
+3. Wait for automatic health poll; gateway script opens browser when ready.
+4. Verify `/health` returns JSON status for each node.
+5. Run connectivity: `node scripts/checkNodeConnectivityClean.mjs`.
+6. Smoke blocks: `node scripts/smokeProduce.mjs` (see Running Nodes for expected output).
 
-If you don't see a page you need, open an issue or create a PR — we sync `neuroswarm/docs/` into this wiki via CI. This front page is refreshed from `neuroswarm/docs/wiki/Home.md` in the repository (see `pushDocsToWiki.mjs`).
-# Welcome to NeuroSwarm
+---
+## Contributor Quick Start
+1. Clone the monorepo; run `pnpm install -w` (never commit `package-lock.json`).
+2. Read [Contributor Policy](Contributor-Policy) for pnpm + workflow conventions.
+3. Make a doc/code change; run tests (PoS & block production in `neuro-services`).
+4. Use `scripts/publishUpdate.mjs` for release prep → open PR → announce in Discord → merge → CI syncs wiki.
+5. Confirm changes appear here after the `docs-wiki-sync` workflow completes.
 
-## Mission
-NeuroSwarm is building a decentralized AI platform that emphasizes transparent governance, contributor-first collaboration, and auditable decision-making. This wiki is the centralized source for onboarding, architecture, governance, and operational playbooks.
+---
+## Scripts & Automation
+- Packaging: `scripts/package-binaries.mjs` (builds multi‑OS binaries & ZIP installers).
+- Unified launcher: `scripts/launch-node.mjs` (health polling + browser open for gateway).
+- Connectivity: `scripts/checkNodeConnectivityClean.mjs`.
+- Smoke / block production: `scripts/smokeProduce.mjs`.
+- Release / update: `scripts/publishUpdate.mjs`.
+- Git hygiene (multi-repo): `scripts/git-run-all.*`, branch cleanup helpers.
 
-## Quick Start
-1. Check out our contributor onboarding guide: [Contributor Onboarding](Contributor-Onboarding.md)
-2. Set up your dev environment: `pnpm install -w` and run the Admin Node tests (see [CI-CD-and-Testing](CI-CD-and-Testing.md))
-3. For governance rituals and proposer flow: [Governance & Anchoring](Governance-Anchoring.md)
+---
+## CI / CD
+- Installer build matrix: `build-release-installers.yml`.
+- Validation / dry‑run sync: `validate-packaging-and-wiki.yml`.
+- Documentation sync: `docs-wiki-sync.yml` (pushes `docs/wiki/*` here).
+- Integration & PoS testing: see `run-nodes-integration.yml` (may vary by branch).
 
-## Contributor Quick Links
-- New contributor? Start with a small documentation PR: [How to Contribute to the Wiki](How-to-contribute-to-the-wiki.md)
-- Need to run tests locally? Use the PR Checklist helper script: `admin-node/scripts/run-pr-checklist.ps1` (or `.sh`)
-- Want to verify the genesis anchor? Follow the guide: [Contributor Genesis Anchor Verification](../contributor-anchor-verification.md)
+Artifacts include: packaged binaries (`ns-node`, `gateway-node`, `vp-node`) and start scripts with health wait logic.
 
-## Need help?
-- Join our Discussions: https://github.com/brockhager/neuro-infra/discussions
-- Open an issue or ask for clarification on repository issues.
+---
+## Architecture & Governance
+- [Data Flow Architecture](Data-Flow-Architecture) outlines ingestion → consensus → finalization.
+- Governance anchors & proposer rotation documented (see future Governance pages / Updates).
+- PoS, equivocation & reorg handling covered in test suites (`neuro-services/tests`).
 
-See the full index for more pages: [Index](Index.md)
+---
+## Support & Feedback
+- GitHub Discussions: https://github.com/brockhager/neuro-infra/discussions
+- Issues: open if a page is stale or missing.
+- PRs: small, frequent, pnpm‑compliant.
 
-Last updated: 2025-11-15
+If a page you need is missing, create a PR; CI will sync it here. This Home page is auto‑refreshed from `neuroswarm/docs/wiki/Home.md` via `pushDocsToWiki.mjs`.
+
+Last updated: 2025-11-16

@@ -284,9 +284,13 @@ app.post('/blocks/produce', (req, res) => {
   const maybeSlashed = validators.get(header.validatorId) && validators.get(header.validatorId).slashed;
   if (maybeSlashed) return res.status(400).json({ error: 'validator_slashed' });
   const v = validators.get(header.validatorId);
-  // verify signature (HMAC for now)
-  const data = canonicalize({ ...header, signature: undefined });
-  if (!verifyEd25519(v.publicKey, data, signature)) return res.status(400).json({ error: 'invalid header signature' });
+  // canonical data excludes signature key entirely
+  const { signature: _sigDrop, ...headerNoSig } = header;
+  const data = canonicalize(headerNoSig);
+  const verified = verifyEd25519(v.publicKey, data, signature);
+  if (!verified) {
+    return res.status(400).json({ error: 'invalid header signature' });
+  }
   // verify merkle root
   const txIds = (txs || []).map(tx => txIdFor(tx));
   const calcRoot = computeMerkleRoot(txIds);
@@ -634,8 +638,16 @@ function applyBlock(block) {
   if (!validators.has(validatorId)) return { ok: false, reason: 'unknown_validator' };
   const v = validators.get(validatorId);
   // verify header signature using ed25519 public key
-  const headerData = canonicalize({ ...block.header, signature: undefined });
-  if (!verifyEd25519(v.publicKey, headerData, block.header.signature)) return { ok: false, reason: 'bad_sig' };
+  // Build canonical header data excluding the signature key entirely to match signing input.
+  const { signature: _sigIgnored, ...headerNoSig } = block.header;
+  const headerData = canonicalize(headerNoSig);
+  const sigPreview = (block.header.signature || '').toString().slice(0,32);
+  console.log('[NS-NODE][DEBUG] Verifying header signature validator=', validatorId, 'sigPreview=', sigPreview);
+  const verified = verifyEd25519(v.publicKey, headerData, block.header.signature);
+  if (!verified) {
+    console.log('[NS-NODE][DEBUG] Signature verification failed headerDataLength=', headerData.length);
+    return { ok: false, reason: 'bad_sig' };
+  }
   // verify prevHash references a known parent or genesis
   const parentHash = block.header.prevHash;
   const genesisPrev = '0'.repeat(64);
