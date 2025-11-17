@@ -22,15 +22,27 @@ jobs:
         run: pnpm install -w
       - name: Build packages
         run: pnpm -C neuroswarm build || true
-      - name: Package installers (status only)
-        run: pnpm -C neuroswarm package:bins -- --os win --status
-      - name: Save dist snapshot (status only)
-        run: cp -R neuroswarm/dist neuroswarm/dist-status
-      - name: Package installers (status + keep-open)
-        run: pnpm -C neuroswarm package:bins -- --os win --status --keep-open
-      - name: Save dist snapshot (status + keep-open)
-        run: cp -R neuroswarm/dist neuroswarm/dist-status-keep
-      - name: Run start script tests (status only)
-        run: node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status --expect-status
-      - name: Run start script tests (status + keep open)
-        run: node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status-keep --expect-status --expect-keep-open
+      - name: Package & test for Linux
+        run: |
+          pnpm -C neuroswarm package:bins -- --os linux --status
+          cp -R neuroswarm/dist neuroswarm/dist-status-linux
+          pnpm -C neuroswarm package:bins -- --os linux --status --keep-open
+          cp -R neuroswarm/dist neuroswarm/dist-status-linux-keep
+          node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status-linux --expect-status
+          node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status-linux-keep --expect-status --expect-keep-open
+      - name: Package & test for macOS
+        run: |
+          pnpm -C neuroswarm package:bins -- --os macos --status
+          cp -R neuroswarm/dist neuroswarm/dist-status-macos
+          pnpm -C neuroswarm package:bins -- --os macos --status --keep-open
+          cp -R neuroswarm/dist neuroswarm/dist-status-macos-keep
+          node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status-macos --expect-status
+          node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status-macos-keep --expect-status --expect-keep-open
+      - name: Package & test for Windows
+        run: |
+          pnpm -C neuroswarm package:bins -- --os win --status
+          cp -R neuroswarm/dist neuroswarm/dist-status-win
+          pnpm -C neuroswarm package:bins -- --os win --status --keep-open
+          cp -R neuroswarm/dist neuroswarm/dist-status-win-keep
+          node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status-win --expect-status
+          node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status-win-keep --expect-status --expect-keep-open

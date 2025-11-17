@@ -30,11 +30,19 @@ for (let i = 0; i < args.length; i++) {
 }
 
 const dist = path.join(process.cwd(), 'dist');
-if (!fs.existsSync(dist)) fs.mkdirSync(dist, { recursive: true });
+// Ensure a clean dist dir for each packaging run to avoid leftover files
+if (fs.existsSync(dist)) {
+  try { fs.rmSync(dist, { recursive: true, force: true }); } catch (e) { /* ignore */ }
+}
+fs.mkdirSync(dist, { recursive: true });
 
 for (const node of nodes) {
   for (const t of targets.filter(tt => !filter || tt.os === filter)) {
     const outFolder = path.join(dist, node.name, t.os);
+    // Ensure `outFolder` is clean to avoid leftover start scripts or files from previous runs
+    if (fs.existsSync(outFolder)) {
+      try { fs.rmSync(outFolder, { recursive: true, force: true }); } catch (e) { /* ignore */ }
+    }
     fs.mkdirSync(outFolder, { recursive: true });
     const exeName = node.name + (t.os === 'win' ? '.exe' : '');
     const outPath = path.join(outFolder, exeName);
