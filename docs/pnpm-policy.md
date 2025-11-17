@@ -19,6 +19,16 @@ Developer tips:
 
 If you believe a `package-lock.json` is required for a specific package, please open an issue so we can discuss the tradeoffs.
 
+## Where to download binaries
+Always download installers and binaries from the project's official GitHub Release page (not from temporary workflow artifacts). Releases have permanent URLs and are the canonical source for packaged artifacts.
+
+Example download link format:
+```
+https://github.com/<owner>/<repo>/releases/download/<tag>/<file>.zip
+```
+
+Clicking a release asset will save the ZIP to your default download location. Always verify the release tag and checksum if available.
+
 ## Using `publishUpdate.mjs` for Release Notes and Wiki Updates
 
 `publishUpdate.mjs` helps you create wiki updates and PRs for release notes. Common flags:
