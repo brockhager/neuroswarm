@@ -24,8 +24,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
       - name: Build packages
-        run: pnpm -C neuroswarm build || true
+        run: pnpm build || true
       - name: Package & test for runner platform
+        shell: bash
         run: |
           if [ "${{ runner.os }}" == "Linux" ]; then TARGET=os=linux; fi
           if [ "${{ runner.os }}" == "macOS" ]; then TARGET=os=macos; fi
