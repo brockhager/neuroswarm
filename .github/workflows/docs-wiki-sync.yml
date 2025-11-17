@@ -28,4 +28,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
+          # Ensure wiki content existence check before attempting grep/updates
+          if compgen -G "neuroswarm/wiki/*.md" > /dev/null; then
+            echo "Found neuroswarm/wiki files, proceeding to update";
+          else
+            echo "No neuroswarm/wiki files found; creating minimal placeholders so pushDocsToWiki can operate";
+            mkdir -p neuroswarm/wiki || true;
+            echo "# Wiki Home" > neuroswarm/wiki/Home.md || true;
+            git add neuroswarm/wiki/Home.md || true;
+          fi
           node neuroswarm/scripts/pushDocsToWiki.mjs
