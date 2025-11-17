@@ -29,6 +29,11 @@ for (let i = 0; i < args.length; i++) {
   else if (args[i] === '--status') { statusFlag = true; }
 }
 
+// Allow KEEP_OPEN to be set via environment variable for CI cross-platform reliability
+if (!keepOpen && (String(process.env.KEEP_OPEN || '').toLowerCase() === '1' || String(process.env.KEEP_OPEN || '').toLowerCase() === 'true')) {
+  keepOpen = true;
+}
+
 const dist = path.join(process.cwd(), 'dist');
 // Ensure a clean dist dir for each packaging run to avoid leftover files
 if (fs.existsSync(dist)) {
@@ -97,14 +102,55 @@ for (const node of nodes) {
         fs.renameSync(createdName, outPath);
       }
     }
+    // Always copy a fallback server.js into the out folder; this supports the start script falling back to node server.js when the binary is broken
+    try {
+      const srcServer = path.join(process.cwd(), node.entry);
+      if (fs.existsSync(srcServer)) fs.copyFileSync(srcServer, path.join(outFolder, 'server.js'));
+    } catch (e) {}
     // write a platform-aware start script
     const startCommand = builtBinary ? `./${exeName}` : `node server.js`;
     const shStartCmd = builtBinary ? `./${exeName}` : `node "$(dirname \"$0\")/server.js"`;
-    const startSh = `#!/usr/bin/env bash\nexport PORT=${node.port}\nexport NS_NODE_URL=${process.env.NS_NODE_URL || 'http://localhost:3000'}\nexport NS_CHECK_EXIT_ON_FAIL=false\n${statusFlag ? `export STATUS=1\n` : ''}\n# Run node in the foreground so logs stream to this shell\n${shStartCmd} "$@"\nEXIT_CODE=$?\nif [ $EXIT_CODE -ne 0 ]; then\n  echo "[\$(date -u +%Y-%m-%dT%H:%M:%SZ)] ${node.name} exited with code $EXIT_CODE"\n  ${keepOpen ? 'read -n 1 -s -r -p "Press any key to close..."; echo' : ''}\nfi\n` + (node.name === 'gateway-node' ? `\n# open browser on gateway for convenience; run in background so it doesn't block logs\n(\n  for i in {1..30}; do\n    if curl --silent --fail http://localhost:${node.port}/health; then\n      if command -v xdg-open >/dev/null; then\n        xdg-open http://localhost:${node.port} >/dev/null 2>&1 || true\n      elif command -v open >/dev/null; then\n        open http://localhost:${node.port} >/dev/null 2>&1 || true\n      fi\n      break\n    fi\n    sleep 1\n  done\n) &\n` : '') + `\n`;
-    const startBatCmd = builtBinary ? `${exeName}` : `node server.js`;
+    
+    // Build start.sh from an array to avoid nested backticks and quoting issues
+    const shLines = [];
+    shLines.push('#!/usr/bin/env bash');
+    shLines.push(`export PORT=${node.port}`);
+    shLines.push(`export NS_NODE_URL=${process.env.NS_NODE_URL || 'http://localhost:3000'}`);
+    shLines.push('export NS_CHECK_EXIT_ON_FAIL=false');
+    if (statusFlag) shLines.push('export STATUS=1');
+    shLines.push('# Run binary if present, otherwise run server.js in the foreground so logs stream to this shell');
+    shLines.push(`if [ -x "$(dirname \"$0\")/${exeName}" ]; then`);
+    shLines.push(`  "$(dirname \"$0\")/${exeName}" "$@" || node "$(dirname \"$0\")/server.js" "$@"`);
+    shLines.push('else');
+    shLines.push(`${shStartCmd} "$@"`);
+    shLines.push('fi');
+    shLines.push('EXIT_CODE=$?');
+    shLines.push('if [ $EXIT_CODE -ne 0 ]; then');
+    shLines.push(`  echo "[\$(date -u +%Y-%m-%dT%H:%M:%SZ)] ${node.name} exited with code $EXIT_CODE"`);
+    if (keepOpen) shLines.push('  read -n 1 -s -r -p "Press any key to close..."; echo');
+    shLines.push('fi');
+    if (node.name === 'gateway-node') {
+      shLines.push('');
+      shLines.push('# open browser on gateway for convenience; run in background so it doesn\'t block logs');
+      shLines.push('(');
+      shLines.push('  for i in {1..30}; do');
+      shLines.push(`    if curl --silent --fail http://localhost:${node.port}/health; then`);
+      shLines.push('      if command -v xdg-open >/dev/null; then');
+      shLines.push(`        xdg-open http://localhost:${node.port} >/dev/null 2>&1 || true`);
+      shLines.push('      elif command -v open >/dev/null; then');
+      shLines.push(`        open http://localhost:${node.port} >/dev/null 2>&1 || true`);
+      shLines.push('      fi');
+      shLines.push('      break');
+      shLines.push('    fi');
+      shLines.push('    sleep 1');
+      shLines.push('  done');
+      shLines.push(') &');
+    }
+    shLines.push('');
+    const startSh = shLines.join('\n');
     // Run in foreground: don't use `start` to preserve logs in the current console.
     const batStartCmd = builtBinary ? `"%~dp0\\${exeName}" %*` : `node "%~dp0\\server.js" %*`;
-    const startBat = `@echo off\nsetlocal\nset PORT=${node.port}\nset NS_NODE_URL=${process.env.NS_NODE_URL || 'http://localhost:3000'}\nset NS_CHECK_EXIT_ON_FAIL=false\n${statusFlag ? `set STATUS=1\n` : ''}\n:: Run node in foreground so logs stream into this cmd window\n${batStartCmd}\nset EXITCODE=%ERRORLEVEL%\nif %EXITCODE% NEQ 0 (\n  echo [%DATE% %TIME%] ${node.name} exited with code %EXITCODE%\n  ${keepOpen ? 'pause\n' : ''}\n)\nexit /b %EXITCODE%\n` + (node.name === 'gateway-node' ? `\n:: spawn a background health-check to open browser when gateway starts (run in detached window)\nstart "" powershell -NoProfile -Command "for ($i=0; $i -lt 30; $i++) { try { if ((Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:${node.port}/health').StatusCode -eq 200) { Start-Process 'http://localhost:${node.port}'; break } } catch {}; Start-Sleep -Seconds 1 }"\n` : '');
+    const startBat = `@echo off\nsetlocal\nset PORT=${node.port}\nset NS_NODE_URL=${process.env.NS_NODE_URL || 'http://localhost:3000'}\nset NS_CHECK_EXIT_ON_FAIL=false\n${statusFlag ? `set STATUS=1\n` : ''}\n:: Try to run compiled binary if present, otherwise run server.js\nif exist "%~dp0\\${exeName}" (\n  "%~dp0\\${exeName}" %*\n  set EXITCODE=%ERRORLEVEL%\n) else (\n  ${batStartCmd}\n  set EXITCODE=%ERRORLEVEL%\n)\nif %EXITCODE% NEQ 0 (\n  echo [%DATE% %TIME%] ${node.name} exited with code %EXITCODE%\n  ${keepOpen ? 'pause\n' : ''}\n)\nexit /b %EXITCODE%\n`;
     fs.writeFileSync(path.join(outFolder, 'start.sh'), startSh);
     fs.writeFileSync(path.join(outFolder, 'start.bat'), startBat);
     fs.chmodSync(path.join(outFolder, 'start.sh'), 0o755);
