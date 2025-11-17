@@ -35,29 +35,31 @@ jobs:
           TS=$(date -u +%s)
           PN=${TARGET}
           # create a timestamped plain folder
-          PLAIN="dist-status-${PN}-plain-$TS"
-          KEEP="dist-status-${PN}-keep-$TS"
+          PLAIN="neuroswarm/dist-status-${PN}-plain-$TS"
+          KEEP="neuroswarm/dist-status-${PN}-keep-$TS"
 
           pnpm package:bins -- --os $TARGET --status
           rm -rf "$PLAIN" || true
           mkdir -p "$PLAIN"
           cp -R dist/* "$PLAIN"
-          node scripts/verify-dist-copy.mjs --dist "$PLAIN"
+          node neuroswarm/scripts/verify-dist-copy.mjs --dist "$PLAIN"
 
           pnpm package:bins -- --os $TARGET --status --keep-open
           rm -rf "$KEEP" || true
           mkdir -p "$KEEP"
           cp -R dist/* "$KEEP"
-          node scripts/verify-dist-copy.mjs --dist "$KEEP"
+          node neuroswarm/scripts/verify-dist-copy.mjs --dist "$KEEP"
 
-          node scripts/test-start-scripts.mjs --dist "$PLAIN" --expect-status
-          node scripts/test-start-scripts.mjs --dist "$KEEP" --expect-status --expect-keep-open
+          echo "DIST_PLAIN=$PLAIN" >> $GITHUB_ENV
+          echo "DIST_KEEP=$KEEP" >> $GITHUB_ENV
+          node neuroswarm/scripts/test-start-scripts.mjs --dist "$PLAIN" --expect-status
+          node neuroswarm/scripts/test-start-scripts.mjs --dist "$KEEP" --expect-status --expect-keep-open
 
       - name: Run heartbeat smoke test on Linux
         if: runner.os == 'Linux'
         run: |
           set -e
-          DIST=neuroswarm/dist-status-linux
+          DIST=$DIST_PLAIN
           NODE=ns-node
           cd $DIST/$NODE/linux
           chmod +x start.sh || true
@@ -71,7 +73,7 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           set -e
-          DIST=neuroswarm/dist-status-macos
+          DIST=$DIST_PLAIN
           NODE=ns-node
           cd $DIST/$NODE/macos
           chmod +x start.sh || true
@@ -85,7 +87,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $DIST = 'neuroswarm/dist-status-win'
+          $DIST = $env:DIST_PLAIN
           $NODE = 'ns-node'
           Set-Location -Path "$DIST\$NODE\win"
           Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', '.\start.bat > start.log 2>&1' -WorkingDirectory '.'
