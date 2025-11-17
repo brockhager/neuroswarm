@@ -139,6 +139,17 @@ Pre-built installers for `ns-node`, `gateway-node`, and `vp-node` are available 
  - https://github.com/brockhager/neuro-infra/wiki/Contributor-Policy
  - https://github.com/brockhager/neuro-infra/wiki/Updates
 
+Tip: Packaging with live status logging
+-------------------------------------
+
+If you'd like to package installers that display live status messages in the console window and keep the window open only when the process exits unexpectedly, build with the `--status` and `--keep-open` flags:
+
+```powershell
+pnpm -C neuroswarm package:bins -- --keep-open --status
+```
+
+This produces a `start.bat` that runs the node in the foreground so logs stream to the window and will append a pause only if the node exits with a non-zero exit code.
+
 
 Submissions package:
 - `submissions/` — contains submission router, CLI, and validation for contributors to submit data (fingerprint + metadata) to the NeuroSwarm Brain. Mounts at `/v1/brain/submit`.

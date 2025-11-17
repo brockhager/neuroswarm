@@ -152,7 +152,6 @@ async function publishToGateways(message, headers = {}) {
         gw.reachable = true;
         gw.lastError = null;
         if (!prev) logNs(`Connected to gateway ${gw.url}`);
-        else logNs(`Gateway ${gw.url} remains reachable`);
         logNs(`Successfully published message ${message.id} to gateway ${gw.url} correlation=${correlationId}`);
         return { gateway: gw.url, status: 'ok' };
       } else {
@@ -165,13 +164,11 @@ async function publishToGateways(message, headers = {}) {
       gw.lastError = String(err);
       lastError = gw.lastError;
       console.error(`[NS-NODE] Gateway ${gw.url} failed: ${err}`);
-      logNs(`Gateway ${gw.url} error: ${String(err).slice(0, 200)}`);
       if (gw.reachable) {
         logNs(`Disconnected from gateway ${gw.url}, error=${String(err).slice(0, 240)}`);
       }
     }
   }
-  logNs(`All gateways failed; lastError=${lastError}`);
   throw new Error(`All gateways failed; lastError=${lastError}`);
 }
 

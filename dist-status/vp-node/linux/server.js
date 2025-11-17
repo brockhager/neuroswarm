@@ -145,7 +145,7 @@ async function produceLoop() {
       logVp('produce ok:', j);
       lastProduceSuccess = true;
     } else {
-      console.warn('[VP-NODE] produce failed:', j);
+      console.warn('produce failed:', j);
       lastProduceSuccess = false;
     }
     // Optionally pin any tx.cid to IPFS pinning endpoint
@@ -164,7 +164,6 @@ async function produceLoop() {
     }
   } catch (e) {
     console.error('[VP-NODE] vp err', e.message);
-    logVp(`Error in produceLoop: ${e.message.slice(0,200)}`);
     lastProduceSuccess = false;
   }
 }

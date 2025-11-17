@@ -15,6 +15,16 @@ One-click installers:
 Launchers & UX:
 - Each installer contains a platform binary (`ns-node`, `gateway-node`, `vp-node`) and platform start scripts: `start.sh` (Linux/macOS) and `start.bat` (Windows).
 - The `start` scripts set default environment variables (PORT, NS_NODE_URL) and start the binary. For the gateway installer, the start script also opens the system default browser at the gateway URL after confirming the `/health` endpoint is responsive.
+ - The `start` scripts set default environment variables (PORT, NS_NODE_URL) and start the binary. For the gateway installer, the start script also opens the system default browser at the gateway URL after confirming the `/health` endpoint is responsive.
+ - The Windows `start.bat` now runs the node in the foreground so logs stream directly into the console window (instead of launching a separate background process via `start`).
+ - When packaged with `--keep-open`, the `start.bat` will only append a `pause` if the process exits with a non-zero exit code. Normal exit (exit code 0) will not pause the window.
+ - Use the `--status` flag during packaging to enable periodic heartbeat/status logs and explicit connect/disconnect messages in the start script output. Example:
+
+```powershell
+pnpm -C neuroswarm package:bins -- --keep-open --status
+```
+
+These logs are human-readable, timestamped, and printed to STDOUT so they are visible in the start script console window.
 
 Developer packaging and CI:
 - CI builds per-platform artifacts using `pkg` and uploads zipped installers to Release artifacts.

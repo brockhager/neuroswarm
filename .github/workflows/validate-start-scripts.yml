@@ -1,0 +1,36 @@
+name: Validate Start Scripts
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  validate-start-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install pnpm
+        run: npm i -g pnpm
+      - name: Install dependencies
+        run: pnpm install -w
+      - name: Build packages
+        run: pnpm -C neuroswarm build || true
+      - name: Package installers (status only)
+        run: pnpm -C neuroswarm package:bins -- --os win --status
+      - name: Save dist snapshot (status only)
+        run: cp -R neuroswarm/dist neuroswarm/dist-status
+      - name: Package installers (status + keep-open)
+        run: pnpm -C neuroswarm package:bins -- --os win --status --keep-open
+      - name: Save dist snapshot (status + keep-open)
+        run: cp -R neuroswarm/dist neuroswarm/dist-status-keep
+      - name: Run start script tests (status only)
+        run: node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status --expect-status
+      - name: Run start script tests (status + keep open)
+        run: node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status-keep --expect-status --expect-keep-open
