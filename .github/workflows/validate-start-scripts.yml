@@ -67,7 +67,11 @@ jobs:
           sleep 5
           for i in {1..30}; do if curl -s --fail http://localhost:3000/health >/dev/null; then break; fi; sleep 1; done
           sleep 35
-          grep -q "Heartbeat" start.log
+          if ! grep -q "Heartbeat" start.log; then
+            echo '--- NO HEARTBEAT FOUND: START LOG ---'
+            tail -n +1 start.log || true
+            exit 1
+          fi
 
       - name: Run heartbeat smoke test on macOS
         if: runner.os == 'macOS'
@@ -81,7 +85,11 @@ jobs:
           sleep 5
           for i in {1..30}; do if curl -s --fail http://localhost:3000/health >/dev/null; then break; fi; sleep 1; done
           sleep 35
-          grep -q "Heartbeat" start.log
+          if ! grep -q "Heartbeat" start.log; then
+            echo '--- NO HEARTBEAT FOUND: START LOG ---'
+            tail -n +1 start.log || true
+            exit 1
+          fi
 
       - name: Run heartbeat smoke test on Windows
         if: runner.os == 'Windows'
@@ -94,5 +102,9 @@ jobs:
           Start-Sleep -s 5
           for ($i=0; $i -lt 30; $i++) { try { if ((Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:3000/health').StatusCode -eq 200) { break } } catch {}; Start-Sleep -s 1 }
           Start-Sleep -s 35
-          Select-String -Path start.log -Pattern 'Heartbeat' | Out-Null
+          if (-not (Select-String -Path start.log -Pattern 'Heartbeat' -Quiet)) {
+            Write-Host '--- NO HEARTBEAT FOUND: START LOG ---'
+            Get-Content start.log -Raw
+            exit 1
+          }
       # Package & testing is covered by the 'Package & test for runner platform' step above
