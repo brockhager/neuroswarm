@@ -32,22 +32,38 @@ jobs:
           if [ "${{ runner.os }}" == "macOS" ]; then TARGET=macos; fi
           if [ "${{ runner.os }}" == "Windows" ]; then TARGET=win; fi
           echo "Target set to $TARGET";
+          TS=$(date -u +%s)
+          PN=${TARGET}
+          # create a timestamped plain folder
+          PLAIN="neuroswarm/dist-status-${PN}-plain-$TS"
+          KEEP="neuroswarm/dist-status-${PN}-keep-$TS"
+
           pnpm package:bins -- --os $TARGET --status
-          rm -rf dist-status-${TARGET}-plain || true
-          mkdir -p dist-status-${TARGET}-plain
-          cp -R dist/* dist-status-${TARGET}-plain
-          pnpm package:bins -- --os $TARGET --status --keep-open
-          rm -rf dist-status-${TARGET}-keep || true
-          mkdir -p dist-status-${TARGET}-keep
-          cp -R dist/* dist-status-${TARGET}-keep
-          node scripts/test-start-scripts.mjs --dist dist-status-${TARGET}-plain --expect-status
-          node scripts/test-start-scripts.mjs --dist dist-status-${TARGET}-keep --expect-status --expect-keep-open
+          rm -rf "$PLAIN" || true
+          mkdir -p "$PLAIN"
+          cp -R dist/* "$PLAIN"
+          node "$GITHUB_WORKSPACE/scripts/verify-dist-copy.mjs" --dist "$PLAIN"
+
+          KEEP_OPEN=1 pnpm package:bins -- --os $TARGET --status
+          rm -rf "$KEEP" || true
+          mkdir -p "$KEEP"
+          cp -R dist/* "$KEEP"
+          node "$GITHUB_WORKSPACE/scripts/verify-dist-copy.mjs" --dist "$KEEP"
+          echo '--- Debug: listing copied files ---'
+          ls -R "$KEEP" || true
+          echo '--- Debug: content of start.* for all nodes/OS (plain) ---'
+          for n in ns-node gateway-node vp-node; do for o in linux macos win; do if [ -f "$KEEP/$n/$o/start.bat" ]; then echo "--- $KEEP/$n/$o/start.bat ---"; cat "$KEEP/$n/$o/start.bat"; fi; if [ -f "$KEEP/$n/$o/start.sh" ]; then echo "--- $KEEP/$n/$o/start.sh ---"; cat "$KEEP/$n/$o/start.sh"; fi; done; done
+
+          echo "DIST_PLAIN=$PLAIN" >> $GITHUB_ENV
+          echo "DIST_KEEP=$KEEP" >> $GITHUB_ENV
+          node "$GITHUB_WORKSPACE/scripts/test-start-scripts.mjs" --dist "$PLAIN" --expect-status
+          node "$GITHUB_WORKSPACE/scripts/test-start-scripts.mjs" --dist "$KEEP" --expect-status --expect-keep-open
 
       - name: Run heartbeat smoke test on Linux
         if: runner.os == 'Linux'
         run: |
           set -e
-          DIST=neuroswarm/dist-status-linux
+          DIST=$DIST_PLAIN
           NODE=ns-node
           cd $DIST/$NODE/linux
           chmod +x start.sh || true
@@ -55,13 +71,17 @@ jobs:
           sleep 5
           for i in {1..30}; do if curl -s --fail http://localhost:3000/health >/dev/null; then break; fi; sleep 1; done
           sleep 35
-          grep -q "Heartbeat" start.log
+          if ! grep -q "Heartbeat" start.log; then
+            echo '--- NO HEARTBEAT FOUND: START LOG ---'
+            tail -n +1 start.log || true
+            exit 1
+          fi
 
       - name: Run heartbeat smoke test on macOS
         if: runner.os == 'macOS'
         run: |
           set -e
-          DIST=neuroswarm/dist-status-macos
+          DIST=$DIST_PLAIN
           NODE=ns-node
           cd $DIST/$NODE/macos
           chmod +x start.sh || true
@@ -69,18 +89,26 @@ jobs:
           sleep 5
           for i in {1..30}; do if curl -s --fail http://localhost:3000/health >/dev/null; then break; fi; sleep 1; done
           sleep 35
-          grep -q "Heartbeat" start.log
+          if ! grep -q "Heartbeat" start.log; then
+            echo '--- NO HEARTBEAT FOUND: START LOG ---'
+            tail -n +1 start.log || true
+            exit 1
+          fi
 
       - name: Run heartbeat smoke test on Windows
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $DIST = 'neuroswarm/dist-status-win'
+          $DIST = $env:DIST_PLAIN
           $NODE = 'ns-node'
           Set-Location -Path "$DIST\$NODE\win"
           Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', '.\start.bat > start.log 2>&1' -WorkingDirectory '.'
           Start-Sleep -s 5
           for ($i=0; $i -lt 30; $i++) { try { if ((Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:3000/health').StatusCode -eq 200) { break } } catch {}; Start-Sleep -s 1 }
           Start-Sleep -s 35
-          Select-String -Path start.log -Pattern 'Heartbeat' | Out-Null
+          if (-not (Select-String -Path start.log -Pattern 'Heartbeat' -Quiet)) {
+            Write-Host '--- NO HEARTBEAT FOUND: START LOG ---'
+            Get-Content start.log -Raw
+            exit 1
+          }
       # Package & testing is covered by the 'Package & test for runner platform' step above
