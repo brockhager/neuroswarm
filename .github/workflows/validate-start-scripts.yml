@@ -21,8 +21,8 @@ jobs:
           node-version: '20'
       - name: Install pnpm
         run: npm i -g pnpm
-      - name: Install dependencies (neuroswarm)
-        run: pnpm -C neuroswarm install
+      - name: Install dependencies
+        run: pnpm install
       - name: Build packages
         run: pnpm -C neuroswarm build || true
       - name: Package & test for runner platform
@@ -31,12 +31,12 @@ jobs:
           if [ "${{ runner.os }}" == "macOS" ]; then TARGET=os=macos; fi
           if [ "${{ runner.os }}" == "Windows" ]; then TARGET=os=win; fi
           echo "Target set to $TARGET";
-          pnpm -C neuroswarm package:bins -- --$TARGET --status
-          cp -R neuroswarm/dist neuroswarm/dist-status-linux
-          pnpm -C neuroswarm package:bins -- --$TARGET --status --keep-open
-          cp -R neuroswarm/dist neuroswarm/dist-status-$TARGET
-          node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status-$TARGET --expect-status
-          node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status-$TARGET --expect-status --expect-keep-open
+            pnpm package:bins -- --$TARGET --status
+            cp -R dist dist-status-$TARGET
+            pnpm package:bins -- --$TARGET --status --keep-open
+            cp -R dist dist-status-$TARGET
+            node scripts/test-start-scripts.mjs --dist dist-status-$TARGET --expect-status
+            node scripts/test-start-scripts.mjs --dist dist-status-$TARGET --expect-status --expect-keep-open
 
       - name: Run heartbeat smoke test on Linux
         if: runner.os == 'Linux'
@@ -78,19 +78,4 @@ jobs:
           for ($i=0; $i -lt 30; $i++) { try { if ((Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:3000/health').StatusCode -eq 200) { break } } catch {}; Start-Sleep -s 1 }
           Start-Sleep -s 35
           Select-String -Path start.log -Pattern 'Heartbeat' | Out-Null
-      - name: Package & test for macOS
-        run: |
-          pnpm -C neuroswarm package:bins -- --os macos --status
-          cp -R neuroswarm/dist neuroswarm/dist-status-macos
-          pnpm -C neuroswarm package:bins -- --os macos --status --keep-open
-          cp -R neuroswarm/dist neuroswarm/dist-status-macos-keep
-          node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status-macos --expect-status
-          node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status-macos-keep --expect-status --expect-keep-open
-      - name: Package & test for Windows
-        run: |
-          pnpm -C neuroswarm package:bins -- --os win --status
-          cp -R neuroswarm/dist neuroswarm/dist-status-win
-          pnpm -C neuroswarm package:bins -- --os win --status --keep-open
-          cp -R neuroswarm/dist neuroswarm/dist-status-win-keep
-          node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status-win --expect-status
-          node neuroswarm/scripts/test-start-scripts.mjs --dist neuroswarm/dist-status-win-keep --expect-status --expect-keep-open
+      # Package & testing is covered by the 'Package & test for runner platform' step above
