@@ -28,13 +28,13 @@ jobs:
       - name: Package & test for runner platform
         shell: bash
         run: |
-          if [ "${{ runner.os }}" == "Linux" ]; then TARGET=os=linux; fi
-          if [ "${{ runner.os }}" == "macOS" ]; then TARGET=os=macos; fi
-          if [ "${{ runner.os }}" == "Windows" ]; then TARGET=os=win; fi
+          if [ "${{ runner.os }}" == "Linux" ]; then TARGET=linux; fi
+          if [ "${{ runner.os }}" == "macOS" ]; then TARGET=macos; fi
+          if [ "${{ runner.os }}" == "Windows" ]; then TARGET=win; fi
           echo "Target set to $TARGET";
-            pnpm package:bins -- --$TARGET --status
+          pnpm package:bins -- --os $TARGET --status
             cp -R dist dist-status-$TARGET
-            pnpm package:bins -- --$TARGET --status --keep-open
+          pnpm package:bins -- --os $TARGET --status --keep-open
             cp -R dist dist-status-$TARGET
             node scripts/test-start-scripts.mjs --dist dist-status-$TARGET --expect-status
             node scripts/test-start-scripts.mjs --dist dist-status-$TARGET --expect-status --expect-keep-open
