@@ -72,15 +72,11 @@ app.post('/v1/tx', async (req, res) => {
     try {
       const c = await fetch(String(tx.cid));
       if (!c.ok) console.warn('CID not reachable: ', tx.cid);
-    } catch (e) {
-        console.error('[GATEWAY] Heartbeat error', e.message);
-      }
+    } catch(e) {
+      console.warn('CID check error', e.message);
+    }
   }
   // add to local mempool and forward to ns-node
-
-  // Exported helper for connection events - used by other modules or internal code.
-  function logPeerConnect(url) { logGw(`Connected to peer ${url}`); }
-  function logPeerDisconnect(url, reason) { logGw(`Disconnected from peer ${url} reason=${String(reason).slice(0,200)}`); }
   const id = crypto.createHash('sha256').update(JSON.stringify({ ...tx, signature: undefined })).digest('hex');
   gwMempool.set(id, tx);
   // forward to ns-node if configured
