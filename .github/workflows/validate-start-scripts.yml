@@ -42,18 +42,18 @@ jobs:
           rm -rf "$PLAIN" || true
           mkdir -p "$PLAIN"
           cp -R dist/* "$PLAIN"
-          node "$GITHUB_WORKSPACE/neuroswarm/scripts/verify-dist-copy.mjs" --dist "$PLAIN"
+          node "$GITHUB_WORKSPACE/scripts/verify-dist-copy.mjs" --dist "$PLAIN"
 
           pnpm package:bins -- --os $TARGET --status --keep-open
           rm -rf "$KEEP" || true
           mkdir -p "$KEEP"
           cp -R dist/* "$KEEP"
-          node "$GITHUB_WORKSPACE/neuroswarm/scripts/verify-dist-copy.mjs" --dist "$KEEP"
+          node "$GITHUB_WORKSPACE/scripts/verify-dist-copy.mjs" --dist "$KEEP"
 
           echo "DIST_PLAIN=$PLAIN" >> $GITHUB_ENV
           echo "DIST_KEEP=$KEEP" >> $GITHUB_ENV
-          node "$GITHUB_WORKSPACE/neuroswarm/scripts/test-start-scripts.mjs" --dist "$PLAIN" --expect-status
-          node "$GITHUB_WORKSPACE/neuroswarm/scripts/test-start-scripts.mjs" --dist "$KEEP" --expect-status --expect-keep-open
+          node "$GITHUB_WORKSPACE/scripts/test-start-scripts.mjs" --dist "$PLAIN" --expect-status
+          node "$GITHUB_WORKSPACE/scripts/test-start-scripts.mjs" --dist "$KEEP" --expect-status --expect-keep-open
 
       - name: Run heartbeat smoke test on Linux
         if: runner.os == 'Linux'
