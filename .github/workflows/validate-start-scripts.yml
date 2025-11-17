@@ -44,7 +44,7 @@ jobs:
           cp -R dist/* "$PLAIN"
           node "$GITHUB_WORKSPACE/scripts/verify-dist-copy.mjs" --dist "$PLAIN"
 
-          pnpm package:bins -- --os $TARGET --status --keep-open
+          KEEP_OPEN=1 pnpm package:bins -- --os $TARGET --status
           rm -rf "$KEEP" || true
           mkdir -p "$KEEP"
           cp -R dist/* "$KEEP"
