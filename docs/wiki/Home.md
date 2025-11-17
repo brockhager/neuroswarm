@@ -20,6 +20,24 @@ Welcome to the NeuroSwarm Wiki. This is the canonical, single source of truth fo
 6. Smoke blocks: `node scripts/smokeProduce.mjs` (see Running Nodes for expected output).
 
 ---
+## 📦 Downloads
+Download the latest installers from the official GitHub Release (assets are named with OS and arch — e.g., `ns-node-win-x64.zip`). Choose the latest release tag, then click the link to download.
+
+- [ns-node (Windows x64)](https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/ns-node-win-x64.zip)
+- [ns-node (Linux x64)](https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/ns-node-linux-x64.zip)
+- [ns-node (macOS x64)](https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/ns-node-macos-x64.zip)
+
+- [gateway-node (Windows x64)](https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/gateway-node-win-x64.zip)
+- [gateway-node (Linux x64)](https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/gateway-node-linux-x64.zip)
+- [gateway-node (macOS x64)](https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/gateway-node-macos-x64.zip)
+
+- [vp-node (Windows x64)](https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/vp-node-win-x64.zip)
+- [vp-node (Linux x64)](https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/vp-node-linux-x64.zip)
+- [vp-node (macOS x64)](https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/vp-node-macos-x64.zip)
+
+Clicking a link should download the ZIP to your default Downloads folder. Verify the checksum if desired (CI artifacts provide checksums when available).
+
+---
 ## Contributor Quick Start
 1. Clone the monorepo; run `pnpm install -w` (never commit `package-lock.json`).
 2. Read [Contributor Policy](Contributor-Policy) for pnpm + workflow conventions.
