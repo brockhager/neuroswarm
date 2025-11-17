@@ -51,10 +51,8 @@ jobs:
           node "$GITHUB_WORKSPACE/scripts/verify-dist-copy.mjs" --dist "$KEEP"
           echo '--- Debug: listing copied files ---'
           ls -R "$KEEP" || true
-          echo '--- Debug: content of ns-node/linux/start.bat (if present) ---'
-          if [ -f "$KEEP/ns-node/linux/start.bat" ]; then cat "$KEEP/ns-node/linux/start.bat"; fi
-          echo '--- Debug: content of ns-node/linux/start.sh (if present) ---'
-          if [ -f "$KEEP/ns-node/linux/start.sh" ]; then cat "$KEEP/ns-node/linux/start.sh"; fi
+          echo '--- Debug: content of start.* for all nodes/OS (plain) ---'
+          for n in ns-node gateway-node vp-node; do for o in linux macos win; do if [ -f "$KEEP/$n/$o/start.bat" ]; then echo "--- $KEEP/$n/$o/start.bat ---"; cat "$KEEP/$n/$o/start.bat"; fi; if [ -f "$KEEP/$n/$o/start.sh" ]; then echo "--- $KEEP/$n/$o/start.sh ---"; cat "$KEEP/$n/$o/start.sh"; fi; done; done
 
           echo "DIST_PLAIN=$PLAIN" >> $GITHUB_ENV
           echo "DIST_KEEP=$KEEP" >> $GITHUB_ENV
