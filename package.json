@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "NeuroSwarm coordination and documentation",
   "main": "dist/index.js",
+  "type": "module",
   "scripts": {
     "package:bins": "node ./scripts/package-binaries.mjs",
     "build": "tsc --project config",
@@ -13,7 +14,12 @@
   },
   "dependencies": {
     "@solana/wallet-adapter-react": "^0.15.35",
-    "@solana/web3.js": "^1.87.6"
+    "@solana/web3.js": "^1.87.6",
+    "express": "^4.19.2",
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "open": "^9.0.0",
