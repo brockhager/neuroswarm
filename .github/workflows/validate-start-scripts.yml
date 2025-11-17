@@ -21,8 +21,8 @@ jobs:
           node-version: '20'
       - name: Install pnpm
         run: npm i -g pnpm
-      - name: Install dependencies
-        run: pnpm install -w
+      - name: Install dependencies (neuroswarm)
+        run: pnpm -C neuroswarm install
       - name: Build packages
         run: pnpm -C neuroswarm build || true
       - name: Package & test for runner platform
