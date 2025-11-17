@@ -48,8 +48,10 @@ jobs:
       - name: Copy wiki files
         run: |
           rm -rf wiki-repo/* || true
-          # Update Last updated timestamps in each wiki source file based on last commit date
-          for f in neuroswarm/wiki/*.md; do
+          # Check for neuroswarm/wiki files; if none exist, skip copy
+          if ls neuroswarm/wiki/*.md 1> /dev/null 2>&1; then
+            # Update Last updated timestamps in each wiki source file based on last commit date
+            for f in neuroswarm/wiki/*.md; do
             # Get ISO 8601 commit date for the file's last commit
             d=$(git log -1 --format=%cI -- "$f" || true)
             if [ -z "$d" ]; then
@@ -61,8 +63,11 @@ jobs:
             else
               echo -e "\nLast updated: $d" >> "$f"
             fi
-          done
-          cp -r neuroswarm/wiki/* wiki-repo/
+            done
+            cp -r neuroswarm/wiki/* wiki-repo/
+          else
+            echo "No neuroswarm/wiki files found; skipping wiki copy"
+          fi
 
       - name: Commit and push
         working-directory: wiki-repo
