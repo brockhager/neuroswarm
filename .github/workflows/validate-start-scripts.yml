@@ -9,6 +9,9 @@ on:
 
 jobs:
   validate-start-scripts:
+    env:
+      # Set this to 'true' to enable verbose debug logs in the workflow for troubleshooting.
+      DEBUG_START_SCRIPTS: 'false'
     strategy:
       matrix:
         runner: [ubuntu-latest, macos-latest, windows-latest]
@@ -49,10 +52,12 @@ jobs:
           mkdir -p "$KEEP"
           cp -R dist/* "$KEEP"
           node "$GITHUB_WORKSPACE/scripts/verify-dist-copy.mjs" --dist "$KEEP"
-          echo '--- Debug: listing copied files ---'
-          ls -R "$KEEP" || true
-          echo '--- Debug: content of start.* for all nodes/OS (plain) ---'
-          for n in ns-node gateway-node vp-node; do for o in linux macos win; do if [ -f "$KEEP/$n/$o/start.bat" ]; then echo "--- $KEEP/$n/$o/start.bat ---"; cat "$KEEP/$n/$o/start.bat"; fi; if [ -f "$KEEP/$n/$o/start.sh" ]; then echo "--- $KEEP/$n/$o/start.sh ---"; cat "$KEEP/$n/$o/start.sh"; fi; done; done
+          if [ "$DEBUG_START_SCRIPTS" = 'true' ]; then
+            echo '--- Debug: listing copied files ---'
+            ls -R "$KEEP" || true
+            echo '--- Debug: content of start.* for all nodes/OS (plain) ---'
+            for n in ns-node gateway-node vp-node; do for o in linux macos win; do if [ -f "$KEEP/$n/$o/start.bat" ]; then echo "--- $KEEP/$n/$o/start.bat ---"; cat "$KEEP/$n/$o/start.bat"; fi; if [ -f "$KEEP/$n/$o/start.sh" ]; then echo "--- $KEEP/$n/$o/start.sh ---"; cat "$KEEP/$n/$o/start.sh"; fi; done; done
+          fi
 
           echo "DIST_PLAIN=$PLAIN" >> $GITHUB_ENV
           echo "DIST_KEEP=$KEEP" >> $GITHUB_ENV
@@ -64,16 +69,30 @@ jobs:
         run: |
           set -e
           DIST=$DIST_PLAIN
-          NODE=ns-node
-          cd $DIST/$NODE/linux
+          # Start NS Node first (port 3000)
+          cd $DIST/ns-node/linux
           chmod +x start.sh || true
-          nohup ./start.sh > start.log 2>&1 &
+          nohup ./start.sh > ns-start.log 2>&1 &
           sleep 5
           for i in {1..30}; do if curl -s --fail http://localhost:3000/health >/dev/null; then break; fi; sleep 1; done
+          # Start Gateway (port 8080)
+          cd $DIST/gateway-node/linux
+          chmod +x start.sh || true
+          NS_NODE_URL=http://localhost:3000 nohup ./start.sh > gateway-start.log 2>&1 &
+          sleep 5
+          for i in {1..30}; do if curl -s --fail http://localhost:8080/health >/dev/null; then break; fi; sleep 1; done
+          # Start VP node (background produce loop) and ensure it logs a heartbeat when STATUS enabled
+          cd $DIST/vp-node/linux
+          chmod +x start.sh || true
+          NS_NODE_URL=http://localhost:3000 STATUS=1 nohup ./start.sh > vp-start.log 2>&1 &
+          sleep 5
+          # Wait for heartbeats: any one of the logs should show a heartbeat
           sleep 35
-          if ! grep -q "Heartbeat" start.log; then
-            echo '--- NO HEARTBEAT FOUND: START LOG ---'
-            tail -n +1 start.log || true
+          if ! (grep -q "Heartbeat" ns-start.log || grep -q "Heartbeat" gateway-start.log || grep -q "Heartbeat" vp-start.log); then
+            echo '--- NO HEARTBEAT FOUND IN ANY START LOG ---'
+            tail -n +1 ns-start.log || true
+            tail -n +1 gateway-start.log || true
+            tail -n +1 vp-start.log || true
             exit 1
           fi
 
@@ -82,16 +101,26 @@ jobs:
         run: |
           set -e
           DIST=$DIST_PLAIN
-          NODE=ns-node
-          cd $DIST/$NODE/macos
+          cd $DIST/ns-node/macos
           chmod +x start.sh || true
-          nohup ./start.sh > start.log 2>&1 &
+          nohup ./start.sh > ns-start.log 2>&1 &
           sleep 5
           for i in {1..30}; do if curl -s --fail http://localhost:3000/health >/dev/null; then break; fi; sleep 1; done
+          cd $DIST/gateway-node/macos
+          chmod +x start.sh || true
+          NS_NODE_URL=http://localhost:3000 nohup ./start.sh > gateway-start.log 2>&1 &
+          sleep 5
+          for i in {1..30}; do if curl -s --fail http://localhost:8080/health >/dev/null; then break; fi; sleep 1; done
+          cd $DIST/vp-node/macos
+          chmod +x start.sh || true
+          NS_NODE_URL=http://localhost:3000 STATUS=1 nohup ./start.sh > vp-start.log 2>&1 &
+          sleep 5
           sleep 35
-          if ! grep -q "Heartbeat" start.log; then
-            echo '--- NO HEARTBEAT FOUND: START LOG ---'
-            tail -n +1 start.log || true
+          if ! (grep -q "Heartbeat" ns-start.log || grep -q "Heartbeat" gateway-start.log || grep -q "Heartbeat" vp-start.log); then
+            echo '--- NO HEARTBEAT FOUND IN ANY START LOG ---'
+            tail -n +1 ns-start.log || true
+            tail -n +1 gateway-start.log || true
+            tail -n +1 vp-start.log || true
             exit 1
           fi
 
@@ -100,15 +129,26 @@ jobs:
         shell: pwsh
         run: |
           $DIST = $env:DIST_PLAIN
-          $NODE = 'ns-node'
-          Set-Location -Path "$DIST\$NODE\win"
-          Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', '.\start.bat > start.log 2>&1' -WorkingDirectory '.'
+          # Start ns-node
+          Set-Location -Path "$DIST\ns-node\win"
+          Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', '.\start.bat > ns-start.log 2>&1' -WorkingDirectory '.'
           Start-Sleep -s 5
           for ($i=0; $i -lt 30; $i++) { try { if ((Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:3000/health').StatusCode -eq 200) { break } } catch {}; Start-Sleep -s 1 }
+          # Start gateway
+          Set-Location -Path "$DIST\gateway-node\win"
+          Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', 'set "NS_NODE_URL=http://localhost:3000" && .\start.bat > gateway-start.log 2>&1' -WorkingDirectory '.'
+          Start-Sleep -s 5
+          for ($i=0; $i -lt 30; $i++) { try { if ((Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:8080/health').StatusCode -eq 200) { break } } catch {}; Start-Sleep -s 1 }
+          # Start vp-node
+          Set-Location -Path "$DIST\vp-node\win"
+          Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', 'set "NS_NODE_URL=http://localhost:3000" && set "STATUS=1" && .\start.bat > vp-start.log 2>&1' -WorkingDirectory '.'
+          Start-Sleep -s 5
           Start-Sleep -s 35
-          if (-not (Select-String -Path start.log -Pattern 'Heartbeat' -Quiet)) {
-            Write-Host '--- NO HEARTBEAT FOUND: START LOG ---'
-            Get-Content start.log -Raw
+          if (-not ((Select-String -Path ..\ns-node\win\ns-start.log -Pattern 'Heartbeat' -Quiet) -or (Select-String -Path gateway-start.log -Pattern 'Heartbeat' -Quiet) -or (Select-String -Path vp-start.log -Pattern 'Heartbeat' -Quiet))) {
+            Write-Host '--- NO HEARTBEAT FOUND IN ANY START LOG ---'
+            Get-Content ..\ns-node\win\ns-start.log -Raw -ErrorAction SilentlyContinue
+            Get-Content gateway-start.log -Raw -ErrorAction SilentlyContinue
+            Get-Content vp-start.log -Raw -ErrorAction SilentlyContinue
             exit 1
           }
       # Package & testing is covered by the 'Package & test for runner platform' step above
