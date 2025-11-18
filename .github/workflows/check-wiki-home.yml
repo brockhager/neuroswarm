@@ -1,0 +1,34 @@
+name: "Check Wiki Home Presence"
+
+on:
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  check-home-md:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Verify wiki Home presence
+        run: |
+          set -e
+          echo "Checking for neuroswarm/docs/wiki/Home.md or neuroswarm/wiki/Home.md"
+          if [ -f neuroswarm/docs/wiki/Home.md ]; then
+            echo 'Found neuroswarm/docs/wiki/Home.md'
+            fileSize=$(wc -c < neuroswarm/docs/wiki/Home.md | tr -d '[:space:]')
+            if [ "$fileSize" -lt 30 ]; then
+              echo "Home.md found but seems too small ($fileSize bytes). Please update with meaningful content."
+              exit 1
+            fi
+          elif [ -f neuroswarm/wiki/Home.md ]; then
+            echo 'Found neuroswarm/wiki/Home.md'
+            fileSize=$(wc -c < neuroswarm/wiki/Home.md | tr -d '[:space:]')
+            if [ "$fileSize" -lt 30 ]; then
+              echo "Home.md found under neuroswarm/wiki but too small ($fileSize bytes)."
+              exit 1
+            fi
+          else
+            echo 'No wiki Home.md found; please add neuroswarm/docs/wiki/Home.md or neuroswarm/wiki/Home.md'
+            exit 1
+          fi

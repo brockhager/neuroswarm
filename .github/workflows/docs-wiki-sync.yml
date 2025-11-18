@@ -25,6 +25,8 @@ jobs:
 
       - name: Run docs to wiki script
         env:
+          # Prefer GH_PAT if configured (personal access token with repo scope); fall back to GITHUB_TOKEN
+          GH_PAT: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |

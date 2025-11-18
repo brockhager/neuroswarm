@@ -8,9 +8,10 @@ const opts = { dry: false };
 for (let i = 0; i < argv.length; i++) {
   if (argv[i] === '--dry-run') opts.dry = true;
 }
-const token = process.env.GITHUB_TOKEN;
+// Prefer GH_PAT if provided, fallback to GITHUB_TOKEN
+const token = process.env.GH_PAT || process.env.GITHUB_TOKEN;
 const repo = process.env.GITHUB_REPOSITORY || 'brockhager/neuro-infra';
-if (!token && !opts.dry) { console.error('GITHUB_TOKEN required unless --dry-run is used'); process.exit(1); }
+if (!token && !opts.dry) { console.error('GH_PAT or GITHUB_TOKEN required unless --dry-run is used'); process.exit(1); }
 const [owner, name] = repo.split('/');
 const wikiUrl = `https://x-access-token:${token}@github.com/${owner}/${name}.wiki.git`;
 const wikiUrlRedacted = wikiUrl.replace(/(x-access-token:)([^@]+)(@)/, (m, p1, p2, p3) => `${p1}***REDACTED***${p3}`);
@@ -54,6 +55,23 @@ const mapping = [
   // Sync Updates page if present (changelog/Updates.md)
   { src: findSrc(['wiki', 'Updates.md']), dst: 'Updates.md' }
 ];
+
+// Also sync any docs in docs/wiki/ and neuroswarm/wiki/ automatically
+const extraCandidates = [findSrc(['docs', 'wiki']), findSrc(['neuroswarm', 'wiki'])];
+for (const lc of extraCandidates) {
+  try {
+    if (fs.existsSync(lc) && fs.lstatSync(lc).isDirectory()) {
+      const files = fs.readdirSync(lc).filter(f => f.endsWith('.md'));
+      for (const f of files) {
+        const src = path.join(lc, f);
+        // only add if not already mapped
+        if (!mapping.some(m => path.resolve(m.src) === path.resolve(src))) {
+          mapping.push({ src, dst: f });
+        }
+      }
+    }
+  } catch(e) { /* ignore */ }
+}
 
 let changed = false;
 for (const m of mapping) {
