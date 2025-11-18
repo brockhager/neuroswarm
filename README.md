@@ -154,6 +154,13 @@ The `validate-start-scripts` GitHub Action uses a pair of distinct folders when 
 
 If you add or change the build outputs you can review the artifacts under those folders in the workflow logs or in job artifact uploads.
 
+Debugging the start-scripts workflow
+-----------------------------------
+
+To enable verbose debug logging inside the `validate-start-scripts` workflow (for debugging packaging or start script behavior), set the `DEBUG_START_SCRIPTS` workflow environment variable to `true`. This is off by default to keep logs tidy. When enabled, the job prints the artifact directory contents and the content of start scripts.
+
+The smoke tests in CI now cover the `ns-node`, `gateway-node` (port 8080), and `vp-node` (heartbeat logs) to ensure we've got full coverage for health and status behavior across nodes.
+
 
 This produces a `start.bat` that runs the node in the foreground so logs stream to the window and will append a pause only if the node exits with a non-zero exit code.
 
