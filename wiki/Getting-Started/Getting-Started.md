@@ -154,16 +154,16 @@ Now that you're set up, let's explore the project structure:
 
 ```bash
 # View the main documentation index
-See the canonical Docs index on the wiki: https://github.com/brockhager/neuro-infra/wiki/Index
+See the canonical Docs index on the wiki: https://github.com/brockhager/neuroswarm/wiki/Index
 
 # Check available scripts
-See the canonical Scripts documentation on the wiki: https://github.com/brockhager/neuro-infra/wiki/Scripts
+See the canonical Scripts documentation on the wiki: https://github.com/brockhager/neuroswarm/wiki/Scripts
 
 # Review governance documentation
-See the canonical Governance documentation on the wiki: https://github.com/brockhager/neuro-infra/wiki/Governance
+See the canonical Governance documentation on the wiki: https://github.com/brockhager/neuroswarm/wiki/Governance
 
 # Look at the contributor guide
-See the canonical Contributor Guide on the wiki: https://github.com/brockhager/neuro-infra/wiki/Contributor-Guide
+See the canonical Contributor Guide on the wiki: https://github.com/brockhager/neuroswarm/wiki/Contributor-Guide
 ```
 
 ## Step 6: Make Your First Contribution

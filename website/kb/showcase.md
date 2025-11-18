@@ -1,5 +1,5 @@
 # ⚠️ This document has moved
-> **This document has moved to the NeuroSwarm Wiki.** Please see the Community Showcase on the wiki: https://github.com/brockhager/neuro-infra/wiki/Index#community-showcase
+> **This document has moved to the NeuroSwarm Wiki.** Please see the Community Showcase on the wiki: https://github.com/brockhager/neuroswarm/wiki/Index#community-showcase
 
 # Community Showcase
 

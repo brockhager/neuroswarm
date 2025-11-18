@@ -6,7 +6,7 @@
 Welcome to NeuroSwarm! This guide will walk you through setting up your development environment and running your first test. Whether you're a new contributor or returning developer, follow these steps to get up and running quickly.
 
 # ⚠️ This document has moved
-> **This document has moved to the NeuroSwarm Wiki.** Please see the canonical Getting Started guide on the wiki: https://github.com/brockhager/neuro-infra/wiki/Getting-Started
+> **This document has moved to the NeuroSwarm Wiki.** Please see the canonical Getting Started guide on the wiki: https://github.com/brockhager/neuroswarm/wiki/Getting-Started
 
 # Getting Started with NeuroSwarm
 
