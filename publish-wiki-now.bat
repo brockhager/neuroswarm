@@ -68,8 +68,13 @@ REM Compute default branch (try git remote show origin HEAD branch)
 set DEFAULT_BRANCH=master
 for /f "tokens=3 delims=: " %%b in ('git remote show origin 2^>nul ^| findstr /C:"HEAD branch:"') do set DEFAULT_BRANCH=%%b
 set DRY=0
-if "%~1"=="--dry-run" set DRY=1
-if "%~1"=="--dry" set DRY=1
+set LOCAL=0
+for %%a in (%*) do (
+  if "%%~a"=="--dry-run" set DRY=1
+  if "%%~a"=="--dry" set DRY=1
+  if "%%~a"=="--local" set LOCAL=1
+  if "%%~a"=="--local-push" set LOCAL=1
+)
 
 echo Script directory: %SCRIPT_DIR%
 echo Computed repo root: %REPO_ROOT%
@@ -122,6 +127,10 @@ if %ERRORLEVEL%==0 (
   goto exit_popd
 )
 
+if "%LOCAL%"=="1" (
+  goto local_push
+)
+
 :node_fallback
 where node >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
@@ -165,8 +174,109 @@ echo Opening the Wiki Actions page for confirmation.
 start https://github.com/%REPO%/actions/workflows/%WORKFLOW% >nul 2>&1
 
 :exit_popd
+del "%TEMP%\git_status.txt" >nul 2>&1
 popd >nul 2>&1
 goto end
+
+:: Local direct push (not via GH dispatch or Node push script)
+:local_push
+echo === Local Wiki Push Mode ===
+
+where git >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+  echo Git is not installed or not in PATH. Please install Git: https://git-scm.com/downloads
+  goto exit_popd
+)
+
+REM Determine wiki local clone path under neuroswarm
+set WIKI_DIR=%REPO_ROOT%\neuroswarm\wiki-clone
+if defined WIKI_CLONE_DIR set WIKI_DIR=%WIKI_CLONE_DIR%
+if not exist "%WIKI_DIR%\.git" (
+  echo Wiki repo not found in '%WIKI_DIR%'.
+  echo Clone it with:
+  echo git clone https://github.com/%REPO%.wiki.git "^"%WIKI_DIR%^"
+  echo Aborting local push.
+  goto exit_popd
+)
+
+pushd "%WIKI_DIR%" >nul 2>&1 || (
+  echo Could not cd to '%WIKI_DIR%'
+  goto exit_popd
+)
+
+echo Pulling latest wiki from origin...
+git pull origin %DEFAULT_BRANCH% || (
+  echo Failed to pull wiki.
+  popd >nul 2>&1
+  goto exit_popd
+)
+
+REM Ensure the code repo's docs are up to date before copying
+pushd "%REPO_ROOT%" >nul 2>&1
+echo Pulling latest code repo from origin (%DEFAULT_BRANCH%)...
+git pull origin %DEFAULT_BRANCH% || echo Failed to pull code repo (proceeding with local copy)
+popd >nul 2>&1
+
+REM Copy updated docs from neuroswarm/docs and neuroswarm/docs/wiki into wiki clone
+echo Copying docs from '%REPO_ROOT%\neuroswarm\docs' and '...\neuroswarm\docs\wiki' into wiki clone
+rem Copy and rename key docs to expected wiki filenames
+if exist "%REPO_ROOT%\neuroswarm\docs\run-nodes.md" (
+  echo Copying run-nodes.md -> Running-Nodes.md
+  xcopy /Y /I "%REPO_ROOT%\neuroswarm\docs\run-nodes.md" "%WIKI_DIR%\Running-Nodes.md" >nul 2>&1
+)
+if exist "%REPO_ROOT%\neuroswarm\docs\download.md" (
+  echo Copying download.md -> Download.md
+  xcopy /Y /I "%REPO_ROOT%\neuroswarm\docs\download.md" "%WIKI_DIR%\Download.md" >nul 2>&1
+)
+if exist "%REPO_ROOT%\neuroswarm\docs\data-flow-architecture.md" (
+  echo Copying data-flow-architecture.md -> Data-Flow-Architecture.md
+  xcopy /Y /I "%REPO_ROOT%\neuroswarm\docs\data-flow-architecture.md" "%WIKI_DIR%\Data-Flow-Architecture.md" >nul 2>&1
+)
+if exist "%REPO_ROOT%\neuroswarm\docs\pnpm-policy.md" (
+  echo Copying pnpm-policy.md -> Contributor-Policy.md
+  xcopy /Y /I "%REPO_ROOT%\neuroswarm\docs\pnpm-policy.md" "%WIKI_DIR%\Contributor-Policy.md" >nul 2>&1
+)
+rem Copy docs/wiki (flat) if exists
+if exist "%REPO_ROOT%\neuroswarm\docs\wiki\*.md" (
+  xcopy /Y /Q "%REPO_ROOT%\neuroswarm\docs\wiki\*.md" "%WIKI_DIR%\" >nul 2>&1
+)
+rem Copy neuroswarm/wiki extra pages
+if exist "%REPO_ROOT%\neuroswarm\wiki\*.md" (
+  xcopy /Y /Q "%REPO_ROOT%\neuroswarm\wiki\*.md" "%WIKI_DIR%\" >nul 2>&1
+)
+
+echo Staging changes...
+git add --all
+
+REM Check for staged changes
+set HAS_CHANGES=
+git status --porcelain > "%TEMP%\git_status.txt"
+for /f "delims=" %%c in ('type "%TEMP%\git_status.txt"') do set HAS_CHANGES=1
+if "%HAS_CHANGES%"=="1" (
+  if "%DRY%"=="1" (
+    echo Dry-run: staged changes detected; not committing or pushing due to --dry-run flag
+    type "%TEMP%\git_status.txt"
+    del "%TEMP%\git_status.txt" >nul 2>&1
+    popd >nul 2>&1
+    goto exit_popd
+  )
+  echo Committing changes...
+  git commit -m "Update wiki: downloads page, links, docs" || echo Nothing to commit
+  echo Pushing changes to origin/%DEFAULT_BRANCH%...
+  git push origin %DEFAULT_BRANCH%
+  if %ERRORLEVEL% NEQ 0 (
+    echo Push failed. If GitHub credentials are missing, follow:
+    echo git config --global credential.helper manager
+    popd >nul 2>&1
+    goto exit_popd
+  )
+  echo Wiki update pushed.
+) else (
+  echo No changes detected; nothing to commit.
+)
+
+popd >nul 2>&1
+goto exit_popd
 
 :end
 echo Done.
