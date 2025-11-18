@@ -1,5 +1,5 @@
 # ⚠️ This document has moved
-> **This document has moved to the NeuroSwarm Wiki.** Please see the canonical Quickstart on the wiki: https://github.com/brockhager/neuro-infra/wiki/Getting-Started
+> **This document has moved to the NeuroSwarm Wiki.** Please see the canonical Quickstart on the wiki: https://github.com/brockhager/neuroswarm/wiki/Getting-Started
 
 # Interactive Quickstart
 
@@ -164,9 +164,9 @@ npm run update:all
 
 This quickstart got you running, but to become an expert:
 
-- **Full Getting Started Guide (Wiki)**: https://github.com/brockhager/neuro-infra/wiki/Getting-Started
-- **Contributor Pathways (Wiki)**: https://github.com/brockhager/neuro-infra/wiki/Getting-Started#contributor-pathways
-- **Governance Rituals (Wiki)**: https://github.com/brockhager/neuro-infra/wiki/Governance/rituals
+- **Full Getting Started Guide (Wiki)**: https://github.com/brockhager/neuroswarm/wiki/Getting-Started
+- **Contributor Pathways (Wiki)**: https://github.com/brockhager/neuroswarm/wiki/Getting-Started#contributor-pathways
+- **Governance Rituals (Wiki)**: https://github.com/brockhager/neuroswarm/wiki/Governance/rituals
 - **Technical Deep Dives (Wiki)**: https://github.com/brockhager/neuro-infra/wiki/Architecture/program-architecture
 
 ---

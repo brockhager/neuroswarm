@@ -61,7 +61,7 @@ For releases we include a `checksums.txt` and an optional `checksums.sig` (GPG s
 Linux / macOS (SHA256):
 
 ```bash
-curl -LO https://github.com/brockhager/neuro-infra/releases/latest/download/ns-node-linux-x64.tar.gz
+curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.tar.gz
 curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/checksums.txt
 sha256sum ns-node-linux-x64.tar.gz
 grep ns-node-linux-x64.tar.gz checksums.txt

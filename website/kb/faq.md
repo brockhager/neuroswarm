@@ -1,5 +1,5 @@
 # ⚠️ This document has moved
-> **This document has moved to the NeuroSwarm Wiki.** Please see the canonical FAQ on the wiki: https://github.com/brockhager/neuro-infra/wiki/Getting-Started#faq
+> **This document has moved to the NeuroSwarm Wiki.** Please see the canonical FAQ on the wiki: https://github.com/brockhager/neuroswarm/wiki/Getting-Started#faq
 
 # NeuroSwarm FAQ
 
@@ -13,7 +13,7 @@
 - A GitHub account for collaboration
 
 ### Q: How do I set up my development environment?
-**A:** Follow our [Getting Started Guide (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Getting-Started) for step-by-step instructions. We also provide automated setup scripts in the `/scripts/` directory.
+**A:** Follow our [Getting Started Guide (Wiki)](https://github.com/brockhager/neuroswarm/wiki/Getting-Started) for step-by-step instructions. We also provide automated setup scripts in the `/scripts/` directory.
 
 ### Q: I'm getting build errors. What should I do?
 **A:** Check these common solutions:

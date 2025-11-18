@@ -1,5 +1,5 @@
 # ⚠️ This document has moved
-> **This document has moved to the NeuroSwarm Wiki.** Please see our canonical Governance Dashboard in the wiki: https://github.com/brockhager/neuro-infra/wiki/Governance/governance
+> **This document has moved to the NeuroSwarm Wiki.** Please see our canonical Governance Dashboard in the wiki: https://github.com/brockhager/neuroswarm/wiki/Governance/governance
 
 # Governance Events Dashboard
 

@@ -10,7 +10,7 @@ GATEWAY_SOURCES_MAX_PER_TX=3 GATEWAY_SOURCES_QUERY_TIMEOUT_MS=1500 GATEWAY_SOURC
 
 # Run Nodes (Standalone & Integrated)
 
-> NOTE: This doc is synced to the project Wiki and the GitHub Wiki is the canonical source for contributors and users: https://github.com/brockhager/neuro-infra/wiki
+> NOTE: This doc is synced to the project Wiki and the GitHub Wiki is the canonical source for contributors and users: https://github.com/brockhager/neuroswarm/wiki
 
 This document describes how to run the NeuroSwarm nodes (ns-node, gateway-node, vp-node) individually and together, how to validate connectivity, log outputs, and run basic consensus/PoS tests.
 
@@ -169,7 +169,7 @@ Follow this sequence to start an integrated environment and run simple connectiv
 Using the installers
 --------------------
 
-For end users: visit the Downloads page in the project wiki for direct links to release artifacts and verified installers: https://github.com/brockhager/neuro-infra/wiki/Download. Extract the downloaded asset and run the bundled `start.sh` (Linux/macOS) or `start.bat` (Windows) file. The default gateway installer will attempt to open your browser at `http://localhost:8080` when the gateway is ready.
+For end users: visit the Downloads page in the project wiki for direct links to release artifacts and verified installers: https://github.com/brockhager/neuroswarm/wiki/Download. Extract the downloaded asset and run the bundled `start.sh` (Linux/macOS) or `start.bat` (Windows) file. The default gateway installer will attempt to open your browser at `http://localhost:8080` when the gateway is ready.
 
 Start script behavior (Windows `start.bat`) and logging
 -------------------------------------------------------
