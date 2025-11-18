@@ -49,7 +49,7 @@ const mapping = [
   { src: findSrc(['docs', 'run-nodes.md']), dst: 'Running-Nodes.md' },
   { src: findSrc(['docs', 'data-flow-architecture.md']), dst: 'Data-Flow-Architecture.md' },
   { src: findSrc(['docs', 'pnpm-policy.md']), dst: 'Contributor-Policy.md' },
-  { src: findSrc(['docs', 'node-installation.md']), dst: 'Installation.md' },
+  { src: findSrc(['docs', 'download.md']), dst: 'Download.md' },
   // Home page: canonical front page for the wiki
   { src: findSrc(['docs', 'wiki', 'Home.md']), dst: 'Home.md' },
   // Sync Updates page if present (changelog/Updates.md)
