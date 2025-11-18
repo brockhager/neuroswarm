@@ -132,9 +132,9 @@ Note: This repository adopts a pnpm-only workflow. CI enforces that no `package-
 Download & Run
 --------------
 
-Pre-built installers for `ns-node`, `gateway-node`, and `vp-node` are available on GitHub Releases under the "Assets" section of the release. Each installer is a ZIP file and contains a platform-appropriate binary and a start script. See the "Installation" wiki page for one-click install & run instructions:
+Pre-built installers for `ns-node`, `gateway-node`, and `vp-node` are available on GitHub Releases under the "Assets" section of the release. Each installer is a ZIP file and contains a platform-appropriate binary and a start script. See the wiki 'Download' page for release downloads and runtime instructions:
 
- - https://github.com/brockhager/neuro-infra/wiki/Installation
+ - https://github.com/brockhager/neuro-infra/wiki/Download
  - https://github.com/brockhager/neuro-infra/wiki/Running-Nodes
  - https://github.com/brockhager/neuro-infra/wiki/Data-Flow-Architecture
  - https://github.com/brockhager/neuro-infra/wiki/Contributor-Policy

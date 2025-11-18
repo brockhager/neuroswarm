@@ -209,6 +209,12 @@ node scripts/seed-e2e-timeline.js
 - Documented API rate limiting and abuse prevention design in `docs/security/api-rate-limiting.md`.
 - Documented initial contributor reputation system design in `docs/governance/reputation-system.md`.
 
+---
+
+### Downloads Page Restored (2025-11-18)
+- Restored and updated the Download page for the project Wiki (`Download.md`). This includes platform-specific links, example `curl` / PowerShell commands, and checksum verification instructions.
+- Updated `docs/run-nodes.md` and `neuroswarm/wiki/Home.md` to reference the `Download` page instead of `Installation`.
+
 
 ## Notes & Acknowledgements
 - This work included multiple debug iterations to identify mismatched data (seed data vs. expected test data) and a fix to ensure consistency across the UI, backend, and e2e tests.

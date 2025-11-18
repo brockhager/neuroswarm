@@ -4,7 +4,7 @@ Welcome to the NeuroSwarm Wiki. This is the canonical, single source of truth fo
 
 ---
 ## Essential Pages
-- [Installation](Installation) – One‑click installers & manual setup.
+- [Download](Download) – Pre-built release artifacts and platform installers.
 - [Running Nodes](Running-Nodes) – Operating `ns-node`, `gateway-node`, `vp-node` + health & logs.
 - [Data Flow Architecture](Data-Flow-Architecture) – End‑to‑end pipeline, consensus, reorg handling.
 - [Contributor Policy](Contributor-Policy) – pnpm only (no `package-lock.json`), branching & PR rules.
@@ -12,7 +12,7 @@ Welcome to the NeuroSwarm Wiki. This is the canonical, single source of truth fo
 
 ---
 ## Operator Quick Start
-1. Go to [Installation](Installation) and download platform-specific ZIPs.
+1. Go to [Download](Download) and download platform-specific ZIPs.
 2. Unpack; run provided start script (`start-gateway`, `start-ns`, `start-vp`).
 3. Wait for automatic health poll; gateway script opens browser when ready.
 4. Verify `/health` returns JSON status for each node.
