@@ -11,25 +11,14 @@ Canonical release page:
 - https://github.com/brockhager/neuroswarm/releases
 
 Quick access (latest release asset helper):
-
 - Latest ns-node (Linux): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.tar.gz
 - Latest ns-node (macOS): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-macos-x64.tar.gz
 - Latest ns-node (Windows): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-win-x64.zip
-
-- Latest gateway-node (Linux): https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-linux-x64.tar.gz
-- Latest gateway-node (macOS): https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-macos-x64.tar.gz
 - Latest gateway-node (Windows): https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-win-x64.zip
-
-- Latest vp-node (Linux): https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-linux-x64.tar.gz
-- Latest vp-node (macOS): https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-macos-x64.tar.gz
 - Latest vp-node (Windows): https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-win-x64.zip
-
-Note: The `latest` URL uses the redirect to the most recent release tag. If you need to pin a version, replace `latest` with `vX.Y.Z` in the URL (e.g., `https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/ns-node-linux-x64.tar.gz`).
-
 ---
 
 ## Platform-Specific Examples
-
 Linux/macOS (bash):
 
 ```bash
@@ -55,7 +44,6 @@ Set-Location gateway-node
 ---
 
 ## Verify Downloads (Checksum / Signature)
-
 For releases we include a `checksums.txt` and an optional `checksums.sig` (GPG signature) file in release assets.
 
 Linux / macOS (SHA256):
@@ -88,19 +76,12 @@ If GPG verification passes you also confirm the checksums are intact and the rel
 ---
 
 ## Release Asset Naming Conventions
-
 We publish platform-specific artifacts with the following naming convention in our release assets. This is required by the download links above and by our packaging scripts:
 
 - `ns-node-<os>-<arch>.tar.gz` or `.zip` (e.g., `ns-node-linux-x64.tar.gz`)
 - `gateway-node-<os>-<arch>.tar.gz` or `.zip`
 - `vp-node-<os>-<arch>.tar.gz` or `.zip`
-- `checksums.txt` — SHA256 checksums of the artifacts
-- `checksums.sig` — (Optional) GPG signature of `checksums.txt`
-
----
-
 ## How to Maintain / Update Downloads
-
 Maintainers: keep these links accurate and current by following the release checklist below.
 
 When publishing a new release:
@@ -115,7 +96,6 @@ When publishing a new release:
 ---
 
 ## Release Checklist (summary)
-
 1. Bump release tag `vX.Y.Z`.
 2. CI artifacts built for Linux, macOS, Windows (x64/x86_64) per node.
 3. Generate checksums and (optional) GPG signature for `checksums.txt`.
@@ -126,7 +106,6 @@ When publishing a new release:
 ---
 
 If you want a script to compute checksums and auto-populate `checksums.txt`, I can add an example script to the `neuroswarm/scripts/` folder.
-
 If you'd like to pin specific versioned links to be shown on the wiki, maintainers can add a small table below linking specific `vX.Y.Z` assets. For simplicity, the `latest` URL is used above and resolves to the most recent tag.
 
 ***

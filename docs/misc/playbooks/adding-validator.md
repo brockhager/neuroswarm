@@ -82,7 +82,7 @@ solana transfer <validator-pubkey> 1 --allow-unfunded-recipient
 ### 3.1 Using Docker (Recommended)
 ```bash
 # Pull latest image
-docker pull ghcr.io/brockhager/neuro-infra:latest
+docker pull ghcr.io/brockhager/neuroswarm:latest
 
 # Create validator data directory
 mkdir -p ~/neuroswarm-validator/data
@@ -100,13 +100,13 @@ docker run -d \
   -e SOLANA_RPC_URL=https://api.mainnet.solana.com \
   -e SOLANA_KEYPAIR_PATH=/app/keys/validator-keypair.json \
   -e LOG_LEVEL=info \
-  ghcr.io/brockhager/neuro-infra:latest
+  ghcr.io/brockhager/neuroswarm:latest
 ```
 
 ### 3.2 Using Systemd Service
 ```bash
 # Download binary
-wget https://github.com/brockhager/neuro-infra/releases/download/v0.1.0/nsd-linux-amd64
+wget https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/nsd-linux-amd64
 chmod +x nsd-linux-amd64
 sudo mv nsd-linux-amd64 /usr/local/bin/nsd
 

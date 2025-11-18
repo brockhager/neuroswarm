@@ -36,21 +36,23 @@ User -> Gateway (mempool + source validation) -> VP (block producer + IPFS publi
 
 ---
 ## 📦 Downloads
-Download the latest installers from the official GitHub Release (assets are named with OS and arch — e.g., `ns-node-win-x64.zip`). Choose the latest release tag, then click the link to download.
+Visit the [Download](Download) page for official release assets and platform installers (copy‑paste examples, checksum verification, and maintainer guidance).
 
-- [ns-node (Windows x64)](https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/ns-node-win-x64.zip)
-- [ns-node (Linux x64)](https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/ns-node-linux-x64.zip)
-- [ns-node (macOS x64)](https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/ns-node-macos-x64.zip)
+Quick links to the latest release assets:
 
-- [gateway-node (Windows x64)](https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/gateway-node-win-x64.zip)
-- [gateway-node (Linux x64)](https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/gateway-node-linux-x64.zip)
-- [gateway-node (macOS x64)](https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/gateway-node-macos-x64.zip)
+- [ns-node (Windows x64)](https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-win-x64.zip)
+- [ns-node (Linux x64)](https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.tar.gz)
+- [ns-node (macOS x64)](https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-macos-x64.tar.gz)
 
-- [vp-node (Windows x64)](https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/vp-node-win-x64.zip)
-- [vp-node (Linux x64)](https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/vp-node-linux-x64.zip)
-- [vp-node (macOS x64)](https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/vp-node-macos-x64.zip)
+- [gateway-node (Windows x64)](https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-win-x64.zip)
+- [gateway-node (Linux x64)](https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-linux-x64.tar.gz)
+- [gateway-node (macOS x64)](https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-macos-x64.tar.gz)
 
-Clicking a link should download the ZIP to your default Downloads folder. Verify the checksum if desired (CI artifacts provide checksums when available).
+- [vp-node (Windows x64)](https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-win-x64.zip)
+- [vp-node (Linux x64)](https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-linux-x64.tar.gz)
+- [vp-node (macOS x64)](https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-macos-x64.tar.gz)
+
+Clicking a link should download the asset to your default Downloads folder. Verify the checksum if desired (CI artifacts provide `checksums.txt` when available).
 
 ---
 ## Contributor Quick Start
@@ -86,7 +88,7 @@ Artifacts include: packaged binaries (`ns-node`, `gateway-node`, `vp-node`) and 
 
 ---
 ## Support & Feedback
-- GitHub Discussions: https://github.com/brockhager/neuro-infra/discussions
+- GitHub Discussions: https://github.com/brockhager/neuroswarm/discussions
 - Issues: open if a page is stale or missing.
 - PRs: small, frequent, pnpm‑compliant.
 
