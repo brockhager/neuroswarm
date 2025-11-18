@@ -4,7 +4,7 @@ REM Usage: double-click to run; optional argument: --dry-run
 setlocal
 
 echo ==============================
-echo Publish Wiki Now - neuro-infra (neuroswarm helper)
+echo Publish Wiki Now - neuroswarm (neuroswarm helper)
 echo ==============================
 
 REM The script is intended to run from the neuroswarm subdirectory.
@@ -20,8 +20,9 @@ REM dispatches the repo workflow or falls back to the local Node script if GH CL
 
 REM If no repo-level script is present, re-run the logic inline (fallback)
 REM Attempt to detect owner/repo using gh (preferred) or git remote as fallback
+REM Hard-coded target repo (only publish wiki updates to the neuroswarm repo)
 set REPO_OWNER=brockhager
-set REPO_NAME=neuro-infra
+set REPO_NAME=neuroswarm
 set REPO=%REPO_OWNER%/%REPO_NAME%
 REM Support an override environment variable: PUBLISH_REPO (owner/repo)
 if defined PUBLISH_REPO (
@@ -30,20 +31,26 @@ if defined PUBLISH_REPO (
 )
 where gh >nul 2>&1
 if %ERRORLEVEL%==0 (
-  for /f "delims=" %%r in ('gh repo view --json owner,name -q ".owner.login + \"/\" + .name"') do set REPO=%%r
-)
-if "%REPO%"=="" (
-  for /f "delims=" %%u in ('git config --get remote.origin.url') do set REMOTE_URL=%%u
-  if not "%REMOTE_URL%"=="" (
-    REM Normalize a few common remote formats
-    set REPO_TMP=%REMOTE_URL%
-    set REPO_TMP=%REPO_TMP:git@github.com:=%
-    set REPO_TMP=%REPO_TMP:https://github.com/=%
-    set REPO_TMP=%REPO_TMP:.git=%
-    for /f "delims=/ tokens=1,2" %%a in ("%REPO_TMP%") do set REPO_OWNER=%%a & set REPO_NAME=%%b
-    set REPO=%REPO_OWNER%/%REPO_NAME%
+  rem Use gh to verify or override the REPO only if it succeeds
+  rem Write outputs to temp files to avoid GraphQL error text being printed directly
+  set GH_OUT=%TEMP%\gh_repo_view_out.txt
+  set GH_ERR=%TEMP%\gh_repo_view_err.txt
+  del /q "%GH_OUT%" >nul 2>&1
+  del /q "%GH_ERR%" >nul 2>&1
+  gh repo view "%REPO%" --json owner,name -q ".owner.login + \"/\" + .name" > "%GH_OUT%" 2> "%GH_ERR%"
+  if %ERRORLEVEL%==0 (
+    for /f "delims=" %%r in ('type "%GH_OUT%"') do set REPO=%%r
+    del /q "%GH_OUT%" >nul 2>&1
+    del /q "%GH_ERR%" >nul 2>&1
+  ) else (
+    echo Warning: gh repo view failed for %REPO% - using git remote parsing as fallback.
+    echo gh error:
+    type "%GH_ERR%" || echo (no detailed error output)
+    del /q "%GH_OUT%" >nul 2>&1
+    del /q "%GH_ERR%" >nul 2>&1
   )
 )
+REM No fallback to git remote parsing - REPO is hard-coded or provided via PUBLISH_REPO env var
 set WORKFLOW=publish-wiki-now.yml
 REM Compute default branch (try git remote show origin HEAD branch)
 set DEFAULT_BRANCH=master
@@ -62,6 +69,16 @@ where gh >nul 2>&1
 if %ERRORLEVEL%==0 (
   echo Using GitHub CLI to trigger the workflow.
   echo Target repo: %REPO%  (branch: %DEFAULT_BRANCH%)
+  if "%REPO%"=="brockhager/name" (
+    echo ERROR: Computed repo is 'brockhager/name' (placeholder); the gh CLI likely failed to determine the repo.
+    echo Please set `PUBLISH_REPO=brockhager/neuro-infra` and retry, or run the fallback.
+    choice /M "Run fallback push script instead?"
+    if errorlevel 2 (
+      echo Aborted by user.
+      goto exit_popd
+    )
+    goto node_fallback
+  )
   echo Checking workflow availability in %REPO% ...
   gh workflow view "%WORKFLOW%" --repo %REPO% >nul 2>&1
   if %ERRORLEVEL% NEQ 0 (

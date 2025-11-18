@@ -55,7 +55,7 @@ For security-related questions or concerns:
 
 **Alternatively**, you can also open a private GitHub Security Advisory for confidential reports:
 
-- https://github.com/brockhager/neuro-infra/security/advisories
+- https://github.com/brockhager/neuroswarm/security/advisories
 
 ## Recognition
 
