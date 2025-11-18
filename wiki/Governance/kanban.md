@@ -7,8 +7,8 @@ It is not a task list — it is guidance for contributors and agents to follow.
 - **Kanban, not sprints**: Work flows continuously from Backlog → In Progress → Done. No time-boxed iterations.
 - **WIP discipline**: Keep the number of items in "In Progress" small to avoid overload. Pull new work only when capacity frees up.
 - **Explicit policies**: "Done" means code committed, tests passing, documentation updated, and CI/CD green.
-- **Repo separation**: Infrastructure tasks belong in `neuro-infra`. Application repos (`neuro-shared`, `neuro-program`, `neuro-services`, `neuro-web`) remain focused on their domains.
-- **Transparency**: Every task must be tagged with its repo (`[neuro-infra]`, `[neuro-services]`, etc.) so contributors know where it belongs.
+- **Repo separation**: Infrastructure tasks belong in `neuroswarm`. Application repos (`neuro-shared`, `neuro-program`, `neuro-services`, `neuro-web`) remain focused on their domains.
+- **Transparency**: Every task must be tagged with its repo (`[neuroswarm]`, `[neuro-services]`, etc.) so contributors know where it belongs.
 - **Auditability**: Changes should be documented in the appropriate `/docs` file and reflected in Kanban movement.
 
 ## Governance Integration
@@ -20,7 +20,7 @@ Every Kanban card must have a **documentation anchor** linking to relevant gover
 | Card Type | Required Documentation Links |
 |-----------|------------------------------|
 | **Feature Request** | [Governance Charter](./governance-charter.md#feature-proposals) |
-| **Bug Fix** | [Security Guidelines (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Security/Overview) |
+| **Bug Fix** | [Security Guidelines (Wiki)](https://github.com/brockhager/neuroswarm/wiki/Security/Overview) |
 | **Infrastructure** | [Development Standards](../../misc/development.md) |
 | **Governance Change** | [Voting Procedures](./how-to-vote.md) |
 | **Documentation** | [Documentation Standards](../../misc/development.md#documentation) |
@@ -33,7 +33,7 @@ Every Kanban card must include these governance cross-references:
 ## Governance Links
 - **Approval Process**: [Governance Charter](./governance-charter.md#decision-framework)
 - **Quality Standards**: [Development Guide](../../misc/development.md#quality-gates)
-- **Security Review**: [Security Guidelines (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Security/Overview)
+- **Security Review**: [Security Guidelines (Wiki)](https://github.com/brockhager/neuroswarm/wiki/Security/Overview)
 - **Documentation**: [Relevant docs](../README.md)
 ```
 
@@ -89,7 +89,7 @@ A task is **Done** when all of the following are true:
 
 ---
 
-This guidance ensures the agent knows **how to behave** in Kanban: respect repo boundaries, enforce WIP discipline, document everything, keep infra centralized in `neuro-infra`, and maintain governance compliance. Every task must have documentation anchors linking to relevant governance processes.
+This guidance ensures the agent knows **how to behave** in Kanban: respect repo boundaries, enforce WIP discipline, document everything, keep infra centralized in `neuroswarm`, and maintain governance compliance. Every task must have documentation anchors linking to relevant governance processes.
 
 **Related Governance Documents:**
 - [Complete Governance Charter](./governance-charter.md)
