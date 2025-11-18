@@ -136,7 +136,7 @@ Step 2: Validation -> Mempool
 - ns-node verifies minimal tx shape; verifies signature if `signedBy` is validator; stores tx with `txIdFor`.
 
 Step 3: Block Inclusion
-- Validator picks txs from ns-node mempool and constructs a block, computes `merkleRoot`, signs header.
+- Validator picks txs from the gateway canonical mempool and constructs a block, computes `merkleRoot`, signs header.
 - Validator sends block via `POST /blocks/produce` to ns-node.
 - ns-node verifies header signature, merkle root, applies block via `applyBlock`. If canonical, moves txs into `txIndex` and removes from mempool.
 
@@ -172,7 +172,7 @@ Step 7: Governance Dispute & Slashing
  - For debug endpoints, use the following example calls:
 	 - `curl http://localhost:3000/health`
 	 - `curl http://localhost:3000/debug/peers`
-	 - `curl -s http://localhost:3000/mempool | jq` to inspect mempool
+ 	 - `curl -s http://localhost:8080/v1/mempool | jq` to inspect gateway mempool
 	 - `curl -XPOST http://localhost:3000/tx -d '{"type":"example","fee":1}' -H 'Content-Type: application/json'`
 	 - `POST /blocks/produce` to be used by `vp-node` to publish a signed block
 
