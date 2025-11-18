@@ -19,9 +19,30 @@ REM No delegation to root-level scripts. This helper runs in the `neuroswarm` fo
 REM dispatches the repo workflow or falls back to the local Node script if GH CLI is missing.
 
 REM If no repo-level script is present, re-run the logic inline (fallback)
+REM Attempt to detect owner/repo using gh (preferred) or git remote as fallback
 set REPO_OWNER=brockhager
 set REPO_NAME=neuro-infra
+set REPO=%REPO_OWNER%/%REPO_NAME%
+where gh >nul 2>&1
+if %ERRORLEVEL%==0 (
+  for /f "delims=" %%r in ('gh repo view --json owner,name -q ".owner.login + \"/\" + .name"') do set REPO=%%r
+)
+if "%REPO%"=="" (
+  for /f "delims=" %%u in ('git config --get remote.origin.url') do set REMOTE_URL=%%u
+  if not "%REMOTE_URL%"=="" (
+    REM Normalize a few common remote formats
+    set REPO_TMP=%REMOTE_URL%
+    set REPO_TMP=%REPO_TMP:git@github.com:=%
+    set REPO_TMP=%REPO_TMP:https://github.com/=%
+    set REPO_TMP=%REPO_TMP:.git=%
+    for /f "delims=/ tokens=1,2" %%a in ("%REPO_TMP%") do set REPO_OWNER=%%a & set REPO_NAME=%%b
+    set REPO=%REPO_OWNER%/%REPO_NAME%
+  )
+)
 set WORKFLOW=publish-wiki-now.yml
+REM Compute default branch (try git remote show origin HEAD branch)
+set DEFAULT_BRANCH=master
+for /f "tokens=3 delims=: " %%b in ('git remote show origin 2^>nul ^| findstr /C:"HEAD branch:"') do set DEFAULT_BRANCH=%%b
 set DRY=0
 if "%~1"=="--dry-run" set DRY=1
 if "%~1"=="--dry" set DRY=1
@@ -35,8 +56,8 @@ if errorlevel 2 (
 where gh >nul 2>&1
 if %ERRORLEVEL%==0 (
   echo Using GitHub CLI to trigger the workflow.
-  echo Running: gh workflow run %WORKFLOW% --ref master
-  gh workflow run "%WORKFLOW%" --ref master
+  echo Running: gh workflow run %WORKFLOW% --repo %REPO% --ref %DEFAULT_BRANCH%
+  gh workflow run "%WORKFLOW%" --repo %REPO% --ref %DEFAULT_BRANCH%
   if %ERRORLEVEL% NEQ 0 (
     echo gh workflow run failed.
     echo If gh CLI is not authenticated, run: gh auth login
@@ -45,7 +66,7 @@ if %ERRORLEVEL%==0 (
   )
   echo GitHub workflow dispatched successfully.
   echo Opening the Actions workflow page in your browser.
-  start https://github.com/%REPO_OWNER%/%REPO_NAME%/actions/workflows/%WORKFLOW% >nul 2>&1
+  start https://github.com/%REPO%/actions/workflows/%WORKFLOW% >nul 2>&1
   goto exit_popd
 )
 
@@ -57,7 +78,7 @@ if %ERRORLEVEL% NEQ 0 (
   goto exit_popd
 )
 
-echo Node.js found. Attempting to run local script neuroswarm\scripts\pushDocsToWiki.mjs
+  echo Node.js found. Attempting to run local script neuroswarm\scripts\pushDocsToWiki.mjs
 if not exist "neuroswarm\scripts\pushDocsToWiki.mjs" (
   echo Could not find neuroswarm\scripts\pushDocsToWiki.mjs relative to %REPO_ROOT%
   goto exit_popd
@@ -89,7 +110,7 @@ if %ERRORLEVEL% NEQ 0 (
 
 echo Wiki content push complete.
 echo Opening the Wiki Actions page for confirmation.
-start https://github.com/%REPO_OWNER%/%REPO_NAME%/actions/workflows/%WORKFLOW% >nul 2>&1
+start https://github.com/%REPO%/actions/workflows/%WORKFLOW% >nul 2>&1
 
 :exit_popd
 popd >nul 2>&1
