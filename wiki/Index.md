@@ -33,6 +33,7 @@ Welcome to the NeuroSwarm Wiki. This index points to key pages and resources to 
 - [Analytics & SDK](Analytics-and-SDK.md)
 - [Changelog & Release Notes](Changelog-and-Release-Notes.md)
 - [Brain Data Submission Guide](Brain-Data-Submission.md)
+ - [Downloads (Release Assets)](Download.md)
 
 If you don't find what you need, check the repository's `docs/` folder or reach out in the community channels.
 <contents of docs/wiki/Index.md copied>

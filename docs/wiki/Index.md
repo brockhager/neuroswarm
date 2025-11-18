@@ -27,6 +27,7 @@ Navigation:
 ## Related resources
 - [Docs Index](../index.md)
 - [Contributor Guide](../CONTRIBUTOR-GUIDE.md)
+- [Downloads (Release Assets)](Download.md)
 
 Select a topic to begin.
 

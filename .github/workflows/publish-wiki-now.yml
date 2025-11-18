@@ -1,25 +1,10 @@
-name: 'Publish Wiki Now'
+name: 'Publish Wiki Now (DISABLED DUPLICATE)'
 
-on:
-  workflow_dispatch: {}
+on: []
 
 jobs:
-  publish:
+  disabled-job:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Install pnpm
-        run: npm install -g pnpm@8
-      - name: Generate local wiki files (copy docs -> neuroswarm/wiki)
-        run: |
-          node neuroswarm/scripts/generate-wiki-local.mjs || true
-      - name: Push docs to wiki
-        env:
-          GH_PAT: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
-          GITHUB_REPOSITORY: ${{ github.repository }}
-        run: node neuroswarm/scripts/pushDocsToWiki.mjs
+      - name: Disabled - duplicate workflow
+        run: echo "This workflow is a duplicate and intentionally disabled. Use the root-level .github/workflows/publish-wiki-now.yml instead."

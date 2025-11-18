@@ -169,7 +169,7 @@ Follow this sequence to start an integrated environment and run simple connectiv
 Using the installers
 --------------------
 
-For end users: download the ZIP for your platform from the GitHub Release page for the project. Extract the ZIP and run the bundled `start.sh` or `start.bat` file. The default gateway installer will attempt to open your browser at `http://localhost:8080` when the gateway is ready.
+For end users: visit the Downloads page in the project wiki for direct links to release artifacts and verified installers: https://github.com/brockhager/neuro-infra/wiki/Download. Extract the downloaded asset and run the bundled `start.sh` (Linux/macOS) or `start.bat` (Windows) file. The default gateway installer will attempt to open your browser at `http://localhost:8080` when the gateway is ready.
 
 Start script behavior (Windows `start.bat`) and logging
 -------------------------------------------------------
