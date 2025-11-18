@@ -18,7 +18,16 @@ if (!fs.existsSync(HISTORY_FILE)) fs.writeFileSync(HISTORY_FILE, JSON.stringify(
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+function ts() { return new Date().toISOString(); }
+console.log(`[${ts()}] ns-node starting on port ${PORT}`);
+
 app.use(cors());
+// Log incoming HTTP requests for connection visibility
+app.use((req, res, next) => {
+  const ip = req.ip || req.socket.remoteAddress;
+  console.log(`[${ts()}] HTTP ${req.method} ${req.url} from ${ip}`);
+  next();
+});
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -206,7 +215,7 @@ app.get('/debug/last-headers', (req, res) => {
 });
 
 // Health endpoint
-let VERSION = 'dev';
+let VERSION = '0.1.0';
 try {
   const pkgPath = path.join(__dirname, 'package.json');
   if (fs.existsSync(pkgPath)) {
@@ -809,7 +818,14 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log('ns-node local server started on http://localhost:' + PORT);
+const server = app.listen(PORT, () => {
+  console.log(`[${ts()}] Listening at http://localhost:${PORT}`);
+  console.log(`[${ts()}] Health endpoint available at /health`);
   console.log('Open your browser at http://localhost:' + PORT + ' to start chatting');
+});
+
+server.on('connection', (socket) => {
+  const remote = `${socket.remoteAddress}:${socket.remotePort}`;
+  console.log(`[${ts()}] Connection from ${remote}`);
+  socket.on('close', () => console.log(`[${ts()}] Connection closed ${remote}`));
 });
