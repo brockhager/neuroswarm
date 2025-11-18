@@ -1,4 +1,5 @@
 # Changelog — November 2025 (2025-11-15)
+> Updated: 2025-11-17 — added Gateway-owned mempool, VP IPFS payload signatures, NS requeue/resilience, and related CI/integration tests.
 
 ## Summary
 
@@ -48,6 +49,16 @@ Key outcomes:
   - Sorting and fingerprint handling preserved but made robust to multiple data shapes
 
 - Seed script fix: `admin-node/scripts/seed-e2e-timeline.js` now computes the actual `genesisSha256` from `docs/admin/admin-genesis.json` to produce timeline entries with the correct fingerprint.
+
+---
+
+### Gateway / Mempool / VP / NS architectural changes (2025-11-17)
+
+Detailed coverage of the Gateway-owned mempool, VP IPFS payload signing, and requeue behavior has been moved to a separate changelog entry. See:
+
+- `docs/changelog/changelog-2025-11-17-gateway-mempool-ipfs.md`
+
+This entry contains a full description of the behavior changes, endpoints, and integration tests.
 
 ---
 

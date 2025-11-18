@@ -16,6 +16,14 @@ Navigation:
 ## Welcome
 - Home page: [Home](Home.md)
 
+## Quick links
+- [Architecture](Architecture.md)
+- [Sources](Sources.md)
+- [Testing & CI](Testing.md)
+- [Contributing](Contributing.md)
+- [Troubleshooting](Troubleshooting.md)
+- [Changelog & Release Notes](Changelog-and-Release-Notes.md)
+
 ## Related resources
 - [Docs Index](../index.md)
 - [Contributor Guide](../CONTRIBUTOR-GUIDE.md)
