@@ -8,9 +8,11 @@
     "package:bins": "node ./scripts/package-binaries.mjs",
     "build": "tsc --project config",
     "test": "node tests/governance/test-quorum-validation.ts",
+    "test:sources": "node tests/sources-root.test.mjs",
     "submit-proposals": "node scripts/governance/submit-bootstrap-proposals.ts",
     "docs": "echo 'Documentation is in docs/ folder'",
-    "clone-all": "echo 'Use git clone for individual repos'"
+    "clone-all": "echo 'Use git clone for individual repos'",
+    "test:sources-allie": "node scripts/integration/sources-allie.mjs --gateway http://localhost:8080 --vp http://localhost:4000 --ns http://localhost:3000 --timeout 60000"
   },
   "dependencies": {
     "@solana/wallet-adapter-react": "^0.15.35",

@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
 import express from 'express';
+import { computeSourcesRoot } from '../sources/index.js';
 import { create as ipfsHttpClient } from 'ipfs-http-client';
 
 const NS_URL = process.env.NS_NODE_URL || 'http://localhost:3000';
@@ -86,6 +87,11 @@ function signEd25519PrivateKey(privateKeyPem, data) {
   return sig.toString('base64');
 }
 
+function signPayload(privateKeyPem, payloadObj) {
+  const data = canonicalize(payloadObj);
+  return signEd25519PrivateKey(privateKeyPem, data);
+}
+
 function txIdFor(tx) {
   const copy = { ...tx };
   delete copy.signature;
@@ -108,6 +114,8 @@ function computeMerkleRoot(txIds) {
   }
   return layer[0].toString('hex');
 }
+
+// computeSourcesRoot is provided by /sources/index.js so the algorithm is shared between VP and NS
 
 async function register() {
   if (!PRIVATE_KEY_PEM) {
@@ -170,16 +178,26 @@ async function produceLoop() {
     }
     const txIds = txs.map(tx => txIdFor(tx));
     const merkleRoot = computeMerkleRoot(txIds);
+    const sourcesRoot = computeSourcesRoot(txs);
     // Build header and payload; optionally add payload CID if IPFS is available
-    const header = { version: 1, prevHash: prev ? sha256Hex(canonicalize(prev)) : '0'.repeat(64), merkleRoot, timestamp: Date.now(), validatorId: VAL_ID, stakeWeight: Number(chosen.stake || 0) };
+    const header = { version: 1, prevHash: prev ? sha256Hex(canonicalize(prev)) : '0'.repeat(64), merkleRoot, sourcesRoot, timestamp: Date.now(), validatorId: VAL_ID, stakeWeight: Number(chosen.stake || 0) };
     const payload = { header: { ...header }, txs };
     let payloadCid = null;
     if (ipfsConnected && ipfs) {
       try {
-        const addRes = await ipfs.add(JSON.stringify(payload));
+        // Sign the payload before adding to IPFS so that NS can verify payload origin
+        const signer = VAL_ID;
+        const payloadToSign = { header: { ...header }, txs };
+        const payloadSig = PRIVATE_KEY_PEM ? signPayload(PRIVATE_KEY_PEM, payloadToSign) : null;
+        const ipfsContent = { payload: payloadToSign, signer, payloadSignature: payloadSig, txSources: txs.map(tx => tx.sources || []) };
+        const addRes = await ipfs.add(JSON.stringify(ipfsContent));
         payloadCid = addRes.cid ? addRes.cid.toString() : addRes.toString();
         header.payloadCid = payloadCid;
-        logVp(`Produced block ${slot}, CID: ${payloadCid}`);
+        const origins = new Set();
+        for (const tx of txs) {
+          if (tx.sources && Array.isArray(tx.sources)) for (const s of tx.sources) origins.add(s.origin || s.adapter || 'unknown');
+        }
+        logVp(`Produced block ${slot}, CID: ${payloadCid} signer=${signer} sourcesRoot=${sourcesRoot} txs=${txIds.length} origins=${Array.from(origins).join(',') || 'none'}`);
       } catch (e) {
         console.warn('[VP-NODE] IPFS add failed:', e.message);
         payloadCid = null;

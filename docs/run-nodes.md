@@ -1,3 +1,13 @@
+Gateway source policies (environment variables):
+- `GATEWAY_SOURCES_MAX_PER_TX` (default 5) — maximum number of adapter queries allowed per `POST /v1/tx` to prevent abusive requests.
+- `GATEWAY_SOURCES_QUERY_TIMEOUT_MS` (default 2000) — adapter query timeout in milliseconds (gateway will treat timeouts as adapter failures).
+- `GATEWAY_SOURCES_CACHE_TTL_MS` (default 60000) — TTL for adapter response cache that reduces load on external sources.
+Example usage when starting gateway:
+
+```powershell
+GATEWAY_SOURCES_MAX_PER_TX=3 GATEWAY_SOURCES_QUERY_TIMEOUT_MS=1500 GATEWAY_SOURCES_CACHE_TTL_MS=30000 PORT=8080 NS_NODE_URL=http://localhost:3000 node gateway-node/server.js
+```
+
 # Run Nodes (Standalone & Integrated)
 
 > NOTE: This doc is synced to the project Wiki and the GitHub Wiki is the canonical source for contributors and users: https://github.com/brockhager/neuro-infra/wiki
@@ -62,6 +72,13 @@ Checklist Before Running Nodes
    - Debug endpoints:
      - `GET /debug/peers` (gateway & ns) — check peer visibility
      - `GET /debug/gateways` (ns) — check gateways reported
+    - Gateway-specific mempool endpoints:
+      - `GET /v1/mempool` — list curated transactions on the gateway
+      - `GET /v1/stats` — mempool statistics (size, counters)
+      - `POST /v1/mempool/consume` — notify gateway of consumed txs when a block is produced (call with { ids: [...] })
+      - `POST /v1/mempool/requeue` — re-add txs to the gateway mempool when NS notifies a reorg (call with { txs: [...] })
+      - NS debug scaffold (for local testing)
+        - `POST /debug/requeue` — NS debug endpoint (guarded by `NS_ALLOW_REQUEUE_SIM=true`): accepts `{ txs: [...] }` and forwards to the first configured gateway's `/v1/mempool/requeue`. Useful for testing requeue behavior without a full reorg.
    - Run `scripts/checkNodeConnectivityClean.mjs` to validate gateway ↔ ns forwarding (CI-friendly `--ci` flag):
 
      ```powershell
@@ -316,4 +333,23 @@ The `/health` endpoint for `vp-node` now includes `ipfsPeer` when IPFS connectiv
 ```
 
 When IPFS is not reachable, `vp-node` will continue producing blocks but will log a warning and will not include a `payloadCid` in block headers.
+
+Payload signing & verification
+-------------------------------
+To ensure block payloads fetched from a producer's IPFS endpoint are authentic and originate from the same validator producing the block header, `vp-node` signs the block payload prior to publishing to IPFS. The signed payload includes the `payloadSignature` and `signer` (validatorId) in the IPFS content, and `ns-node` verifies the signature using the registered validator public key before accepting a block referencing a `payloadCid`.
+
+This provides cryptographic attestation of payload origin and is enforced during `/blocks/produce` verification and the `/ipfs/verify` endpoint.
+
+Sources validation & Allie-AI integration
+-----------------------------------------
+Gateway can optionally query external sources/adapters and attach the resulting attestation metadata to transactions during admission.
+Adapters live under `/sources/adapters/` and can include third-party integrations such as Allie-AI.
+To use Allie-AI adapters, add `sourcesRequired` to the tx JSON, for example:
+
+```powershell
+curl -s -X POST http://localhost:8080/v1/tx -H "Content-Type: application/json" -d '{"type":"sample","fee":2,"content":"hello","sourcesRequired":["allie-price"]}'
+```
+
+Gateway will query the `allie-price` adapter, add `tx.sources` and `tx.sourcesVerified=true` when successful, and the VP will include sources in IPFS payloads and add `sourcesRoot` to the block header. `ns-node` verifies `sourcesRoot` during `POST /blocks/produce` and `/ipfs/verify`.
+
 

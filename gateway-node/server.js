@@ -6,6 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
+import { loadRegistry, queryAdapter, listStatuses, queryAdapterWithOpts } from '../sources/index.js';
 
 const PORT = process.env.PORT || 8080;
 
@@ -76,6 +77,11 @@ function createMempoolEntry(tx) {
   return { txId: id, type: tx.type, payload: tx, fee: Number(tx.fee || 0), timestamp: Date.now(), status: 'pending' };
 }
 
+// Sources policy: limit adapters per tx and source query timeouts
+const SOURCES_MAX_PER_TX = Number(process.env.GATEWAY_SOURCES_MAX_PER_TX || 5);
+const SOURCES_QUERY_TIMEOUT_MS = Number(process.env.GATEWAY_SOURCES_QUERY_TIMEOUT_MS || 2000);
+const SOURCES_USE_CACHE = process.env.GATEWAY_SOURCES_USE_CACHE !== 'false';
+
 function checkRateLimit(ip) {
   const now = Date.now();
   const r = rateMap.get(ip) || { windowStart: now, count: 0 };
@@ -98,8 +104,44 @@ app.post('/v1/tx', async (req, res) => {
   const entry = createMempoolEntry(tx);
   if (gwMempool.has(entry.txId)) { gwSpamRejected += 1; logGw(`Rejected duplicate tx ${entry.txId} from ${remoteIP} (${src})`); return res.status(409).json({ error: 'duplicate' }); }
   // accept
-  gwMempool.set(entry.txId, entry);
-  logGw(`Accepted tx ${entry.txId} from ${remoteIP} (${src}) type=${entry.type} fee=${entry.fee}`);
+  // If the tx declares it requires sources validation, query and attach results
+  try {
+    const requiredSources = tx.sourcesRequired || [];
+    if (Array.isArray(requiredSources) && requiredSources.length > 0) {
+      const collected = [];
+        if (requiredSources.length > SOURCES_MAX_PER_TX) {
+          gwSpamRejected += 1;
+          logGw(`Rejected tx ${entry.txId} from ${remoteIP} (${src}) too many sources requested: ${requiredSources.length} > ${SOURCES_MAX_PER_TX}`);
+          return res.status(400).json({ error: 'too_many_sources_requested', requested: requiredSources.length, limit: SOURCES_MAX_PER_TX });
+        }
+        for (const adapterName of requiredSources) {
+          try {
+            const entry = loadRegistry().adapters.find(a => a.name === adapterName);
+            const origin = entry && entry.origin ? entry.origin : 'unknown';
+            logGw(`Source adapter query adapter=${adapterName} origin=${origin} txId=${entry ? entry.name : 'unknown'}`);
+            const result = await queryAdapterWithOpts(adapterName, tx.sourceParams || {}, { timeoutMs: SOURCES_QUERY_TIMEOUT_MS, useCache: SOURCES_USE_CACHE });
+            collected.push({ adapter: adapterName, origin, result });
+          } catch (e) {
+            collected.push({ adapter: adapterName, origin: 'unknown', error: e.message });
+          }
+        }
+      tx.sources = collected;
+      const sourcesVerified = collected.every(c => c && c.result && c.result.value !== null && typeof c.result.value !== 'undefined');
+      tx.sourcesVerified = sourcesVerified;
+      if (!sourcesVerified && process.env.ALLOW_UNVERIFIED_SOURCES !== '1') {
+        gwSpamRejected += 1; logGw(`Rejected tx ${entry.txId} from ${remoteIP} (${src}) due to sources verification failed`);
+        return res.status(400).json({ error: 'source_validation_failed', sources: collected });
+      }
+    }
+  } catch (e) {
+    gwSpamRejected += 1; logGw(`Rejected tx ${entry.txId} from ${remoteIP} (${src}) due to adapter error ${e.message}`); return res.status(400).json({ error: 'adapter_error', message: e.message });
+  }
+
+    gwMempool.set(entry.txId, entry);
+    const srcCount = (tx.sources && Array.isArray(tx.sources)) ? tx.sources.length : 0;
+    const srcsOK = tx.sourcesVerified ? 'yes' : 'no';
+    const origins = (tx.sources || []).map(s => s.origin || s.adapter || 'unknown').join(',') || 'none';
+    logGw(`Accepted tx ${entry.txId} from ${remoteIP} (${src}) type=${entry.type} fee=${entry.fee} sources=${srcCount} sourcesVerified=${srcsOK} origins=${origins}`);
   res.json({ ok: true, txId: entry.txId });
 });
 
@@ -107,6 +149,27 @@ app.get('/v1/mempool', (req, res) => {
   const arr = [];
   for (const [id, entry] of gwMempool.entries()) arr.push({ id, txId: id, type: entry.type, fee: entry.fee, timestamp: entry.timestamp, status: entry.status, payload: entry.payload });
   res.json({ mempool: arr });
+});
+
+// Sources endpoints: list adapters and query them
+app.get('/v1/sources', async (req, res) => {
+  try {
+    const adapters = loadRegistry();
+    const statuses = await listStatuses();
+    return res.json({ adapters: adapters.adapters, statuses });
+  } catch (e) { return res.status(500).json({ error: e.message }); }
+});
+
+app.post('/v1/sources/query', async (req, res) => {
+  try {
+    const { adapter, params } = req.body || {};
+    if (!adapter) return res.status(400).json({ error: 'adapter required' });
+    const entry = loadRegistry().adapters.find(a => a.name === adapter);
+    const origin = entry && entry.origin ? entry.origin : 'unknown';
+    const result = await queryAdapter(adapter, params);
+    logGw(`Source adapter admin query adapter=${adapter} origin=${origin}`);
+    return res.json({ adapter, origin, result });
+  } catch (e) { return res.status(500).json({ error: e.message }); }
 });
 
 // Mempool stats endpoint
@@ -123,6 +186,22 @@ app.post('/v1/mempool/consume', (req, res) => {
     if (gwMempool.has(id)) { gwMempool.delete(id); removed += 1; logGw(`Consumed tx ${id}`); }
   }
   res.json({ ok: true, removed });
+});
+
+// Requeue txs after a chain reorg (re-add tx payloads to mempool)
+app.post('/v1/mempool/requeue', (req, res) => {
+  const txs = req.body && req.body.txs ? req.body.txs : (Array.isArray(req.body) ? req.body : []);
+  if (!Array.isArray(txs) || txs.length === 0) return res.status(400).json({ error: 'txs array required' });
+  let added = 0;
+  for (const tx of txs) {
+    if (!tx || !tx.type || typeof tx.fee !== 'number') continue;
+    const entry = createMempoolEntry(tx);
+    if (gwMempool.has(entry.txId)) continue; // already present
+    gwMempool.set(entry.txId, entry);
+    added += 1;
+    logGw(`Requeued tx ${entry.txId} type=${entry.type} fee=${entry.fee}`);
+  }
+  res.json({ ok: true, added });
 });
 
 app.get('/debug/last-message', (req, res) => {

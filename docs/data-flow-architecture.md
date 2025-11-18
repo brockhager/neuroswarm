@@ -38,6 +38,13 @@ Egress: SPV/Proofs, client queries, governance endpoints
 ## Key Components & Responsibilities
 
 - Gateway (gateway-node): Accepts client messages, validates and forwards them to the `ns-node` via `/v1/tx` or `/v1/chat`. Provides `/debug/peers`, `/history`, and `/v1/mempool` for diagnostics.
+ - Gateway (gateway-node): Accepts client messages, validates and forwards them to the `ns-node` via `/v1/tx` or `/v1/chat`. Provides `/debug/peers`, `/history`, `/v1/mempool`, and `/v1/mempool/requeue` for diagnostics and resilience.
+- Policy & resilience: Gateway enforces adapter query policies (max adapters per tx, query timeouts, and in-memory caching) that protect gateway resources from abusive requests or slow adapters. Set env vars `GATEWAY_SOURCES_MAX_PER_TX`, `GATEWAY_SOURCES_QUERY_TIMEOUT_MS`, and `GATEWAY_SOURCES_CACHE_TTL_MS` to control them.
+
+### Sources validation and Allie-AI adapters
+- Gateways query adapters in `/sources/adapters/` during `POST /v1/tx` admission when the tx declares `sourcesRequired`. The gateway calls adapters, attaches normalized metadata to the tx (on `entry.payload.sources`), and sets `sourcesVerified=true` when the adapters respond with valid data.
+- We integrate Allie-AI adapters under `/sources/adapters/` with `origin: 'allie-ai'` to enable adapters from the Allie ecosystem (Allie price, weather, news). Gateway records adapter queries with `origin=allie-ai` in logs for traceability.
+- When producing blocks, VP stores the payload and the sources metadata in IPFS; the block header includes `sourcesRoot` (merkle root of per-tx sources metadata). NS verifies `sourcesRoot` during `POST /blocks/produce` and also exposes `/ipfs/verify` that returns `sourcesValid`. Failures to match `sourcesRoot` will result in block rejection.
 - Brain (ns-node): Core PoS node that maintains `blockMap`, headers, and validators and performs signature/merkle verification. It does not own the canonical mempool (gateway owns it). It:
   - Accepts validators & txs
   - Validates signatures / canonicalization
@@ -144,6 +151,7 @@ Step 4: Broadcast & Propagation
 
 Step 5: Fork / Reorg Handling
 - If a heavier chain arrives, nodes select a new canonical tip; `performReorg` is invoked: rollback + snapshot restore + replay; removed txs re-added to mempool.
+  - NS will attempt to re-add removed txs to the gateway canonical mempool by calling `POST /v1/mempool/requeue` with the removed tx payloads so other validators may include them in future blocks.
 
 Step 6: SPV Proof & Client Verification
 - Client asks for an SPV proof via `/proof/:txId`; server returns a proof and block header.
@@ -160,6 +168,7 @@ Step 7: Governance Dispute & Slashing
 - `history` entry: `{ direction: 'in'|'out', id, sender, content, headers: { authorization, 'x-forwarded-for', 'x-forwarded-user', 'x-correlation-id' }, timestamp }`
 - `tx` schema: `{ type, fee, cid?, signedBy?, signature?, body?, metadata? }` where `metadata` may include `source`, `tags`, or `attestation`.
 - `header` schema: `{ version, prevHash, merkleRoot, timestamp, validatorId, stakeWeight, signature }`
+ - `header` schema: `{ version, prevHash, merkleRoot, sourcesRoot?, timestamp, validatorId, stakeWeight, signature }` - `sourcesRoot` is optional and contains the merkle root of per-tx sources metadata when included.
 - `blockMap` and `snapshot.validators`: maintained as `{ validatorId -> stake, publicKey, slashed }` in snapshots attached to blocks (not global changes unless a block is canonical and extended)
 
 ---

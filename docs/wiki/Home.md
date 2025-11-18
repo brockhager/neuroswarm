@@ -18,6 +18,21 @@ Welcome to the NeuroSwarm Wiki. This is the canonical, single source of truth fo
 4. Verify `/health` returns JSON status for each node.
 5. Run connectivity: `node scripts/checkNodeConnectivityClean.mjs`.
 6. Smoke blocks: `node scripts/smokeProduce.mjs` (see Running Nodes for expected output).
+7. Troubleshooting: see `Troubleshooting.md`. If you are missing docs on the wiki, open an issue.
+
+---
+## Architecture (short)
+```
+User -> Gateway (mempool + source validation) -> VP (block producer + IPFS publisher) -> NS (verifier & chain state) -> Gateway (requeue after reorg)
+```
+
+## Links & Docs
+- [System Overview](System-Overview.md)
+- [Architecture](Architecture.md)
+- [Sources / Allie-AI](Sources.md)
+- [Testing & CI](Testing.md)
+- [Troubleshooting](Troubleshooting.md)
+- [How to Contribute](Contributing.md)
 
 ---
 ## 📦 Downloads
@@ -78,3 +93,5 @@ Artifacts include: packaged binaries (`ns-node`, `gateway-node`, `vp-node`) and 
 If a page you need is missing, create a PR; CI will sync it here. This Home page is auto‑refreshed from `neuroswarm/docs/wiki/Home.md` via `pushDocsToWiki.mjs`.
 
 Last updated: 2025-11-16
+
+_If you want to help maintain the wiki: see [How to Contribute](Contributing.md) and [Contributor Onboarding](Contributor-Onboarding.md)._

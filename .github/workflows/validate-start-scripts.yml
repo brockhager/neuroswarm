@@ -63,6 +63,9 @@ jobs:
           echo "DIST_KEEP=$KEEP" >> $GITHUB_ENV
           node "$GITHUB_WORKSPACE/scripts/test-start-scripts.mjs" --dist "$PLAIN" --expect-status
           node "$GITHUB_WORKSPACE/scripts/test-start-scripts.mjs" --dist "$KEEP" --expect-status --expect-keep-open
+      - name: Run sources unit tests
+        run: |
+          pnpm -C neuroswarm test:sources || true
 
       - name: Run heartbeat smoke test on Linux
         if: runner.os == 'Linux'
@@ -113,8 +116,15 @@ jobs:
           set -e
           node $GITHUB_WORKSPACE/scripts/integration/gateway-to-ns.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --timeout 20000
           node $GITHUB_WORKSPACE/scripts/integration/ns-to-gateway.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --timeout 20000
+          node $GITHUB_WORKSPACE/scripts/integration/gateway-sources-policy.mjs --gateway http://localhost:8080
+          # simulate requeue via NS debug endpoint
+          NS_ALLOW_REQUEUE_SIM=true node $GITHUB_WORKSPACE/scripts/tools/ns-trigger-requeue.mjs --ns http://localhost:3000 --gateway http://localhost:8080 --tx '{"type":"chat","fee":1,"content":"requeue-demo"}'
+          node $GITHUB_WORKSPACE/scripts/integration/gateway-requeue-test.mjs --gateway http://localhost:8080 --timeout 20000
+          node $GITHUB_WORKSPACE/scripts/integration/gateway-sources-policy.mjs --gateway http://localhost:8080
+          node $GITHUB_WORKSPACE/scripts/integration/ns-to-gateway.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --timeout 20000
           # Ensure a block with payloadCid was produced and verify via IPFS
           node $GITHUB_WORKSPACE/scripts/integration/vp-block-ipfs.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --vp http://localhost:4000 --timeout 20000
+          node $GITHUB_WORKSPACE/scripts/integration/sources-allie.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --vp http://localhost:4000 --timeout 20000
           docker rm -f ipfs || true
 
       - name: Run gateway->ns synthetic integration test
@@ -125,8 +135,14 @@ jobs:
           docker run -d --name ipfs -p 5001:5001 ipfs/go-ipfs:latest || true
           for i in {1..30}; do if curl -s --fail http://localhost:5001/api/v0/version >/dev/null; then break; fi; sleep 1; done
           node $GITHUB_WORKSPACE/scripts/integration/gateway-to-ns.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --timeout 20000
+          # simulate requeue via NS debug endpoint
+          NS_ALLOW_REQUEUE_SIM=true node $GITHUB_WORKSPACE/scripts/tools/ns-trigger-requeue.mjs --ns http://localhost:3000 --gateway http://localhost:8080 --tx '{"type":"chat","fee":1,"content":"requeue-demo"}'
+          node $GITHUB_WORKSPACE/scripts/integration/ns-to-gateway.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --timeout 20000
+          node $GITHUB_WORKSPACE/scripts/integration/gateway-requeue-test.mjs --gateway http://localhost:8080 --timeout 20000
           node $GITHUB_WORKSPACE/scripts/integration/ns-to-gateway.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --timeout 20000
           node $GITHUB_WORKSPACE/scripts/integration/vp-block-ipfs.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --vp http://localhost:4000 --timeout 20000
+          node $GITHUB_WORKSPACE/scripts/integration/sources-allie.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --vp http://localhost:4000 --timeout 20000
+          node $GITHUB_WORKSPACE/scripts/integration/sources-allie.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --vp http://localhost:4000 --timeout 20000
           docker rm -f ipfs || true
           # Ensure the ns-node reported that it is listening and health endpoint is available
           if ! (grep -q "Listening at http://localhost:3000" ns-start.log || grep -q "Health endpoint available at /health" ns-start.log); then
@@ -208,6 +224,10 @@ jobs:
           docker run -d --name ipfs -p 5001:5001 ipfs/go-ipfs:latest || true
           for ($i=0; $i -lt 30; $i++) { try { if ((Invoke-RestMethod -Uri 'http://localhost:5001/api/v0/version').Version) { break } } catch {}; Start-Sleep -s 1 }
           node $env:GITHUB_WORKSPACE\scripts\integration\gateway-to-ns.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --timeout 20000
+          # simulate requeue via NS debug endpoint (enable debug guard)
+          set "NS_ALLOW_REQUEUE_SIM=true" && node $env:GITHUB_WORKSPACE\scripts\tools\ns-trigger-requeue.mjs --ns http://localhost:3000 --gateway http://localhost:8080 --tx '{"type":"chat","fee":1,"content":"requeue-demo"}'
+          node $env:GITHUB_WORKSPACE\scripts\integration\ns-to-gateway.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --timeout 20000
+          node $env:GITHUB_WORKSPACE\scripts\integration\gateway-requeue-test.mjs --gateway http://localhost:8080 --timeout 20000
           node $env:GITHUB_WORKSPACE\scripts\integration\ns-to-gateway.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --timeout 20000
           node $env:GITHUB_WORKSPACE\scripts\integration\vp-block-ipfs.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --vp http://localhost:4000 --timeout 20000
           docker rm -f ipfs || true
