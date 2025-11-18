@@ -101,10 +101,10 @@ function loadGatewayConfig() {
       return arr.map((item) => ({ url: item.url, auth: item.auth || null, reachable: false, lastError: null }));
     }
     const urls = (process.env.GATEWAY_URLS || '').split(',').map(s => s.trim()).filter(Boolean);
-    const objs = urls.length > 0 ? urls.map(u => ({ url: u, auth: null, reachable: false, lastError: null })) : [{ url: 'http://localhost:3000', auth: null, reachable: false, lastError: null }];
+    const objs = urls.length > 0 ? urls.map(u => ({ url: u, auth: null, reachable: false, lastError: null })) : [{ url: 'http://localhost:8080', auth: null, reachable: false, lastError: null }];
     return objs;
   } catch (e) {
-    return [{ url: 'http://localhost:3000', auth: null, reachable: false, lastError: String(e) }];
+    return [{ url: 'http://localhost:8080', auth: null, reachable: false, lastError: String(e) }];
   }
 }
 
@@ -123,12 +123,23 @@ function logNs(...args) {
 
 // Periodic heartbeat for operator/debugging visibility
 if (STATUS_ENABLED) {
-  setInterval(() => {
+  setInterval(async () => {
     try {
       const gwStatus = GATEWAY_CONFIG.map(g => `${g.url}${g.reachable ? ':OK' : ':DOWN'}`).join(', ');
-      const mempoolSize = mempool ? mempool.size : 0;
       const validatorCount = validators ? validators.size : 0;
-      logNs(`Heartbeat: gateways=${gwStatus} validators=${validatorCount} mempool=${mempoolSize} height=${getCanonicalHeight()}`);
+      // Query gateway for mempool stats if available
+      let mempoolSize = null;
+      try {
+        const gw = GATEWAY_CONFIG && GATEWAY_CONFIG.length ? GATEWAY_CONFIG[0] : null;
+        if (gw && gw.url) {
+          const url = gw.url.replace(/\/$/, '') + '/v1/stats';
+          const r = await fetch(url);
+          if (r.ok) {
+            const j = await r.json(); if (j && typeof j.mempoolSize !== 'undefined') mempoolSize = j.mempoolSize;
+          }
+        }
+      } catch (e) { /* ignore */ }
+      logNs(`Heartbeat: gateways=${gwStatus} validators=${validatorCount} mempool=${mempoolSize || 'unknown'} height=${getCanonicalHeight()}`);
     } catch (e) {
       console.error('[NS-NODE] Heartbeat error', e.message);
     }
@@ -234,6 +245,29 @@ app.get('/history', (req, res) => {
   res.json(loadHistory());
 });
 
+// Fetch content by CID via producer's vp-node IPFS endpoint and verify payload integrity
+app.post('/ipfs/verify', async (req, res) => {
+  const { cid, producerUrl } = req.body || {};
+  if (!cid || !producerUrl) return res.status(400).json({ error: 'cid and producerUrl required' });
+  try {
+    const fetchUrl = `${producerUrl.replace(/\/$/, '')}/ipfs/${cid}`;
+    const fetched = await fetch(fetchUrl);
+    if (!fetched.ok) return res.status(400).json({ error: 'fetch_failed', status: fetched.status });
+    const body = await fetched.json();
+    const payloadContent = body && body.content ? body.content : null;
+    if (!payloadContent) return res.status(400).json({ error: 'invalid_payload' });
+    // validate merkle root and txs if possible
+    const fetchedHeader = payloadContent.header || {};
+    const fetchedTxs = payloadContent.txs || [];
+    const fetchedIds = (fetchedTxs || []).map(tx => txIdFor(tx));
+    const fetchedRoot = computeMerkleRoot(fetchedIds);
+    const matches = (fetchedRoot === fetchedHeader.merkleRoot);
+    res.json({ ok: true, matches, fetchedHeader, fetchedTxs });
+  } catch (e) {
+    res.status(500).json({ error: 'verify_exception', message: e.message });
+  }
+});
+
 // Endpoints for validators & PoS
 app.post('/validators/register', (req, res) => {
   const { validatorId, stake = 0, publicKey } = req.body || {};
@@ -262,7 +296,7 @@ app.post('/validators/slash', (req, res) => {
 });
 
 // Submit tx to mempool
-app.post('/tx', (req, res) => {
+app.post('/tx', async (req, res) => {
   const tx = req.body || {};
   // Basic validation: require type and fee
   if (!tx.type || typeof tx.fee !== 'number') return res.status(400).json({ error: 'type and fee required' });
@@ -272,15 +306,48 @@ app.post('/tx', (req, res) => {
     const data = canonicalize({ ...tx, signature: undefined });
     if (!verifyEd25519(v.publicKey, data, tx.signature)) return res.status(400).json({ error: 'invalid signature' });
   }
-  const id = txIdFor(tx);
-  mempool.set(id, tx);
-  res.json({ ok: true, txId: id });
+  // Forward transaction to configured gateway(s) and do not persist in NS mempool
+  try {
+    let forwarded = [];
+    for (const gw of GATEWAY_CONFIG) {
+      const url = gw.url.replace(/\/$/, '') + '/v1/tx';
+      try {
+        const fwd = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': req.header('x-forwarded-for') || req.socket.remoteAddress || '', 'X-Source': 'ns' }, body: JSON.stringify(tx) });
+          if (fwd.ok) {
+            const j = await fwd.json().catch(() => null);
+            forwarded.push({ url: gw.url, resp: j || true });
+            logNs(`Forwarded tx to gateway ${gw.url}`);
+          // stop on first successful forward
+          break;
+        } else {
+          forwarded.push({ url: gw.url, error: `HTTP ${fwd.status}` });
+        }
+      } catch (e) {
+        forwarded.push({ url: gw.url, error: e.message });
+      }
+    }
+    if (forwarded.length === 0) return res.status(500).json({ error: 'no_gateways_configured' });
+    const ok = forwarded.some(f => f.resp);
+    if (!ok) return res.status(502).json({ error: 'forward_failed', forwarded });
+    return res.json({ ok: true, forwarded });
+  } catch (e) {
+    return res.status(500).json({ error: 'forward_exception', message: e.message });
+  }
 });
 
-app.get('/mempool', (req, res) => {
-  const list = [];
-  for (const [id, tx] of mempool.entries()) list.push({ id, tx });
-  res.json({ mempool: list });
+app.get('/mempool', async (req, res) => {
+  // NS does not keep a mempool; proxy to gateway's mempool for compatibility
+  try {
+    const gw = GATEWAY_CONFIG && GATEWAY_CONFIG.length ? GATEWAY_CONFIG[0] : null;
+    if (!gw || !gw.url) return res.json({ mempool: [] });
+    const url = gw.url.replace(/\/$/, '') + '/v1/mempool';
+    const r = await fetch(url);
+    if (!r.ok) return res.status(500).json({ error: 'gateway_mempool_unavailable', status: r.status });
+    const j = await r.json();
+    return res.json(j);
+  } catch (e) {
+    return res.status(500).json({ error: 'proxy_failed', message: e.message });
+  }
 });
 
 // Governance endpoints
@@ -337,6 +404,45 @@ app.post('/blocks/produce', (req, res) => {
   const genesisPrev = '0'.repeat(64);
   if (parentHash !== genesisPrev && !blockMap.has(parentHash)) return res.status(400).json({ error: 'unknown prevHash' });
   // apply block
+  // If a payloadCid is provided in the header, attempt to fetch it from the producer
+  // for integrity verification before accepting the block.
+  const payloadCid = header.payloadCid || header.cid || null;
+  if (payloadCid) {
+    const producerUrl = req.header('x-producer-url') || null;
+    if (!producerUrl) return res.status(400).json({ error: 'producer_url_required_for_payload_cid' });
+    (async () => {
+      try {
+        const fetchUrl = `${producerUrl.replace(/\/$/, '')}/ipfs/${payloadCid}`;
+        const fetched = await fetch(fetchUrl, { method: 'GET' });
+        if (!fetched.ok) {
+          console.error('[NS-NODE] Failed to fetch payloadCid from producer', fetchUrl, fetched.status);
+          return res.status(400).json({ error: 'payload_cid_fetch_failed', status: fetched.status });
+        }
+        const body = await fetched.json();
+        const payloadContent = body && body.content ? body.content : null;
+        if (!payloadContent) return res.status(400).json({ error: 'invalid_payload_content' });
+        // Validate the merkleRoot & txs equality
+        const fetchedHeader = payloadContent.header || {};
+        const fetchedTxs = payloadContent.txs || [];
+        const fetchedIds = (fetchedTxs || []).map(tx => txIdFor(tx));
+        const fetchedRoot = computeMerkleRoot(fetchedIds);
+        if (fetchedRoot !== header.merkleRoot) {
+          console.error('[NS-NODE] Payload CID merkle root mismatch', fetchedRoot, header.merkleRoot);
+          return res.status(400).json({ error: 'payload_cid_merkle_mismatch' });
+        }
+        // Fetched content matches - proceed to apply block
+        header.signature = signature;
+        const block = { header, txs };
+        const result = applyBlock(block);
+        if (!result.ok) return res.status(400).json({ error: result.reason });
+        return res.json({ ok: true, blockHash: result.blockHash });
+      } catch (e) {
+        console.error('[NS-NODE] Error fetching payloadCid', e.message);
+        return res.status(400).json({ error: 'payload_cid_fetch_exception', message: e.message });
+      }
+    })();
+    return; // early return while we async-verified
+  }
   header.signature = signature;
   const block = { header, txs };
   const result = applyBlock(block);
@@ -404,7 +510,8 @@ app.post('/verify/proof', (req, res) => {
 
 
 // Simple PoS blockchain state and helpers
-const mempool = new Map(); // txId -> tx
+// NOTE: ns-node no longer persists a mempool - gateway-node is authoritative for pending txs.
+// Gateway mempool is queried by validators (vp-node) when producing blocks.
 const blockMap = new Map(); // blockHash -> block {header, txs, blockHash, parentHash, cumWeight, snapshot}
 const heads = new Set(); // blockHash candidates for chain tip
 let canonicalTipHash = null; // hash of current canonical chain tip
@@ -540,7 +647,7 @@ function performReorg(oldTipHash, newTipHash) {
       for (const t of rb.txs) removedTxIds.add(txIdFor(t));
     }
   }
-  mempool.clear();
+  // NS does not own a mempool; gateway manages pending txs. No local mempool clearing.
   // replay blocks from genesis up to ancestor (if any)
   const canonicalPath = [];
   if (ancestor) {
@@ -561,8 +668,7 @@ function performReorg(oldTipHash, newTipHash) {
       const tx = b.txs[i];
       const id = txIdFor(tx);
       txIndex.set(id, { blockHash: bh, txIndex: i });
-      // remove from mempool if present
-      mempool.delete(id);
+      // gateway manages mempool; NS does not delete consumed txs locally
       if (tx.type === 'stake') {
         if (!validators.has(tx.validatorId)) validators.set(tx.validatorId, { stake: 0, publicKey: tx.publicKey || 'unknown' });
         const vv = validators.get(tx.validatorId);
@@ -599,7 +705,7 @@ function performReorg(oldTipHash, newTipHash) {
         }
         if (found) break;
       }
-      if (found) mempool.set(txId, found);
+      // gateway manages re-adding any txs post-reorg; NS does not re-add to mempool
     }
   }
   // update heads: remove tip of old chain and add newTip

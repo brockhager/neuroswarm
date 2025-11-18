@@ -63,44 +63,66 @@ app.post('/v1/chat', (req, res) => {
   return res.json(response);
 });
 
-// Minimal gateway mempool admission + forward /v1/tx to ns-node
-const gwMempool = new Map();
+// Gateway mempool ownership: canonical schema and endpoints
+const gwMempool = new Map(); // id -> entry
+let gwSpamRejected = 0;
+// rate limiting map: ip -> { windowStart, count }
+const rateMap = new Map();
+const RATE_LIMIT = Number(process.env.GATEWAY_RATE_LIMIT || 20); // messages per window
+const RATE_WINDOW_MS = Number(process.env.GATEWAY_RATE_WINDOW_MS || 10000);
+
+function createMempoolEntry(tx) {
+  const id = crypto.createHash('sha256').update(JSON.stringify({ ...tx, signature: undefined })).digest('hex');
+  return { txId: id, type: tx.type, payload: tx, fee: Number(tx.fee || 0), timestamp: Date.now(), status: 'pending' };
+}
+
+function checkRateLimit(ip) {
+  const now = Date.now();
+  const r = rateMap.get(ip) || { windowStart: now, count: 0 };
+  if (now - r.windowStart > RATE_WINDOW_MS) { r.windowStart = now; r.count = 0; }
+  r.count += 1;
+  rateMap.set(ip, r);
+  return r.count <= RATE_LIMIT;
+}
+
 app.post('/v1/tx', async (req, res) => {
   const tx = req.body || {};
-  if (!tx.type || typeof tx.fee !== 'number') return res.status(400).json({ error: 'type and fee required' });
-  // simple admission: fee >= 1
-  if (tx.fee < Number(process.env.MIN_FEE || 1)) return res.status(400).json({ error: 'insufficient_fee' });
-  // Quick CID reachability check if CID present
-  if (tx.cid) {
-    try {
-      const c = await fetch(String(tx.cid));
-      if (!c.ok) console.warn('CID not reachable: ', tx.cid);
-    } catch (e) {
-        console.error('[GATEWAY] Heartbeat error', e.message);
-      }
-  }
-  // add to local mempool and forward to ns-node
-
-  // Exported helper for connection events - used by other modules or internal code.
-  function logPeerConnect(url) { logGw(`Connected to peer ${url}`); }
-  function logPeerDisconnect(url, reason) { logGw(`Disconnected from peer ${url} reason=${String(reason).slice(0,200)}`); }
-  const id = crypto.createHash('sha256').update(JSON.stringify({ ...tx, signature: undefined })).digest('hex');
-  gwMempool.set(id, tx);
-  // forward to ns-node if configured
-  const NS_NODE_URL = process.env.NS_NODE_URL || 'http://localhost:3000';
-  try {
-    const fwd = await fetch(NS_NODE_URL + '/tx', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(tx) });
-    const j = await fwd.json();
-    res.json({ ok: true, fwd: j });
-  } catch (e) {
-    res.status(500).json({ error: 'forward_failed', message: e.message });
-  }
+  const remoteIP = req.header('x-forwarded-for') || req.socket.remoteAddress || 'unknown';
+  const src = req.header('x-source') || 'client';
+  if (!tx.type || typeof tx.fee !== 'number') { gwSpamRejected += 1; logGw(`Rejected tx from ${remoteIP} (${src}) missing type/fee`); return res.status(400).json({ error: 'type and fee required' }); }
+  // rate limit
+  if (!checkRateLimit(remoteIP)) { gwSpamRejected += 1; logGw(`Rejected tx from ${remoteIP} (${src}) due to rate limit`); return res.status(429).json({ error: 'rate_limited' }); }
+  // spam filter: fee
+  if (tx.fee < Number(process.env.MIN_FEE || 1)) { gwSpamRejected += 1; logGw(`Rejected tx from ${remoteIP} (${src}) insufficient fee ${tx.fee}`); return res.status(400).json({ error: 'insufficient_fee' }); }
+  // duplicate check
+  const entry = createMempoolEntry(tx);
+  if (gwMempool.has(entry.txId)) { gwSpamRejected += 1; logGw(`Rejected duplicate tx ${entry.txId} from ${remoteIP} (${src})`); return res.status(409).json({ error: 'duplicate' }); }
+  // accept
+  gwMempool.set(entry.txId, entry);
+  logGw(`Accepted tx ${entry.txId} from ${remoteIP} (${src}) type=${entry.type} fee=${entry.fee}`);
+  res.json({ ok: true, txId: entry.txId });
 });
 
 app.get('/v1/mempool', (req, res) => {
   const arr = [];
-  for (const [id, tx] of gwMempool.entries()) arr.push({ id, tx });
+  for (const [id, entry] of gwMempool.entries()) arr.push({ id, txId: id, type: entry.type, fee: entry.fee, timestamp: entry.timestamp, status: entry.status, payload: entry.payload });
   res.json({ mempool: arr });
+});
+
+// Mempool stats endpoint
+app.get('/v1/stats', (req, res) => {
+  res.json({ mempoolSize: gwMempool.size, spamRejected: gwSpamRejected, rateLimiters: Array.from(rateMap.keys()).length });
+});
+
+// Mark txs as consumed (e.g., when vp-node produces blocks)
+app.post('/v1/mempool/consume', (req, res) => {
+  const ids = req.body && (req.body.ids || req.body) || [];
+  if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids array required' });
+  let removed = 0;
+  for (const id of ids) {
+    if (gwMempool.has(id)) { gwMempool.delete(id); removed += 1; logGw(`Consumed tx ${id}`); }
+  }
+  res.json({ ok: true, removed });
 });
 
 app.get('/debug/last-message', (req, res) => {
