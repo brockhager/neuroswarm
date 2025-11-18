@@ -574,4 +574,4 @@ GET  /v1/observability/discord-status   # Check Discord bot connection status
 
 ## Contributing
 
-See the canonical [Contributor Guide (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Contributor-Guide#admin-node-awareness) for admin node awareness requirements and security protocols.
+See the canonical [Contributor Guide (Wiki)](https://github.com/brockhager/neuroswarm/wiki/Contributor-Guide#admin-node-awareness) for admin node awareness requirements and security protocols.

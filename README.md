@@ -99,10 +99,10 @@ Notes:
 
 Key design and developer docs (canonical pages are on the `Wiki`):
 
-- [Home — Wiki](https://github.com/brockhager/neuro-infra/wiki)
-- [Contributor onboarding — Wiki](https://github.com/brockhager/neuro-infra/wiki/Contributor-Onboarding)
-- [Getting Started (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Getting-Started)
-- [Data flow architecture — Wiki](https://github.com/brockhager/neuro-infra/wiki/Data-Flow-Architecture)
+- [Home — Wiki](https://github.com/brockhager/neuroswarm/wiki)
+- [Contributor onboarding — Wiki](https://github.com/brockhager/neuroswarm/wiki/Contributor-Onboarding)
+- [Getting Started (Wiki)](https://github.com/brockhager/neuroswarm/wiki/Getting-Started)
+- [Data flow architecture — Wiki](https://github.com/brockhager/neuroswarm/wiki/Data-Flow-Architecture)
  - [Data flow architecture (Wiki)](wiki/data-flow-architecture.md)
 
 Run the nodes

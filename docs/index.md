@@ -16,25 +16,25 @@ New to NeuroSwarm? Start here to get up and running quickly.
 
 Begin by cloning the repository, installing dependencies, and running your first build and test cycle.
 
-> NOTE: The definitive, user-facing docs are on the GitHub Wiki: https://github.com/brockhager/neuro-infra/wiki
+> NOTE: The definitive, user-facing docs are on the GitHub Wiki: https://github.com/brockhager/neuroswarm/wiki
 > Use the Wiki for quick navigation and contributor onboarding.
 
 ## Contributor Experience
 
 Learn how to contribute effectively to NeuroSwarm's development.
 
-- **[File Organization Rules (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Contributor-Guide#file-placement)** - Understanding our monorepo structure and hygiene enforcement
+- **[File Organization Rules (Wiki)](https://github.com/brockhager/neuroswarm/wiki/Contributor-Guide#file-placement)** - Understanding our monorepo structure and hygiene enforcement
 
 Our contributor experience emphasizes clear communication, automated validation, and progressive skill-building.
 
 ## Governance & Transparency
 
 NeuroSwarm operates through transparent, community-driven governance.
-- **[Program Architecture (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Architecture/program-architecture)** - Solana program foundation and PDA constants
+- **[Program Architecture (Wiki)](https://github.com/brockhager/neuroswarm/wiki/Architecture/program-architecture)** - Solana program foundation and PDA constants
 - **[Weekly Rituals](governance/rituals.md)** - Structured ceremonies for refinement, dependency reviews, and progress updates
  - **[Governance Events](governance/logs/wp_publish_log.jsonl)** - All governance actions logged in our transparency record
 
-- **[Frequently Asked Questions (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Getting-Started#faq)** - Answers to common setup, build, and contribution questions
+- **[Frequently Asked Questions (Wiki)](https://github.com/brockhager/neuroswarm/wiki/Getting-Started#faq)** - Answers to common setup, build, and contribution questions
 
 Explore NeuroSwarm's architecture and subsystems.
 - Experienced contributor? Check our [Contributor Guide (Wiki)](https://github.com/brockhager/neuro-infra/wiki/Contributor-Guide) for best practices.
@@ -84,7 +84,7 @@ Ready to contribute? Here's your pathway forward:
 - [Project Board](https://github.com/brockhager/neuro-infra/projects)
 - [Issues](https://github.com/brockhager/neuro-infra/issues)
 - [Discussions](https://github.com/brockhager/neuro-infra/discussions)
- - [Project Wiki](https://github.com/brockhager/neuro-infra/wiki)
+ - [Project Wiki](https://github.com/brockhager/neuroswarm/wiki)
 
 ## Contributing
 New to the project? Start with our [Getting Started Guide](../website/kb/getting-started.md).
