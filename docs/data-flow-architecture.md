@@ -38,7 +38,7 @@ Egress: SPV/Proofs, client queries, governance endpoints
 ## Key Components & Responsibilities
 
 - Gateway (gateway-node): Accepts client messages, validates and forwards them to the `ns-node` via `/v1/tx` or `/v1/chat`. Provides `/debug/peers`, `/history`, and `/v1/mempool` for diagnostics.
-- Brain (ns-node): Core PoS node that maintains mempool, blockMap, headers, and validators. It:
+- Brain (ns-node): Core PoS node that maintains `blockMap`, headers, and validators and performs signature/merkle verification. It does not own the canonical mempool (gateway owns it). It:
   - Accepts validators & txs
   - Validates signatures / canonicalization
   - Computes and verifies Merkle roots
@@ -57,9 +57,8 @@ Egress: SPV/Proofs, client queries, governance endpoints
    - `Authorization` (optional) — for bots/ clients and governance flows
    - `X-Correlation-ID` — to trace across hops
    - `X-Forwarded-For` / `X-Forwarded-User` — provenance headers
-3. Gateway performs a basic admission check (fee threshold, CID reachability) and optionally stores in `gwMempool`.
-4. Gateway forwards tx to brain (`ns-node` `/tx`) with relevant headers preserved.
-5. The brain validates tx core fields (type, fee) and verifier if `signedBy` present. If validator-signed: verifies signature using `validators` map.
+3. Gateway performs a basic admission check (fee threshold, CID reachability), stores tx in its own canonical `gwMempool`, and forwards a record to `ns-node` for light validation (not to persist the mempool).
+4. The brain validates tx core fields (type, fee) and signatures if `signedBy` present. NS does not persist a mempool; the gateway keeps the authoritative mempool.
 
 Key endpoints and functions:
 - Gateway: `POST /v1/chat`, `POST /v1/tx`.
@@ -136,7 +135,7 @@ Step 2: Validation -> Mempool
 - ns-node verifies minimal tx shape; verifies signature if `signedBy` is validator; stores tx with `txIdFor`.
 
 Step 3: Block Inclusion
-- Validator picks txs from ns-node mempool and constructs a block, computes `merkleRoot`, signs header.
+- Validator picks txs from the gateway canonical mempool (`/v1/mempool`) and constructs a block, computes `merkleRoot`, signs header.
 - Validator sends block via `POST /blocks/produce` to ns-node.
 - ns-node verifies header signature, merkle root, applies block via `applyBlock`. If canonical, moves txs into `txIndex` and removes from mempool.
 
@@ -172,7 +171,7 @@ Step 7: Governance Dispute & Slashing
 - For debug endpoints, use the following example calls:
   - `curl http://localhost:3000/health`
   - `curl http://localhost:3000/debug/peers`
-  - `curl -s http://localhost:3000/mempool | jq` to inspect mempool
+  - `curl -s http://localhost:8080/v1/mempool | jq` to inspect gateway mempool
   - `curl -XPOST http://localhost:3000/tx -d '{"type":"example","fee":1}' -H 'Content-Type: application/json'`
   - `POST /blocks/produce` to be used by `vp-node` to publish a signed block
 

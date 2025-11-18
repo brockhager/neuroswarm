@@ -128,22 +128,24 @@ Follow this sequence to start an integrated environment and run simple connectiv
    curl --silent --fail http://localhost:4000/health
    ```
 
-5. Post a test transaction to gateway to confirm forwarding
+5. Post a test transaction to gateway to confirm forwarding and mempool ownership
 
    ```powershell
-   curl -s -X POST http://localhost:8080/v1/tx -H "Content-Type: application/json" -d '{"type":"chat","fee":1,"content": "connectivity test"}'
-   # Check ns-node mempool
-   curl -s http://localhost:3000/v1/mempool
+  curl -s -X POST http://localhost:8080/v1/tx -H "Content-Type: application/json" -d '{"type":"chat","fee":1,"content": "connectivity test"}'
+  # Check gateway mempool (gateway is the canonical mempool)
+  curl -s http://localhost:8080/v1/mempool
    ```
 
 6. Produce a block via vp-node (if you have a validator key), which posts to NS via `POST /blocks/produce`.
    - Tests use signed validator keys; for a manual run you can use test keys in `neuro-services/tests/test-keys`.
    - Example (from tests):
 
-     ```powershell
+    ```powershell
      # Example produceBlock script from tests; adapt values as needed
      curl -s -X POST http://localhost:4000/blocks/produce -H "Content-Type: application/json" -d '{"header": {...}, "txs": [...], "signature": "..." }'
      ```
+
+  Note: vp-node consumes curated transactions from the gateway's canonical mempool at `/v1/mempool`, not directly from NS. The VP will notify the gateway to consume txs after successful block production.
 
 7. Verify the block was accepted by ns (we assume server return `ok: true` or a 200 status) and check logs for SPV proof generation.
 
@@ -273,3 +275,45 @@ References
 - Gateway startup behavior and env vars: `neuroswarm/gateway-node/README.md` and `gateway-node/server.js`
 - Connectivity check script: `neuroswarm/scripts/checkNodeConnectivityClean.mjs` (CI-friendly)
 - Tests for block production: `neuro-services/tests/*` (pos-* tests)
+ 
+IPFS & vp-node
+---------------
+
+vp-node can optionally connect to a local or remote IPFS HTTP API (default: `http://localhost:5001`). When enabled via `IPFS_API` the node will publish block payloads (header + txs) and validator proofs (slashing, stake updates) to IPFS and include a `payloadCid` on the block header for referenceable auditability.
+
+Start an IPFS daemon with Docker (Linux / macOS):
+
+```bash
+docker run -d --name ipfs -p 127.0.0.1:5001:5001 ipfs/go-ipfs:latest
+```
+
+In Windows PowerShell (Docker Desktop), run:
+
+```powershell
+docker run -d --name ipfs -p 5001:5001 ipfs/go-ipfs:latest
+```
+
+Start vp-node with `IPFS_API` configured:
+
+```powershell
+PORT=4000 NS_NODE_URL=http://127.0.0.1:3000 IPFS_API=http://127.0.0.1:5001 node vp-node/server.js > tmp/vp.log 2> tmp/vp.err & echo $! > tmp/vp.pid
+```
+
+Endpoint summary (vp-node):
+- `GET /ipfs/:cid` — Fetch the payload content by CID (returns JSON if content is JSON)
+- `POST /ipfs` — Add arbitrary JSON payload to IPFS and return a `cid`.
+- `POST /proofs` — Add a validator proof payload to IPFS and return a `cid`.
+
+The `/health` endpoint for `vp-node` now includes `ipfsPeer` when IPFS connectivity is available, for example:
+
+```json
+{
+  "status": "ok",
+  "version": "0.1.0",
+  "uptime": 12345,
+  "ipfsPeer": "Qm..."
+}
+```
+
+When IPFS is not reachable, `vp-node` will continue producing blocks but will log a warning and will not include a `payloadCid` in block headers.
+
