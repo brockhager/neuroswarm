@@ -6,6 +6,7 @@
 NeuroSwarm is a decentralized AI platform where personal AI agents run locally on user devices and connect to a shared Global Brain. The system combines local personalization with collaborative, auditable knowledge sharing.
 
 ## What it does
+ - It includes a `sources/` adapter mechanism allowing Gateway to query external source adapters (like Allie-AI), attach metadata to txs, and include source attestation in blocks for additional verification.
 
 
 # NeuroSwarm coordination and documentation

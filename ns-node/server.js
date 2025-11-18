@@ -4,6 +4,7 @@ import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { computeSourcesRoot } from '../sources/index.js';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 
@@ -225,6 +226,26 @@ app.get('/debug/last-headers', (req, res) => {
   }
 });
 
+// Debugging endpoint: trigger requeue on configured gateways with provided txs
+// Guarded behind NS_ALLOW_REQUEUE_SIM env var to avoid accidental exposure in production
+app.post('/debug/requeue', async (req, res) => {
+  if (process.env.NS_ALLOW_REQUEUE_SIM !== 'true') return res.status(403).json({ error: 'requeue_debug_disabled' });
+  const t = req.body && req.body.txs ? req.body.txs : (Array.isArray(req.body) ? req.body : []);
+  if (!Array.isArray(t) || t.length === 0) return res.status(400).json({ error: 'txs array required' });
+  try {
+    const gw = GATEWAY_CONFIG && GATEWAY_CONFIG.length ? GATEWAY_CONFIG[0] : null;
+    if (!gw || !gw.url) return res.status(400).json({ error: 'no_gateway_configured' });
+    const url = gw.url.replace(/\/$/, '') + '/v1/mempool/requeue';
+    const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ txs: t }) });
+    const j = await r.json().catch(() => null);
+    if (!r.ok) return res.status(400).json({ error: 'gateway_requeue_failed', status: r.status, body: j });
+    logNs(`Debug requeue triggered to ${gw.url} for ${t.length} tx(s)`);
+    return res.json({ ok: true, requeued: t.length, result: j });
+  } catch (e) {
+    return res.status(500).json({ error: 'requeue_exception', message: e.message });
+  }
+});
+
 // Health endpoint
 let VERSION = '0.1.0';
 try {
@@ -257,12 +278,32 @@ app.post('/ipfs/verify', async (req, res) => {
     const payloadContent = body && body.content ? body.content : null;
     if (!payloadContent) return res.status(400).json({ error: 'invalid_payload' });
     // validate merkle root and txs if possible
-    const fetchedHeader = payloadContent.header || {};
-    const fetchedTxs = payloadContent.txs || [];
+    const fetchedHeader = (payloadContent && payloadContent.payload && payloadContent.payload.header) ? payloadContent.payload.header : (payloadContent && payloadContent.header) || {};
+    const fetchedTxs = (payloadContent && payloadContent.payload && payloadContent.payload.txs) ? payloadContent.payload.txs : (payloadContent && payloadContent.txs) || [];
+    // verify payload signature if present
+    const fetchedSigner = payloadContent && payloadContent.signer ? payloadContent.signer : (fetchedHeader && fetchedHeader.validatorId);
+    const fetchedPayloadSig = payloadContent && payloadContent.payloadSignature ? payloadContent.payloadSignature : (payloadContent && payloadContent.payload && payloadContent.payload.payloadSignature ? payloadContent.payload.payloadSignature : null);
     const fetchedIds = (fetchedTxs || []).map(tx => txIdFor(tx));
     const fetchedRoot = computeMerkleRoot(fetchedIds);
     const matches = (fetchedRoot === fetchedHeader.merkleRoot);
-    res.json({ ok: true, matches, fetchedHeader, fetchedTxs });
+    // verify signature if present
+    let signatureValid = null;
+    try {
+      const fetchedSigner = payloadContent && payloadContent.signer ? payloadContent.signer : (fetchedHeader && fetchedHeader.validatorId);
+      const fetchedPayloadSig = payloadContent && payloadContent.payloadSignature ? payloadContent.payloadSignature : (payloadContent && payloadContent.payload && payloadContent.payload.payloadSignature ? payloadContent.payload.payloadSignature : null);
+      if (fetchedPayloadSig) {
+        if (!fetchedSigner || !validators.has(fetchedSigner)) return res.status(400).json({ error: 'signer_not_registered' });
+        const pub = validators.get(fetchedSigner).publicKey;
+        const payloadObj = payloadContent && payloadContent.payload ? payloadContent.payload : { header: fetchedHeader, txs: fetchedTxs };
+        const payloadData = canonicalize(payloadObj);
+        signatureValid = verifyEd25519(pub, payloadData, fetchedPayloadSig);
+      }
+    } catch (e) {
+      return res.status(500).json({ error: 'signature_verify_exception', message: e.message });
+    }
+    const sourcesValid = (fetchedHeader && fetchedHeader.sourcesRoot) ? (computeSourcesRoot(fetchedTxs) === fetchedHeader.sourcesRoot) : null;
+    const fetchedOrigins = Array.from(new Set((fetchedTxs || []).flatMap(tx => (tx.sources || []).map(s => s.origin || s.adapter || 'unknown'))));
+    res.json({ ok: true, matches, signatureValid, sourcesValid, fetchedHeader, fetchedTxs, fetchedOrigins });
   } catch (e) {
     res.status(500).json({ error: 'verify_exception', message: e.message });
   }
@@ -399,6 +440,14 @@ app.post('/blocks/produce', (req, res) => {
   const txIds = (txs || []).map(tx => txIdFor(tx));
   const calcRoot = computeMerkleRoot(txIds);
   if (calcRoot !== header.merkleRoot) return res.status(400).json({ error: 'bad merkle root' });
+  // verify sourcesRoot if present
+  if (header.sourcesRoot) {
+    const srcRoot = computeSourcesRoot(txs);
+    if (srcRoot !== header.sourcesRoot) {
+      console.error('[NS-NODE] Bad sources root computed', srcRoot, 'expected', header.sourcesRoot);
+      return res.status(400).json({ error: 'bad_sources_root' });
+    }
+  }
   // verify prevHash references any known block (or genesis)
   const parentHash = header.prevHash;
   const genesisPrev = '0'.repeat(64);
@@ -424,11 +473,38 @@ app.post('/blocks/produce', (req, res) => {
         // Validate the merkleRoot & txs equality
         const fetchedHeader = payloadContent.header || {};
         const fetchedTxs = payloadContent.txs || [];
+        const fetchedSigner = payloadContent && payloadContent.signer ? payloadContent.signer : (fetchedHeader && fetchedHeader.validatorId);
+        const fetchedPayloadSig = payloadContent && payloadContent.payloadSignature ? payloadContent.payloadSignature : (payloadContent && payloadContent.payload && payloadContent.payload.payloadSignature ? payloadContent.payload.payloadSignature : null);
+        const fetchedSourcesRoot = computeSourcesRoot(fetchedTxs);
+        if (header.sourcesRoot && fetchedSourcesRoot !== header.sourcesRoot) {
+          console.error('[NS-NODE] Payload CID sources root mismatch', fetchedSourcesRoot, header.sourcesRoot);
+          return res.status(400).json({ error: 'payload_sources_root_mismatch', fetchedSourcesRoot, expected: header.sourcesRoot });
+        }
         const fetchedIds = (fetchedTxs || []).map(tx => txIdFor(tx));
         const fetchedRoot = computeMerkleRoot(fetchedIds);
         if (fetchedRoot !== header.merkleRoot) {
           console.error('[NS-NODE] Payload CID merkle root mismatch', fetchedRoot, header.merkleRoot);
           return res.status(400).json({ error: 'payload_cid_merkle_mismatch' });
+        }
+        // verify signature if present
+        if (fetchedPayloadSig) {
+          try {
+            const signerId = fetchedSigner || header.validatorId;
+            if (fetchedSigner && header.validatorId && fetchedSigner !== header.validatorId) {
+              console.error('[NS-NODE] Payload signer mismatch', fetchedSigner, header.validatorId);
+              return res.status(400).json({ error: 'payload_signer_mismatch' });
+            }
+            if (!signerId || !validators.has(signerId)) return res.status(400).json({ error: 'signer_not_registered' });
+            const pv = validators.get(signerId);
+            const pubKey = pv.publicKey;
+            const payloadObj = payloadContent && payloadContent.payload ? payloadContent.payload : { header: fetchedHeader, txs: fetchedTxs };
+            const payloadData = canonicalize(payloadObj);
+            const sigValid = verifyEd25519(pubKey, payloadData, fetchedPayloadSig);
+            if (!sigValid) return res.status(400).json({ error: 'payload_signature_invalid' });
+          } catch (e) {
+            console.error('[NS-NODE] Error verifying payload signature', e.message);
+            return res.status(500).json({ error: 'payload_signature_verify_exception', message: e.message });
+          }
         }
         // Fetched content matches - proceed to apply block
         header.signature = signature;
@@ -565,7 +641,9 @@ function computeMerkleRoot(txIds) {
   return layer[0].toString('hex');
 }
 
-function chooseCanonicalTipAndReorg() {
+// computeSourcesRoot() is now centralized in `sources/index.js` and imported at the top of this file
+
+async function chooseCanonicalTipAndReorg() {
   // pick head with maximum cumWeight
   let bestHash = null;
   let bestWeight = -1;
@@ -581,7 +659,11 @@ function chooseCanonicalTipAndReorg() {
   // New canonical chain tip found: perform reorg from canonicalTipHash to bestHash
   const oldTip = canonicalTipHash;
   canonicalTipHash = bestHash;
-  performReorg(oldTip, bestHash);
+  try {
+    await performReorg(oldTip, bestHash);
+  } catch (e) {
+    logNs(`performReorg error: ${e.message}`);
+  }
 }
 
 function getBlockAncestors(hash) {
@@ -604,7 +686,7 @@ function findCommonAncestor(hashA, hashB) {
   return null;
 }
 
-function performReorg(oldTipHash, newTipHash) {
+async function performReorg(oldTipHash, newTipHash) {
   if (!newTipHash) return;
   const ancestor = findCommonAncestor(oldTipHash, newTipHash);
   // rollback blocks from old tip down to ancestor (exclusive)
@@ -648,6 +730,7 @@ function performReorg(oldTipHash, newTipHash) {
     }
   }
   // NS does not own a mempool; gateway manages pending txs. No local mempool clearing.
+  const requeueCandidates = [];
   // replay blocks from genesis up to ancestor (if any)
   const canonicalPath = [];
   if (ancestor) {
@@ -692,6 +775,7 @@ function performReorg(oldTipHash, newTipHash) {
     if (vv) { vv.stake += reward; totalStake += reward; }
   }
   // any removed txs that are NOT now part of the canonical chain should be re-added to mempool
+  // but NS is lightweight; instead, request gateway to requeue them
   for (const txId of removedTxIds) {
     if (!txIndex.has(txId)) {
       // we don't have original tx data reconstructed here; instead, leave placeholder or skip
@@ -706,6 +790,7 @@ function performReorg(oldTipHash, newTipHash) {
         if (found) break;
       }
       // gateway manages re-adding any txs post-reorg; NS does not re-add to mempool
+      if (found) requeueCandidates.push(found);
     }
   }
   // update heads: remove tip of old chain and add newTip
@@ -720,6 +805,25 @@ function performReorg(oldTipHash, newTipHash) {
   }
   heads.clear();
   for (const [hsh] of blockMap.entries()) if (!childExists.has(hsh)) heads.add(hsh);
+
+  // Send requeue request to gateway for any removed txs that we reconstructed
+  if (requeueCandidates.length > 0) {
+    try {
+      const gw = GATEWAY_CONFIG && GATEWAY_CONFIG.length ? GATEWAY_CONFIG[0] : null;
+      if (gw && gw.url) {
+        const url = gw.url.replace(/\/$/, '') + '/v1/mempool/requeue';
+        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ txs: requeueCandidates }) });
+        if (res.ok) {
+          const j = await res.json().catch(() => null);
+          logNs(`Requeued ${requeueCandidates.length} tx(s) to gateway ${gw.url} response=${JSON.stringify(j)}`);
+        } else {
+          logNs(`Failed to requeue txs to ${gw.url} status=${res.status}`);
+        }
+      }
+    } catch (e) {
+      logNs(`Exception requeue txs to gateway: ${e.message}`);
+    }
+  }
 }
 
 function buildMerkleProof(txIds, targetIdHex) {
@@ -828,11 +932,12 @@ function applyBlock(block) {
   let totalFees = 0;
   // determine if the block extends the current canonical tip (and therefore should update global state)
   const extendsCanonical = (parentHash === canonicalTipHash);
+  const consumedIds = [];
   for (let i = 0; i < block.txs.length; i++) {
     const id = txIdFor(block.txs[i]);
     if (extendsCanonical) {
       txIndex.set(id, { blockHash, txIndex: i });
-      mempool.delete(id);
+      consumedIds.push(id);
     }
     totalFees += Number(block.txs[i].fee || 0);
     // process stake/unstake
@@ -880,6 +985,21 @@ function applyBlock(block) {
     // update snapshot validator
     const idx = snapshot.validators.findIndex(([id]) => id === validatorId);
     if (idx !== -1) snapshot.validators[idx][1].stake += reward;
+  }
+  // If we have consumed txs as part of this accepted canonical block, notify the gateway
+  if (consumedIds.length > 0) {
+    try {
+      const gw = GATEWAY_CONFIG && GATEWAY_CONFIG.length ? GATEWAY_CONFIG[0] : null;
+      if (gw && gw.url) {
+        const url = gw.url.replace(/\/$/, '') + '/v1/mempool/consume';
+        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: consumedIds }) });
+        if (res.ok) {
+          logNs(`Notified gateway to consume ${consumedIds.length} tx(s)`);
+        } else {
+          logNs(`Gateway consume call failed status=${res.status} for ${consumedIds.length} tx(s)`);
+        }
+      }
+    } catch (e) { logNs(`Error notifying gateway to consume txs: ${e.message}`); }
   }
   // If this block extended canonical chain, update the stored snapshot to reflect post-block validators
   if (extendsCanonical) {
