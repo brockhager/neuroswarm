@@ -15,14 +15,8 @@ for /f "delims=" %%x in ('cd /d "%REPO_ROOT%"^& cd') do set REPO_ROOT=%%x
 
 pushd "%REPO_ROOT%" >nul 2>&1
 
-REM Delegate to main repo-level publish script if present
-if exist "publish-wiki-now.bat" (
-  echo Found repo-level publish-wiki-now.bat; invoking that instead.
-  echo Running: call publish-wiki-now.bat %*
-  call publish-wiki-now.bat %*
-  popd >nul 2>&1
-  goto end
-)
+REM No delegation to root-level scripts. This helper runs in the `neuroswarm` folder and
+REM dispatches the repo workflow or falls back to the local Node script if GH CLI is missing.
 
 REM If no repo-level script is present, re-run the logic inline (fallback)
 set REPO_OWNER=brockhager

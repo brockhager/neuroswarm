@@ -49,7 +49,6 @@ Invoke-WebRequest -Uri https://github.com/brockhager/neuro-infra/releases/latest
 Expand-Archive gateway-node-win-x64.zip -DestinationPath gateway-node
 Set-Location gateway-node
 # Start the gateway (example)
-.
 start.bat
 ```
 
