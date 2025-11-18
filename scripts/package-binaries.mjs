@@ -118,11 +118,18 @@ for (const node of nodes) {
     shLines.push(`export NS_NODE_URL=${process.env.NS_NODE_URL || 'http://localhost:3000'}`);
     shLines.push('export NS_CHECK_EXIT_ON_FAIL=false');
     if (statusFlag) shLines.push('export STATUS=1');
-    shLines.push('# Run binary if present, otherwise run server.js in the foreground so logs stream to this shell');
+    shLines.push('# Run compiled binary if present; if it fails, log warning and fallback to node server.js');
     shLines.push(`if [ -x "$(dirname \"$0\")/${exeName}" ]; then`);
-    shLines.push(`  "$(dirname \"$0\")/${exeName}" "$@" || node "$(dirname \"$0\")/server.js" "$@"`);
+    shLines.push(`  "$(dirname \"$0\")/${exeName}" "$@"`);
+    shLines.push('  EXIT_CODE=$?');
+    shLines.push('  if [ $EXIT_CODE -ne 0 ]; then');
+    shLines.push(`    echo "[$(date -u +%Y-%m-%dT%H:%M:%SZ)] WARNING: ${node.name} binary failed with code $EXIT_CODE; falling back to node server.js"`);
+    shLines.push(`    node "$(dirname \"$0\")/server.js" "$@"`);
+    shLines.push('    EXIT_CODE=$?');
+    shLines.push('  fi');
     shLines.push('else');
     shLines.push(`${shStartCmd} "$@"`);
+    shLines.push('  EXIT_CODE=$?');
     shLines.push('fi');
     shLines.push('EXIT_CODE=$?');
     shLines.push('if [ $EXIT_CODE -ne 0 ]; then');
@@ -150,7 +157,7 @@ for (const node of nodes) {
     const startSh = shLines.join('\n');
     // Run in foreground: don't use `start` to preserve logs in the current console.
     const batStartCmd = builtBinary ? `"%~dp0\\${exeName}" %*` : `node "%~dp0\\server.js" %*`;
-    const startBat = `@echo off\nsetlocal\nset PORT=${node.port}\nset NS_NODE_URL=${process.env.NS_NODE_URL || 'http://localhost:3000'}\nset NS_CHECK_EXIT_ON_FAIL=false\n${statusFlag ? `set STATUS=1\n` : ''}\n:: Try to run compiled binary if present, otherwise run server.js\nif exist "%~dp0\\${exeName}" (\n  "%~dp0\\${exeName}" %*\n  set EXITCODE=%ERRORLEVEL%\n) else (\n  ${batStartCmd}\n  set EXITCODE=%ERRORLEVEL%\n)\nif %EXITCODE% NEQ 0 (\n  echo [%DATE% %TIME%] ${node.name} exited with code %EXITCODE%\n  ${keepOpen ? 'pause\n' : ''}\n)\nexit /b %EXITCODE%\n`;
+    const startBat = `@echo off\nsetlocal\nset PORT=${node.port}\nset NS_NODE_URL=${process.env.NS_NODE_URL || 'http://localhost:3000'}\nset NS_CHECK_EXIT_ON_FAIL=false\n${statusFlag ? `set STATUS=1\n` : ''}\n:: Try to run compiled binary if present; if it fails, log and fallback\nif exist "%~dp0\\${exeName}" (\n  "%%~dp0\\${exeName}" %%*\n  set EXITCODE=%ERRORLEVEL%\n  if %EXITCODE% NEQ 0 (\n    echo [%DATE% %TIME%] WARNING: ${node.name} binary failed with code %EXITCODE%; falling back to node server.js\n    node "%%~dp0\\server.js" %%*\n    set EXITCODE=%ERRORLEVEL%\n  )\n) else (\n  node "%%~dp0\\server.js" %%*\n  set EXITCODE=%ERRORLEVEL%\n)\nif %EXITCODE% NEQ 0 (\n  echo [%DATE% %TIME%] ${node.name} exited with code %EXITCODE%\n  ${keepOpen ? 'pause\n' : ''}\n)\nexit /b %EXITCODE%\n`;
     fs.writeFileSync(path.join(outFolder, 'start.sh'), startSh);
     fs.writeFileSync(path.join(outFolder, 'start.bat'), startBat);
     fs.chmodSync(path.join(outFolder, 'start.sh'), 0o755);
