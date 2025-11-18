@@ -37,13 +37,12 @@ fs.mkdirSync(tmpDir, { recursive: true });
 }
 
 function findSrc(relPathParts) {
-  // Only consider paths under the repo's neuroswarm folder or the current working dir.
+  // Only consider files under the 'neuroswarm' folder. Do not fallback to the repo root.
   const candidates = [
-    path.join(process.cwd(), 'neuroswarm', ...relPathParts),
-    path.join(process.cwd(), ...relPathParts)
+    path.join(process.cwd(), 'neuroswarm', ...relPathParts)
   ];
   for (const c of candidates) if (fs.existsSync(c)) return c;
-  return path.join(process.cwd(), ...relPathParts); // fallback (non-existing) so caller logs missing file
+  return path.join(process.cwd(), 'neuroswarm', ...relPathParts); // fallback (non-existing) so caller logs missing file
 }
 
 const mapping = [
@@ -57,8 +56,11 @@ const mapping = [
   { src: findSrc(['wiki', 'Updates.md']), dst: 'Updates.md' }
 ];
 
-// Also sync any docs in docs/wiki/ and neuroswarm/wiki/ automatically
-const extraCandidates = [findSrc(['docs', 'wiki']), findSrc(['neuroswarm', 'wiki'])];
+// Also sync any docs in neuroswarm/docs/wiki/ and neuroswarm/wiki/ automatically
+const extraCandidates = [
+  path.join(process.cwd(), 'neuroswarm', 'docs', 'wiki'),
+  path.join(process.cwd(), 'neuroswarm', 'wiki')
+];
 for (const lc of extraCandidates) {
   try {
     if (fs.existsSync(lc) && fs.lstatSync(lc).isDirectory()) {

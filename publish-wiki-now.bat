@@ -9,11 +9,23 @@ echo ==============================
 
 REM The script is intended to run from the neuroswarm subdirectory.
 REM Determine the repo root as the parent of this folder
-set REPO_ROOT=%~dp0\..
-REM Trim trailing backslash
-for /f "delims=" %%x in ('cd /d "%REPO_ROOT%"^& cd') do set REPO_ROOT=%%x
+REM Compute repo root as parent of the folder this script sits in
+set SCRIPT_DIR=%~dp0
+REM Trim trailing backslash from SCRIPT_DIR if present
+if "%SCRIPT_DIR:~-1%"=="\" set SCRIPT_DIR=%SCRIPT_DIR:~0,-1%
+set REPO_ROOT=%SCRIPT_DIR%\..
+REM Normalize the path
+for /f "delims=" %%x in ('cd /d "%REPO_ROOT%" 2^>nul ^& cd') do set REPO_ROOT=%%x
+if not exist "%REPO_ROOT%" (
+  echo Warning: Computed repo root '%REPO_ROOT%' does not exist.
+  echo Falling back to script directory: '%SCRIPT_DIR%'
+  set REPO_ROOT=%SCRIPT_DIR%
+)
 
-pushd "%REPO_ROOT%" >nul 2>&1
+pushd "%REPO_ROOT%" >nul 2>&1 || (
+  echo Could not change directory to '%REPO_ROOT%'. Aborting.
+  goto end
+)
 
 REM No delegation to root-level scripts. This helper runs in the `neuroswarm` folder and
 REM dispatches the repo workflow or falls back to the local Node script if GH CLI is missing.
@@ -59,6 +71,10 @@ set DRY=0
 if "%~1"=="--dry-run" set DRY=1
 if "%~1"=="--dry" set DRY=1
 
+echo Script directory: %SCRIPT_DIR%
+echo Computed repo root: %REPO_ROOT%
+echo Target repo (REPO): %REPO%
+echo Target workflow: %WORKFLOW% (branch: %DEFAULT_BRANCH%)
 choice /M "This will publish the wiki (this may change the repository wiki). Continue?"
 if errorlevel 2 (
   echo Aborted by user.
@@ -71,7 +87,7 @@ if %ERRORLEVEL%==0 (
   echo Target repo: %REPO%  (branch: %DEFAULT_BRANCH%)
   if "%REPO%"=="brockhager/name" (
     echo ERROR: Computed repo is 'brockhager/name' (placeholder); the gh CLI likely failed to determine the repo.
-    echo Please set `PUBLISH_REPO=brockhager/neuro-infra` and retry, or run the fallback.
+    echo Please set `PUBLISH_REPO=brockhager/neuroswarm` and retry, or run the fallback.
     choice /M "Run fallback push script instead?"
     if errorlevel 2 (
       echo Aborted by user.
