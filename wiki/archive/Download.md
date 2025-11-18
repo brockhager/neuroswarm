@@ -4,27 +4,27 @@ This page provides clear, copy‑paste friendly download links for official rele
 
 ## Official Releases
 
-We publish pre-built installers / release artifacts on GitHub Releases under the `neuro-infra` project.
+We publish pre-built installers / release artifacts on GitHub Releases under the `neuroswarm` project.
 
 Canonical release page:
 
-- https://github.com/brockhager/neuro-infra/releases
+- https://github.com/brockhager/neuroswarm/releases
 
 Quick access (latest release asset helper):
 
-- Latest ns-node (Linux): https://github.com/brockhager/neuro-infra/releases/latest/download/ns-node-linux-x64.tar.gz
-- Latest ns-node (macOS): https://github.com/brockhager/neuro-infra/releases/latest/download/ns-node-macos-x64.tar.gz
-- Latest ns-node (Windows): https://github.com/brockhager/neuro-infra/releases/latest/download/ns-node-win-x64.zip
+- Latest ns-node (Linux): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.tar.gz
+- Latest ns-node (macOS): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-macos-x64.tar.gz
+- Latest ns-node (Windows): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-win-x64.zip
 
-- Latest gateway-node (Linux): https://github.com/brockhager/neuro-infra/releases/latest/download/gateway-node-linux-x64.tar.gz
-- Latest gateway-node (macOS): https://github.com/brockhager/neuro-infra/releases/latest/download/gateway-node-macos-x64.tar.gz
-- Latest gateway-node (Windows): https://github.com/brockhager/neuro-infra/releases/latest/download/gateway-node-win-x64.zip
+- Latest gateway-node (Linux): https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-linux-x64.tar.gz
+- Latest gateway-node (macOS): https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-macos-x64.tar.gz
+- Latest gateway-node (Windows): https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-win-x64.zip
 
-- Latest vp-node (Linux): https://github.com/brockhager/neuro-infra/releases/latest/download/vp-node-linux-x64.tar.gz
-- Latest vp-node (macOS): https://github.com/brockhager/neuro-infra/releases/latest/download/vp-node-macos-x64.tar.gz
-- Latest vp-node (Windows): https://github.com/brockhager/neuro-infra/releases/latest/download/vp-node-win-x64.zip
+- Latest vp-node (Linux): https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-linux-x64.tar.gz
+- Latest vp-node (macOS): https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-macos-x64.tar.gz
+- Latest vp-node (Windows): https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-win-x64.zip
 
-Note: The `latest` URL uses the redirect to the most recent release tag. If you need to pin a version, replace `latest` with `vX.Y.Z` in the URL (e.g., `https://github.com/brockhager/neuro-infra/releases/download/v0.1.0/ns-node-linux-x64.tar.gz`).
+Note: The `latest` URL uses the redirect to the most recent release tag. If you need to pin a version, replace `latest` with `vX.Y.Z` in the URL (e.g., `https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/ns-node-linux-x64.tar.gz`).
 
 ---
 
@@ -34,7 +34,7 @@ Linux/macOS (bash):
 
 ```bash
 # Download the latest Linux ns-node
-curl -LO https://github.com/brockhager/neuro-infra/releases/latest/download/ns-node-linux-x64.tar.gz
+curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.tar.gz
 tar -xzf ns-node-linux-x64.tar.gz
 cd ns-node
 # Start the node (example)
@@ -45,7 +45,7 @@ Windows (PowerShell):
 
 ```powershell
 # Download the latest Windows gateway binary
-Invoke-WebRequest -Uri https://github.com/brockhager/neuro-infra/releases/latest/download/gateway-node-win-x64.zip -OutFile gateway-node-win-x64.zip
+Invoke-WebRequest -Uri https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-win-x64.zip -OutFile gateway-node-win-x64.zip
 Expand-Archive gateway-node-win-x64.zip -DestinationPath gateway-node
 Set-Location gateway-node
 # Start the gateway (example)
@@ -62,7 +62,7 @@ Linux / macOS (SHA256):
 
 ```bash
 curl -LO https://github.com/brockhager/neuro-infra/releases/latest/download/ns-node-linux-x64.tar.gz
-curl -LO https://github.com/brockhager/neuro-infra/releases/latest/download/checksums.txt
+curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/checksums.txt
 sha256sum ns-node-linux-x64.tar.gz
 grep ns-node-linux-x64.tar.gz checksums.txt
 ```
@@ -70,7 +70,7 @@ grep ns-node-linux-x64.tar.gz checksums.txt
 Windows (PowerShell SHA256):
 
 ```powershell
-Invoke-WebRequest -Uri https://github.com/brockhager/neuro-infra/releases/latest/download/ns-node-win-x64.zip -OutFile ns-node-win-x64.zip
+Invoke-WebRequest -Uri https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-win-x64.zip -OutFile ns-node-win-x64.zip
 Get-FileHash ns-node-win-x64.zip -Algorithm SHA256
 # Compare with the checksums.txt published alongside the release
 ```
@@ -78,8 +78,8 @@ Get-FileHash ns-node-win-x64.zip -Algorithm SHA256
 GPG verification (if release signatures present):
 
 ```bash
-curl -LO https://github.com/brockhager/neuro-infra/releases/latest/download/checksums.txt
-curl -LO https://github.com/brockhager/neuro-infra/releases/latest/download/checksums.sig
+curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/checksums.txt
+curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/checksums.sig
 gpg --verify checksums.sig checksums.txt
 ```
 
