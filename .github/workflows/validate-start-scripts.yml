@@ -72,16 +72,23 @@ jobs:
         run: |
           set -e
           DIST=$DIST_PLAIN
+          # Create a central log directory and unique timestamp for this run
+          LOG_BASE="$GITHUB_WORKSPACE/neuroswarm/logs"
+          mkdir -p "$LOG_BASE"
+          TS_NOW=$(date -u +%Y%m%d-%H%M%S)
+          NS_LOG="$LOG_BASE/ns-start-$TS_NOW.log"
+          GW_LOG="$LOG_BASE/gateway-start-$TS_NOW.log"
+          VP_LOG="$LOG_BASE/vp-start-$TS_NOW.log"
           # Start NS Node first (port 3000)
           cd $DIST/ns-node/linux
           chmod +x start.sh || true
-          nohup ./start.sh > ns-start.log 2>&1 &
+          nohup ./start.sh > "$NS_LOG" 2>&1 &
           sleep 5
           for i in {1..30}; do if curl -s --fail http://localhost:3000/health >/dev/null; then break; fi; sleep 1; done
           # Start Gateway (port 8080)
           cd $DIST/gateway-node/linux
           chmod +x start.sh || true
-          NS_NODE_URL=http://localhost:3000 nohup ./start.sh > gateway-start.log 2>&1 &
+          NS_NODE_URL=http://localhost:3000 nohup ./start.sh > "$GW_LOG" 2>&1 &
           sleep 5
           for i in {1..30}; do if curl -s --fail http://localhost:8080/health >/dev/null; then break; fi; sleep 1; done
           # Start VP node (background produce loop) and ensure it logs a heartbeat when STATUS enabled
@@ -90,23 +97,23 @@ jobs:
           for i in {1..30}; do if curl -s --fail http://localhost:5001/api/v0/version >/dev/null; then break; fi; sleep 1; done
           cd $DIST/vp-node/linux
           chmod +x start.sh || true
-          NS_NODE_URL=http://localhost:3000 STATUS=1 IPFS_API=http://localhost:5001 VP_PUBLISH_URL=http://localhost:4000 nohup ./start.sh > vp-start.log 2>&1 &
+          NS_NODE_URL=http://localhost:3000 STATUS=1 IPFS_API=http://localhost:5001 VP_PUBLISH_URL=http://localhost:4000 nohup ./start.sh > "$VP_LOG" 2>&1 &
           sleep 5
           # Wait for heartbeats: any one of the logs should show a heartbeat
           sleep 35
-          if ! (grep -q "Heartbeat" ns-start.log || grep -q "Heartbeat" gateway-start.log || grep -q "Heartbeat" vp-start.log); then
+          if ! (grep -q "Heartbeat" "$LOG_BASE"/ns-start-*.log || grep -q "Heartbeat" "$LOG_BASE"/gateway-start-*.log || grep -q "Heartbeat" "$LOG_BASE"/vp-start-*.log); then
             echo '--- NO HEARTBEAT FOUND IN ANY START LOG ---'
-            tail -n +1 ns-start.log || true
-            tail -n +1 gateway-start.log || true
-            tail -n +1 vp-start.log || true
+            tail -n +1 "$LOG_BASE"/ns-start-*.log || true
+            tail -n +1 "$LOG_BASE"/gateway-start-*.log || true
+            tail -n +1 "$LOG_BASE"/vp-start-*.log || true
             exit 1
           fi
           # Also check VP /health endpoint and ns/gateway health
-          if ! curl -s --fail http://localhost:4000/health >/dev/null; then echo 'VP /health failed'; tail -n +1 vp-start.log || true; exit 1; fi
+          if ! curl -s --fail http://localhost:4000/health >/dev/null; then echo 'VP /health failed'; tail -n +1 "$LOG_BASE"/vp-start-*.log || true; exit 1; fi
           # Ensure the ns-node reported that it is listening and health endpoint is available
-          if ! (grep -q "Listening at http://localhost:3000" ns-start.log || grep -q "Health endpoint available at /health" ns-start.log); then
+          if ! (grep -q "Listening at http://localhost:3000" "$LOG_BASE"/ns-start-*.log || grep -q "Health endpoint available at /health" "$LOG_BASE"/ns-start-*.log); then
             echo '--- NS-NODE Did NOT report listening or health availability ---'
-            tail -n +1 ns-start.log || true
+            tail -n +1 "$LOG_BASE"/ns-start-*.log || true
             exit 1
           fi
 
@@ -145,9 +152,9 @@ jobs:
           node $GITHUB_WORKSPACE/scripts/integration/sources-allie.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --vp http://localhost:4000 --timeout 20000
           docker rm -f ipfs || true
           # Ensure the ns-node reported that it is listening and health endpoint is available
-          if ! (grep -q "Listening at http://localhost:3000" ns-start.log || grep -q "Health endpoint available at /health" ns-start.log); then
+          if ! (grep -q "Listening at http://localhost:3000" "$GITHUB_WORKSPACE/neuroswarm/logs"/ns-start-*.log || grep -q "Health endpoint available at /health" "$GITHUB_WORKSPACE/neuroswarm/logs"/ns-start-*.log); then
             echo '--- NS-NODE Did NOT report listening or health availability ---'
-            tail -n +1 ns-start.log || true
+            tail -n +1 "$GITHUB_WORKSPACE/neuroswarm/logs"/ns-start-*.log || true
             exit 1
           fi
 
@@ -156,26 +163,33 @@ jobs:
         run: |
           set -e
           DIST=$DIST_PLAIN
+          # central logs location and timestamp
+          LOG_BASE="$GITHUB_WORKSPACE/neuroswarm/logs"
+          mkdir -p "$LOG_BASE"
+          TS_NOW=$(date -u +%Y%m%d-%H%M%S)
+          NS_LOG="$LOG_BASE/ns-start-$TS_NOW.log"
+          GW_LOG="$LOG_BASE/gateway-start-$TS_NOW.log"
+          VP_LOG="$LOG_BASE/vp-start-$TS_NOW.log"
           cd $DIST/ns-node/macos
           chmod +x start.sh || true
-          nohup ./start.sh > ns-start.log 2>&1 &
+          nohup ./start.sh > "$NS_LOG" 2>&1 &
           sleep 5
           for i in {1..30}; do if curl -s --fail http://localhost:3000/health >/dev/null; then break; fi; sleep 1; done
           cd $DIST/gateway-node/macos
           chmod +x start.sh || true
-          NS_NODE_URL=http://localhost:3000 nohup ./start.sh > gateway-start.log 2>&1 &
+          NS_NODE_URL=http://localhost:3000 nohup ./start.sh > "$GW_LOG" 2>&1 &
           sleep 5
           for i in {1..30}; do if curl -s --fail http://localhost:8080/health >/dev/null; then break; fi; sleep 1; done
           cd $DIST/vp-node/macos
           chmod +x start.sh || true
-          NS_NODE_URL=http://localhost:3000 STATUS=1 nohup ./start.sh > vp-start.log 2>&1 &
+          NS_NODE_URL=http://localhost:3000 STATUS=1 nohup ./start.sh > "$VP_LOG" 2>&1 &
           sleep 5
           sleep 35
-          if ! (grep -q "Heartbeat" ns-start.log || grep -q "Heartbeat" gateway-start.log || grep -q "Heartbeat" vp-start.log); then
+          if ! (grep -q "Heartbeat" "$LOG_BASE"/ns-start-*.log || grep -q "Heartbeat" "$LOG_BASE"/gateway-start-*.log || grep -q "Heartbeat" "$LOG_BASE"/vp-start-*.log); then
             echo '--- NO HEARTBEAT FOUND IN ANY START LOG ---'
-            tail -n +1 ns-start.log || true
-            tail -n +1 gateway-start.log || true
-            tail -n +1 vp-start.log || true
+            tail -n +1 "$LOG_BASE"/ns-start-*.log || true
+            tail -n +1 "$LOG_BASE"/gateway-start-*.log || true
+            tail -n +1 "$LOG_BASE"/vp-start-*.log || true
             exit 1
           fi
 
@@ -184,14 +198,21 @@ jobs:
         shell: pwsh
         run: |
           $DIST = $env:DIST_PLAIN
+          # Setup central log dir and timestamp
+          $LOG_BASE = Join-Path $env:GITHUB_WORKSPACE 'neuroswarm\logs'
+          New-Item -ItemType Directory -Force -Path $LOG_BASE | Out-Null
+          $ts = Get-Date -Format 'yyyyMMdd-HHmmss'
+          $nsLog = Join-Path $LOG_BASE ("ns-start-$ts.log")
+          $gwLog = Join-Path $LOG_BASE ("gateway-start-$ts.log")
+          $vpLog = Join-Path $LOG_BASE ("vp-start-$ts.log")
           # Start ns-node
           Set-Location -Path "$DIST\ns-node\win"
-          Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', '.\start.bat > ns-start.log 2>&1' -WorkingDirectory '.'
+          Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', ".\start.bat > `"$nsLog`" 2>&1" -WorkingDirectory '.'
           Start-Sleep -s 5
           for ($i=0; $i -lt 30; $i++) { try { if ((Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:3000/health').StatusCode -eq 200) { break } } catch {}; Start-Sleep -s 1 }
           # Start gateway
           Set-Location -Path "$DIST\gateway-node\win"
-          Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', 'set "NS_NODE_URL=http://localhost:3000" && .\start.bat > gateway-start.log 2>&1' -WorkingDirectory '.'
+          Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', "set `"NS_NODE_URL=http://localhost:3000`" && .\start.bat > `"$gwLog`" 2>&1" -WorkingDirectory '.'
           Start-Sleep -s 5
           for ($i=0; $i -lt 30; $i++) { try { if ((Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:8080/health').StatusCode -eq 200) { break } } catch {}; Start-Sleep -s 1 }
           # Start vp-node
@@ -199,20 +220,20 @@ jobs:
           # Start a local IPFS daemon for Windows runner
           docker run -d --name ipfs -p 5001:5001 ipfs/go-ipfs:latest || true
           for ($i=0; $i -lt 30; $i++) { try { if ((Invoke-RestMethod -Uri 'http://localhost:5001/api/v0/version').Version) { break } } catch {}; Start-Sleep -s 1 }
-          Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', 'set "NS_NODE_URL=http://localhost:3000" && set "STATUS=1" && set "IPFS_API=http://localhost:5001" && set "VP_PUBLISH_URL=http://localhost:4000" && .\start.bat > vp-start.log 2>&1' -WorkingDirectory '.'
+          Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', "set `"NS_NODE_URL=http://localhost:3000`" && set `"STATUS=1`" && set `"IPFS_API=http://localhost:5001`" && set `"VP_PUBLISH_URL=http://localhost:4000`" && .\start.bat > `"$vpLog`" 2>&1" -WorkingDirectory '.'
           Start-Sleep -s 5
           Start-Sleep -s 35
-          if (-not ((Select-String -Path ..\ns-node\win\ns-start.log -Pattern 'Heartbeat' -Quiet) -or (Select-String -Path gateway-start.log -Pattern 'Heartbeat' -Quiet) -or (Select-String -Path vp-start.log -Pattern 'Heartbeat' -Quiet))) {
+          if (-not ((Select-String -Path "$LOG_BASE\ns-start-*.log" -Pattern 'Heartbeat' -Quiet) -or (Select-String -Path "$LOG_BASE\gateway-start-*.log" -Pattern 'Heartbeat' -Quiet) -or (Select-String -Path "$LOG_BASE\vp-start-*.log" -Pattern 'Heartbeat' -Quiet))) {
             Write-Host '--- NO HEARTBEAT FOUND IN ANY START LOG ---'
-            Get-Content ..\ns-node\win\ns-start.log -Raw -ErrorAction SilentlyContinue
-            Get-Content gateway-start.log -Raw -ErrorAction SilentlyContinue
-            Get-Content vp-start.log -Raw -ErrorAction SilentlyContinue
+            Get-Content "$LOG_BASE\ns-start-*.log" -Raw -ErrorAction SilentlyContinue
+            Get-Content "$LOG_BASE\gateway-start-*.log" -Raw -ErrorAction SilentlyContinue
+            Get-Content "$LOG_BASE\vp-start-*.log" -Raw -ErrorAction SilentlyContinue
             exit 1
           }
           # Ensure ns-node reported listening / health
-          if (-not ((Select-String -Path ..\ns-node\win\ns-start.log -Pattern 'Listening at' -Quiet) -or (Select-String -Path ..\ns-node\win\ns-start.log -Pattern 'Health endpoint available at' -Quiet))) {
+          if (-not ((Select-String -Path "$LOG_BASE\ns-start-*.log" -Pattern 'Listening at' -Quiet) -or (Select-String -Path "$LOG_BASE\ns-start-*.log" -Pattern 'Health endpoint available at' -Quiet))) {
             Write-Host '--- NS-NODE Did NOT report listening or health availability ---'
-            Get-Content ..\ns-node\win\ns-start.log -Raw -ErrorAction SilentlyContinue
+            Get-Content "$LOG_BASE\ns-start-*.log" -Raw -ErrorAction SilentlyContinue
             exit 1
           }
 
