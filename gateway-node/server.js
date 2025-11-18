@@ -8,6 +8,9 @@ import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 
 const PORT = process.env.PORT || 8080;
+
+function ts() { return new Date().toISOString(); }
+console.log(`[${ts()}] gateway-node starting on port ${PORT}`);
 const DATA_DIR = path.join(process.cwd(), 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
@@ -131,7 +134,7 @@ app.get('/', (req, res) => {
 });
 
 // Health endpoint for the gateway
-let GW_VERSION = 'dev';
+let GW_VERSION = '0.1.0';
 try {
   const pkgPath = path.join(process.cwd(), 'package.json');
   if (fs.existsSync(pkgPath)) {
@@ -191,8 +194,15 @@ async function startServer() {
       logGw(`Connected to ns-node ${NS_NODE_URL}`);
     }
   }
-  app.listen(PORT, () => {
-    console.log(`Gateway node listening on http://localhost:${PORT}`);
+  const server = app.listen(PORT, () => {
+      console.log(`[${ts()}] Listening at http://localhost:${PORT}`);
+      console.log(`[${ts()}] Health endpoint available at /health`);
+    });
+
+  server.on('connection', (socket) => {
+    const remote = `${socket.remoteAddress}:${socket.remotePort}`;
+    console.log(`[${ts()}] Connection from ${remote}`);
+    socket.on('close', () => console.log(`[${ts()}] Connection closed ${remote}`));
   });
 
   // If ns not reachable, retry in background using exponential backoff

@@ -171,6 +171,20 @@ With `--status` logs you will see timestamped lines such as:
 [VP-NODE] [2025-11-17T12:00:30.000Z] Heartbeat: ns=http://localhost:3000 nsReachable=true lastProduceSuccess=true validator=val-xxx
 ```
 
+You will also see explicit startup and health logs when the node starts. Example startup logs:
+
+```
+[2025-11-17T12:00:00.000Z] ns-node starting on port 3000
+[2025-11-17T12:00:00.150Z] Listening at http://localhost:3000
+[2025-11-17T12:00:00.150Z] Health endpoint available at /health
+```
+
+If the packaged binary fails (for example due to platform issues), the start script will log a warning, then fall back to running `node server.js`:
+
+```
+[2025-11-17T12:00:01.000Z] WARNING: ns-node binary failed with code 127; falling back to node server.js
+```
+
 These logs are human-readable, timestamped, and printed to stdout so they are visible in the `start.bat` cmd window.
 
 Building installers locally (advanced)

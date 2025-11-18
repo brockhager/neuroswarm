@@ -1,7 +1,11 @@
 import crypto from 'crypto';
 import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
+import path from 'path';
+import express from 'express';
 
 const NS_URL = process.env.NS_NODE_URL || 'http://localhost:3000';
+const PORT = process.env.PORT || 4000;
 const VAL_ID = process.env.VALIDATOR_ID || 'val-' + uuidv4();
 let PRIVATE_KEY_PEM = process.env.VALIDATOR_PRIVATE_KEY || null;
 let PUBLIC_KEY_PEM = process.env.VALIDATOR_PUBLIC_KEY || null;
@@ -13,10 +17,10 @@ function sha256Hex(buf) {
 }
 
 const STATUS_ENABLED = process.env.STATUS === '1' || process.argv.includes('--status');
-function logVp(...args) {
-  const ts = new Date().toISOString();
-  console.log(`[VP-NODE] [${ts}]`, ...args);
-}
+function ts() { return new Date().toISOString(); }
+console.log(`[${ts()}] vp-node starting on port ${PORT}`);
+if (STATUS_ENABLED) console.log(`[${ts()}] vp-node heartbeat enabled (interval ${Number(process.env.STATUS_INTERVAL_MS || 30000)}ms)`);
+function logVp(...args) { const _ts = new Date().toISOString(); console.log(`[${_ts}] [VP-NODE]`, ...args); }
 let lastProduceSuccess = null;
 let nsReachable = false;
 
@@ -173,5 +177,33 @@ async function main() {
   await register();
   setInterval(produceLoop, INTERVAL_MS);
 }
+
+// Health endpoint for VP (consistency with other nodes)
+let VP_VERSION = '0.1.0';
+try {
+  const pkgPath = path.join(process.cwd(), 'package.json');
+  if (fs.existsSync(pkgPath)) {
+    const pj = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+    VP_VERSION = pj.version || VP_VERSION;
+  }
+} catch (e) {
+  // ignore
+}
+import express from 'express';
+const app = express();
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', version: VP_VERSION, uptime: process.uptime() });
+});
+
+const server = app.listen(PORT, () => {
+  console.log(`[${ts()}] Listening at http://localhost:${PORT}`);
+  console.log(`[${ts()}] Health endpoint available at /health`);
+});
+
+server.on('connection', (socket) => {
+  const remote = `${socket.remoteAddress}:${socket.remotePort}`;
+  console.log(`[${ts()}] Connection from ${remote}`);
+  socket.on('close', () => console.log(`[${ts()}] Connection closed ${remote}`));
+});
 
 main();

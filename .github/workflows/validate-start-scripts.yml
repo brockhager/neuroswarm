@@ -95,6 +95,32 @@ jobs:
             tail -n +1 vp-start.log || true
             exit 1
           fi
+          # Also check VP /health endpoint and ns/gateway health
+          if ! curl -s --fail http://localhost:4000/health >/dev/null; then echo 'VP /health failed'; tail -n +1 vp-start.log || true; exit 1; fi
+          # Ensure the ns-node reported that it is listening and health endpoint is available
+          if ! (grep -q "Listening at http://localhost:3000" ns-start.log || grep -q "Health endpoint available at /health" ns-start.log); then
+            echo '--- NS-NODE Did NOT report listening or health availability ---'
+            tail -n +1 ns-start.log || true
+            exit 1
+          fi
+
+      - name: Run gateway->ns synthetic integration test
+        if: runner.os == 'Linux'
+        run: |
+          set -e
+          node $GITHUB_WORKSPACE/scripts/integration/gateway-to-ns.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --timeout 20000
+
+      - name: Run gateway->ns synthetic integration test
+        if: runner.os == 'macOS'
+        run: |
+          set -e
+          node $GITHUB_WORKSPACE/scripts/integration/gateway-to-ns.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --timeout 20000
+          # Ensure the ns-node reported that it is listening and health endpoint is available
+          if ! (grep -q "Listening at http://localhost:3000" ns-start.log || grep -q "Health endpoint available at /health" ns-start.log); then
+            echo '--- NS-NODE Did NOT report listening or health availability ---'
+            tail -n +1 ns-start.log || true
+            exit 1
+          fi
 
       - name: Run heartbeat smoke test on macOS
         if: runner.os == 'macOS'
@@ -151,4 +177,16 @@ jobs:
             Get-Content vp-start.log -Raw -ErrorAction SilentlyContinue
             exit 1
           }
+          # Ensure ns-node reported listening / health
+          if (-not ((Select-String -Path ..\ns-node\win\ns-start.log -Pattern 'Listening at' -Quiet) -or (Select-String -Path ..\ns-node\win\ns-start.log -Pattern 'Health endpoint available at' -Quiet))) {
+            Write-Host '--- NS-NODE Did NOT report listening or health availability ---'
+            Get-Content ..\ns-node\win\ns-start.log -Raw -ErrorAction SilentlyContinue
+            exit 1
+          }
+
+      - name: Run gateway->ns synthetic integration test
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          node $env:GITHUB_WORKSPACE\scripts\integration\gateway-to-ns.mjs --gateway http://localhost:8080 --ns http://localhost:3000 --timeout 20000
       # Package & testing is covered by the 'Package & test for runner platform' step above
