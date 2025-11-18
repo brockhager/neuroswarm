@@ -71,7 +71,7 @@ Artifacts include: packaged binaries (`ns-node`, `gateway-node`, `vp-node`) and 
 
 ---
 ## Support & Feedback
-- GitHub Discussions: https://github.com/brockhager/neuro-infra/discussions
+- GitHub Discussions: https://github.com/brockhager/neuroswarm/discussions
 - Issues: open if a page is stale or missing.
 - PRs: small, frequent, pnpm‑compliant.
 

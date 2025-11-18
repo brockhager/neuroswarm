@@ -10,7 +10,8 @@ for (let i = 0; i < argv.length; i++) {
 }
 // Prefer GH_PAT if provided, fallback to GITHUB_TOKEN
 const token = process.env.GH_PAT || process.env.GITHUB_TOKEN;
-const repo = process.env.GITHUB_REPOSITORY || 'brockhager/neuro-infra';
+// Hard-code the target repo to the neuroswarm project per user request
+const repo = process.env.GITHUB_REPOSITORY || 'brockhager/neuroswarm';
 if (!token && !opts.dry) { console.error('GH_PAT or GITHUB_TOKEN required unless --dry-run is used'); process.exit(1); }
 const [owner, name] = repo.split('/');
 const wikiUrl = `https://x-access-token:${token}@github.com/${owner}/${name}.wiki.git`;
@@ -36,10 +37,10 @@ fs.mkdirSync(tmpDir, { recursive: true });
 }
 
 function findSrc(relPathParts) {
+  // Only consider paths under the repo's neuroswarm folder or the current working dir.
   const candidates = [
-    path.join(process.cwd(), ...relPathParts),
     path.join(process.cwd(), 'neuroswarm', ...relPathParts),
-    path.join(process.cwd(), '..', 'neuroswarm', ...relPathParts)
+    path.join(process.cwd(), ...relPathParts)
   ];
   for (const c of candidates) if (fs.existsSync(c)) return c;
   return path.join(process.cwd(), ...relPathParts); // fallback (non-existing) so caller logs missing file
