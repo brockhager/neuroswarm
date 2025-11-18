@@ -23,6 +23,11 @@ REM Attempt to detect owner/repo using gh (preferred) or git remote as fallback
 set REPO_OWNER=brockhager
 set REPO_NAME=neuro-infra
 set REPO=%REPO_OWNER%/%REPO_NAME%
+REM Support an override environment variable: PUBLISH_REPO (owner/repo)
+if defined PUBLISH_REPO (
+  set REPO=%PUBLISH_REPO%
+  for /f "delims=/ tokens=1,2" %%a in ("%REPO%") do set REPO_OWNER=%%a & set REPO_NAME=%%b
+)
 where gh >nul 2>&1
 if %ERRORLEVEL%==0 (
   for /f "delims=" %%r in ('gh repo view --json owner,name -q ".owner.login + \"/\" + .name"') do set REPO=%%r
@@ -56,6 +61,20 @@ if errorlevel 2 (
 where gh >nul 2>&1
 if %ERRORLEVEL%==0 (
   echo Using GitHub CLI to trigger the workflow.
+  echo Target repo: %REPO%  (branch: %DEFAULT_BRANCH%)
+  echo Checking workflow availability in %REPO% ...
+  gh workflow view "%WORKFLOW%" --repo %REPO% >nul 2>&1
+  if %ERRORLEVEL% NEQ 0 (
+    echo WORKFLOW '%WORKFLOW%' not found in %REPO%.
+    echo This may be because the upstream repository is different or you are on a fork without the workflow.
+    echo You can either run the local node-based fallback to push the wiki or run gh from the intended repo.
+    choice /M "Run fallback push script instead?"
+    if errorlevel 2 (
+      echo Aborted by user.
+      goto exit_popd
+    )
+    goto node_fallback
+  )
   echo Running: gh workflow run %WORKFLOW% --repo %REPO% --ref %DEFAULT_BRANCH%
   gh workflow run "%WORKFLOW%" --repo %REPO% --ref %DEFAULT_BRANCH%
   if %ERRORLEVEL% NEQ 0 (
