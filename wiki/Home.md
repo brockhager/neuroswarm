@@ -23,19 +23,9 @@ Welcome to the NeuroSwarm Wiki. This is the canonical, single source of truth fo
 ## 📦 Downloads
 Visit the [Download](Download) page for official release assets and platform installers (copy‑paste examples, checksum verification, and maintainer guidance).
 
-Quick links to the latest release assets:
+Quick link: See the canonical download page for all release assets.
 
-- [ns-node (Windows x64)](https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-win-x64.zip)
-- [ns-node (Linux x64)](https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.tar.gz)
-- [ns-node (macOS x64)](https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-macos-x64.tar.gz)
-
-- [gateway-node (Windows x64)](https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-win-x64.zip)
-- [gateway-node (Linux x64)](https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-linux-x64.tar.gz)
-- [gateway-node (macOS x64)](https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-macos-x64.tar.gz)
-
-- [vp-node (Windows x64)](https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-win-x64.zip)
-- [vp-node (Linux x64)](https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-linux-x64.tar.gz)
-- [vp-node (macOS x64)](https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-macos-x64.tar.gz)
+👉 See [Download](Download.md) for the latest platform binaries and installers.
 
 Clicking a link should download the asset to your default Downloads folder. Verify the checksum if desired (CI artifacts provide `checksums.txt` when available).
 
