@@ -11,5 +11,5 @@ if %ERRORLEVEL% NEQ 0 (
   exit /b 1
 )
 echo Starting Gateway in a new cmd window (persistent)
-start "Gateway Node" cmd /k "node "%~dp0server.js" %* || (echo [GW] Node exited with code %ERRORLEVEL% & pause)"
+start "Gateway Node" cmd /k "node "%~dp0server.js" --status %* || (echo [GW] Node exited with code %ERRORLEVEL% & pause)"
 exit /b 0

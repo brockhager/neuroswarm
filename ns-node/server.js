@@ -144,7 +144,7 @@ if (STATUS_ENABLED) {
       } catch (e) { /* ignore */ }
       logNs(`heartbeat | gateways=${gwStatus} validators=${validatorCount} mempool=${mempoolSize || 'unknown'} height=${getCanonicalHeight()} verifiedBlocks=${blocksVerified} sourcesValid=${sourcesValidCount} uptime=${process.uptime().toFixed(0)}s`);
     } catch (e) {
-      console.error('[NS-NODE] Heartbeat error', e.message);
+      logNs('Heartbeat error', e.message);
     }
   }, Number(process.env.STATUS_INTERVAL_MS || 60000));
 }
@@ -1049,13 +1049,14 @@ app.get('/', (req, res) => {
 });
 
 const server = app.listen(PORT, () => {
-  console.log(`[${ts()}] Listening at http://localhost:${PORT}`);
-  console.log(`[${ts()}] Health endpoint available at /health`);
-  console.log('Open your browser at http://localhost:' + PORT + ' to start chatting');
+  logNs('NS node started, verifying blocks');
+  logNs(`Listening at http://localhost:${PORT}`);
+  logNs('Health endpoint available at /health');
+  logNs(`Open your browser at http://localhost:${PORT} to start chatting`);
 });
 
 server.on('connection', (socket) => {
   const remote = `${socket.remoteAddress}:${socket.remotePort}`;
-  console.log(`[${ts()}] Connection from ${remote}`);
-  socket.on('close', () => console.log(`[${ts()}] Connection closed ${remote}`));
+  logNs(`Connection from ${remote}`);
+  socket.on('close', () => logNs(`Connection closed ${remote}`));
 });
