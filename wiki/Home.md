@@ -21,13 +21,7 @@ Welcome to the NeuroSwarm Wiki. This is the canonical, single source of truth fo
 
 ---
 ## 📦 Downloads
-Visit the [Download](Download) page for official release assets and platform installers (copy‑paste examples, checksum verification, and maintainer guidance).
-
-Quick link: See the canonical download page for all release assets.
-
-👉 See [Download](Download.md) for the latest platform binaries and installers.
-
-Clicking a link should download the asset to your default Downloads folder. Verify the checksum if desired (CI artifacts provide `checksums.txt` when available).
+👉 See the **[Download](Download)** page for all official release assets, platform installers, checksums, and installation instructions.
 
 ---
 ## Contributor Quick Start
