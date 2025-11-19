@@ -51,4 +51,17 @@ function safeJoinRepo(...parts) {
   return joined;
 }
 
-module.exports = { REPO_ROOT, isInsideRepo, ensureDirInRepoSync, safeJoinRepo, safeRmInRepoSync };
+function getTmpDir() {
+  const tmpEnv = process.env.NEUROSWARM_TMP || process.env.TMP_DIR || process.env.TMP || process.env.TEMP;
+  let base;
+  if (tmpEnv) {
+    base = path.isAbsolute(tmpEnv) ? tmpEnv : path.join(process.cwd(), tmpEnv);
+  } else {
+    base = path.join(REPO_ROOT, 'tmp');
+  }
+  const joined = path.join(base, ...Array.prototype.slice.call(arguments));
+  try { fs.mkdirSync(joined, { recursive: true }); } catch (e) { }
+  return joined;
+}
+
+module.exports = { REPO_ROOT, isInsideRepo, ensureDirInRepoSync, safeJoinRepo, safeRmInRepoSync, getTmpDir };

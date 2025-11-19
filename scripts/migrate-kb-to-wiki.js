@@ -9,7 +9,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { ensureDirInRepoSync, safeJoinRepo, safeRmInRepoSync } = require('./repoScopedFs.cjs');
+const { ensureDirInRepoSync, safeJoinRepo, safeRmInRepoSync, getTmpDir } = require('./repoScopedFs.cjs');
 const { execSync, spawnSync } = require('child_process');
 let blockedHomeAttempt = false;
 
@@ -93,7 +93,7 @@ function gitCloneAndPush(wikiRepo, exportDir, commitMessage = 'Migrate KB to wik
     console.error('No wiki repo provided for clone/push');
     process.exit(1);
   }
-  const tmpDir = safeJoinRepo('tmp', 'wiki-clone');
+  const tmpDir = getTmpDir('wiki-clone');
   if (fs.existsSync(tmpDir)) {
     safeRmInRepoSync(tmpDir);
   }
@@ -142,7 +142,7 @@ function main() {
         out = safeJoinRepo(...parts);
       } catch (e) {
         // fallback
-        out = safeJoinRepo('tmp', 'neuroswarm-wiki-export');
+        out = getTmpDir('neuroswarm-wiki-export');
       }
     }
   }
