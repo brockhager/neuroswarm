@@ -93,6 +93,13 @@ for (const m of mapping) {
     let dstExists = fs.existsSync(dstPath);
     let dstContent = dstExists ? fs.readFileSync(dstPath, 'utf8') : null;
     let srcContent = fs.readFileSync(m.src, 'utf8');
+    // If the src Home.md file is empty, do not copy and fail when running in CI
+    if (!srcContent || srcContent.trim().length === 0) {
+      console.error('ERROR: Source Home.md is empty; refusing to copy or overwrite Home.md');
+      wikiLog('ERROR', 'Blocked attempt to overwrite Home.md with empty source', `src=${m.src}`);
+      blockedHomeAttempt = true;
+      continue;
+    }
     if (dstExists && dstContent === srcContent) {
       // nothing to do
       console.log('Home.md is identical; skipping overwrite.');
@@ -101,7 +108,8 @@ for (const m of mapping) {
     if (!allowHomeOverwrite) {
       // Block automated overwrite
       console.error('ERROR: Attempted overwrite of Home.md blocked.');
-      wikiLog('WARN', 'Unauthorized attempt to modify Home.md', `src=${m.src}`, `dst=${dstPath}`);
+      wikiLog('ERROR', 'Attempted overwrite of Home.md blocked by automation guard', `src=${m.src}`, `dst=${dstPath}`);
+      wikiLog('WARN', 'Unauthorized attempt to modify Home.md; blocked by guard.');
       blockedHomeAttempt = true;
       continue; // do not copy
     }
