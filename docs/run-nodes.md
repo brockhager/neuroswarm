@@ -95,7 +95,13 @@ Run each node standalone to validate it starts and exposes health endpoints.
   cd neuroswarm
   # Persistent CMD window (Windows):
   cd neuroswarm\ns-node
-  .\start-windows.bat
+  .\run-ns.bat
+
+  # macOS/Linux (POSIX):
+  cd neuroswarm/ns-node
+  ./run-ns.sh
+  # If needed, make the script executable first:
+  chmod +x run-ns.sh
 
   # Standard redirection (Windows or Linux):
   PORT=3000 node ns-node/server.js > tmp/ns.log 2> tmp/ns.err ; echo $LASTEXITCODE
@@ -108,7 +114,13 @@ Run each node standalone to validate it starts and exposes health endpoints.
   cd neuroswarm
   # Persistent CMD window (Windows):
   cd neuroswarm\gateway-node
-  .\start-windows.bat
+  .\run-gateway.bat
+
+  # macOS/Linux (POSIX):
+  cd neuroswarm/gateway-node
+  ./run-gateway.sh
+  # If needed, make the script executable first:
+  chmod +x run-gateway.sh
 
   # Standard redirection:
   PORT=8080 NS_NODE_URL=http://127.0.0.1:3000 NS_CHECK_EXIT_ON_FAIL=false node gateway-node/server.js > tmp/gw.log 2> tmp/gw.err ; echo $LASTEXITCODE
@@ -121,7 +133,13 @@ Run each node standalone to validate it starts and exposes health endpoints.
   cd neuroswarm
   # Persistent CMD window (Windows):
   cd neuroswarm\vp-node
-  .\start-windows.bat
+  .\run-vp.bat
+
+  # macOS/Linux (POSIX):
+  cd neuroswarm/vp-node
+  ./run-vp.sh
+  # If needed, make the script executable first:
+  chmod +x run-vp.sh
 
   # Standard redirection:
   PORT=4000 NS_NODE_URL=http://127.0.0.1:3000 node vp-node/server.js > tmp/vp.log 2> tmp/vp.err ; echo $LASTEXITCODE
@@ -153,8 +171,6 @@ Run each node standalone to validate it starts and exposes health endpoints.
 
   CI will perform the same check automatically using the packaging validation step and `neuroswarm/scripts/confirm-heartbeat-from-logs.mjs`.
 
-Integrated Run: Start nodes and validate network
------------------------------------------------
 Follow this sequence to start an integrated environment and run simple connectivity and consensus steps.
 
 1. Start ns-node first, port 3000
