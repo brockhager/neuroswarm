@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import child_process from 'child_process';
+import { ensureDirInRepoSync } from './repoScopedFs.mjs';
 
 function usageAndExit() {
   console.error('Usage: node publishUpdate.mjs --title "Title" --body "Body text" [--author "Author"] [--push] [--pr] [--open-pr] [--labels "label1,label2"] [--reviewers "user1,user2"] [--template plain|full|path-to-file] [--template-file path]');
@@ -123,7 +124,7 @@ async function main() {
   const __dirname = path.dirname(fileURLToPath(import.meta.url));
   const updatesFile = path.join(__dirname, '..', 'wiki', 'Updates.md');
   // ensure directory exists
-  try { fs.mkdirSync(path.dirname(updatesFile), { recursive: true }); } catch (e) {}
+  try { if (!fs.existsSync(path.dirname(updatesFile))) ensureDirInRepoSync(path.dirname(updatesFile)); } catch (e) {}
   const templated = renderTemplate(opts, now);
   const entry = templated.entry;
   const prBody = templated.prBody;

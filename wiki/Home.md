@@ -63,7 +63,11 @@ Clicking a link should download the asset to your default Downloads folder. Veri
 - Documentation sync: `docs-wiki-sync.yml` (pushes `docs/wiki/*` here).
 - Integration & PoS testing: see `run-nodes-integration.yml` (may vary by branch).
 
-Artifacts include: packaged binaries (`ns-node`, `gateway-node`, `vp-node`) and start scripts with health wait logic.
+Artifacts include: packaged binaries (`ns-node`, `gateway-node`, `vp-node`) and start scripts with health wait logic. Windows ZIPs include a `start-windows.bat` that opens a persistent CMD window and defaults to `--status` for heartbeat logs.
+
+Windows start scripts:
+- The Windows ZIPs include `start-windows.bat` that starts the node in a new CMD shell via `cmd /k` and defaults to `--status` (emits periodic heartbeat lines).
+- Maintainers can verify the start script and the presence of `--status` using the commands in the Download -> "Verify Windows start-windows.bat" section; CI will also check these during packaging.
 
 ---
 ## Architecture & Governance

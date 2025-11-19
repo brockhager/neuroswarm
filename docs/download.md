@@ -63,6 +63,21 @@ Get-FileHash ns-node-win-x64.zip -Algorithm SHA256
 # Compare with the checksums.txt published alongside the release
 ```
 
+### Verify Windows `start-windows.bat` and `--status`
+
+Before publishing a Windows ZIP, confirm the `start-windows.bat` is present and defaults to `--status` and `cmd /k`:
+
+PowerShell example:
+
+```powershell
+Expand-Archive ns-node-win-x64.zip -DestinationPath ns-node
+Test-Path ns-node\start-windows.bat
+Get-Content ns-node\start-windows.bat | Select-String "--status"
+Get-Content ns-node\start-windows.bat | Select-String "cmd /k"
+```
+
+CI will automatically run the packaging validation job to assert these conditions; if you need to run the same verification locally, use the above PowerShell commands after building artifacts with `pnpm -C neuroswarm package:bins -- --os win`.
+
 GPG verification (if release signatures present):
 
 ```bash

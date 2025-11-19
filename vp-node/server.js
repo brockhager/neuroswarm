@@ -4,7 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import express from 'express';
 import { computeSourcesRoot } from '../sources/index.js';
-import { create as ipfsHttpClient } from 'ipfs-http-client';
+// ipfs-http-client is an optional runtime dependency. Dynamically import it
+// inside initIpfs so the server can start without IPFS being installed.
 
 const NS_URL = process.env.NS_NODE_URL || 'http://localhost:3000';
 const GATEWAY_URL = process.env.GATEWAY_URL || 'http://localhost:8080';
@@ -50,6 +51,10 @@ async function pingGateway() {
 async function initIpfs() {
   const ipfsApi = process.env.IPFS_API || 'http://localhost:5001';
   try {
+    // Dynamically import ipfs-http-client so we can gracefully handle the
+    // case where it's not installed in the environment (e.g. lightweight
+    // dev setups that don't need IPFS).
+    const { create: ipfsHttpClient } = await import('ipfs-http-client');
     // ipfs-http-client v59 uses create()
     ipfs = ipfsHttpClient({ url: ipfsApi });
     const id = await ipfs.id();
@@ -272,7 +277,6 @@ try {
 } catch (e) {
   // ignore
 }
-import express from 'express';
 const app = express();
 app.use(express.json());
 app.get('/health', (req, res) => {
