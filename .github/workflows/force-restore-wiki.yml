@@ -1,0 +1,40 @@
+name: Force Restore Wiki Home Page
+
+on:
+  workflow_dispatch:
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install pnpm
+        run: npm install -g pnpm@8
+
+      - name: Restore wiki Home.md
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          NEUROSWARM_TMP: neuroswarm/tmp
+        run: |
+          node neuroswarm/scripts/restore-wiki-home.mjs
+
+      - name: Report last wiki commit
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          TMPDIR="neuroswarm/tmp/wiki-home-check"
+          if [ -d "$TMPDIR" ]; then
+            cd "$TMPDIR"
+            last=$(git log -1 --pretty=format:'%H|%an|%ae|%s')
+            echo "Last wiki commit: $last"
+          else
+            echo "TMPDIR not found: $TMPDIR"
+          fi
