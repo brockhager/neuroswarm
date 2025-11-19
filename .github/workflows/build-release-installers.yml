@@ -40,6 +40,20 @@ jobs:
           name: installers-${{ matrix.os }}
           path: dist/*.zip
 
+      - name: Validate ZIPs (basic)
+        if: ${{ always() }}
+        run: |
+          set -ex
+          # Validate zips for this OS
+          for z in dist/*-${{ matrix.os }}-*.zip; do
+            echo "Testing $z"
+            if [[ "${{ matrix.os }}" == "windows-latest" ]]; then
+              pwsh -Command "Expand-Archive -Path '$z' -DestinationPath tmp/extract-test -Force; Remove-Item -Recurse -Force tmp/extract-test"
+            else
+              unzip -t "$z"
+            fi
+          done
+
   publish:
     needs: build
     runs-on: ubuntu-latest
@@ -67,6 +81,52 @@ jobs:
           ls -la installers-linux || true
           ls -la installers-macos || true
           ls -la installers-win || true
+      - name: Checkout repo to commit release zips
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate zip contents with Node script
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install validation deps
+        run: |
+          npm install -g pnpm@8
+          pnpm install -w
+      - name: Validate vp installer contents
+        run: |
+          set -ex
+          # validate Windows installers (if present) and Linux installers
+          if [ -f installers-win/vp-node-win-x64.zip ]; then
+            node neuroswarm/scripts/validate-zip.mjs installers-win/vp-node-win-x64.zip server.js run-vp.bat run-vp.sh node_modules/uuid
+          fi
+          if [ -f installers-linux/vp-node-linux-x64.zip ]; then
+            node neuroswarm/scripts/validate-zip.mjs installers-linux/vp-node-linux-x64.zip server.js run-vp.sh node_modules/uuid
+          fi
+      - name: Ensure release/ directory and commit zips
+        run: |
+          set -ex
+          git config user.email "actions@github.com"
+          git config user.name "github-actions[bot]"
+          mkdir -p release
+          cp -v installers-linux/*.zip release || true
+          cp -v installers-macos/*.zip release || true
+          cp -v installers-win/*.zip release || true
+          # Compute checksums for release zips for verification
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum release/*.zip > release/checksums.txt || true
+          else
+            # For macos, use shasum -a 256
+            shasum -a 256 release/*.zip > release/checksums.txt || true
+          fi
+          git add --force release/*.zip || true
+          if ! git diff --staged --quiet; then
+            git commit -m "Update: valid installer zips (automated)" || true
+            git push origin HEAD:main
+          else
+            echo "No change to release zips"
+          fi
+
       - name: Create or update GitHub Release and upload installers
         uses: softprops/action-gh-release@v1
         with:

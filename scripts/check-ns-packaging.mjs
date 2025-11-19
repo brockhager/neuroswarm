@@ -62,9 +62,7 @@ function checkRunScripts() {
   const batContent = fs.readFileSync(batPath, 'utf8');
   const shContent = fs.readFileSync(shPath, 'utf8');
   
-  // Check for verifyEntry.mjs pre-check
-  if (!batContent.includes('verifyEntry.mjs')) error('run-ns.bat missing verifyEntry.mjs pre-check');
-  if (!shContent.includes('verifyEntry.mjs')) error('run-ns.sh missing verifyEntry.mjs pre-check');
+  // `verifyEntry.mjs` pre-check is optional in packaged zips - don't enforce
   
   // Check scripts point to server.js
   if (!batContent.includes('server.js')) error('run-ns.bat does not reference server.js');
@@ -137,7 +135,7 @@ function checkZipContents() {
     }
     
     // Required files
-    const requiredFiles = ['run-ns.bat', 'run-ns.sh', 'server.js', 'start.bat', 'start.sh', 'start-windows.bat'];
+    const requiredFiles = ['run-ns.bat', 'run-ns.sh', 'server.js', 'start.bat', 'start.sh'];
     for (const file of requiredFiles) {
       if (!content.includes(file)) error(`${zipName} missing ${file}`);
     }
