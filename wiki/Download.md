@@ -12,17 +12,17 @@ Canonical release page:
 
 Quick access (latest release asset helper):
 
-- Latest ns-node (Linux): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.tar.gz
-- Latest ns-node (macOS): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-macos-x64.tar.gz
--- Latest ns-node (Windows): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-win-x64.zip (or `.exe` when provided by the release)
+- Latest ns-node (Linux): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.zip
+- Latest ns-node (macOS): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-macos-x64.zip
+- Latest ns-node (Windows): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-win-x64.zip
 
-- Latest gateway-node (Linux): https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-linux-x64.tar.gz
-- Latest gateway-node (macOS): https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-macos-x64.tar.gz
--- Latest gateway-node (Windows): https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-win-x64.zip (or `.exe` when provided by the release)
+- Latest gateway-node (Linux): https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-linux-x64.zip
+- Latest gateway-node (macOS): https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-macos-x64.zip
+- Latest gateway-node (Windows): https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-win-x64.zip
 
-- Latest vp-node (Linux): https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-linux-x64.tar.gz
-- Latest vp-node (macOS): https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-macos-x64.tar.gz
--- Latest vp-node (Windows): https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-win-x64.zip (or `.exe` when provided by the release)
+- Latest vp-node (Linux): https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-linux-x64.zip
+- Latest vp-node (macOS): https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-macos-x64.zip
+- Latest vp-node (Windows): https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-win-x64.zip
 
 Note: The `latest` URL uses the redirect to the most recent release tag. If you need to pin a version, replace `latest` with `vX.Y.Z` in the URL (e.g., `https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/ns-node-linux-x64.tar.gz`).
 
@@ -34,8 +34,8 @@ Linux/macOS (bash):
 
 ```bash
 # Download the latest Linux ns-node
-curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.tar.gz
-tar -xzf ns-node-linux-x64.tar.gz
+curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.zip
+unzip ns-node-linux-x64.zip
 cd ns-node
 # Start the node (example)
 PORT=3000 ./start.sh
@@ -98,10 +98,10 @@ For releases we include a `checksums.txt` and an optional `checksums.sig` (GPG s
 Linux / macOS (SHA256):
 
 ```bash
-curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.tar.gz
+curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.zip
 curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/checksums.txt
-sha256sum ns-node-linux-x64.tar.gz
-grep ns-node-linux-x64.tar.gz checksums.txt
+sha256sum ns-node-linux-x64.zip
+grep ns-node-linux-x64.zip checksums.txt
 ```
 
 Windows (PowerShell SHA256):
@@ -141,9 +141,9 @@ If GPG verification passes you also confirm the checksums are intact and the rel
 
 We publish platform-specific artifacts with the following naming convention in our release assets. This is required by the download links above and by our packaging scripts:
 
-- `ns-node-<os>-<arch>.tar.gz` or `.zip` (e.g., `ns-node-linux-x64.tar.gz`)
-- `gateway-node-<os>-<arch>.tar.gz` or `.zip`
-- `vp-node-<os>-<arch>.tar.gz` or `.zip`
+- `ns-node-<os>-<arch>.zip` (e.g., `ns-node-linux-x64.zip`)
+- `gateway-node-<os>-<arch>.zip`
+- `vp-node-<os>-<arch>.zip`
 - `checksums.txt` — SHA256 checksums of the artifacts
 - `checksums.sig` — (Optional) GPG signature of `checksums.txt`
 

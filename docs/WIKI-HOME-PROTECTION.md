@@ -17,6 +17,8 @@ All automation scripts that touch wiki content include Home.md protection:
 - Blocks `Home.md` overwrite unless `ALLOW_WIKI_HOME_OVERWRITE=1` **AND** `--allow-home-overwrite` flag
 - If source `Home.md` is empty, automatically restores from `default-Home.md` template
 - Logs all blocked attempts with timestamps: `[WIKI][timestamp] ERROR: Attempted overwrite of Home.md blocked`
+ - Ensures `Home.md` is present in the wiki clone before commit; if missing, the script will restore `Home.md` from the canonical source (`neuroswarm/wiki/Home.md`), fallback to `neuroswarm/docs/wiki/Home.md`, or finally `neuroswarm/scripts/default-Home.md`.
+ - Stages only the files written by the script to avoid accidental deletion of unrelated files in the wiki repo.
 
 #### `restore-wiki-home.mjs`
 - Checks wiki repo for missing/empty `Home.md`
