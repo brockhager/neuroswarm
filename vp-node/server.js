@@ -340,4 +340,15 @@ server.on('connection', (socket) => {
   socket.on('close', () => logVp(`Connection closed ${remote}`));
 });
 
+// Standardized crash handling: log and exit so the CMD window remains open for diagnostics
+process.on('uncaughtException', (err) => {
+  try { logVp('ERROR: Node crashed | reason=' + (err && err.message ? err.message : String(err))); } catch (e) { console.error('ERROR: Node crashed', err && err.message ? err.message : String(err)); }
+  try { logVp(err && err.stack ? err.stack : err); } catch (e) { console.error(err && err.stack ? err.stack : err); }
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+  try { logVp('ERROR: Node crashed | reason=' + (reason && reason.message ? reason.message : String(reason))); } catch (e) { console.error('ERROR: Node crashed', reason); }
+  process.exit(1);
+});
+
 main();
