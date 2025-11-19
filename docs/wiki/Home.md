@@ -1,95 +1,118 @@
-# NeuroSwarm Wiki (Canonical Home)
+# Welcome to NeuroSwarm
 
-Welcome to the NeuroSwarm Wiki. This is the canonical, single source of truth for installation, node operations, architecture, governance, and contributor workflow. If a README or code comment conflicts with the wiki, the wiki wins — please open an issue or PR to reconcile.
-
----
-## Essential Pages
-- [Download](Download) – Pre-built release artifacts and platform installers.
-- [Running Nodes](Running-Nodes) – Operating `ns-node`, `gateway-node`, `vp-node` + health & logs.
-- [Data Flow Architecture](Data-Flow-Architecture) – End‑to‑end pipeline, consensus, reorg handling.
-- [Contributor Policy](Contributor-Policy) – pnpm only (no `package-lock.json`), branching & PR rules.
-- [Updates / Changelog](Updates) – Release notes, breaking changes, migration guidance.
+**NeuroSwarm** is a decentralized AI platform that enables users to run their own local AI models while contributing to a global, collaborative "brain." Built on Solana blockchain technology, NeuroSwarm ensures verifiable AI provenance, transparent governance, and community-driven intelligence.
 
 ---
-## Operator Quick Start
-1. Go to [Download](Download) and download platform-specific ZIPs.
-2. Unpack; run provided start script (`start-gateway`, `start-ns`, `start-vp`).
-3. Wait for automatic health poll; gateway script opens browser when ready.
-4. Verify `/health` returns JSON status for each node.
-	 - Start nodes with `--status` to emit periodic heartbeat logs (60s):
-		 - Example (Windows): `start-windows.bat` opens persistent cmd window; use `start-windows.bat` in each node folder.
-	 - Example log prefixes:
-		 - Gateway: `[GW][2025-11-18T15:20Z] tx admitted: abc123 | sourcesVerified=true`
-		 - VP: `[VP][2025-11-18T15:20Z] produced block #42 | payloadCid=Qm...`
-		 - NS: `[NS][2025-11-18T15:20Z] verified block #42 | signatureValid=true | sourcesValid=true`
-5. Run connectivity: `node scripts/checkNodeConnectivityClean.mjs`.
-6. Smoke blocks: `node scripts/smokeProduce.mjs` (see Running Nodes for expected output).
-7. Troubleshooting: see `Troubleshooting.md`. If you are missing docs on the wiki, open an issue.
+
+## 🚀 Quick Start
+
+### For End Users
+**New!** Download the **NeuroSwarm Desktop Launcher** for a one-click experience:
+
+1. **[Download NeuroSwarm Launcher](Download#neuroswarm-launcher)** (Windows, macOS, Linux)
+2. Extract and run `NeuroSwarm.exe` (or equivalent for your platform)
+3. Follow the setup wizard to install the local AI engine
+4. Start chatting with your own decentralized AI!
+
+The launcher automatically manages all services and guides you through AI model setup.
+
+### For Node Operators
+Run individual NeuroSwarm nodes to participate in the decentralized network:
+
+1. **[Download Node Binaries](Download)** - Pre-built packages for all platforms
+2. **[Running Nodes Guide](Running-Nodes)** - Setup and operation instructions
+3. **[Node Types](System-Overview#node-types)** - Learn about NS, Gateway, and VP nodes
+
+### For Developers
+Contribute to the NeuroSwarm ecosystem:
+
+1. **[Contributor Guide](Contributor-Guide)** - Development workflow and standards
+2. **[Architecture Overview](data-flow-architecture)** - System design and data flow
+3. **[Governance](Governance)** - Participate in platform decisions
 
 ---
-## Architecture (short)
-```
-User -> Gateway (mempool + source validation) -> VP (block producer + IPFS publisher) -> NS (verifier & chain state) -> Gateway (requeue after reorg)
-```
 
-## Links & Docs
-- [System Overview](System-Overview.md)
-- [Architecture](Architecture.md)
-- [Sources / Allie-AI](Sources.md)
-- [Testing & CI](Testing.md)
-- [Troubleshooting](Troubleshooting.md)
-- [How to Contribute](Contributing.md)
+## 📦 What's Included
 
----
-## 📦 Downloads
-Visit the [Download](Download) page for official release assets and platform installers (copy‑paste examples, checksum verification, and maintainer guidance).
+### NeuroSwarm Launcher (Desktop App)
+A unified Electron application that provides:
+- **One-Click Setup**: Automatic service orchestration
+- **AI Setup Wizard**: Guided installation of local AI models (Ollama/Llama)
+- **Modern Chat Interface**: Beautiful UI with Markdown support
+- **System Tray Integration**: Runs quietly in the background
 
-Quick link: See the canonical download page for all release assets.
-
-👉 See [Download](Download.md) for the latest platform binaries and installers.
-
-Clicking a link should download the asset to your default Downloads folder. Verify the checksum if desired (CI artifacts provide `checksums.txt` when available).
+### Node Infrastructure
+Three specialized node types power the NeuroSwarm network:
+- **NS Node** (port 3000): Core consensus and block verification
+- **Gateway Node** (port 8080): API gateway with browser interface
+- **VP Node** (port 4000): Block production and validation
 
 ---
-## Contributor Quick Start
-1. Clone the monorepo; run `pnpm install -w` (never commit `package-lock.json`).
-2. Read [Contributor Policy](Contributor-Policy) for pnpm + workflow conventions.
-3. Make a doc/code change; run tests (PoS & block production in `neuro-services`).
-4. Use `scripts/publishUpdate.mjs` for release prep → open PR → announce in Discord → merge → CI syncs wiki.
-5. Confirm changes appear here after the `docs-wiki-sync` workflow completes.
+
+## 🎯 Key Features
+
+### Decentralized AI
+- **Local Inference**: Run AI models on your own hardware
+- **No External Dependencies**: Complete data sovereignty
+- **Open Source Models**: Llama 3, Mistral, and more via Ollama
+
+### Blockchain Integration
+- **Solana-Based**: Fast, low-cost transactions
+- **Verifiable Provenance**: Every AI interaction is cryptographically attested
+- **Transparent Governance**: Community-driven decision making
+
+### Developer-Friendly
+- **Modern Stack**: TypeScript, Next.js, Express, Rust
+- **Comprehensive APIs**: RESTful endpoints for all services
+- **Extensive Documentation**: Guides, tutorials, and API references
 
 ---
-## Scripts & Automation
-- Packaging: `scripts/package-binaries.mjs` (builds multi‑OS binaries & ZIP installers).
-- Unified launcher: `scripts/launch-node.mjs` (health polling + browser open for gateway).
-- Connectivity: `scripts/checkNodeConnectivityClean.mjs`.
-- Smoke / block production: `scripts/smokeProduce.mjs`.
-- Release / update: `scripts/publishUpdate.mjs`.
-- Git hygiene (multi-repo): `scripts/git-run-all.*`, branch cleanup helpers.
+
+## 📚 Documentation
+
+### Getting Started
+- **[Download](Download)** - Get the latest releases
+- **[Installation Guide](Getting-Started)** - Step-by-step setup
+- **[Running Nodes](Running-Nodes)** - Node operation and monitoring
+
+### Architecture & Design
+- **[System Overview](System-Overview)** - High-level architecture
+- **[Data Flow](data-flow-architecture)** - End-to-end pipeline
+- **[Security](Security)** - Security protocols and best practices
+
+### Development
+- **[Contributor Guide](Contributor-Guide)** - How to contribute
+- **[Governance](Governance)** - Platform governance model
+- **[Changelog](Updates)** - Release notes and updates
 
 ---
-## CI / CD
-- Installer build matrix: `build-release-installers.yml`.
-- Validation / dry‑run sync: `validate-packaging-and-wiki.yml`.
-- Documentation sync: `docs-wiki-sync.yml` (pushes `docs/wiki/*` here).
-- Integration & PoS testing: see `run-nodes-integration.yml` (may vary by branch).
 
-Artifacts include: packaged binaries (`ns-node`, `gateway-node`, `vp-node`) and start scripts with health wait logic.
+## 🤝 Community & Support
 
----
-## Architecture & Governance
-- [Data Flow Architecture](Data-Flow-Architecture) outlines ingestion → consensus → finalization.
-- Governance anchors & proposer rotation documented (see future Governance pages / Updates).
-- PoS, equivocation & reorg handling covered in test suites (`neuro-services/tests`).
+- **[GitHub Discussions](https://github.com/brockhager/neuroswarm/discussions)** - Ask questions and share ideas
+- **[Issues](https://github.com/brockhager/neuroswarm/issues)** - Report bugs or request features
+- **[Discord](https://discord.gg/neuroswarm)** - Join the community chat
 
 ---
-## Support & Feedback
-- GitHub Discussions: https://github.com/brockhager/neuroswarm/discussions
-- Issues: open if a page is stale or missing.
-- PRs: small, frequent, pnpm‑compliant.
 
-If a page you need is missing, create a PR; CI will sync it here. This Home page is auto‑refreshed from `neuroswarm/docs/wiki/Home.md` via `pushDocsToWiki.mjs`.
+## 🔄 Recent Updates
 
-Last updated: 2025-11-16
+See the **[Changelog](Updates)** for the latest release notes and migration guides.
 
-_If you want to help maintain the wiki: see [How to Contribute](Contributing.md) and [Contributor Onboarding](Contributor-Onboarding.md)._
+**Latest Release**: v0.2.0 (November 2025)
+- ✨ New NeuroSwarm Desktop Launcher
+- 🤖 Local AI integration with Ollama
+- 🎨 Modern chat interface with Markdown support
+- 🔧 Improved node packaging and distribution
+
+---
+
+## 📖 About This Wiki
+
+This wiki is the **canonical source of truth** for NeuroSwarm documentation. If you find conflicts between the wiki and other documentation, the wiki takes precedence.
+
+**Contributing to the Wiki**: See **[How to Contribute to the Wiki](How-to-contribute-to-the-wiki)** for guidelines.
+
+---
+
+*Last updated: November 19, 2025*
