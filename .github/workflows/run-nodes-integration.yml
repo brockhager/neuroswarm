@@ -134,6 +134,32 @@ jobs:
           if [ -f gw.pid ]; then kill $(cat gw.pid) || true; fi
           if [ -f vp.pid ]; then kill $(cat vp.pid) || true; fi
 
+      - name: Lint: disallow raw console.* in runtime node sources
+        run: |
+          set -ex
+          # Find raw console.* uses in runtime sources (neuroswarm/*-node), excluding the log wrapper definitions
+          matches=$(git grep -n -- 'console\.\(log\|warn\|error\)' -- neuroswarm/*-node || true)
+          filtered=$(printf "%s" "$matches" | grep -v -E 'function log|/public/|start-windows.bat|\[GW\]|\[NS\]|\[VP\]' || true)
+          if [ -n "$filtered" ]; then echo "Found console.* in node runtimes:"; echo "$filtered"; exit 1; fi
+
+      - name: Package artifacts and verify Windows start scripts
+        run: |
+          set -ex
+          pnpm -C neuroswarm package:bins
+          # Validate zip artifacts contain start-windows.bat and that it contains 'cmd /k'
+          for z in neuroswarm/dist/*.zip; do
+            echo "Validating $z"
+            if ! unzip -l "$z" | grep -q 'start-windows.bat'; then echo "Missing start-windows.bat in $z" && exit 1; fi
+            tmpdir=$(mktemp -d)
+            unzip -q "$z" -d "$tmpdir"
+            # find start-windows.bat inside the unzipped folder and assert content
+            batfile=$(find "$tmpdir" -type f -name 'start-windows.bat' | head -n 1 || true)
+            if [ -z "$batfile" ]; then echo "No start-windows.bat extracted from $z" && exit 1; fi
+            if ! grep -q 'cmd /k' "$batfile"; then echo "start-windows.bat in $z does not use 'cmd /k'" && exit 1; fi
+            if ! grep -q -- '--status' "$batfile"; then echo "start-windows.bat in $z does not pass --status by default" && exit 1; fi
+            rm -rf "$tmpdir"
+          done
+
   run-nodes-reverse:
     runs-on: ubuntu-latest
     timeout-minutes: 60

@@ -27,28 +27,28 @@ function loadJWTKeys() {
     const privateKeyPath = process.env.SERVICE_JWT_PRIVATE_KEY_PATH;
     if (privateKeyPath) {
       const fullPath = path.resolve(privateKeyPath);
-      console.log(`Loading JWT private key from: ${fullPath}`);
+      logger.info(`Loading JWT private key from: ${fullPath}`);
       if (fs.existsSync(fullPath)) {
         jwtPrivateKey = fs.readFileSync(fullPath, 'utf8');
-        console.log('JWT private key loaded successfully');
+        logger.info('JWT private key loaded successfully');
       } else {
-        console.error(`JWT private key file not found: ${fullPath}`);
+        logger.error(`JWT private key file not found: ${fullPath}`);
       }
     }
 
     const publicKeyPath = process.env.FOUNDER_PUBLIC_KEY_PATH;
     if (publicKeyPath) {
       const fullPath = path.resolve(publicKeyPath);
-      console.log(`Loading JWT public key from: ${fullPath}`);
+      logger.info(`Loading JWT public key from: ${fullPath}`);
       if (fs.existsSync(fullPath)) {
         jwtPublicKey = fs.readFileSync(fullPath, 'utf8');
-        console.log('JWT public key loaded successfully');
+        logger.info('JWT public key loaded successfully');
       } else {
-        console.error(`JWT public key file not found: ${fullPath}`);
+        logger.error(`JWT public key file not found: ${fullPath}`);
       }
     }
   } catch (error) {
-    console.error('Failed to load JWT keys:', error);
+    logger.error('Failed to load JWT keys:', error);
   }
 }
 
