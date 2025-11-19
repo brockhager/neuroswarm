@@ -90,6 +90,27 @@ neuroswarm/
 - **CI checks**: Fail PRs with files in prohibited locations
 - **Audit logging**: All file moves are logged in `wp_publish_log.jsonl`
 
+### Repo-Scoped Folder Creation (New)
+
+To maintain repository integrity, all automated folder creation is restricted to the `neuroswarm/` repository root and its subdirectories (`docs/`, `src/`, `wiki/`, etc.). Scripts or tools that create folders must ensure that:
+- Paths are validated and normalized to be inside `neuroswarm/` (not the monorepo root or higher)
+- The default placement for new folders is `neuroswarm/<subdir>/` (for example, `neuroswarm/tmp/`)
+- If a script receives an invalid path, it must abort and log the error clearly:
+
+```
+ERROR: Attempted to create folder outside repo root. Operation blocked.
+```
+
+Errors must include the requested path and a short message instructing the contributor to place files inside `neuroswarm/`.
+
+If no valid `subdir` is provided to a script or tool, it must default to `neuroswarm/misc/` and log a warning.
+
+Examples:
+- Correct: `neuroswarm/tmp/wiki-clone/` (allowed)
+- Incorrect: `tmp/wiki-clone/` (outside `neuroswarm/`) — blocked
+
+CI and local scripts will use the `repoScopedFs` helper (`neuroswarm/scripts/repoScopedFs.{mjs,cjs}`) to enforce these rules. Please use the helper when writing new scripts that create directories.
+
 Violations will be automatically corrected, but please follow these rules to avoid delays in your PR review.
 
 ### Code Standards

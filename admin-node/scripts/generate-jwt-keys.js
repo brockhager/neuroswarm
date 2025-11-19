@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 const fs = require('fs');
 const path = require('path');
+const { ensureDirInRepoSync } = require('../../scripts/repoScopedFs.cjs');
 const { generateKeyPairSync } = require('crypto');
 
 const secretsDir = path.join(__dirname, '..', 'secrets');
-if (!fs.existsSync(secretsDir)) fs.mkdirSync(secretsDir);
+if (!fs.existsSync(secretsDir)) ensureDirInRepoSync(secretsDir);
 
 function writeKeyPair(prefix) {
   const { privateKey, publicKey } = generateKeyPairSync('rsa', {

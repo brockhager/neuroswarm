@@ -9,6 +9,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { ensureDirInRepoSync, safeJoinRepo, safeRmInRepoSync } = require('./repoScopedFs.cjs');
 const { execSync, spawnSync } = require('child_process');
 
 function parseArgs() {
@@ -54,10 +55,11 @@ function convertLinks(content) {
 }
 
 function ensureCleanDir(dir) {
-  if (fs.existsSync(dir)) {
-    fs.rmSync(dir, { recursive: true, force: true });
+  if (!ensureDirInRepoSync(dir)) {
+    console.error('ERROR: ensureCleanDir: Directory is outside repo and will not be created:', dir);
+    process.exit(1);
   }
-  fs.mkdirSync(dir, { recursive: true });
+  if (fs.existsSync(dir)) safeRmInRepoSync(dir);
 }
 
 function copyAndConvert(sourceDir, outDir) {
@@ -81,9 +83,9 @@ function gitCloneAndPush(wikiRepo, exportDir, commitMessage = 'Migrate KB to wik
     console.error('No wiki repo provided for clone/push');
     process.exit(1);
   }
-  const tmpDir = path.join('tmp', 'wiki-clone');
+  const tmpDir = safeJoinRepo('tmp', 'wiki-clone');
   if (fs.existsSync(tmpDir)) {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    safeRmInRepoSync(tmpDir);
   }
   console.log(`Cloning wiki repo ${wikiRepo} into ${tmpDir}`);
   const cloneCmd = `git clone ${wikiRepo} ${tmpDir}`;
@@ -114,7 +116,26 @@ function gitCloneAndPush(wikiRepo, exportDir, commitMessage = 'Migrate KB to wik
 function main() {
   const opts = parseArgs();
   const source = opts.src || path.join('website', 'kb');
-  const out = opts.out || path.join('tmp', 'neuroswarm-wiki-export');
+  let out = opts.out || path.join('tmp', 'neuroswarm-wiki-export');
+  if (out) {
+    // If out is absolute and within repo, accept; otherwise, normalize to be inside neuroswarm
+    if (path.isAbsolute(out)) {
+      if (!ensureDirInRepoSync(out)) {
+        console.warn('Warning: requested out path is outside of neuroswarm; falling back to neuroswarm/tmp/neuroswarm-wiki-export');
+        out = path.join('tmp', 'neuroswarm-wiki-export');
+      }
+    } else {
+      // Non-absolute: ensure inside repo using safeJoinRepo
+      const parts = out.split(path.sep).filter(Boolean);
+      out = path.join(...parts);
+      try {
+        out = safeJoinRepo(...parts);
+      } catch (e) {
+        // fallback
+        out = safeJoinRepo('tmp', 'neuroswarm-wiki-export');
+      }
+    }
+  }
   const wikiRepo = opts['wiki-repo'];
   const push = !!opts.push;
 

@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { ensureDirInRepoSync } = require('../scripts/repoScopedFs.cjs');
 
 // Generate founder key pair
 const founderKeys = crypto.generateKeyPairSync('rsa', {
@@ -32,7 +33,7 @@ const adminKeys = crypto.generateKeyPairSync('rsa', {
 const secretsDir = path.join(__dirname, 'secrets');
 
 if (!fs.existsSync(secretsDir)) {
-  fs.mkdirSync(secretsDir);
+  ensureDirInRepoSync(secretsDir);
 }
 
 fs.writeFileSync(path.join(secretsDir, 'founder.jwt.key'), founderKeys.privateKey);

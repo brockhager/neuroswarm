@@ -7,6 +7,7 @@
   "scripts": {
     "package:bins": "node ./scripts/package-binaries.mjs",
     "lint:console": "node ./scripts/check-no-console.mjs",
+    "lint:folders": "node ./scripts/check-repo-scoped-folders.mjs",
     "build": "tsc --project config",
     "test": "node tests/governance/test-quorum-validation.ts",
     "test:sources": "node tests/sources-root.test.mjs",

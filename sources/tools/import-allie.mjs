@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import fs from 'fs';
 import path from 'path';
+import { ensureDirInRepoSync } from '../../scripts/repoScopedFs.mjs';
 import fetch from 'node-fetch';
 
 // Usage: node sources/tools/import-allie.mjs --repo <owner/repo> --dir adapters --token <GITHUB_TOKEN>
@@ -26,7 +27,7 @@ async function run() {
   try {
     const files = await listFiles();
     const outDir = path.resolve(new URL('../adapters', import.meta.url).pathname);
-    if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+    if (!fs.existsSync(outDir)) ensureDirInRepoSync(outDir);
     for (const f of files) {
       if (f.type !== 'file') continue;
       const rawUrl = f.download_url;

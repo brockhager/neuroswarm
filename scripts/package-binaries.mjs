@@ -2,6 +2,7 @@
 import { spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import { ensureDirInRepoSync, safeJoinRepo, safeRmInRepoSync } from './repoScopedFs.mjs';
 import archiver from 'archiver';
 
 // Entries are relative to the neuroswarm project root (process.cwd()).
@@ -34,21 +35,21 @@ if (!keepOpen && (String(process.env.KEEP_OPEN || '').toLowerCase() === '1' || S
   keepOpen = true;
 }
 
-const dist = path.join(process.cwd(), 'dist');
+const dist = safeJoinRepo('dist');
 // Ensure a clean dist dir for each packaging run to avoid leftover files
 if (fs.existsSync(dist)) {
-  try { fs.rmSync(dist, { recursive: true, force: true }); } catch (e) { /* ignore */ }
+  try { safeRmInRepoSync(dist); } catch (e) { /* ignore */ }
 }
-fs.mkdirSync(dist, { recursive: true });
+if (!ensureDirInRepoSync(dist)) throw new Error('Dist folder is outside repo root');
 
 for (const node of nodes) {
   for (const t of targets.filter(tt => !filter || tt.os === filter)) {
     const outFolder = path.join(dist, node.name, t.os);
     // Ensure `outFolder` is clean to avoid leftover start scripts or files from previous runs
     if (fs.existsSync(outFolder)) {
-      try { fs.rmSync(outFolder, { recursive: true, force: true }); } catch (e) { /* ignore */ }
+      try { safeRmInRepoSync(outFolder); } catch (e) { /* ignore */ }
     }
-    fs.mkdirSync(outFolder, { recursive: true });
+    if (!ensureDirInRepoSync(outFolder)) throw new Error('Out folder is outside repo');
     const exeName = node.name + (t.os === 'win' ? '.exe' : '');
     const outPath = path.join(outFolder, exeName);
     console.log(`Packaging ${node.name} for ${t.os} -> ${outPath}`);
@@ -75,11 +76,11 @@ for (const node of nodes) {
             const s = path.join(srcPublic, f.name);
             const d = path.join(dstPublic, f.name);
             if (f.isDirectory()) {
-              fs.mkdirSync(d, { recursive: true });
+              ensureDirInRepoSync(d);
               // copy nested
               // A naive recursive copy implementation
               function cpDir(sdir, ddir) {
-                fs.mkdirSync(ddir, { recursive: true });
+                ensureDirInRepoSync(ddir);
                 for (const ent of fs.readdirSync(sdir, { withFileTypes: true })) {
                   const s2 = path.join(sdir, ent.name);
                   const d2 = path.join(ddir, ent.name);
@@ -88,7 +89,7 @@ for (const node of nodes) {
               }
               cpDir(s, d);
             } else {
-              fs.mkdirSync(path.dirname(d), { recursive: true });
+              ensureDirInRepoSync(path.dirname(d));
               fs.copyFileSync(s, d);
             }
           }
