@@ -21,5 +21,5 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo Starting vp-node in a persistent cmd window
-start "VP Node" cmd /k "node "%~dp0\server.js" %* || (echo [VP] Node exited with code %ERRORLEVEL% & pause)"
+start "VP Node" cmd /k "node "%~dp0\server.js" --status %* || (echo [VP] Node exited with code %ERRORLEVEL% & pause)"
 exit /b 0

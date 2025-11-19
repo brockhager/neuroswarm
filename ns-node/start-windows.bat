@@ -11,5 +11,5 @@ if %ERRORLEVEL% NEQ 0 (
   exit /b 1
 )
 echo Starting NS Node in a new cmd window (persistent)
-start "NS Node" cmd /k "node "%~dp0server.js" %* || (echo [NS] Node exited with code %ERRORLEVEL% & pause)"
+start "NS Node" cmd /k "node "%~dp0server.js" --status %* || (echo [NS] Node exited with code %ERRORLEVEL% & pause)"
 exit /b 0
