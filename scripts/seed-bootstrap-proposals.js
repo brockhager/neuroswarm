@@ -9,6 +9,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { ensureDirInRepoSync } = require('../scripts/repoScopedFs.cjs');
 
 // Initial proposals data
 const initialProposals = [
@@ -407,7 +408,7 @@ function seedProposals() {
   // Ensure data directory exists
   const dataDir = path.dirname(outputPath);
   if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+    ensureDirInRepoSync(dataDir);
   }
 
   // Add metadata to proposals

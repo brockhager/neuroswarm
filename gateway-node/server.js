@@ -4,6 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import fs from 'fs';
 import path from 'path';
+import { ensureDirInRepoSync } from '../scripts/repoScopedFs.mjs';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import { loadRegistry, queryAdapter, listStatuses, queryAdapterWithOpts } from '../sources/index.js';
@@ -14,7 +15,7 @@ function ts() { return new Date().toISOString(); }
 function logGw(...args) { const _ts = new Date().toISOString(); console.log(`[GW][${_ts}]`, ...args); }
 logGw(`gateway-node starting on port ${PORT}`);
 const DATA_DIR = path.join(process.cwd(), 'data');
-if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+if (!fs.existsSync(DATA_DIR)) ensureDirInRepoSync(DATA_DIR);
 const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
 if (!fs.existsSync(HISTORY_FILE)) fs.writeFileSync(HISTORY_FILE, JSON.stringify([]));
 

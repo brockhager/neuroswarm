@@ -128,6 +128,31 @@ Run each node standalone to validate it starts and exposes health endpoints.
   curl --silent --fail http://localhost:4000/health
   ```
 
+  ### Example `start-windows.bat` (Windows ZIP artifacts)
+
+  Each Windows release ZIP contains a `start-windows.bat` helper that opens a new CMD window and launches the node with a default `--status` flag:
+
+  ```
+  @echo off
+  rem Starts server in a new command window and keeps it open for debugging/monitoring
+  start cmd /k "node server.js --status"
+  ```
+
+  ### Verifying the Windows artifact & start script (maintainers)
+
+  To confirm a release package contains the `start-windows.bat` helper and that it defaults to emitting heartbeat `--status` in the Windows ZIP, run the following steps:
+
+  PowerShell example (after downloading the ZIP):
+
+  ```powershell
+  Expand-Archive ns-node-win-x64.zip -DestinationPath ns-node
+  Test-Path ns-node\start-windows.bat
+  Get-Content ns-node\start-windows.bat | Select-String "--status"
+  Get-Content ns-node\start-windows.bat | Select-String "cmd /k"
+  ```
+
+  CI will perform the same check automatically using the packaging validation step and `neuroswarm/scripts/confirm-heartbeat-from-logs.mjs`.
+
 Integrated Run: Start nodes and validate network
 -----------------------------------------------
 Follow this sequence to start an integrated environment and run simple connectivity and consensus steps.

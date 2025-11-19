@@ -2,6 +2,7 @@
 import { execSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import { ensureDirInRepoSync, safeJoinRepo, safeRmInRepoSync } from './repoScopedFs.mjs';
 
 const argv = process.argv.slice(2);
 const opts = { dry: false };
@@ -21,9 +22,9 @@ function redact(str) {
   if (!str) return str;
   return String(str).replace(new RegExp(token, 'g'), '***REDACTED***');
 }
-const tmpDir = path.join(process.cwd(), 'tmp', 'wiki-clone');
-if (fs.existsSync(tmpDir)) { try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch(e) { execSync(`rm -rf ${tmpDir}`); } }
-fs.mkdirSync(tmpDir, { recursive: true });
+const tmpDir = safeJoinRepo('tmp', 'wiki-clone');
+if (fs.existsSync(tmpDir)) { try { safeRmInRepoSync(tmpDir); } catch(e) { execSync(`rm -rf ${tmpDir}`); } }
+if (!ensureDirInRepoSync(tmpDir)) process.exit(1);
   if (!opts.dry) {
   console.log('Cloning wiki repo', wikiUrlRedacted);
   try {

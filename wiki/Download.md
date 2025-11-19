@@ -49,7 +49,7 @@ Invoke-WebRequest -Uri https://github.com/brockhager/neuroswarm/releases/latest/
 Expand-Archive gateway-node-win-x64.zip -DestinationPath gateway-node
 Set-Location gateway-node
 # Start the gateway (example)
-start.bat
+start-windows.bat  # Start a new CMD window; this script defaults to --status and keeps the window open for monitoring
 ```
 
 ---
@@ -74,6 +74,19 @@ Invoke-WebRequest -Uri https://github.com/brockhager/neuroswarm/releases/latest/
 Get-FileHash ns-node-win-x64.zip -Algorithm SHA256
 # Compare with the checksums.txt published alongside the release
 ```
+
+### Verify Windows `start-windows.bat` and `--status`
+
+To maintain consistent behaviour across releases, ensure `start-windows.bat` is present in Windows ZIPs and that it defaults to `--status` and opens a cmd window via `cmd /k`. Use PowerShell to extract and inspect the script:
+
+```powershell
+Expand-Archive ns-node-win-x64.zip -DestinationPath ns-node
+Test-Path ns-node\start-windows.bat
+Get-Content ns-node\start-windows.bat | Select-String "--status"
+Get-Content ns-node\start-windows.bat | Select-String "cmd /k"
+```
+
+Maintainers: CI packaging validation will assert the same checks; ensure those checks continue to pass whenever packaging scripts are modified.
 
 GPG verification (if release signatures present):
 
@@ -110,7 +123,8 @@ When publishing a new release:
 4. Generate `checksums.txt` (sha256) and upload it to the release.
 5. If signing (recommended): sign `checksums.txt` and upload `checksums.sig`.
 6. Update `docs/download.md` (if you want to link to versioned assets) or rely on `latest` redirect above.
-7. Run the wiki publish workflow (repo `Publish Wiki Now`) or run `neuroswarm/publish-wiki-now.bat` to sync docs to the GitHub wiki.
+7. Confirm Windows ZIP artifacts contain `start-windows.bat` that uses `cmd /k` and includes `--status` by default.
+8. Run the wiki publish workflow (repo `Publish Wiki Now`) or run `neuroswarm/publish-wiki-now.bat` to sync docs to the GitHub wiki.
 
 ---
 

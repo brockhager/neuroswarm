@@ -2,6 +2,7 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
+import { ensureDirInRepoSync } from '../../shared/repoScopedFs';
 
 describe('Admin shutdown mode integration', () => {
   let app: any;
@@ -15,7 +16,7 @@ describe('Admin shutdown mode integration', () => {
     process.env.PORT = '0';
 
     const secretsDir = path.join(__dirname, '..', '..', 'secrets');
-    if (!fs.existsSync(secretsDir)) fs.mkdirSync(secretsDir);
+    if (!fs.existsSync(secretsDir)) ensureDirInRepoSync(secretsDir);
     const privatePath = path.join(secretsDir, 'founder.jwt.key');
     const publicPath = path.join(secretsDir, 'founder.jwt.pub');
 

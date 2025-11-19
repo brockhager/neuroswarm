@@ -4,12 +4,11 @@
 const { generateKeyPairSync } = require('crypto');
 const fs = require('fs');
 const path = require('path');
+const { ensureDirInRepoSync } = require('../../scripts/repoScopedFs.cjs');
 
 // Ensure secrets directory exists
 const secretsDir = path.join(__dirname, '..', 'secrets');
-if (!fs.existsSync(secretsDir)) {
-  fs.mkdirSync(secretsDir);
-}
+if (!fs.existsSync(secretsDir)) { ensureDirInRepoSync(secretsDir); }
 
 // Generate RSA key pair
 const { privateKey, publicKey } = generateKeyPairSync('rsa', {

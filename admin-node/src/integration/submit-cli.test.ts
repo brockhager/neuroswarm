@@ -16,7 +16,7 @@ describe('CLI Submission e2e', () => {
     process.env.PORT = '0';
 
     const secretsDir = path.join(__dirname, '..', '..', 'secrets');
-    if (!fs.existsSync(secretsDir)) fs.mkdirSync(secretsDir);
+    if (!fs.existsSync(secretsDir)) ensureDirInRepoSync(secretsDir);
     founderPrivatePath = path.join(secretsDir, 'founder.jwt.key');
     founderPublicPath = path.join(secretsDir, 'founder.jwt.pub');
 
