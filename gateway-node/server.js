@@ -11,7 +11,8 @@ import { loadRegistry, queryAdapter, listStatuses, queryAdapterWithOpts } from '
 const PORT = process.env.PORT || 8080;
 
 function ts() { return new Date().toISOString(); }
-console.log(`[${ts()}] gateway-node starting on port ${PORT}`);
+function logGw(...args) { const _ts = new Date().toISOString(); console.log(`[GW][${_ts}]`, ...args); }
+logGw(`gateway-node starting on port ${PORT}`);
 const DATA_DIR = path.join(process.cwd(), 'data');
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
@@ -60,7 +61,7 @@ app.post('/v1/chat', (req, res) => {
     return '***';
   }
   const maskedAuth = maskAuth(auth);
-  console.log(`[GATEWAY-${process.pid}] Received message ${inMsg.id} correlation=${correlation} from ${sender} auth=${maskedAuth}`);
+  logGw(`[PID:${process.pid}] Received message ${inMsg.id} correlation=${correlation} from ${sender} auth=${maskedAuth}`);
   return res.json(response);
 });
 
@@ -265,7 +266,7 @@ async function checkNsNodeHealth(nsUrl, maxRetries = 5) {
   let delay = 500;
   while (attempt < maxRetries) {
     attempt++;
-    console.log(`[GATEWAY] Checking ns-node health attempt ${attempt} -> ${healthUrl}`);
+    logGw(`Checking ns-node health attempt ${attempt} -> ${healthUrl}`);
     const ok = await pingUrl(healthUrl);
     if (ok) return true;
     await new Promise(resolve => setTimeout(resolve, delay));
@@ -281,7 +282,6 @@ const NS_CHECK_MAX_DELAY_MS = Number(process.env.NS_CHECK_MAX_DELAY_MS || 30000)
 const NS_CHECK_EXIT_ON_FAIL = (process.env.NS_CHECK_EXIT_ON_FAIL === 'true');
 let nsReachable = false;
 const STATUS_ENABLED = process.env.STATUS === '1' || process.argv.includes('--status');
-function logGw(...args) { const ts = new Date().toISOString(); console.log(`[GATEWAY] [${ts}]`, ...args); }
 
 function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
@@ -290,20 +290,20 @@ async function startServer() {
     // Attempt a quick initial check, but do not exit on failure: start the server and retry
     nsReachable = await checkNsNodeHealth(NS_NODE_URL, 1);
     if (!nsReachable) {
-      console.warn(`[GATEWAY] ns-node ${NS_NODE_URL} is unreachable initially; starting gateway and retrying with backoff (retries=${NS_CHECK_RETRIES}).`);
+      logGw(`ns-node ${NS_NODE_URL} is unreachable initially; starting gateway and retrying with backoff (retries=${NS_CHECK_RETRIES}).`);
     } else {
       logGw(`Connected to ns-node ${NS_NODE_URL}`);
     }
   }
-  const server = app.listen(PORT, () => {
-      console.log(`[${ts()}] Listening at http://localhost:${PORT}`);
-      console.log(`[${ts()}] Health endpoint available at /health`);
+    const server = app.listen(PORT, () => {
+      logGw(`Listening at http://localhost:${PORT}`);
+      logGw(`Health endpoint available at /health`);
     });
 
   server.on('connection', (socket) => {
     const remote = `${socket.remoteAddress}:${socket.remotePort}`;
-    console.log(`[${ts()}] Connection from ${remote}`);
-    socket.on('close', () => console.log(`[${ts()}] Connection closed ${remote}`));
+    logGw(`Connection from ${remote}`);
+    socket.on('close', () => logGw(`Connection closed ${remote}`));
   });
 
   // If ns not reachable, retry in background using exponential backoff
@@ -313,7 +313,7 @@ async function startServer() {
       let delay = NS_CHECK_INITIAL_DELAY_MS;
       while (attempt < NS_CHECK_RETRIES && !nsReachable) {
         attempt += 1;
-        console.log(`[GATEWAY] Retry ${attempt}/${NS_CHECK_RETRIES} to check ns-node ${NS_NODE_URL} after ${delay}ms...`);
+        logGw(`Retry ${attempt}/${NS_CHECK_RETRIES} to check ns-node ${NS_NODE_URL} after ${delay}ms...`);
         await sleep(delay);
         const prev = nsReachable;
         nsReachable = await checkNsNodeHealth(NS_NODE_URL, 1);
@@ -330,12 +330,12 @@ async function startServer() {
         delay = Math.min(delay * 2, NS_CHECK_MAX_DELAY_MS);
       }
       if (!nsReachable) {
-        const msg = `[GATEWAY] ns-node ${NS_NODE_URL} still unreachable after ${NS_CHECK_RETRIES} attempts.`;
+        const msg = `ns-node ${NS_NODE_URL} still unreachable after ${NS_CHECK_RETRIES} attempts.`;
         if (NS_CHECK_EXIT_ON_FAIL) {
-          console.error(msg, 'Exiting due to NS_CHECK_EXIT_ON_FAIL=true');
+          logGw(msg, 'Exiting due to NS_CHECK_EXIT_ON_FAIL=true');
           process.exit(1);
         } else {
-          console.warn(msg, 'Continuing with degraded functionality.');
+          logGw(msg, 'Continuing with degraded functionality.');
         }
       }
     })();
@@ -346,9 +346,11 @@ if (STATUS_ENABLED) {
   setInterval(() => {
     try {
       const mempoolSize = gwMempool ? gwMempool.size : 0;
-      logGw(`Heartbeat: ns=${NS_NODE_URL} nsReachable=${nsReachable} mempoolSize=${mempoolSize}`);
-    } catch (e) { console.error('[GATEWAY] Heartbeat error', e.message); }
-  }, Number(process.env.STATUS_INTERVAL_MS || 30000));
+      // Adapter query stats
+      const adapterCount = loadRegistry && typeof loadRegistry === 'function' ? (loadRegistry().adapters || []).length : 0;
+      logGw(`heartbeat | ns=${NS_NODE_URL} nsReachable=${nsReachable} mempoolSize=${mempoolSize} adapters=${adapterCount} uptime=${process.uptime().toFixed(0)}s`);
+    } catch (e) { logGw('Heartbeat error', e.message); }
+  }, Number(process.env.STATUS_INTERVAL_MS || 60000));
 }
 }
 

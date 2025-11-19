@@ -5,11 +5,13 @@ set NS_NODE_URL=http://localhost:3000
 set NS_CHECK_EXIT_ON_FAIL=false
 set STATUS=1
 
-:: Run node in foreground so logs stream into this cmd window
-node "%~dp0\server.js" %*
-set EXITCODE=%ERRORLEVEL%
-if %EXITCODE% NEQ 0 (
-  echo [%DATE% %TIME%] ns-node exited with code %EXITCODE%
-  
+where node >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+  echo ERROR: Node.js not found in PATH. Please install Node.js.
+  pause
+  exit /b 1
 )
-exit /b %EXITCODE%
+
+echo Starting ns-node in a persistent cmd window
+start "NS Node" cmd /k "node "%~dp0\server.js" %* || (echo [NS] Node exited with code %ERRORLEVEL% & pause)"
+exit /b 0

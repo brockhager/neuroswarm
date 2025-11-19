@@ -21,9 +21,9 @@ function sha256Hex(buf) {
 
 const STATUS_ENABLED = process.env.STATUS === '1' || process.argv.includes('--status');
 function ts() { return new Date().toISOString(); }
-console.log(`[${ts()}] vp-node starting on port ${PORT}`);
+logVp(`vp-node starting on port ${PORT}`);
 if (STATUS_ENABLED) console.log(`[${ts()}] vp-node heartbeat enabled (interval ${Number(process.env.STATUS_INTERVAL_MS || 30000)}ms)`);
-function logVp(...args) { const _ts = new Date().toISOString(); console.log(`[${_ts}] [VP-NODE]`, ...args); }
+function logVp(...args) { const _ts = new Date().toISOString(); console.log(`[VP][${_ts}]`, ...args); }
 let lastProduceSuccess = null;
 let nsReachable = false;
 let ipfs = null;
@@ -58,10 +58,12 @@ async function initIpfs() {
     if (ipfsConnected) logVp(`vp-node connected to IPFS peer ${ipfsPeer}`);
   } catch (e) {
     ipfsConnected = false;
-    console.warn('[VP-NODE] IPFS not available at', ipfsApi, '-', e.message);
+    logVp('IPFS not available at', ipfsApi, '-', e.message);
   }
 }
 
+let blocksProduced = 0;
+let lastPayloadCid = null;
 if (STATUS_ENABLED) {
   // periodic heartbeat
   setInterval(async () => {
@@ -70,8 +72,8 @@ if (STATUS_ENABLED) {
       nsReachable = nsOk;
       const gwOk = await pingGateway();
       logVp(`Heartbeat: ns=${NS_URL} nsReachable=${nsOk} gateway=${GATEWAY_URL} gatewayOk=${gwOk} lastProduceSuccess=${lastProduceSuccess} validator=${VAL_ID}`);
-    } catch (e) { console.error('[VP-NODE] Heartbeat error', e.message); }
-  }, Number(process.env.STATUS_INTERVAL_MS || 30000));
+    } catch (e) { logVp('Heartbeat error', e.message); }
+  }, Number(process.env.STATUS_INTERVAL_MS || 60000));
 }
 
 function canonicalize(obj) {
@@ -134,7 +136,7 @@ async function register() {
     const j = await res.json();
     logVp('register:', j);
   } catch (e) {
-    console.error('[VP-NODE] register error', e.message);
+    logVp('register error', e.message);
   }
 }
 
@@ -199,7 +201,7 @@ async function produceLoop() {
         }
         logVp(`Produced block ${slot}, CID: ${payloadCid} signer=${signer} sourcesRoot=${sourcesRoot} txs=${txIds.length} origins=${Array.from(origins).join(',') || 'none'}`);
       } catch (e) {
-        console.warn('[VP-NODE] IPFS add failed:', e.message);
+        logVp('IPFS add failed:', e.message);
         payloadCid = null;
       }
     } else {
@@ -211,9 +213,11 @@ async function produceLoop() {
     const producerUrl = process.env.VP_PUBLISH_URL || `http://localhost:${PORT}`;
     const res = await fetch(NS_URL + '/blocks/produce', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Producer-Url': producerUrl }, body: JSON.stringify({ header, txs, signature: sig }) });
     const j = await res.json();
-    if (j && j.ok) {
-      logVp('produce ok:', j);
+        if (j && j.ok) {
       lastProduceSuccess = true;
+      blocksProduced += 1;
+      lastPayloadCid = payloadCid || null;
+      logVp(`produced block #${slot} | payloadCid=${payloadCid || 'none'} | txs=${txIds.length}`);
       // after producing a block, notify gateway to remove consumed txs
       try {
         const consume = await fetch(GATEWAY_URL + '/v1/mempool/consume', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: txIds }) });
@@ -226,7 +230,7 @@ async function produceLoop() {
         logVp('Error notifying gateway for consume:', e.message);
       }
     } else {
-      console.warn('[VP-NODE] produce failed:', j);
+      logVp('produce failed:', j);
       lastProduceSuccess = false;
     }
     // Optionally pin any tx.cid to IPFS pinning endpoint
@@ -244,7 +248,7 @@ async function produceLoop() {
       }
     }
   } catch (e) {
-    console.error('[VP-NODE] vp err', e.message);
+    logVp('vp err', e.message);
     logVp(`Error in produceLoop: ${e.message.slice(0,200)}`);
     lastProduceSuccess = false;
   }

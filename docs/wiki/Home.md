@@ -16,6 +16,12 @@ Welcome to the NeuroSwarm Wiki. This is the canonical, single source of truth fo
 2. Unpack; run provided start script (`start-gateway`, `start-ns`, `start-vp`).
 3. Wait for automatic health poll; gateway script opens browser when ready.
 4. Verify `/health` returns JSON status for each node.
+	 - Start nodes with `--status` to emit periodic heartbeat logs (60s):
+		 - Example (Windows): `start-windows.bat` opens persistent cmd window; use `start-windows.bat` in each node folder.
+	 - Example log prefixes:
+		 - Gateway: `[GW][2025-11-18T15:20Z] tx admitted: abc123 | sourcesVerified=true`
+		 - VP: `[VP][2025-11-18T15:20Z] produced block #42 | payloadCid=Qm...`
+		 - NS: `[NS][2025-11-18T15:20Z] verified block #42 | signatureValid=true | sourcesValid=true`
 5. Run connectivity: `node scripts/checkNodeConnectivityClean.mjs`.
 6. Smoke blocks: `node scripts/smokeProduce.mjs` (see Running Nodes for expected output).
 7. Troubleshooting: see `Troubleshooting.md`. If you are missing docs on the wiki, open an issue.

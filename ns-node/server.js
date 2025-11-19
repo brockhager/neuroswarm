@@ -20,13 +20,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 function ts() { return new Date().toISOString(); }
-console.log(`[${ts()}] ns-node starting on port ${PORT}`);
+logNs(`ns-node starting on port ${PORT}`);
 
 app.use(cors());
 // Log incoming HTTP requests for connection visibility
 app.use((req, res, next) => {
   const ip = req.ip || req.socket.remoteAddress;
-  console.log(`[${ts()}] HTTP ${req.method} ${req.url} from ${ip}`);
+  logNs(`HTTP ${req.method} ${req.url} from ${ip}`);
   next();
 });
 app.use(bodyParser.json());
@@ -84,7 +84,7 @@ app.post('/chat', (req, res) => {
   const forwardedHeaders = { authorization: auth, 'x-forwarded-for': forwardedFor, 'x-forwarded-user': forwardedUser, 'x-correlation-id': incomingCorrelation };
   publishToGateways({ id: response.id, sender: response.sender, content: response.content, timestamp: response.timestamp }, forwardedHeaders)
     .catch((err) => {
-      console.error('Failed to publish to gateways:', err);
+      logNs('Failed to publish to gateways:', err);
     });
 
   res.json(response);
@@ -117,9 +117,11 @@ function maskAuth(header) {
 }
 
 const STATUS_ENABLED = process.env.STATUS === '1' || process.argv.includes('--status');
+let blocksVerified = 0;
+let sourcesValidCount = 0;
 function logNs(...args) {
   const ts = new Date().toISOString();
-  console.log(`[NS-NODE] [${ts}]`, ...args);
+  console.log(`[NS][${ts}]`, ...args);
 }
 
 // Periodic heartbeat for operator/debugging visibility
@@ -140,11 +142,11 @@ if (STATUS_ENABLED) {
           }
         }
       } catch (e) { /* ignore */ }
-      logNs(`Heartbeat: gateways=${gwStatus} validators=${validatorCount} mempool=${mempoolSize || 'unknown'} height=${getCanonicalHeight()}`);
+      logNs(`heartbeat | gateways=${gwStatus} validators=${validatorCount} mempool=${mempoolSize || 'unknown'} height=${getCanonicalHeight()} verifiedBlocks=${blocksVerified} sourcesValid=${sourcesValidCount} uptime=${process.uptime().toFixed(0)}s`);
     } catch (e) {
       console.error('[NS-NODE] Heartbeat error', e.message);
     }
-  }, Number(process.env.STATUS_INTERVAL_MS || 30000));
+  }, Number(process.env.STATUS_INTERVAL_MS || 60000));
 }
 
 async function publishToGateways(message, headers = {}) {
@@ -162,7 +164,7 @@ async function publishToGateways(message, headers = {}) {
         if (gw.auth.type === 'apiKey') forwardHeaders['X-API-Key'] = gw.auth.key;
       }
       const maskedAuth = maskAuth(forwardHeaders['Authorization']);
-      console.log(`[NS-NODE] Publishing message ${message.id} to gateway ${gw.url} correlation=${correlationId} auth=${maskedAuth}`);
+      logNs(`Publishing message ${message.id} to gateway ${gw.url} correlation=${correlationId} auth=${maskedAuth}`);
       const controller = new AbortController();
       const timeoutMs = Number(process.env.GATEWAY_REQUEST_TIMEOUT_MS || 5000);
       const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
@@ -442,10 +444,12 @@ app.post('/blocks/produce', (req, res) => {
   if (calcRoot !== header.merkleRoot) return res.status(400).json({ error: 'bad merkle root' });
   // verify sourcesRoot if present
   if (header.sourcesRoot) {
-    const srcRoot = computeSourcesRoot(txs);
+      const srcRoot = computeSourcesRoot(txs);
     if (srcRoot !== header.sourcesRoot) {
-      console.error('[NS-NODE] Bad sources root computed', srcRoot, 'expected', header.sourcesRoot);
+        console.error('[NS-NODE] Bad sources root computed', srcRoot, 'expected', header.sourcesRoot);
       return res.status(400).json({ error: 'bad_sources_root' });
+      // sources root matched
+      sourcesValidCount += 1;
     }
   }
   // verify prevHash references any known block (or genesis)
