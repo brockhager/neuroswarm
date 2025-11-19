@@ -131,7 +131,20 @@ for (const m of mapping) {
       continue; // do not copy
     }
     // if we reach here, allow overwrite (explicit permission)
-    console.log('Home.md overwrite allowed (explicit flag present). Copying', m.src, '->', dstPath);
+      console.log('Home.md overwrite allowed (explicit flag present). Preparing to backup and copy', m.src, '->', dstPath);
+      // Create a timestamped backup of existing Home.md (if present) for audit/trouble shooting
+      if (dstExists) {
+        try {
+          const tsSafe = new Date().toISOString().replace(/[:.]/g, '-');
+          const backupName = `Home.md.backup.${tsSafe}.md`;
+          const backupPath = path.join(tmpDir, backupName);
+          fs.copyFileSync(dstPath, backupPath);
+          console.log('Home.md backup created:', backupPath);
+        } catch (e) {
+          wikiLog('WARN', 'Failed to create Home.md backup before overwrite', e.message);
+        }
+      }
+      console.log('Home.md overwrite allowed (explicit flag present). Copying', m.src, '->', dstPath);
     fs.copyFileSync(m.src, dstPath);
     changed = true;
     continue;

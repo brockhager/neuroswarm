@@ -3,8 +3,8 @@ name: Protect Wiki Home Page
 on:
   workflow_dispatch:
   schedule:
-    # Run every 6 hours to detect and restore Home.md if compromised
-    - cron: '0 */6 * * *'
+    # Run every 15 minutes to detect and restore Home.md if compromised
+    - cron: '*/15 * * * *'
   push:
     branches:
       - main
