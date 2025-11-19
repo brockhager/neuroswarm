@@ -93,12 +93,29 @@ for (const m of mapping) {
     let dstExists = fs.existsSync(dstPath);
     let dstContent = dstExists ? fs.readFileSync(dstPath, 'utf8') : null;
     let srcContent = fs.readFileSync(m.src, 'utf8');
-    // If the src Home.md file is empty, do not copy and fail when running in CI
+    
+    // SAFEGUARD: If source Home.md is empty, restore from default template
     if (!srcContent || srcContent.trim().length === 0) {
-      console.error('ERROR: Source Home.md is empty; refusing to copy or overwrite Home.md');
-      wikiLog('ERROR', 'Blocked attempt to overwrite Home.md with empty source', `src=${m.src}`);
-      blockedHomeAttempt = true;
-      continue;
+      console.error('ERROR: Source Home.md is empty; attempting restoration from default template');
+      wikiLog('ERROR', 'Source Home.md empty - restoring from default template', `src=${m.src}`);
+      
+      // Try to restore from default-Home.md
+      const defaultHomePath = path.join(process.cwd(), 'neuroswarm', 'scripts', 'default-Home.md');
+      if (fs.existsSync(defaultHomePath)) {
+        srcContent = fs.readFileSync(defaultHomePath, 'utf8');
+        wikiLog('INFO', 'Restored Home.md from default template');
+        // Write restored content back to source to prevent repeated restoration
+        try {
+          fs.writeFileSync(m.src, srcContent, 'utf8');
+          wikiLog('INFO', 'Wrote restored content back to source:', m.src);
+        } catch (e) {
+          wikiLog('WARN', 'Failed to write restored content to source:', e.message);
+        }
+      } else {
+        wikiLog('ERROR', 'default-Home.md not found; cannot restore');
+        blockedHomeAttempt = true;
+        continue;
+      }
     }
     if (dstExists && dstContent === srcContent) {
       // nothing to do
