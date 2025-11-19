@@ -356,3 +356,14 @@ if (STATUS_ENABLED) {
 }
 
 startServer();
+
+// Standardized crash handling: log and exit so the CMD window remains open for diagnostics
+process.on('uncaughtException', (err) => {
+  try { logGw('ERROR: Node crashed | reason=' + (err && err.message ? err.message : String(err))); } catch (e) { console.error('ERROR: Node crashed', err.message); }
+  try { logGw(err && err.stack ? err.stack : err); } catch (e) { console.error(err && err.stack ? err.stack : err); }
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+  try { logGw('ERROR: Node crashed | reason=' + (reason && reason.message ? reason.message : String(reason))); } catch (e) { console.error('ERROR: Node crashed', reason); }
+  process.exit(1);
+});
