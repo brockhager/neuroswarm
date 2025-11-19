@@ -3,7 +3,16 @@ import fs from 'fs';
 import path from 'path';
 
 // repo root is always the neuroswarm folder inside the monorepo
-const REPO_ROOT = path.join(process.cwd(), 'neuroswarm');
+// If we're already inside neuroswarm, use cwd. Otherwise, join with 'neuroswarm'
+function findRepoRoot() {
+  const cwd = process.cwd();
+  // Check if cwd ends with 'neuroswarm' or contains neuroswarm/.git
+  if (cwd.endsWith('neuroswarm') || fs.existsSync(path.join(cwd, '.git'))) {
+    return cwd;
+  }
+  return path.join(cwd, 'neuroswarm');
+}
+const REPO_ROOT = findRepoRoot();
 
 function normalize(p) {
   try { return path.resolve(p); } catch (e) { return p; }
