@@ -5,6 +5,7 @@ import path from 'path';
 function runAndCheck(cmd, args, cwd, match, timeout = 120000) {
   return new Promise((resolve, reject) => {
     const p = spawn(cmd, args, { cwd, shell: true });
+      p.on('error', (err) => { clearTimeout(timer); reject(err); });
     let matched = false;
     const timer = setTimeout(() => {
       p.kill();

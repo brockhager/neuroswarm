@@ -41,6 +41,13 @@ All documentation must be placed in the `/docs/` directory with proper categoriz
 - **Keep filenames descriptive** and consistent with existing patterns
 - **Update navigation** when adding new documentation sections
 
+### 🛡️ Wiki Home page protection
+
+- **Do not modify `Home.md` via automation.** The wiki home page (`neuroswarm/docs/wiki/Home.md` or `neuroswarm/wiki/Home.md`) is the single canonical entry point for the manual and user-facing documentation. Any automation or scripts that attempt to overwrite, create, remove, or reset `Home.md` will be blocked by the repository checks.
+- **Edits must be intentional and reviewed via PR.** Contributors should update `neuroswarm/docs/wiki/Home.md` only through a pull request that documents and explains the change and receives peer review.
+- **Allowing automated writes:** If automation must update `Home.md` (an unusual sanctioned case), it must be explicitly permitted by setting the environment variable `ALLOW_WIKI_HOME_OVERWRITE=1` for that job/run and include clear justification in the PR description.
+- **Logging of blocked attempts:** Any script attempting to modify `Home.md` without explicit permission will log an error: `ERROR: Attempted overwrite of Home.md blocked.` and a `[WIKI][time] WARN: Unauthorized attempt to modify Home.md` message.
+
 ## 💻 Code Contributions
 
 ### Development Workflow

@@ -56,6 +56,14 @@ jobs:
         run: |
           node neuroswarm/scripts/pushDocsToWiki.mjs --dry-run
 
+      - name: Test pushDocsToWiki blocks Home.md in CI
+        run: |
+          node neuroswarm/scripts/test-pushDocsToWiki-home-block.mjs
+
+      - name: Test migrate-kb-to-wiki blocks Home.md in CI
+        run: |
+          node neuroswarm/scripts/test-migrate-kb-block-home.mjs
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
