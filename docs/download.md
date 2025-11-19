@@ -209,6 +209,8 @@ Invoke-WebRequest -Uri https://github.com/brockhager/neuroswarm/releases/latest/
 # Compare with the checksums.txt published alongside the release
 ```
 
+> Note: VP ZIPs are validated for extraction on both Windows and Linux during CI and include the run scripts and bundled dependencies where required.
+
 GPG verification (if release signatures present):
 
 ```bash
