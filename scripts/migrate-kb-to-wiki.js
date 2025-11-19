@@ -11,6 +11,7 @@ const fs = require('fs');
 const path = require('path');
 const { ensureDirInRepoSync, safeJoinRepo, safeRmInRepoSync } = require('./repoScopedFs.cjs');
 const { execSync, spawnSync } = require('child_process');
+let blockedHomeAttempt = false;
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -62,7 +63,7 @@ function ensureCleanDir(dir) {
   if (fs.existsSync(dir)) safeRmInRepoSync(dir);
 }
 
-function copyAndConvert(sourceDir, outDir) {
+function copyAndConvert(sourceDir, outDir, opts = {}) {
   ensureCleanDir(outDir);
   const files = fs.readdirSync(sourceDir).filter(f => f.endsWith('.md'));
   files.forEach(f => {
@@ -70,11 +71,20 @@ function copyAndConvert(sourceDir, outDir) {
     const raw = fs.readFileSync(src, 'utf8');
     const converted = convertLinks(raw);
     const base = f.replace(/\.md$/, '');
-    const title = toWikiTitle(base);
-    const dstName = `${title}.md`;
-    const dst = path.join(outDir, dstName);
-    fs.writeFileSync(dst, converted);
-    console.log(`Exported ${src} -> ${dstName}`);
+      let outDest;
+      if (base === 'index') {
+        if (process.env.ALLOW_WIKI_HOME_OVERWRITE === '1' || opts['allow-home-overwrite'] === true) {
+          outDest = path.join(outDir, 'Home.md');
+        } else {
+          console.warn('Skipping conversion of index.md to Home.md in migrate-kb-to-wiki; Home.md modifications require explicit permission -- allow via ALLOW_WIKI_HOME_OVERWRITE=1');
+          blockedHomeAttempt = true;
+          return; // Skip this iteration
+        }
+      } else {
+        outDest = path.join(outDir, `${toWikiTitle(base)}.md`);
+      }
+      fs.writeFileSync(outDest, converted);
+      console.log(`Exported ${src} -> ${path.basename(outDest)}`);
   });
 }
 
@@ -143,11 +153,16 @@ function main() {
     console.error('KB source directory does not exist:', source);
     process.exit(1);
   }
-  copyAndConvert(source, out);
+  copyAndConvert(source, out, opts);
   if (wikiRepo) {
     gitCloneAndPush(wikiRepo, out, 'Migrate KB pages to wiki', push);
   } else {
     console.log('Export complete. Files are in', path.resolve(out));
+  }
+  // If a Home.md overwrite was blocked and we're on CI, fail to prevent automation from skipping this change silently
+  if (typeof blockedHomeAttempt !== 'undefined' && blockedHomeAttempt && (process.env.CI === 'true' || process.env.GITHUB_ACTIONS)) {
+    console.error('CI detected unauthorized Home.md migration attempt; failing the job to prevent automation from modifying the wiki home page.');
+    process.exit(2);
   }
 }
 

@@ -2,6 +2,17 @@
 import { execSync } from 'child_process';
 
 try {
+  // Ensure this is a git repository; otherwise, skip this check
+  try {
+    const inside = execSync('git rev-parse --is-inside-work-tree', { encoding: 'utf8' }).trim();
+    if (inside !== 'true') {
+      console.warn('Not a git repo; skipping check-no-console');
+      process.exit(0);
+    }
+  } catch (e) {
+    console.warn('Not a git repo (git rev-parse failed); skipping check-no-console');
+    process.exit(0);
+  }
   const out = execSync('git grep -n -- "console\\.\\(log\\|warn\\|error\\)" -- neuroswarm/*-node || true', { encoding: 'utf8' });
   if (!out || out.trim().length === 0) {
     console.log('No console.* occurrences found in neuroswarm/*-node');
