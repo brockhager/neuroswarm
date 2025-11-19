@@ -1,0 +1,59 @@
+name: Protect Wiki Home Page
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Run every 6 hours to detect and restore Home.md if compromised
+    - cron: '0 */6 * * *'
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - 'neuroswarm/wiki/Home.md'
+      - 'neuroswarm/docs/wiki/Home.md'
+      - '.github/workflows/protect-wiki-home.yml'
+
+jobs:
+  protect-home:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check source Home.md is valid
+        run: |
+          set -e
+          if [ -f neuroswarm/wiki/Home.md ]; then
+            test -s neuroswarm/wiki/Home.md || {
+              echo "ERROR: neuroswarm/wiki/Home.md is empty"
+              exit 1
+            }
+          elif [ -f neuroswarm/docs/wiki/Home.md ]; then
+            test -s neuroswarm/docs/wiki/Home.md || {
+              echo "ERROR: neuroswarm/docs/wiki/Home.md is empty"
+              exit 1
+            }
+          else
+            echo "ERROR: Home.md not found in neuroswarm/wiki or neuroswarm/docs/wiki"
+            exit 1
+          fi
+          echo "✓ Source Home.md is valid"
+
+      - name: Restore wiki Home.md if needed
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          node neuroswarm/scripts/restore-wiki-home.mjs
+
+      - name: Verify restoration worked
+        if: failure()
+        run: |
+          echo "::error::Wiki Home.md restoration failed - manual intervention required"
+          exit 1
