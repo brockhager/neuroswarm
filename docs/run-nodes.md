@@ -91,27 +91,42 @@ Run each node standalone to validate it starts and exposes health endpoints.
 
 1. ns-node alone (Port 3000):
 
-   ```powershell
-   cd neuroswarm
-   PORT=3000 node ns-node/server.js > tmp/ns.log 2> tmp/ns.err & echo $! > tmp/ns.pid
-   curl --silent --fail http://localhost:3000/health
-   ```
+  ```powershell
+  cd neuroswarm
+  # Persistent CMD window (Windows):
+  cd neuroswarm\ns-node
+  .\start-windows.bat
+
+  # Standard redirection (Windows or Linux):
+  PORT=3000 node ns-node/server.js > tmp/ns.log 2> tmp/ns.err ; echo $LASTEXITCODE
+  curl --silent --fail http://localhost:3000/health
+  ```
 
 2. gateway-node alone (Port 8080):
 
-   ```powershell
-   cd neuroswarm
-   PORT=8080 NS_NODE_URL=http://127.0.0.1:3000 NS_CHECK_EXIT_ON_FAIL=false node gateway-node/server.js > tmp/gw.log 2> tmp/gw.err & echo $! > tmp/gw.pid
-   curl --silent --fail http://localhost:8080/health
-   ```
+  ```powershell
+  cd neuroswarm
+  # Persistent CMD window (Windows):
+  cd neuroswarm\gateway-node
+  .\start-windows.bat
+
+  # Standard redirection:
+  PORT=8080 NS_NODE_URL=http://127.0.0.1:3000 NS_CHECK_EXIT_ON_FAIL=false node gateway-node/server.js > tmp/gw.log 2> tmp/gw.err ; echo $LASTEXITCODE
+  curl --silent --fail http://localhost:8080/health
+  ```
 
 3. vp-node alone (Port 4000):
 
-   ```powershell
-   cd neuroswarm
-   PORT=4000 NS_NODE_URL=http://127.0.0.1:3000 node vp-node/server.js > tmp/vp.log 2> tmp/vp.err & echo $! > tmp/vp.pid
-   curl --silent --fail http://localhost:4000/health
-   ```
+  ```powershell
+  cd neuroswarm
+  # Persistent CMD window (Windows):
+  cd neuroswarm\vp-node
+  .\start-windows.bat
+
+  # Standard redirection:
+  PORT=4000 NS_NODE_URL=http://127.0.0.1:3000 node vp-node/server.js > tmp/vp.log 2> tmp/vp.err ; echo $LASTEXITCODE
+  curl --silent --fail http://localhost:4000/health
+  ```
 
 Integrated Run: Start nodes and validate network
 -----------------------------------------------
@@ -172,22 +187,20 @@ Using the installers
 For end users: visit the Downloads page in the project wiki for direct links to release artifacts and verified installers: https://github.com/brockhager/neuroswarm/wiki/Download. Extract the downloaded asset and run the bundled `start.sh` (Linux/macOS) or `start.bat` (Windows) file. The default gateway installer will attempt to open your browser at `http://localhost:8080` when the gateway is ready.
 
 Start script behavior (Windows `start.bat`) and logging
--------------------------------------------------------
 
-- The packaged `start.bat` script now runs the node in the foreground so logs stream into the current cmd window instead of launching a separate background window.
-- If you package using the `--keep-open` flag (or the installer includes the `start.bat` with this behavior), the `start.bat` script will append a `pause` only if the node process exits with a non-zero exit code (i.e., the script will not keep the window open on normal exit).
-- When packaged with the `--status` flag, the start scripts set the `STATUS=1` env var inside the script to enable periodic heartbeat messages and connection/disconnect logs from the node. Example packaging command with status logging and keep-open behavior:
+ The packaged `start-windows.bat` opens a **new** CMD window that remains open, so logs are easily viewable and persistent. Use `start-windows.bat` on Windows for this behavior.
+ The `--keep-open` flag instructs packaging to use a `start-windows.bat` that keeps the window open (CMD window with `start cmd /k`) so the window is not closed automatically on normal exit.
 
 ```bash
 pnpm -C neuroswarm package:bins -- --keep-open --status
 ```
 
-With `--status` logs you will see timestamped lines such as:
+With `--status` logs you will see standardized, timestamped lines such as:
 
 ```
-[NS-NODE] [2025-11-17T12:00:00.000Z] Heartbeat: gateways=http://localhost:8080:OK validators=2 mempool=0 height=3
-[GATEWAY] [2025-11-17T12:00:05.100Z] Connected to ns-node http://localhost:3000
-[VP-NODE] [2025-11-17T12:00:30.000Z] Heartbeat: ns=http://localhost:3000 nsReachable=true lastProduceSuccess=true validator=val-xxx
+[NS][2025-11-17T12:00:00.000Z] heartbeat | gateways=http://localhost:8080:OK validators=2 mempool=0 height=3 verifiedBlocks=3 sourcesValid=3 uptime=180s
+[GW][2025-11-17T12:00:05.100Z] Connected to ns-node http://localhost:3000
+[VP][2025-11-17T12:00:30.000Z] heartbeat | ns=http://localhost:3000 nsReachable=true lastProduceSuccess=true validator=val-xxx blocksProduced=2 lastPayloadCid=Qm...
 ```
 
 You will also see explicit startup and health logs when the node starts. Example startup logs:
