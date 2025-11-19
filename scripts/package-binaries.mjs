@@ -96,6 +96,30 @@ for (const node of nodes) {
         }
       }
     }
+    // Copy node_modules for source-based fallback so dependencies are available
+    if (!builtBinary) {
+      const srcNodeModules = path.join(process.cwd(), 'node_modules');
+      const dstNodeModules = path.join(outFolder, 'node_modules');
+      if (fs.existsSync(srcNodeModules)) {
+        console.log(`  Copying node_modules to ${dstNodeModules}...`);
+        try {
+          fs.cpSync(srcNodeModules, dstNodeModules, { recursive: true });
+        } catch (e) {
+          console.warn(`  Warning: Failed to copy node_modules: ${e.message}`);
+        }
+      }
+      // Also copy sources/ folder if it exists (some nodes import from ../sources)
+      const srcSources = path.join(process.cwd(), 'sources');
+      const dstSources = path.join(outFolder, 'sources');
+      if (fs.existsSync(srcSources)) {
+        console.log(`  Copying sources/ to ${dstSources}...`);
+        try {
+          fs.cpSync(srcSources, dstSources, { recursive: true });
+        } catch (e) {
+          console.warn(`  Warning: Failed to copy sources/: ${e.message}`);
+        }
+      }
+    }
     // If pkg output file is named `server` (from server.js) attempt to rename to a more friendly name
     if (builtBinary) {
       const createdName = path.join(outFolder, path.basename(node.entry, '.js')) + (t.os === 'win' ? '.exe' : '');
@@ -186,18 +210,6 @@ for (const node of nodes) {
     fs.writeFileSync(path.join(outFolder, 'start.bat'), startBat);
     fs.chmodSync(path.join(outFolder, 'start.sh'), 0o755);
     // package into zip
-      // Create a `start-windows.bat` which opens a new cmd window and keeps it open by default
-      const startWindowsBat = `@echo off
-  setlocal
-  :: persistent start entry for Windows users - opens a new CMD window and runs the node binary or fallback with --status
-  if exist "%~dp0\\${exeName}" (
-    start "${node.name}" cmd /k "%%~dp0\\${exeName} --status %%* || (echo [${node.name}] Node exited with code %ERRORLEVEL% & pause)"
-  ) else (
-    start "${node.name}" cmd /k "node \"%~dp0\\server.js\" --status %%* || (echo [${node.name}] Node exited with code %ERRORLEVEL% & pause)"
-  )
-  exit /b 0
-  `;
-      fs.writeFileSync(path.join(outFolder, 'start-windows.bat'), startWindowsBat);
     const arch = t.target.split('-').slice(-1)[0] || 'x64';
     const zipName = `${node.name}-${t.os}-${arch}.zip`;
     const zipPath = path.join(dist, zipName);
