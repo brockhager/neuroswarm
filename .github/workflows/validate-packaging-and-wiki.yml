@@ -54,6 +54,14 @@ jobs:
         run: |
           node neuroswarm/scripts/check-vp-packaging.mjs
 
+      - name: Validate NS packaging correctness
+        run: |
+          node neuroswarm/scripts/check-ns-packaging.mjs
+
+      - name: Validate Gateway packaging correctness
+        run: |
+          node neuroswarm/scripts/check-gateway-packaging.mjs
+
       - name: Validate Home.md is present and not empty
         run: |
           set -e
