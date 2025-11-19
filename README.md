@@ -1,5 +1,8 @@
-# neuroswarm
+<p align="center">
+  <img src="icon.png" alt="NeuroSwarm" width="200"/>
+</p>
 
+# NeuroSwarm
 
 ## About
 
