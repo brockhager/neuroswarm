@@ -27,6 +27,7 @@
     "ipfs-http-client": "^59.0.0"
   },
   "devDependencies": {
+    "adm-zip": "^0.5.9",
     "open": "^9.0.0",
     "node-fetch": "^3.3.1",
     "pkg": "^5.8.0",

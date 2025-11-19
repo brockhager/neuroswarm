@@ -66,6 +66,18 @@ jobs:
         run: |
           node neuroswarm/scripts/check-gateway-packaging.mjs
 
+      - name: Validate all ZIPs with Node validator
+        run: |
+          set -ex
+          for z in neuroswarm/dist/*.zip; do
+            echo "Validating $z"
+            EXPECTED="server.js run-ns.sh run-ns.bat run-gateway.sh run-gateway.bat run-vp.sh run-vp.bat"
+            if echo "$z" | grep -q "vp-node"; then
+              EXPECTED="$EXPECTED node_modules/uuid"
+            fi
+            node neuroswarm/scripts/validate-zip.mjs "$z" $EXPECTED || exit 1
+          done
+
       - name: Validate Home.md is present and not empty
         run: |
           set -e
@@ -80,6 +92,14 @@ jobs:
       - name: Cross-platform ZIP contents check (Node)
         run: |
           node neuroswarm/scripts/check-zip-contents.mjs
+
+      - name: Validate VP ZIP integrity and contents (Node)
+        run: |
+          set -ex
+          for z in neuroswarm/dist/*vp-node*zip; do
+            echo "Validating $z"
+            node neuroswarm/scripts/validate-zip.mjs "$z" server.js run-vp.bat run-vp.sh
+          done
 
       - name: Validate node startup logs by launching servers (CI)
         run: |

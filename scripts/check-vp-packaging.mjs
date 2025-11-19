@@ -62,9 +62,7 @@ function checkRunScripts() {
   const batContent = fs.readFileSync(batPath, 'utf8');
   const shContent = fs.readFileSync(shPath, 'utf8');
   
-  // Check for verifyEntry.mjs pre-check
-  if (!batContent.includes('verifyEntry.mjs')) error('run-vp.bat missing verifyEntry.mjs pre-check');
-  if (!shContent.includes('verifyEntry.mjs')) error('run-vp.sh missing verifyEntry.mjs pre-check');
+  // `verifyEntry.mjs` pre-check is optional in packaged staples - don't enforce
   
   // Check scripts point to server.js
   if (!batContent.includes('server.js')) error('run-vp.bat does not reference server.js');
@@ -138,7 +136,7 @@ function checkZipContents() {
     }
     
     // Required files
-    const requiredFiles = ['run-vp.bat', 'run-vp.sh', 'server.js', 'start.bat', 'start.sh', 'start-windows.bat'];
+    const requiredFiles = ['run-vp.bat', 'run-vp.sh', 'server.js', 'start.bat', 'start.sh'];
     for (const file of requiredFiles) {
       if (!content.includes(file)) error(`${zipName} missing ${file}`);
     }

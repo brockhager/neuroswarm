@@ -223,3 +223,18 @@ for (const node of nodes) {
 }
 
 console.log('Done packaging binaries. Artifacts are located in dist/*.zip');
+// Generate checksums.txt for all zip files in dist
+try {
+  const crypto = await import('crypto');
+  const zipFiles = fs.readdirSync(dist).flatMap(d => fs.readdirSync(path.join(dist, d)).filter(f => f.endsWith('.zip')).map(f => path.join(dist, d, f)));
+  const checksums = [];
+  for (const z of zipFiles) {
+    const data = fs.readFileSync(z);
+    const hash = crypto.createHash('sha256').update(data).digest('hex');
+    const name = path.basename(z);
+    checksums.push(`${hash}  ${name}`);
+  }
+  if (checksums.length > 0) fs.writeFileSync(path.join(dist, 'checksums.txt'), checksums.join('\n'));
+} catch (e) {
+  console.warn('Failed to write checksums:', e.message);
+}
