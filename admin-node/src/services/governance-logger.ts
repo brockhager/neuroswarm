@@ -17,11 +17,11 @@ export class GovernanceLogger {
   private logger: any;
 
   constructor(logger?: any) {
-    // Use provided logger or fallback to console
+    // Use provided logger or fallback to a prefixed console logger
     this.logger = logger || {
-      info: console.log,
-      warn: console.warn,
-      error: console.error,
+      info: (...args: any[]) => console.log(`[ADMIN][${new Date().toISOString()}]`, ...args),
+      warn: (...args: any[]) => console.warn(`[ADMIN][${new Date().toISOString()}]`, ...args),
+      error: (...args: any[]) => console.error(`[ADMIN][${new Date().toISOString()}]`, ...args),
     };
 
     this.logPath = process.env.WP_PUBLISH_LOG_PATH ? path.resolve(process.env.WP_PUBLISH_LOG_PATH) : getWpPublishLogPath();
@@ -83,8 +83,12 @@ export class GovernanceLogger {
       this.logger.info(`Governance action logged: ${action}`, { actor: entry.actor });
     } catch (error) {
       this.logger.error('Failed to write governance log:', error);
-      // Fallback: log to console
-      console.error('GOVERNANCE LOG ERROR:', entry);
+      // Fallback: log to configured logger
+      if (this.logger && this.logger.error) {
+        this.logger.error('GOVERNANCE LOG ERROR:', entry);
+      } else {
+        console.error('[ADMIN][ERROR]', 'GOVERNANCE LOG ERROR:', entry);
+      }
     }
   }
 

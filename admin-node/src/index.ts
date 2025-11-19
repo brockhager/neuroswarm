@@ -10,7 +10,7 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
-console.log('Environment variables loaded. GOVERNANCE_PRIVATE_KEY_PATH:', process.env.GOVERNANCE_PRIVATE_KEY_PATH);
+logger.info('Environment variables loaded. GOVERNANCE_PRIVATE_KEY_PATH:', process.env.GOVERNANCE_PRIVATE_KEY_PATH);
 
 // Import routes and middleware
 import { authMiddleware } from './middleware/auth';
