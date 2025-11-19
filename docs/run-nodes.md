@@ -219,6 +219,39 @@ If the packaged binary fails (for example due to platform issues), the start scr
 
 These logs are human-readable, timestamped, and printed to stdout so they are visible in the `start.bat` cmd window.
 
+Startup confirmation and examples
+---------------------------------
+
+When a node starts using `start-windows.bat` or `node server.js --status` you will see an immediate startup confirmation in the CMD window. Examples:
+
+```
+[GW][2025-11-18T18:47:00.000Z] Gateway node started, listening on port 8080
+[NS][2025-11-18T18:47:00.100Z] NS node started, verifying blocks
+[VP][2025-11-18T18:47:00.150Z] VP node started, producing blocks
+```
+
+Each node emits a periodic heartbeat every 60 seconds by default (configurable with `STATUS_INTERVAL_MS`). Heartbeat examples:
+
+```
+[NS][2025-11-18T18:47:00.000Z] heartbeat | gateways=http://localhost:8080:OK validators=2 mempool=0 height=3 verifiedBlocks=3 sourcesValid=3 uptime=180s
+[GW][2025-11-18T18:47:05.100Z] heartbeat | ns=http://localhost:3000 nsReachable=true mempoolSize=3 adapters=5 uptime=180s
+[VP][2025-11-18T18:47:30.000Z] heartbeat | ns=http://localhost:3000 nsReachable=true lastProduceSuccess=true validator=val-xxx blocksProduced=2 lastPayloadCid=Qm...
+```
+
+Interpreting the logs:
+
+- Gateway (`GW`): look for `mempoolSize`, `adapters` count and `nsReachable` — these indicate gateway admission behavior and adapter availability.
+- VP (`VP`): `blocksProduced`, `lastPayloadCid`, and `lastProduceSuccess` show production activity and whether payloads were successfully generated/pinned.
+- NS (`NS`): `verifiedBlocks`, `sourcesValid` indicate how many blocks have been verified and whether sources roots matched expected values.
+
+If a node process crashes or exits abnormally, the `start-windows.bat` will show an exit code and pause the CMD window for diagnostics:
+
+```
+[VP] Node exited with code 1
+Pause
+```
+
+
 Building installers locally (advanced)
 -------------------------------------
 

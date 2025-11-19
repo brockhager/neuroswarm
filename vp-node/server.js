@@ -22,7 +22,7 @@ function sha256Hex(buf) {
 const STATUS_ENABLED = process.env.STATUS === '1' || process.argv.includes('--status');
 function ts() { return new Date().toISOString(); }
 logVp(`vp-node starting on port ${PORT}`);
-if (STATUS_ENABLED) console.log(`[${ts()}] vp-node heartbeat enabled (interval ${Number(process.env.STATUS_INTERVAL_MS || 30000)}ms)`);
+if (STATUS_ENABLED) logVp(`vp-node heartbeat enabled (interval ${Number(process.env.STATUS_INTERVAL_MS || 60000)}ms)`);
 function logVp(...args) { const _ts = new Date().toISOString(); console.log(`[VP][${_ts}]`, ...args); }
 let lastProduceSuccess = null;
 let nsReachable = false;
@@ -71,7 +71,7 @@ if (STATUS_ENABLED) {
       const nsOk = await pingNsHealth();
       nsReachable = nsOk;
       const gwOk = await pingGateway();
-      logVp(`Heartbeat: ns=${NS_URL} nsReachable=${nsOk} gateway=${GATEWAY_URL} gatewayOk=${gwOk} lastProduceSuccess=${lastProduceSuccess} validator=${VAL_ID}`);
+      logVp(`heartbeat | ns=${NS_URL} nsReachable=${nsOk} gateway=${GATEWAY_URL} gatewayOk=${gwOk} lastProduceSuccess=${lastProduceSuccess} validator=${VAL_ID} blocksProduced=${blocksProduced} lastPayloadCid=${lastPayloadCid || 'none'} uptime=${process.uptime().toFixed(0)}s`);
     } catch (e) { logVp('Heartbeat error', e.message); }
   }, Number(process.env.STATUS_INTERVAL_MS || 60000));
 }
@@ -171,7 +171,7 @@ async function produceLoop() {
     const prevHash = prev ? sha256Hex(canonicalize(prev)) : '0'.repeat(64);
     const chosen = await pickValidator(validatorsResp.validators, slot, prevHash);
     if (!chosen) {
-      console.log('no eligible validator');
+      logVp('no eligible validator');
       return;
     }
     if (chosen.validatorId !== VAL_ID) {
@@ -240,9 +240,9 @@ async function produceLoop() {
         if (tx.cid) {
           try {
             await fetch(IPFS_PIN + '/pin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cid: tx.cid }) });
-            console.log('pinned', tx.cid);
+            logVp('pinned', tx.cid);
           } catch (e) {
-            console.warn('pin error', e.message);
+            logVp('pin error', e.message);
           }
         }
       }
@@ -258,6 +258,7 @@ async function main() {
   await initIpfs();
   await register();
   setInterval(produceLoop, INTERVAL_MS);
+  logVp('VP production loop initialized');
 }
 
 // Health endpoint for VP (consistency with other nodes)
@@ -324,14 +325,15 @@ app.post('/proofs', async (req, res) => {
 });
 
 const server = app.listen(PORT, () => {
-  console.log(`[${ts()}] Listening at http://localhost:${PORT}`);
-  console.log(`[${ts()}] Health endpoint available at /health`);
+  logVp('VP node started, producing blocks');
+  logVp(`Listening at http://localhost:${PORT}`);
+  logVp('Health endpoint available at /health');
 });
 
 server.on('connection', (socket) => {
   const remote = `${socket.remoteAddress}:${socket.remotePort}`;
-  console.log(`[${ts()}] Connection from ${remote}`);
-  socket.on('close', () => console.log(`[${ts()}] Connection closed ${remote}`));
+  logVp(`Connection from ${remote}`);
+  socket.on('close', () => logVp(`Connection closed ${remote}`));
 });
 
 main();

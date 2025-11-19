@@ -13,7 +13,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo Starting gateway-node in a persistent cmd window
-start "Gateway Node" cmd /k "node "%~dp0\server.js" %* || (echo [GW] Node exited with code %ERRORLEVEL% & pause)"
+start "Gateway Node" cmd /k "node "%~dp0\server.js" --status %* || (echo [GW] Node exited with code %ERRORLEVEL% & pause)"
 exit /b 0
 :: spawn a background health-check to open browser when gateway starts (run in detached window)
 start "" powershell -NoProfile -Command "for ($i=0; $i -lt 30; $i++) { try { if ((Invoke-WebRequest -UseBasicParsing -Uri 'http://localhost:8080/health').StatusCode -eq 200) { Start-Process 'http://localhost:8080'; break } } catch {}; Start-Sleep -Seconds 1 }"

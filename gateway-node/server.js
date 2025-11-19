@@ -296,7 +296,7 @@ async function startServer() {
     }
   }
     const server = app.listen(PORT, () => {
-      logGw(`Listening at http://localhost:${PORT}`);
+      logGw(`Gateway node started, listening on port ${PORT}`);
       logGw(`Health endpoint available at /health`);
     });
 
