@@ -39,6 +39,21 @@ export function safeRmInRepoSync(dirPath) {
     console.error('  Requested path:', abs);
     return false;
   }
+  // Guard: Protect wiki Home.md from accidental removal by automation
+  const wikiHome = path.join(REPO_ROOT, 'wiki', 'Home.md');
+  const wikiDir = path.join(REPO_ROOT, 'wiki');
+  const allowHomeRemove = process.env.ALLOW_WIKI_HOME_OVERWRITE === '1';
+  if (!allowHomeRemove) {
+    if (normalize(abs).toLowerCase() === normalize(wikiHome).toLowerCase()) {
+      console.error('ERROR: Attempted overwrite or removal of Home.md blocked. Set ALLOW_WIKI_HOME_OVERWRITE=1 to allow.');
+      return false;
+    }
+    if (normalize(abs).toLowerCase().startsWith(normalize(wikiDir).toLowerCase() + path.sep)) {
+      // Removing a path inside neuroswarm/wiki/ could remove Home.md; block unless explicit allow
+      console.error('ERROR: Attempted removal of paths inside neuroswarm/wiki blocked (to protect Home.md). Set ALLOW_WIKI_HOME_OVERWRITE=1 to allow.');
+      return false;
+    }
+  }
   try {
     fs.rmSync(abs, { recursive: true, force: true });
     console.log('Removed folder:', abs);

@@ -46,6 +46,11 @@ function findSrc(relPathParts) {
   return path.join(process.cwd(), 'neuroswarm', ...relPathParts); // fallback (non-existing) so caller logs missing file
 }
 
+function timestamp() { return new Date().toISOString(); }
+function wikiLog(level, ...args) { console.log(`[WIKI][${timestamp()}] ${level}:`, ...args); }
+
+const allowHomeOverwrite = process.env.ALLOW_WIKI_HOME_OVERWRITE === '1' || argv.includes('--allow-home-overwrite');
+
 const mapping = [
   { src: findSrc(['docs', 'run-nodes.md']), dst: 'Running-Nodes.md' },
   { src: findSrc(['docs', 'data-flow-architecture.md']), dst: 'Data-Flow-Architecture.md' },
@@ -78,9 +83,34 @@ for (const lc of extraCandidates) {
 }
 
 let changed = false;
+let blockedHomeAttempt = false;
 for (const m of mapping) {
   if (!fs.existsSync(m.src)) { console.warn('Source doc missing', m.src); continue; }
   const dstPath = path.join(tmpDir, m.dst);
+  // Protect Home.md: only allow if explicitly allowed via env or CLI flag
+  if (m.dst === 'Home.md') {
+    // if wiki repo has an existing Home.md, compare contents
+    let dstExists = fs.existsSync(dstPath);
+    let dstContent = dstExists ? fs.readFileSync(dstPath, 'utf8') : null;
+    let srcContent = fs.readFileSync(m.src, 'utf8');
+    if (dstExists && dstContent === srcContent) {
+      // nothing to do
+      console.log('Home.md is identical; skipping overwrite.');
+      continue;
+    }
+    if (!allowHomeOverwrite) {
+      // Block automated overwrite
+      console.error('ERROR: Attempted overwrite of Home.md blocked.');
+      wikiLog('WARN', 'Unauthorized attempt to modify Home.md', `src=${m.src}`, `dst=${dstPath}`);
+      blockedHomeAttempt = true;
+      continue; // do not copy
+    }
+    // if we reach here, allow overwrite (explicit permission)
+    console.log('Home.md overwrite allowed (explicit flag present). Copying', m.src, '->', dstPath);
+    fs.copyFileSync(m.src, dstPath);
+    changed = true;
+    continue;
+  }
   console.log('Copying', m.src, '->', dstPath);
   fs.copyFileSync(m.src, dstPath);
   changed = true;
@@ -111,4 +141,8 @@ try{
 } catch (e) {
   // Redact any token present in the error message
   console.error('git commit/push failed', redact(e.message));
+}
+if (blockedHomeAttempt && (process.env.CI === 'true' || process.env.GITHUB_ACTIONS)) {
+  console.error('CI detected unauthorized Home.md overwrite attempt; failing the job to prevent automation from modifying the wiki home page.');
+  process.exit(2);
 }

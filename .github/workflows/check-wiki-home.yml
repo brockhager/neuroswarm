@@ -32,3 +32,6 @@ jobs:
             echo 'No wiki Home.md found; please add neuroswarm/docs/wiki/Home.md or neuroswarm/wiki/Home.md'
             exit 1
           fi
+      - name: Validate Home.md via script
+        run: |
+          node neuroswarm/scripts/validate-home-md.mjs
