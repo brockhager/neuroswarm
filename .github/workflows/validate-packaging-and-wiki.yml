@@ -50,6 +50,25 @@ jobs:
           node neuroswarm/scripts/verifyEntry.mjs neuroswarm/gateway-node/server.js gw
           node neuroswarm/scripts/verifyEntry.mjs neuroswarm/vp-node/server.js vp
 
+      - name: Validate Home.md is present and not empty
+        run: |
+          set -e
+          if [ -f neuroswarm/docs/wiki/Home.md ]; then
+            test -s neuroswarm/docs/wiki/Home.md || (echo "Home.md in docs is empty" && exit 1)
+          elif [ -f neuroswarm/wiki/Home.md ]; then
+            test -s neuroswarm/wiki/Home.md || (echo "Home.md in wiki is empty" && exit 1)
+          else
+            echo "Home.md not found in neuroswarm/docs/wiki or neuroswarm/wiki" && exit 1
+          fi
+
+      - name: Cross-platform ZIP contents check (Node)
+        run: |
+          node neuroswarm/scripts/check-zip-contents.mjs
+
+      - name: Validate node startup logs by launching servers (CI)
+        run: |
+          node neuroswarm/scripts/check-startup-logs.mjs
+
       - name: Verify run scripts included in ZIP artifacts (Unix runners)
         if: runner.os != 'Windows'
         run: |
