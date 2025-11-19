@@ -1,0 +1,51 @@
+{
+  "name": "neuro-launcher",
+  "version": "1.0.0",
+  "description": "NeuroSwarm Desktop Launcher",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
+  },
+  "keywords": [
+    "neuroswarm",
+    "ai",
+    "blockchain"
+  ],
+  "author": "NeuroSwarm Team",
+  "license": "MIT",
+  "build": {
+    "appId": "com.neuroswarm.launcher",
+    "productName": "NeuroSwarm",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "icon.png"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icon.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "icon.png"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "icon.png"
+    }
+  },
+  "devDependencies": {
+    "electron": "^39.0.0",
+    "electron-builder": "^26.0.0"
+  },
+  "dependencies": {
+    "adm-zip": "^0.5.10"
+  }
+}
