@@ -50,6 +50,10 @@ jobs:
           node neuroswarm/scripts/verifyEntry.mjs neuroswarm/gateway-node/server.js gw
           node neuroswarm/scripts/verifyEntry.mjs neuroswarm/vp-node/server.js vp
 
+      - name: Validate VP packaging correctness
+        run: |
+          node neuroswarm/scripts/check-vp-packaging.mjs
+
       - name: Validate Home.md is present and not empty
         run: |
           set -e
