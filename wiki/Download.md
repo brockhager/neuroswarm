@@ -1,199 +1,122 @@
 # Downloads
 
-This page provides clear, copy‑paste friendly download links for official release artifacts across platforms and guidance for verifying downloads and maintaining the links.
-
-## Official Releases
-
-We publish pre-built installers / release artifacts on GitHub Releases under the `neuroswarm` project.
-
-Canonical release page:
-
-- https://github.com/brockhager/neuroswarm/releases
-
-Quick access (latest release asset helper):
-
-- Latest ns-node (Linux): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.zip
-- Latest ns-node (macOS): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-macos-x64.zip
-- Latest ns-node (Windows): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-win-x64.zip
-
-- Latest gateway-node (Linux): https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-linux-x64.zip
-- Latest gateway-node (macOS): https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-macos-x64.zip
-- Latest gateway-node (Windows): https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-win-x64.zip
-
-- Latest vp-node (Linux): https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-linux-x64.zip
-- Latest vp-node (macOS): https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-macos-x64.zip
-- Latest vp-node (Windows): https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-win-x64.zip
-
-Note: The `latest` URL uses the redirect to the most recent release tag. If you need to pin a version, replace `latest` with `vX.Y.Z` in the URL (e.g., `https://github.com/brockhager/neuroswarm/releases/download/v0.1.0/ns-node-linux-x64.tar.gz`).
+Get started with NeuroSwarm by downloading the Desktop Launcher or individual node binaries.
 
 ---
 
-## Platform-Specific Examples
+## 🚀 NeuroSwarm Desktop Launcher (Recommended)
 
-Linux/macOS (bash):
+The **NeuroSwarm Desktop Launcher** is the easiest way to get started. It provides a one-click installation experience with an interactive setup wizard.
 
+### Features
+- ✨ **Component Selection**: Choose which parts to install (Desktop App only, or include nodes)
+- 🔄 **Auto-Download**: Automatically downloads the right binaries for your platform
+- 🎯 **AI Setup Wizard**: Guided installation of local AI models (Ollama/Llama)
+- 📦 **Lightweight**: Only ~5MB - downloads components on-demand
+
+### Download Launcher
+
+| Platform | Download Link | Size |
+|----------|--------------|------|
+| Windows  | [neuro-launcher-win-x64.zip](https://github.com/brockhager/neuroswarm/releases/latest/download/neuro-launcher-win-x64.zip) | ~138MB |
+| macOS    | [neuro-launcher-macos-x64.zip](https://github.com/brockhager/neuroswarm/releases/latest/download/neuro-launcher-macos-x64.zip) | ~138MB |
+| Linux    | [neuro-launcher-linux-x64.zip](https://github.com/brockhager/neuroswarm/releases/latest/download/neuro-launcher-linux-x64.zip) | ~138MB |
+
+### Quick Start
 ```bash
-# Download the latest Linux ns-node
-curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.zip
-unzip ns-node-linux-x64.zip
+# Windows (PowerShell)
+Invoke-WebRequest -Uri https://github.com/brockhager/neuroswarm/releases/latest/download/neuro-launcher-win-x64.zip -OutFile neuro-launcher.zip
+Expand-Archive neuro-launcher.zip -DestinationPath neuro-launcher
+cd neuro-launcher
+.\\NeuroSwarm.exe
+
+# macOS/Linux
+curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/neuro-launcher-macos-x64.zip
+unzip neuro-launcher-macos-x64.zip
+cd neuro-launcher
+./NeuroSwarm
+```
+
+On first run, the launcher will:
+1. Ask which components you want to install
+2. Download selected components automatically
+3. Guide you through AI model setup (Ollama)
+4. Start all services and open the chat interface
+
+---
+
+## 📦 Individual Node Binaries
+
+For advanced users and node operators who want to run specific components.
+
+### NS Node (Core Consensus)
+| Platform | Download Link |
+|----------|--------------|
+| Windows  | [ns-node-win-x64.zip](https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-win-x64.zip) |
+| macOS    | [ns-node-macos-x64.zip](https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-macos-x64.zip) |
+| Linux    | [ns-node-linux-x64.zip](https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.zip) |
+
+### Gateway Node (API Gateway)
+| Platform | Download Link |
+|----------|--------------|
+| Windows  | [gateway-node-win-x64.zip](https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-win-x64.zip) |
+| macOS    | [gateway-node-macos-x64.zip](https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-macos-x64.zip) |
+| Linux    | [gateway-node-linux-x64.zip](https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-linux-x64.zip) |
+
+### VP Node (Block Production)
+| Platform | Download Link |
+|----------|--------------|
+| Windows  | [vp-node-win-x64.zip](https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-win-x64.zip) |
+| macOS    | [vp-node-macos-x64.zip](https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-macos-x64.zip) |
+| Linux    | [vp-node-linux-x64.zip](https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-linux-x64.zip) |
+
+### Running Individual Nodes
+```bash
+# Extract and run
+unzip ns-node-win-x64.zip
 cd ns-node
-# Start the node (example)
-PORT=3000 ./start.sh
+./start.sh  # or start-windows.bat on Windows
+```
+
+See the [Running Nodes](Running-Nodes) guide for detailed instructions.
 
 ---
 
-## Run scripts included in ZIP downloads
+## 🔐 Verify Downloads
 
-All release ZIPs include `run-*.bat` and `run-*.sh` files for immediate use after extraction. Windows users can run `run-*.bat` (or `start-windows.bat`), and Linux/macOS users can run `./run-*.sh` (make executable with `chmod +x`). These scripts point at `server.js` and include `--status` by default in the start helpers.
-
-**Packaging Validation**: All node types (NS, Gateway, VP) include the latest run scripts with:
-- Pre-check validation via `verifyEntry.mjs` to ensure `server.js` is the correct startup file
-- `--status` flag enabled for heartbeat logging
-- Automatic environment variable setup (PORT, NS_NODE_URL)
-- Fallback to `node server.js` if binary fails
-
-Example expected startup log messages:
-
-```
-[GW][2025-11-18T18:47:00.000Z] Gateway node started, listening on port 8080
-[NS][2025-11-18T18:47:00.100Z] NS node started, verifying blocks
-[VP][2025-11-18T18:47:00.150Z] VP node started, producing blocks
-```
-
-**Verifying Packaging Correctness**: Contributors can validate packaging locally:
+All releases include checksums for verification:
 
 ```bash
-# Validate all node types (source files and run scripts)
-node neuroswarm/scripts/check-ns-packaging.mjs
-node neuroswarm/scripts/check-gateway-packaging.mjs
-node neuroswarm/scripts/check-vp-packaging.mjs
-
-# Build and validate including ZIP contents
-cd neuroswarm
-pnpm package:bins -- --os win
-cd ..
-node neuroswarm/scripts/check-ns-packaging.mjs
-node neuroswarm/scripts/check-gateway-packaging.mjs
-node neuroswarm/scripts/check-vp-packaging.mjs
-```
-```
-
-Windows (PowerShell):
-
-```powershell
-# Download the latest Windows gateway binary
-Invoke-WebRequest -Uri https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-win-x64.zip -OutFile gateway-node-win-x64.zip
-Expand-Archive gateway-node-win-x64.zip -DestinationPath gateway-node
-Set-Location gateway-node
-# Start the gateway (example)
-start-windows.bat  # Start a new CMD window; this script defaults to --status and keeps the window open for monitoring
-```
-
----
-
-## Verify Downloads (Checksum / Signature)
-
-For releases we include a `checksums.txt` and an optional `checksums.sig` (GPG signature) file in release assets.
-
-Linux / macOS (SHA256):
-
-```bash
-curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.zip
+# Download checksums
 curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/checksums.txt
-sha256sum ns-node-linux-x64.zip
-grep ns-node-linux-x64.zip checksums.txt
+
+# Verify (Linux/macOS)
+sha256sum neuro-launcher-linux-x64.zip
+grep neuro-launcher-linux-x64.zip checksums.txt
+
+# Verify (Windows PowerShell)
+Get-FileHash neuro-launcher-win-x64.zip -Algorithm SHA256
 ```
 
-Windows (PowerShell SHA256):
+---
 
-```powershell
-Invoke-WebRequest -Uri https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-win-x64.zip -OutFile ns-node-win-x64.zip
-Get-FileHash ns-node-win-x64.zip -Algorithm SHA256
-# Compare with the checksums.txt published alongside the release
-```
+## 📋 Release Information
 
-### Verify Windows `start-windows.bat` and `--status`
-
-To maintain consistent behaviour across releases, ensure `start-windows.bat` is present in Windows ZIPs and that it defaults to `--status` and opens a cmd window via `cmd /k`. Use PowerShell to extract and inspect the script:
-
-```powershell
-Expand-Archive ns-node-win-x64.zip -DestinationPath ns-node
-Test-Path ns-node\start-windows.bat
-Get-Content ns-node\start-windows.bat | Select-String "--status"
-Get-Content ns-node\start-windows.bat | Select-String "cmd /k"
-```
-
-Maintainers: CI packaging validation will assert the same checks; ensure those checks continue to pass whenever packaging scripts are modified.
-
-GPG verification (if release signatures present):
-
-```bash
-curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/checksums.txt
-curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/checksums.sig
-gpg --verify checksums.sig checksums.txt
-```
-
-If GPG verification passes you also confirm the checksums are intact and the release author signed them.
+- **Latest Release**: [View on GitHub](https://github.com/brockhager/neuroswarm/releases/latest)
+- **Changelog**: See [Updates](Updates) for release notes
+- **All Releases**: [Browse all versions](https://github.com/brockhager/neuroswarm/releases)
 
 ---
 
-## Release Asset Naming Conventions
+## 💡 Which Download Should I Choose?
 
-We publish platform-specific artifacts with the following naming convention in our release assets. This is required by the download links above and by our packaging scripts:
-
-- `ns-node-<os>-<arch>.zip` (e.g., `ns-node-linux-x64.zip`)
-- `gateway-node-<os>-<arch>.zip`
-- `vp-node-<os>-<arch>.zip`
-- `checksums.txt` — SHA256 checksums of the artifacts
-- `checksums.sig` — (Optional) GPG signature of `checksums.txt`
-
----
-
-## How to Maintain / Update Downloads
-
-Maintainers: keep these links accurate and current by following the release checklist below.
-
-When publishing a new release:
-1. Create a release tag `vX.Y.Z` and push it.
-2. Run packaging/build for all platforms via CI (`neuroswarm/.github/workflows/build-release-installers.yml`).
-3. Upload release assets using the naming convention above.
-4. Generate `checksums.txt` (sha256) and upload it to the release.
-5. If signing (recommended): sign `checksums.txt` and upload `checksums.sig`.
-6. Update `docs/download.md` (if you want to link to versioned assets) or rely on `latest` redirect above.
-7. Confirm Windows ZIP artifacts contain `start-windows.bat` that uses `cmd /k` and includes `--status` by default.
-8. Run the wiki publish workflow (repo `Publish Wiki Now`) or run `neuroswarm/publish-wiki-now.bat` to sync docs to the GitHub wiki.
+| Use Case | Recommended Download |
+|----------|---------------------|
+| **New User** | Desktop Launcher (select "Desktop App Only") |
+| **Node Operator** | Desktop Launcher (select "Desktop + All Nodes") |
+| **Developer** | Individual node binaries + clone the repo |
+| **Server Deployment** | Individual node binaries |
 
 ---
 
-## Release Checklist (summary)
-
-1. Bump release tag `vX.Y.Z`.
-2. CI artifacts built for Linux, macOS, Windows (x64/x86_64) per node.
-3. Generate checksums and (optional) GPG signature for `checksums.txt`.
-4. Upload all artifacts to the GitHub release.
-5. Confirm artifacts download and sha256 checksum locally.
-6. Push or dispatch `Publish Wiki Now` workflow to update the wiki pages.
-
----
-
-If you want a script to compute checksums and auto-populate `checksums.txt`, ask and I can add an example script to the `neuroswarm/scripts/` folder.
-
-If you'd like to pin specific versioned links to be shown on the wiki, maintainers can add a small table below linking specific `vX.Y.Z` assets. For simplicity, the `latest` URL is used above and resolves to the most recent tag.
-
----
-
-## Release Checklist (maintainers)
-
-Before publishing a new release, follow this checklist:
-
-1. Create and push the new annotated tag `vX.Y.Z`.
-2. Run `pnpm -C neuroswarm package:bins -- --os <platform>` and verify outputs in `neuroswarm/dist`.
-3. Upload release assets with proper names (e.g., `ns-node-linux-x64.tar.gz`, `checksums.txt`, `checksums.sig`).
-4. Generate `checksums.txt` with sha256 sums and sign it if using GPG; upload to the release.
-5. Update `docs/download.md` with `vX.Y.Z` links when you want to pin versioned assets (optional); otherwise rely on `latest` redirects.
-6. Run `neuroswarm/publish-wiki-now.bat --local` or dispatch `Publish Wiki Now` via GH Actions to update the wiki.
-7. Verify the wiki `Download` page lists the new release and the checksums/signatures are present.
-
-If you want automation for step 5, add a small CI job that updates `docs/download.md` with a pinned `vX.Y.Z` table and triggers the publish workflow.
-
-If you'd like me to populate the exact `vX.Y.Z` links for the most recent release automatically, I can add a script to compute and inject the latest tag automatically into the wiki during CI publishing.
+*Last updated: November 19, 2025*
