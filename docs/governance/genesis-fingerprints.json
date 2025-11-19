@@ -1,8 +1,0 @@
-{
-  "founder_pub_sha256": "22454115751ea570e089c57a4f4aef307f4092708e17f5ef6df8485808d266ce",
-  "admin_pub_sha256": "22454115751ea570e089c57a4f4aef307f4092708e17f5ef6df8485808d266ce",
-  "genesis_sha256": "b6e200c7ec732caf9566002e9d9f90dce8dd58d33299d8762e8c0b591421c366",
-  "algo": "SHA-256",
-  "format": "SPKI",
-  "timestamp": "2025-11-15T07:01:02.733Z"
-}
