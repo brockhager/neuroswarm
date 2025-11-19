@@ -45,6 +45,10 @@ jobs:
           fi
           echo "✓ Source Home.md is valid"
 
+      - name: Validate only Download.md contains direct download links
+        run: |
+          node neuroswarm/scripts/check-download-links.mjs
+
       - name: Restore wiki Home.md if needed
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
