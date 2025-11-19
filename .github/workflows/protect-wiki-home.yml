@@ -61,3 +61,33 @@ jobs:
         run: |
           echo "::error::Wiki Home.md restoration failed - manual intervention required"
           exit 1
+
+      - name: Notify maintainers if wiki restored
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          set -e
+          TMPDIR="neuroswarm/tmp/wiki-home-check"
+          if [ -d "$TMPDIR" ]; then
+            cd "$TMPDIR"
+            if git log -1 --pretty=%B | grep -q "Restore Home.md content"; then
+              echo "Home.md restored in wiki; creating issue to notify maintainers"
+              curl -s -H "Authorization: token $GH_PAT" -H "Accept: application/vnd.github+json" \
+                -X POST https://api.github.com/repos/${{ github.repository }}/issues \
+                -d '{"title":"Wiki Home.md restored by automation","body":"The wiki Home.md was detected missing and has been automatically restored by CI. Please review the restoration and the content."}'
+            fi
+          fi
+
+      - name: Report last wiki commit (for forensics)
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          set -e
+          TMPDIR="neuroswarm/tmp/wiki-home-check"
+          if [ -d "$TMPDIR" ]; then
+            cd "$TMPDIR"
+            last=$(git log -1 --pretty=format:'%H|%an|%ae|%s')
+            echo "Last wiki commit: $last"
+          else
+            echo "TMPDIR not found: $TMPDIR"
+          fi
