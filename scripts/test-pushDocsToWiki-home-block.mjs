@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 import fs from 'fs';
 import path from 'path';
+import { getTmpDir } from './repoScopedFs.mjs';
 import { execSync } from 'child_process';
 
 // Test to ensure pushDocsToWiki.mjs blocks Home.md overwrite in CI when ALLOW_WIKI_HOME_OVERWRITE not set
 const repoRoot = process.cwd();
-const tmpDir = path.join(repoRoot, 'tmp', 'wiki-clone');
+const tmpDir = getTmpDir('wiki-clone');
 const docsDir = path.join(repoRoot, 'neuroswarm', 'docs', 'wiki');
 const wikiDir = path.join(repoRoot, 'neuroswarm', 'wiki');
 

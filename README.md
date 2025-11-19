@@ -115,13 +115,16 @@ Quick start:
 ```powershell
 # Start ns-node on 3000
 cd neuroswarm
-PORT=3000 node ns-node/server.js > tmp/ns.log 2> tmp/ns.err & echo $! > tmp/ns.pid
+# POSIX: use NEUROSWARM_TMP to override tmp location (defaults to repo's neuroswarm/tmp)
+PORT=3000 node ns-node/server.js > ${NEUROSWARM_TMP:-tmp}/ns.log 2> ${NEUROSWARM_TMP:-tmp}/ns.err & echo $! > ${NEUROSWARM_TMP:-tmp}/ns.pid
 
 # Start gateway on 8080 (point to ns)
-PORT=8080 NS_NODE_URL=http://127.0.0.1:3000 NS_CHECK_EXIT_ON_FAIL=false node gateway-node/server.js > tmp/gw.log 2> tmp/gw.err & echo $! > tmp/gw.pid
+# POSIX:
+PORT=8080 NS_NODE_URL=http://127.0.0.1:3000 NS_CHECK_EXIT_ON_FAIL=false node gateway-node/server.js > ${NEUROSWARM_TMP:-tmp}/gw.log 2> ${NEUROSWARM_TMP:-tmp}/gw.err & echo $! > ${NEUROSWARM_TMP:-tmp}/gw.pid
 
 # Start vp-node on 4000 (point to ns)
-PORT=4000 NS_NODE_URL=http://127.0.0.1:3000 node vp-node/server.js > tmp/vp.log 2> tmp/vp.err & echo $! > tmp/vp.pid
+# POSIX:
+PORT=4000 NS_NODE_URL=http://127.0.0.1:3000 node vp-node/server.js > ${NEUROSWARM_TMP:-tmp}/vp.log 2> ${NEUROSWARM_TMP:-tmp}/vp.err & echo $! > ${NEUROSWARM_TMP:-tmp}/vp.pid
 
 # Run a quick connectivity check
 node neuroswarm/scripts/checkNodeConnectivityClean.mjs --ns http://localhost:3000 --gateway http://localhost:8080 --ci

@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 import fs from 'fs';
 import path from 'path';
+import { getTmpDir } from './repoScopedFs.mjs';
 import { execSync } from 'child_process';
 
 // Simulate a KB with index.md and a target wiki Home.md to ensure the script blocks conversion in CI
 const repoRoot = process.cwd();
 const srcDir = path.join(repoRoot, 'website', 'kb');
-const tmpOut = path.join(repoRoot, 'tmp', 'neuroswarm-wiki-export');
+const tmpOut = getTmpDir('neuroswarm-wiki-export');
 const wikiHome = path.join(repoRoot, 'tmp', 'wiki-clone', 'Home.md');
 
 try { fs.rmSync(tmpOut, { recursive: true, force: true }); } catch(e) {}
