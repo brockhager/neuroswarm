@@ -33,6 +33,15 @@ app.use((req, res, next) => {
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Error handler for malformed JSON bodies
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') {
+    logNs('WARN', 'Bad JSON payload in request body', err.message);
+    return res.status(400).json({ error: 'bad_json', message: err.message });
+  }
+  next(err);
+});
+
 function loadHistory() {
   try {
     return JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));

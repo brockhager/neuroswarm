@@ -164,15 +164,19 @@ function pickValidator(validators, slot, prevHash) {
 async function produceLoop() {
   try {
     const m = await fetch(GATEWAY_URL + '/v1/mempool');
-    const mp = await m.json();
+    let mp = { mempool: [] };
+    try { mp = await m.json(); } catch (e) { logVp('WARN', 'Failed to parse mempool JSON from gateway:', e.message); }
     // mp.mempool elements: { txId, payload }
     const txs = (mp.mempool || []).slice(0, MAX_TX).map(entry => entry.payload || entry.tx || {});
 
-    const head = await (await fetch(NS_URL + '/headers/tip')).json();
+    let head = null;
+    try { head = await (await fetch(NS_URL + '/headers/tip')).json(); } catch (e) { logVp('WARN', 'Failed to parse head JSON from NS:', e.message); }
     const prev = head.header || null;
-    const heightResp = await (await fetch(NS_URL + '/chain/height')).json();
+    let heightResp = { height: 0 };
+    try { heightResp = await (await fetch(NS_URL + '/chain/height')).json(); } catch (e) { logVp('WARN', 'Failed to parse height JSON from NS:', e.message); }
     const slot = (heightResp.height || 0) + 1;
-    const validatorsResp = await (await fetch(NS_URL + '/validators')).json();
+    let validatorsResp = { validators: [] };
+    try { validatorsResp = await (await fetch(NS_URL + '/validators')).json(); } catch (e) { logVp('WARN', 'Failed to parse validators JSON from NS:', e.message); }
     const prevHash = prev ? sha256Hex(canonicalize(prev)) : '0'.repeat(64);
     const chosen = await pickValidator(validatorsResp.validators, slot, prevHash);
     if (!chosen) {
@@ -217,7 +221,8 @@ async function produceLoop() {
     const sig = signEd25519PrivateKey(PRIVATE_KEY_PEM, headerData);
     const producerUrl = process.env.VP_PUBLISH_URL || `http://localhost:${PORT}`;
     const res = await fetch(NS_URL + '/blocks/produce', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Producer-Url': producerUrl }, body: JSON.stringify({ header, txs, signature: sig }) });
-    const j = await res.json();
+    let j = null;
+    try { j = await res.json(); } catch (e) { logVp('WARN', 'Failed to parse JSON from NS /blocks/produce response:', e.message); j = null; }
         if (j && j.ok) {
       lastProduceSuccess = true;
       blocksProduced += 1;
@@ -271,14 +276,27 @@ let VP_VERSION = '0.1.0';
 try {
   const pkgPath = path.join(process.cwd(), 'package.json');
   if (fs.existsSync(pkgPath)) {
-    const pj = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-    VP_VERSION = pj.version || VP_VERSION;
+    try {
+      const pj = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      VP_VERSION = pj.version || VP_VERSION;
+    } catch (e) {
+      logVp('WARN', 'Failed to parse package.json for version:', e.message);
+    }
   }
 } catch (e) {
-  // ignore
+  logVp('WARN', 'Failed to read package.json due to error:', e.message);
 }
 const app = express();
 app.use(express.json());
+
+// Error handler for malformed JSON bodies (Express throws on body parse failures)
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') {
+    logVp('WARN', 'Bad JSON payload in request body', err.message);
+    return res.status(400).json({ error: 'bad_json', message: err.message });
+  }
+  next(err);
+});
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', version: VP_VERSION, uptime: process.uptime(), ipfsPeer: ipfsPeer || null });
 });
@@ -295,7 +313,14 @@ app.get('/ipfs/:cid', async (req, res) => {
     }
     const buf = Buffer.concat(chunks);
     const text = buf.toString('utf8');
-    try { const json = JSON.parse(text); return res.json({ cid, content: json }); } catch (e) { return res.send(text); }
+    try {
+      const json = JSON.parse(text);
+      return res.json({ cid, content: json });
+    } catch (e) {
+      // Malformed JSON - log and return raw text (do not crash)
+      logVp(`Bad JSON from IPFS cid=${cid} | length=${text ? text.length : 0} | error=${e.message}`);
+      return res.send(text);
+    }
   } catch (e) {
     return res.status(500).json({ error: 'ipfs_read_failed', message: e.message });
   }

@@ -24,6 +24,15 @@ app.use(helmet());
 app.use(cors());
 app.use(bodyParser.json());
 
+// Error handler for malformed JSON bodies - ensure we log and return a safe response
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') {
+    logGw('WARN', 'Bad JSON payload in request body', err.message);
+    return res.status(400).json({ error: 'bad_json', message: err.message });
+  }
+  next(err);
+});
+
 function loadHistory() {
   try {
     return JSON.parse(fs.readFileSync(HISTORY_FILE, 'utf8'));
