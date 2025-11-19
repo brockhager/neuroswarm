@@ -46,12 +46,30 @@ PORT=3000 ./start.sh
 
 All release ZIPs include `run-*.bat` and `run-*.sh` files for immediate use after extraction. Windows users can run `run-*.bat` (or `start-windows.bat`), and Linux/macOS users can run `./run-*.sh` (make executable with `chmod +x`). These scripts point at `server.js` and include `--status` by default in the start helpers.
 
+**VP Node Run Scripts**: The VP node packaging always includes the latest `run-vp.bat` and `run-vp.sh` scripts with:
+- Pre-check validation via `verifyEntry.mjs` to ensure `server.js` is the correct startup file
+- `--status` flag enabled for heartbeat logging
+- Automatic environment variable setup (PORT=4000, NS_NODE_URL)
+
 Example expected startup log messages:
 
 ```
 [GW][2025-11-18T18:47:00.000Z] Gateway node started, listening on port 8080
 [NS][2025-11-18T18:47:00.100Z] NS node started, verifying blocks
 [VP][2025-11-18T18:47:00.150Z] VP node started, producing blocks
+```
+
+**Verifying VP Packaging**: Contributors can validate VP packaging correctness locally:
+
+```bash
+# Validate VP source files and run scripts
+node neuroswarm/scripts/check-vp-packaging.mjs
+
+# Build and validate including ZIP contents
+cd neuroswarm
+pnpm package:bins -- --os win
+cd ..
+node neuroswarm/scripts/check-vp-packaging.mjs
 ```
 ```
 
