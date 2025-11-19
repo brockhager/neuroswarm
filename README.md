@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="icon.png" alt="NeuroSwarm" width="200"/>
+  <img src="icon.png" alt="NeuroSwarm" width="300"/>
 </p>
 
 # NeuroSwarm
