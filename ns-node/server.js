@@ -187,7 +187,7 @@ async function publishToGateways(message, headers = {}) {
       gw.reachable = false;
       gw.lastError = String(err);
       lastError = gw.lastError;
-      console.error(`[NS-NODE] Gateway ${gw.url} failed: ${err}`);
+      logNs('ERROR', `Gateway ${gw.url} failed: ${String(err)}`);
       logNs(`Gateway ${gw.url} error: ${String(err).slice(0, 200)}`);
       if (gw.reachable) {
         logNs(`Disconnected from gateway ${gw.url}, error=${String(err).slice(0, 240)}`);
@@ -446,7 +446,7 @@ app.post('/blocks/produce', (req, res) => {
   if (header.sourcesRoot) {
       const srcRoot = computeSourcesRoot(txs);
     if (srcRoot !== header.sourcesRoot) {
-        console.error('[NS-NODE] Bad sources root computed', srcRoot, 'expected', header.sourcesRoot);
+        logNs('ERROR', 'Bad sources root computed', srcRoot, 'expected', header.sourcesRoot);
       return res.status(400).json({ error: 'bad_sources_root' });
       // sources root matched
       sourcesValidCount += 1;
@@ -468,7 +468,7 @@ app.post('/blocks/produce', (req, res) => {
         const fetchUrl = `${producerUrl.replace(/\/$/, '')}/ipfs/${payloadCid}`;
         const fetched = await fetch(fetchUrl, { method: 'GET' });
         if (!fetched.ok) {
-          console.error('[NS-NODE] Failed to fetch payloadCid from producer', fetchUrl, fetched.status);
+          logNs('ERROR', 'Failed to fetch payloadCid from producer', fetchUrl, fetched.status);
           return res.status(400).json({ error: 'payload_cid_fetch_failed', status: fetched.status });
         }
         const body = await fetched.json();
@@ -481,13 +481,13 @@ app.post('/blocks/produce', (req, res) => {
         const fetchedPayloadSig = payloadContent && payloadContent.payloadSignature ? payloadContent.payloadSignature : (payloadContent && payloadContent.payload && payloadContent.payload.payloadSignature ? payloadContent.payload.payloadSignature : null);
         const fetchedSourcesRoot = computeSourcesRoot(fetchedTxs);
         if (header.sourcesRoot && fetchedSourcesRoot !== header.sourcesRoot) {
-          console.error('[NS-NODE] Payload CID sources root mismatch', fetchedSourcesRoot, header.sourcesRoot);
+          logNs('ERROR', 'Payload CID sources root mismatch', fetchedSourcesRoot, header.sourcesRoot);
           return res.status(400).json({ error: 'payload_sources_root_mismatch', fetchedSourcesRoot, expected: header.sourcesRoot });
         }
         const fetchedIds = (fetchedTxs || []).map(tx => txIdFor(tx));
         const fetchedRoot = computeMerkleRoot(fetchedIds);
         if (fetchedRoot !== header.merkleRoot) {
-          console.error('[NS-NODE] Payload CID merkle root mismatch', fetchedRoot, header.merkleRoot);
+          logNs('ERROR', 'Payload CID merkle root mismatch', fetchedRoot, header.merkleRoot);
           return res.status(400).json({ error: 'payload_cid_merkle_mismatch' });
         }
         // verify signature if present
@@ -495,7 +495,7 @@ app.post('/blocks/produce', (req, res) => {
           try {
             const signerId = fetchedSigner || header.validatorId;
             if (fetchedSigner && header.validatorId && fetchedSigner !== header.validatorId) {
-              console.error('[NS-NODE] Payload signer mismatch', fetchedSigner, header.validatorId);
+              logNs('ERROR', 'Payload signer mismatch', fetchedSigner, header.validatorId);
               return res.status(400).json({ error: 'payload_signer_mismatch' });
             }
             if (!signerId || !validators.has(signerId)) return res.status(400).json({ error: 'signer_not_registered' });
@@ -506,7 +506,7 @@ app.post('/blocks/produce', (req, res) => {
             const sigValid = verifyEd25519(pubKey, payloadData, fetchedPayloadSig);
             if (!sigValid) return res.status(400).json({ error: 'payload_signature_invalid' });
           } catch (e) {
-            console.error('[NS-NODE] Error verifying payload signature', e.message);
+            logNs('ERROR', 'Error verifying payload signature', e.message);
             return res.status(500).json({ error: 'payload_signature_verify_exception', message: e.message });
           }
         }
@@ -517,7 +517,7 @@ app.post('/blocks/produce', (req, res) => {
         if (!result.ok) return res.status(400).json({ error: result.reason });
         return res.json({ ok: true, blockHash: result.blockHash });
       } catch (e) {
-        console.error('[NS-NODE] Error fetching payloadCid', e.message);
+        logNs('ERROR', 'Error fetching payloadCid', e.message);
         return res.status(400).json({ error: 'payload_cid_fetch_exception', message: e.message });
       }
     })();
@@ -622,7 +622,7 @@ function verifyEd25519(publicKeyPem, data, sigBase64) {
     const sig = Buffer.from(sigBase64, 'base64');
     return crypto.verify(null, Buffer.from(data, 'utf8'), pubKey, sig);
   } catch (e) {
-    console.error('ed25519 verify error', e.message);
+    logNs('ERROR', 'ed25519 verify error', e.message);
     return false;
   }
 }
@@ -893,10 +893,10 @@ function applyBlock(block) {
   const { signature: _sigIgnored, ...headerNoSig } = block.header;
   const headerData = canonicalize(headerNoSig);
   const sigPreview = (block.header.signature || '').toString().slice(0,32);
-  console.log('[NS-NODE][DEBUG] Verifying header signature validator=', validatorId, 'sigPreview=', sigPreview);
+  logNs('DEBUG', 'Verifying header signature validator=', validatorId, 'sigPreview=', sigPreview);
   const verified = verifyEd25519(v.publicKey, headerData, block.header.signature);
   if (!verified) {
-    console.log('[NS-NODE][DEBUG] Signature verification failed headerDataLength=', headerData.length);
+    logNs('DEBUG', 'Signature verification failed headerDataLength=', headerData.length);
     return { ok: false, reason: 'bad_sig' };
   }
   // verify prevHash references a known parent or genesis
@@ -912,7 +912,7 @@ function applyBlock(block) {
   const slot = parentHeight + 1;
   const eligible = chooseValidator(parentHash, slot);
   if (eligible !== validatorId) {
-    console.warn(`[NS-NODE] Warning: validator ${validatorId} proposed block for slot ${slot} but deterministic selection was ${eligible}; accepting anyway (fork support)`);
+    logNs('WARN', `Warning: validator ${validatorId} proposed block for slot ${slot} but deterministic selection was ${eligible}; accepting anyway (fork support)`);
     // allow forks: do not reject; accept validly-signed blocks even if not selected
   }
   // compute block hash and parent
@@ -1029,7 +1029,7 @@ function applyBlock(block) {
         totalStake -= toSlash;
         vv.slashed = true;
         vv.slashedAt = Date.now();
-        console.warn(`[NS-NODE] Slashed validator ${id} by ${toSlash} (${slashPct}%) due to equivocation`);
+        logNs('WARN', `Slashed validator ${id} by ${toSlash} (${slashPct}%) due to equivocation`);
       }
       doSlash(validatorId);
       // also slash any other duplicated equivocation across the network (not typical)
