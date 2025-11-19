@@ -39,6 +39,20 @@ tar -xzf ns-node-linux-x64.tar.gz
 cd ns-node
 # Start the node (example)
 PORT=3000 ./start.sh
+
+---
+
+## Run scripts included in ZIP downloads
+
+All release ZIPs include `run-*.bat` and `run-*.sh` files for immediate use after extraction. Windows users can run `run-*.bat` (or `start-windows.bat`), and Linux/macOS users can run `./run-*.sh` (make executable with `chmod +x`). These scripts point at `server.js` and include `--status` by default in the start helpers.
+
+Example expected startup log messages:
+
+```
+[GW][2025-11-18T18:47:00.000Z] Gateway node started, listening on port 8080
+[NS][2025-11-18T18:47:00.100Z] NS node started, verifying blocks
+[VP][2025-11-18T18:47:00.150Z] VP node started, producing blocks
+```
 ```
 
 Windows (PowerShell):
