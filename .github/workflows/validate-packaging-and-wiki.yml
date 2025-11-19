@@ -40,6 +40,55 @@ jobs:
           set -ex
           ls -la neuroswarm/dist || true
 
+      - name: Validate run scripts point to server.js
+        run: |
+          node neuroswarm/scripts/check-run-scripts.mjs
+
+      - name: Verify node entry files are startup files
+        run: |
+          node neuroswarm/scripts/verifyEntry.mjs neuroswarm/ns-node/server.js ns
+          node neuroswarm/scripts/verifyEntry.mjs neuroswarm/gateway-node/server.js gw
+          node neuroswarm/scripts/verifyEntry.mjs neuroswarm/vp-node/server.js vp
+
+      - name: Verify run scripts included in ZIP artifacts (Unix runners)
+        if: runner.os != 'Windows'
+        run: |
+          set -e
+          for z in neuroswarm/dist/*.zip; do
+            echo "Checking $z for run scripts"
+            if unzip -l "$z" | grep -q "run-ns.bat\|run-ns.sh"; then
+              echo "Found ns run scripts in $z";
+            else
+              echo "ERROR: ns run scripts missing from $z"; exit 1;
+            fi
+            if unzip -l "$z" | grep -q "run-gateway.bat\|run-gateway.sh"; then
+              echo "Found gateway run scripts in $z";
+            else
+              echo "ERROR: gateway run scripts missing from $z"; exit 1;
+            fi
+            if unzip -l "$z" | grep -q "run-vp.bat\|run-vp.sh"; then
+              echo "Found vp run scripts in $z";
+            else
+              echo "ERROR: vp run scripts missing from $z"; exit 1;
+            fi
+          done
+
+      - name: Verify run scripts included in ZIP artifacts (Windows runner)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          Get-ChildItem neuroswarm\dist -Filter *.zip | ForEach-Object {
+            $zip = $_.FullName
+            Write-Host "Checking $zip for run scripts"
+            $tmp = Join-Path $env:TEMP ([System.Guid]::NewGuid().ToString())
+            New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+            Expand-Archive -Path $zip -DestinationPath $tmp -Force
+            if (-Not (Test-Path (Join-Path $tmp 'run-ns.bat') -PathType Leaf -ErrorAction SilentlyContinue -or Test-Path (Join-Path $tmp 'run-ns.sh'))) { throw "ns run script missing in $zip" }
+            if (-Not (Test-Path (Join-Path $tmp 'run-gateway.bat') -PathType Leaf -ErrorAction SilentlyContinue -or Test-Path (Join-Path $tmp 'run-gateway.sh'))) { throw "gateway run script missing in $zip" }
+            if (-Not (Test-Path (Join-Path $tmp 'run-vp.bat') -PathType Leaf -ErrorAction SilentlyContinue -or Test-Path (Join-Path $tmp 'run-vp.sh'))) { throw "vp run script missing in $zip" }
+            Remove-Item -Path $tmp -Recurse -Force
+          }
+
       - name: Validate archives contain start scripts and binaries
         run: |
           set -ex

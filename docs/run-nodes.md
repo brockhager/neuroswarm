@@ -43,6 +43,12 @@ Checklist Before Running Nodes
      - ns-node: 3000 (PORT=3000)
      - gateway-node: 8080 (PORT=8080)
      - vp-node: 4000 (PORT=4000)
+    - Entry files (do not run stubs):
+      - `neuroswarm/gateway-node/server.js` — Gateway startup & HTTP server
+      - `neuroswarm/vp-node/server.js` — VP produce loop & health endpoint
+      - `neuroswarm/ns-node/server.js` — NS verification & chain operations
+      - Use the included run scripts `run-gateway.bat/sh`, `run-ns.bat/sh`, `run-vp.bat/sh` to start nodes.
+      - To verify entry scripts are startup files, run `node neuroswarm/scripts/verifyEntry.mjs server.js <gw|vp|ns>` and only use server.js as the entrypoint.
    - Gateway expects `NS_NODE_URL`:
      - Set `NS_NODE_URL=http://localhost:3000` when starting gateway
    - vp-node also expects `NS_NODE_URL`:
@@ -104,7 +110,7 @@ Run each node standalone to validate it starts and exposes health endpoints.
   chmod +x run-ns.sh
 
   # Standard redirection (Windows or Linux):
-  PORT=3000 node ns-node/server.js > tmp/ns.log 2> tmp/ns.err ; echo $LASTEXITCODE
+  PORT=3000 node ns-node/server.js > ${NEUROSWARM_TMP:-tmp}/ns.log 2> ${NEUROSWARM_TMP:-tmp}/ns.err ; echo $LASTEXITCODE
   curl --silent --fail http://localhost:3000/health
   ```
 
@@ -123,7 +129,7 @@ Run each node standalone to validate it starts and exposes health endpoints.
   chmod +x run-gateway.sh
 
   # Standard redirection:
-  PORT=8080 NS_NODE_URL=http://127.0.0.1:3000 NS_CHECK_EXIT_ON_FAIL=false node gateway-node/server.js > tmp/gw.log 2> tmp/gw.err ; echo $LASTEXITCODE
+  PORT=8080 NS_NODE_URL=http://127.0.0.1:3000 NS_CHECK_EXIT_ON_FAIL=false node gateway-node/server.js > ${NEUROSWARM_TMP:-tmp}/gw.log 2> ${NEUROSWARM_TMP:-tmp}/gw.err ; echo $LASTEXITCODE
   curl --silent --fail http://localhost:8080/health
   ```
 
@@ -142,7 +148,7 @@ Run each node standalone to validate it starts and exposes health endpoints.
   chmod +x run-vp.sh
 
   # Standard redirection:
-  PORT=4000 NS_NODE_URL=http://127.0.0.1:3000 node vp-node/server.js > tmp/vp.log 2> tmp/vp.err ; echo $LASTEXITCODE
+  PORT=4000 NS_NODE_URL=http://127.0.0.1:3000 node vp-node/server.js > ${NEUROSWARM_TMP:-tmp}/vp.log 2> ${NEUROSWARM_TMP:-tmp}/vp.err ; echo $LASTEXITCODE
   curl --silent --fail http://localhost:4000/health
   ```
 
@@ -226,6 +232,8 @@ Using the installers
 --------------------
 
 For end users: visit the Downloads page in the project wiki for direct links to release artifacts and verified installers: https://github.com/brockhager/neuroswarm/wiki/Download. Extract the downloaded asset and run the bundled `start.sh` (Linux/macOS) or `start.bat` (Windows) file. The default gateway installer will attempt to open your browser at `http://localhost:8080` when the gateway is ready.
+
+Run scripts (`run-*.bat` and `run-*.sh`) are included in the ZIP downloads for immediate usage. After extracting the ZIP for a given node, run the `run-*.bat` file on Windows or `./run-*.sh` on POSIX systems (make executable with `chmod +x`).
 
 Start script behavior (Windows `start.bat`) and logging
 

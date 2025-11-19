@@ -5,4 +5,5 @@ echo "Starting Gateway node..."
 cd "$(dirname "$0")"
 export PORT=${PORT:-8080}
 export NS_NODE_URL=${NS_NODE_URL:-http://127.0.0.1:3000}
+node ../scripts/verifyEntry.mjs server.js gw || exit 2
 node server.js --status

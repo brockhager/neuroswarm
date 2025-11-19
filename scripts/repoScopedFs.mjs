@@ -70,4 +70,19 @@ export function safeJoinRepo(...parts) {
   return joined;
 }
 
-export default { getRepoRoot, isInsideRepo, ensureDirInRepoSync, safeJoinRepo };
+// Get a tmp directory for helper tasks. If NEUROSWARM_TMP is set, use it.
+// Otherwise default to neuroswarm/tmp in the repo.
+export function getTmpDir(...parts) {
+  const tmpEnv = process.env.NEUROSWARM_TMP || process.env.TMP_DIR || process.env.TMP || process.env.TEMP;
+  let base;
+  if (tmpEnv) {
+    base = path.isAbsolute(tmpEnv) ? tmpEnv : path.join(process.cwd(), tmpEnv);
+  } else {
+    base = path.join(REPO_ROOT, 'tmp');
+  }
+  const joined = path.join(base, ...parts);
+  try { fs.mkdirSync(joined, { recursive: true }); } catch (e) { /* ignore */ }
+  return joined;
+}
+
+export default { getRepoRoot, isInsideRepo, ensureDirInRepoSync, safeJoinRepo, getTmpDir };

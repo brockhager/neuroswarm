@@ -108,6 +108,29 @@ for (const node of nodes) {
       const srcServer = path.join(process.cwd(), node.entry);
       if (fs.existsSync(srcServer)) fs.copyFileSync(srcServer, path.join(outFolder, 'server.js'));
     } catch (e) {}
+    // Also include run scripts (run-*.bat, run-*.sh) from repo so users can run node immediately after extracting ZIPs
+    try {
+      const baseName = node.name.replace('-node', '');
+      const srcRunBat = path.join(process.cwd(), node.name, `run-${baseName}.bat`);
+      const srcRunSh = path.join(process.cwd(), node.name, `run-${baseName}.sh`);
+      const dstRunBat = path.join(outFolder, `run-${baseName}.bat`);
+      const dstRunSh = path.join(outFolder, `run-${baseName}.sh`);
+      if (fs.existsSync(srcRunBat)) {
+        fs.copyFileSync(srcRunBat, dstRunBat);
+      } else {
+        // Fallback: generate minimal run script
+        const batContent = `@echo off\r\ncd %~dp0\r\nnode server.js --status`;
+        fs.writeFileSync(dstRunBat, batContent);
+      }
+      if (fs.existsSync(srcRunSh)) {
+        fs.copyFileSync(srcRunSh, dstRunSh);
+        try { fs.chmodSync(dstRunSh, 0o755); } catch (e) {}
+      } else {
+        const shContent = `#!/usr/bin/env bash\ncd \"$(dirname \"$0\")\"\nnode server.js --status`;
+        fs.writeFileSync(dstRunSh, shContent);
+        try { fs.chmodSync(dstRunSh, 0o755); } catch (e) {}
+      }
+    } catch (e) { /* ignore run script copy errors */ }
     // write a platform-aware start script
     const startCommand = builtBinary ? `./${exeName}` : `node server.js`;
     const shStartCmd = builtBinary ? `./${exeName}` : `node "$(dirname \"$0\")/server.js"`;
