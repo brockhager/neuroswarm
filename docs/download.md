@@ -11,8 +11,8 @@ Canonical release page:
 - https://github.com/brockhager/neuroswarm/releases
 
 Quick access (latest release asset helper):
-- Latest ns-node (Linux): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.tar.gz
-- Latest ns-node (macOS): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-macos-x64.tar.gz
+- Latest ns-node (Linux): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.zip
+- Latest ns-node (macOS): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-macos-x64.zip
 - Latest ns-node (Windows): https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-win-x64.zip
 - Latest gateway-node (Windows): https://github.com/brockhager/neuroswarm/releases/latest/download/gateway-node-win-x64.zip
 - Latest vp-node (Windows): https://github.com/brockhager/neuroswarm/releases/latest/download/vp-node-win-x64.zip
@@ -23,8 +23,8 @@ Linux/macOS (bash):
 
 ```bash
 # Download the latest Linux ns-node
-curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.tar.gz
-tar -xzf ns-node-linux-x64.tar.gz
+curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.zip
+unzip ns-node-linux-x64.zip
 cd ns-node
 # Start the node (example) — start script included in package
 PORT=3000 ./start.sh
@@ -38,7 +38,7 @@ Invoke-WebRequest -Uri https://github.com/brockhager/neuroswarm/releases/latest/
 Expand-Archive gateway-node-win-x64.zip -DestinationPath gateway-node
 Set-Location gateway-node
 # Start the gateway (example)
-.\start.bat
+.\start-windows.bat
 ```
 
 ---
@@ -49,10 +49,10 @@ For releases we include a `checksums.txt` and an optional `checksums.sig` (GPG s
 Linux / macOS (SHA256):
 
 ```bash
-curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.tar.gz
+curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/ns-node-linux-x64.zip
 curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/checksums.txt
-sha256sum ns-node-linux-x64.tar.gz
-grep ns-node-linux-x64.tar.gz checksums.txt
+sha256sum ns-node-linux-x64.zip
+grep ns-node-linux-x64.zip checksums.txt
 ```
 
 Windows (PowerShell SHA256):
