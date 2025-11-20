@@ -51,6 +51,11 @@ echo neuro-services: http://localhost:3001
 echo neuro-runner:   http://localhost:3002
 echo neuro-web:      http://localhost:3003 (auto-adjusted)
 echo.
-echo Open http://localhost:3003/chat to start chatting!
+echo Opening Monitor Dashboard...
+timeout /t 2 /nobreak >nul
+start "" "c:\JS\ns\neuroswarm\monitor-dashboard.html"
+echo.
+echo Dashboard URL: file:///c:/JS/ns/neuroswarm/monitor-dashboard.html
+echo Chat Interface: http://localhost:3003/chat
 echo.
 pause
