@@ -2,9 +2,18 @@
 echo Starting NeuroSwarm Network...
 echo.
 
-echo [1/7] Starting Ollama AI Engine...
-start "Ollama" cmd /k "ollama run llama3"
-timeout /t 3 /nobreak >nul
+echo [1/7] Checking for Ollama AI Engine...
+where ollama >nul 2>&1
+if %errorlevel% equ 0 (
+    echo Ollama found! Starting Ollama with Llama 3...
+    start "Ollama" cmd /k "ollama run llama3"
+    timeout /t 3 /nobreak >nul
+) else (
+    echo WARNING: Ollama not found. AI features will not work.
+    echo Download Ollama from: https://ollama.com/download
+    echo You can still test the chat interface and nodes without AI.
+    timeout /t 3 /nobreak >nul
+)
 
 echo [2/7] Starting NS Node (port 3000)...
 start "NS Node" cmd /k "cd /d c:\JS\ns\neuroswarm\ns-node && set PORT=3000 && node server.js"
