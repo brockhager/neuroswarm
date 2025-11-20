@@ -131,7 +131,7 @@
 
         <div class="service-box">
             <div class="service-header">
-                <span>NS Node (3000)</span>
+                <span>NS Node (3009)</span>
                 <div class="status-indicator" id="status-ns"></div>
             </div>
             <div class="service-logs" id="logs-ns">
@@ -161,7 +161,7 @@
 
         <div class="service-box">
             <div class="service-header">
-                <span>neuro-services (3001)</span>
+                <span>neuro-services (3007)</span>
                 <div class="status-indicator" id="status-services"></div>
             </div>
             <div class="service-logs" id="logs-services">
@@ -171,7 +171,7 @@
 
         <div class="service-box">
             <div class="service-header">
-                <span>neuro-runner (3002)</span>
+                <span>neuro-runner (3008)</span>
                 <div class="status-indicator" id="status-runner"></div>
             </div>
             <div class="service-logs" id="logs-runner">
@@ -181,7 +181,7 @@
 
         <div class="service-box">
             <div class="service-header">
-                <span>neuro-web (3003)</span>
+                <span>neuro-web (3005)</span>
                 <div class="status-indicator" id="status-web"></div>
             </div>
             <div class="service-logs" id="logs-web">
@@ -201,146 +201,100 @@
 
         <div class="service-box">
             <div class="service-header">
-                <span>System Status</span>
-                <div class="status-indicator" id="status-system"></div>
-            </div>
-            <div class="service-logs" id="logs-system">
-                <div class="log-entry info">NeuroSwarm Monitor Dashboard Active</div>
-                <div class="log-entry">Polling services every 10 seconds...</div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        const services = {
-            ollama: { url: 'http://localhost:11434/api/tags', name: 'Ollama', method: 'GET', accept403: true },
-            ns: { url: 'http://localhost:3000/chain/height', name: 'NS Node', method: 'GET' },
-            gateway: { url: 'http://localhost:8080/health', name: 'Gateway', method: 'GET' },
-            vp: { url: 'http://localhost:4000/health', name: 'VP Node', method: 'GET' },
-            services: { url: 'http://localhost:3001/health', name: 'neuro-services', method: 'GET' },
-            runner: { url: 'http://localhost:3002/health', name: 'neuro-runner', method: 'GET' },
-            web: { url: 'http://localhost:3003/', name: 'neuro-web', method: 'GET' },
-            ipfs: { url: 'http://localhost:5001/api/v0/id', name: 'IPFS', method: 'POST' }
-        };
-
-        let statusCache = {};
-
-        function addLog(serviceId, message, type = 'info') {
-            const logsDiv = document.getElementById(`logs-${serviceId}`);
-            const timestamp = new Date().toLocaleTimeString();
-            const logEntry = document.createElement('div');
-            logEntry.className = `log-entry ${type}`;
-            logEntry.textContent = `[${timestamp}] ${message}`;
-            logsDiv.appendChild(logEntry);
-
-            // Auto-scroll to bottom
-            logsDiv.scrollTop = logsDiv.scrollHeight;
-
-            // Keep only last 50 entries
-            while (logsDiv.children.length > 50) {
-                logsDiv.removeChild(logsDiv.firstChild);
-            }
-        }
-
-        function updateStatus(serviceId, isOnline) {
-            const indicator = document.getElementById(`status-${serviceId}`);
-            const wasOnline = statusCache[serviceId];
-            statusCache[serviceId] = isOnline;
-
-            if (isOnline) {
+                if (isOnline) {
                 indicator.classList.remove('error');
                 // Only log status change
                 if (wasOnline === false) {
-                    addLog(serviceId, `${services[serviceId].name} is now online`, 'info');
+                addLog(serviceId, `${services[serviceId].name} is now online`, 'info');
                 }
-            } else {
+                } else {
                 indicator.classList.add('error');
                 // Only log status change
                 if (wasOnline === true) {
-                    addLog(serviceId, `${services[serviceId].name} went offline`, 'error');
+                addLog(serviceId, `${services[serviceId].name} went offline`, 'error');
                 }
-            }
-        }
+                }
+                }
 
-        async function checkService(serviceId, config) {
-            try {
+                async function checkService(serviceId, config) {
+                try {
                 const options = {
-                    method: config.method || 'GET',
-                    mode: 'cors'
+                method: config.method || 'GET',
+                mode: 'cors'
                 };
 
                 // IPFS needs POST method
                 if (serviceId === 'ipfs') {
-                    options.headers = { 'Content-Type': 'application/json' };
+                options.headers = { 'Content-Type': 'application/json' };
                 }
 
                 const response = await fetch(config.url, options);
 
                 // Ollama returns 403 for CORS requests but is still running
                 if (config.accept403 && response.status === 403) {
-                    updateStatus(serviceId, true);
-                    if (statusCache[serviceId] !== true) {
-                        addLog(serviceId, 'Running (CORS blocked, this is normal)', 'info');
-                    }
-                    return true;
+                updateStatus(serviceId, true);
+                if (statusCache[serviceId] !== true) {
+                addLog(serviceId, 'Running (CORS blocked, this is normal)', 'info');
+                }
+                return true;
                 }
 
                 if (response.ok || response.status === 200) {
-                    updateStatus(serviceId, true);
-                    return true;
+                updateStatus(serviceId, true);
+                return true;
                 } else {
-                    updateStatus(serviceId, false);
-                    if (statusCache[serviceId] !== false) {
-                        addLog(serviceId, `Returned status ${response.status}`, 'warn');
-                    }
-                    return false;
+                updateStatus(serviceId, false);
+                if (statusCache[serviceId] !== false) {
+                addLog(serviceId, `Returned status ${response.status}`, 'warn');
                 }
-            } catch (error) {
+                return false;
+                }
+                } catch (error) {
                 updateStatus(serviceId, false);
                 // Only log first error, not every poll
                 if (statusCache[serviceId] !== false) {
-                    addLog(serviceId, `Not reachable: ${error.message}`, 'error');
+                addLog(serviceId, `Not reachable: ${error.message}`, 'error');
                 }
                 return false;
-            }
-        }
+                }
+                }
 
-        async function pollServices() {
-            const results = await Promise.all(
+                async function pollServices() {
+                const results = await Promise.all(
                 Object.entries(services).map(([id, config]) =>
-                    checkService(id, config).then(online => ({ id, online }))
+                checkService(id, config).then(online => ({ id, online }))
                 )
-            );
+                );
 
-            // Update system status
-            const allOnline = results.every(r => r.online);
-            const onlineCount = results.filter(r => r.online).length;
-            updateStatus('system', allOnline);
+                // Update system status
+                const allOnline = results.every(r => r.online);
+                const onlineCount = results.filter(r => r.online).length;
+                updateStatus('system', allOnline);
 
-            // Only log system status changes
-            const prevSystemStatus = statusCache['system-detail'];
-            const currentSystemStatus = `${onlineCount}/${results.length}`;
+                // Only log system status changes
+                const prevSystemStatus = statusCache['system-detail'];
+                const currentSystemStatus = `${onlineCount}/${results.length}`;
 
-            if (prevSystemStatus !== currentSystemStatus) {
+                if (prevSystemStatus !== currentSystemStatus) {
                 statusCache['system-detail'] = currentSystemStatus;
                 if (allOnline) {
-                    addLog('system', `All ${results.length} services operational ✓`, 'info');
+                addLog('system', `All ${results.length} services operational ✓`, 'info');
                 } else {
-                    addLog('system', `${onlineCount}/${results.length} services online`, 'warn');
+                addLog('system', `${onlineCount}/${results.length} services online`, 'warn');
                 }
-            }
-        }
+                }
+                }
 
-        // Initial poll
-        addLog('system', `Dashboard started at ${new Date().toLocaleString()}`);
-        addLog('system', 'Monitoring 8 services...');
-        addLog('system', 'Checking service status...');
+                // Initial poll
+                addLog('system', `Dashboard started at ${new Date().toLocaleString()}`);
+                addLog('system', 'Monitoring 8 services...');
+                addLog('system', 'Checking service status...');
 
-        pollServices();
+                pollServices();
 
-        // Poll every 10 seconds to avoid rate limiting
-        setInterval(pollServices, 10000);
-    </script>
+                // Poll every 10 seconds to avoid rate limiting
+                setInterval(pollServices, 10000);
+                </script>
 </body>
 
 </html>
