@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroSwarm Monitor Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Consolas', 'Monaco', monospace;
+            background: #1a1a1a;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 10px;
+            height: calc(100vh - 20px);
+        }
+
+        .service-box {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .service-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 16px;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.error {
+            background: #ef4444;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .service-logs {
+            flex: 1;
+            padding: 12px;
+            overflow-y: auto;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #333;
+            background: #fafafa;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            word-wrap: break-word;
+        }
+
+        .log-entry.error {
+            color: #dc2626;
+        }
+
+        .log-entry.warn {
+            color: #ea580c;
+        }
+
+        .log-entry.info {
+            color: #0891b2;
+        }
+
+        .service-logs::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .service-logs::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .service-logs::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+
+        .service-logs::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard">
+        <div class="service-box">
+            <div class="service-header">
+                <span>Ollama AI</span>
+                <div class="status-indicator" id="status-ollama"></div>
+            </div>
+            <div class="service-logs" id="logs-ollama">
+                <div class="log-entry info">Waiting for Ollama connection...</div>
+            </div>
+        </div>
+
+        <div class="service-box">
+            <div class="service-header">
+                <span>NS Node (3009)</span>
+                <div class="status-indicator" id="status-ns"></div>
+            </div>
+            <div class="service-logs" id="logs-ns">
+                <div class="log-entry info">Waiting for NS Node...</div>
+            </div>
+        </div>
+
+        <div class="service-box">
+            <div class="service-header">
+                <span>Gateway Node (8080)</span>
+                <div class="status-indicator" id="status-gateway"></div>
+            </div>
+            <div class="service-logs" id="logs-gateway">
+                <div class="log-entry info">Waiting for Gateway Node...</div>
+            </div>
+        </div>
+
+        <div class="service-box">
+            <div class="service-header">
+                <span>VP Node (4000)</span>
+                <div class="status-indicator" id="status-vp"></div>
+            </div>
+            <div class="service-logs" id="logs-vp">
+                <div class="log-entry info">Waiting for VP Node...</div>
+            </div>
+        </div>
+
+        <div class="service-box">
+            <div class="service-header">
+                <span>neuro-services (3007)</span>
+                <div class="status-indicator" id="status-services"></div>
+            </div>
+            <div class="service-logs" id="logs-services">
+                <div class="log-entry info">Waiting for neuro-services...</div>
+            </div>
+        </div>
+
+        <div class="service-box">
+            <div class="service-header">
+                <span>neuro-runner (3008)</span>
+                <div class="status-indicator" id="status-runner"></div>
+            </div>
+            <div class="service-logs" id="logs-runner">
+                <div class="log-entry info">Waiting for neuro-runner...</div>
+            </div>
+        </div>
+
+        <div class="service-box">
+            <div class="service-header">
+                <span>neuro-web (3005)</span>
+                <div class="status-indicator" id="status-web"></div>
+            </div>
+            <div class="service-logs" id="logs-web">
+                <div class="log-entry info">Waiting for neuro-web...</div>
+            </div>
+        </div>
+
+        <div class="service-box">
+            <div class="service-header">
+                <span>IPFS Daemon</span>
+                <div class="status-indicator" id="status-ipfs"></div>
+            </div>
+            <div class="service-logs" id="logs-ipfs">
+                <div class="log-entry info">Checking IPFS status...</div>
+            </div>
+        </div>
+
+        <div class="service-box">
+            <div class="service-header">
+                if (isOnline) {
+                indicator.classList.remove('error');
+                // Only log status change
+                if (wasOnline === false) {
+                addLog(serviceId, `${services[serviceId].name} is now online`, 'info');
+                }
+                } else {
+                indicator.classList.add('error');
+                // Only log status change
+                if (wasOnline === true) {
+                addLog(serviceId, `${services[serviceId].name} went offline`, 'error');
+                }
+                }
+                }
+
+                async function checkService(serviceId, config) {
+                try {
+                const options = {
+                method: config.method || 'GET',
+                mode: 'cors'
+                };
+
+                // IPFS needs POST method
+                if (serviceId === 'ipfs') {
+                options.headers = { 'Content-Type': 'application/json' };
+                }
+
+                const response = await fetch(config.url, options);
+
+                // Ollama returns 403 for CORS requests but is still running
+                if (config.accept403 && response.status === 403) {
+                updateStatus(serviceId, true);
+                if (statusCache[serviceId] !== true) {
+                addLog(serviceId, 'Running (CORS blocked, this is normal)', 'info');
+                }
+                return true;
+                }
+
+                if (response.ok || response.status === 200) {
+                updateStatus(serviceId, true);
+                return true;
+                } else {
+                updateStatus(serviceId, false);
+                if (statusCache[serviceId] !== false) {
+                addLog(serviceId, `Returned status ${response.status}`, 'warn');
+                }
+                return false;
+                }
+                } catch (error) {
+                updateStatus(serviceId, false);
+                // Only log first error, not every poll
+                if (statusCache[serviceId] !== false) {
+                addLog(serviceId, `Not reachable: ${error.message}`, 'error');
+                }
+                return false;
+                }
+                }
+
+                async function pollServices() {
+                const results = await Promise.all(
+                Object.entries(services).map(([id, config]) =>
+                checkService(id, config).then(online => ({ id, online }))
+                )
+                );
+
+                // Update system status
+                const allOnline = results.every(r => r.online);
+                const onlineCount = results.filter(r => r.online).length;
+                updateStatus('system', allOnline);
+
+                // Only log system status changes
+                const prevSystemStatus = statusCache['system-detail'];
+                const currentSystemStatus = `${onlineCount}/${results.length}`;
+
+                if (prevSystemStatus !== currentSystemStatus) {
+                statusCache['system-detail'] = currentSystemStatus;
+                if (allOnline) {
+                addLog('system', `All ${results.length} services operational ✓`, 'info');
+                } else {
+                addLog('system', `${onlineCount}/${results.length} services online`, 'warn');
+                }
+                }
+                }
+
+                // Initial poll
+                addLog('system', `Dashboard started at ${new Date().toLocaleString()}`);
+                addLog('system', 'Monitoring 8 services...');
+                addLog('system', 'Checking service status...');
+
+                pollServices();
+
+                // Poll every 10 seconds to avoid rate limiting
+                setInterval(pollServices, 10000);
+                </script>
+</body>
+
+</html>

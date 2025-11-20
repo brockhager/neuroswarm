@@ -6,7 +6,7 @@
 
 Before you can vote, make sure you have:
 - ✅ A NeuroSwarm contributor account
-- ✅ At least a Bronze badge ([earn badges here](../governance/contributor-recognition.md))
+- ✅ At least a Bronze badge ([earn badges here](../contributor-recognition.md))
 - ✅ Connected Solana wallet
 - ✅ Active within the last 90 days
 
