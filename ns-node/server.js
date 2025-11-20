@@ -366,10 +366,10 @@ app.post('/tx', async (req, res) => {
       const url = gw.url.replace(/\/$/, '') + '/v1/tx';
       try {
         const fwd = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': req.header('x-forwarded-for') || req.socket.remoteAddress || '', 'X-Source': 'ns' }, body: JSON.stringify(tx) });
-          if (fwd.ok) {
-            const j = await fwd.json().catch(() => null);
-            forwarded.push({ url: gw.url, resp: j || true });
-            logNs(`Forwarded tx to gateway ${gw.url}`);
+        if (fwd.ok) {
+          const j = await fwd.json().catch(() => null);
+          forwarded.push({ url: gw.url, resp: j || true });
+          logNs(`Forwarded tx to gateway ${gw.url}`);
           // stop on first successful forward
           break;
         } else {
@@ -454,9 +454,9 @@ app.post('/blocks/produce', (req, res) => {
   if (calcRoot !== header.merkleRoot) return res.status(400).json({ error: 'bad merkle root' });
   // verify sourcesRoot if present
   if (header.sourcesRoot) {
-      const srcRoot = computeSourcesRoot(txs);
+    const srcRoot = computeSourcesRoot(txs);
     if (srcRoot !== header.sourcesRoot) {
-        logNs('ERROR', 'Bad sources root computed', srcRoot, 'expected', header.sourcesRoot);
+      logNs('ERROR', 'Bad sources root computed', srcRoot, 'expected', header.sourcesRoot);
       return res.status(400).json({ error: 'bad_sources_root' });
       // sources root matched
       sourcesValidCount += 1;
@@ -902,7 +902,7 @@ function applyBlock(block) {
   // Build canonical header data excluding the signature key entirely to match signing input.
   const { signature: _sigIgnored, ...headerNoSig } = block.header;
   const headerData = canonicalize(headerNoSig);
-  const sigPreview = (block.header.signature || '').toString().slice(0,32);
+  const sigPreview = (block.header.signature || '').toString().slice(0, 32);
   logNs('DEBUG', 'Verifying header signature validator=', validatorId, 'sigPreview=', sigPreview);
   const verified = verifyEd25519(v.publicKey, headerData, block.header.signature);
   if (!verified) {
@@ -1002,18 +1002,20 @@ function applyBlock(block) {
   }
   // If we have consumed txs as part of this accepted canonical block, notify the gateway
   if (consumedIds.length > 0) {
-    try {
-      const gw = GATEWAY_CONFIG && GATEWAY_CONFIG.length ? GATEWAY_CONFIG[0] : null;
-      if (gw && gw.url) {
-        const url = gw.url.replace(/\/$/, '') + '/v1/mempool/consume';
-        const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: consumedIds }) });
-        if (res.ok) {
-          logNs(`Notified gateway to consume ${consumedIds.length} tx(s)`);
-        } else {
-          logNs(`Gateway consume call failed status=${res.status} for ${consumedIds.length} tx(s)`);
+    (async () => {
+      try {
+        const gw = GATEWAY_CONFIG && GATEWAY_CONFIG.length ? GATEWAY_CONFIG[0] : null;
+        if (gw && gw.url) {
+          const url = gw.url.replace(/\/$/, '') + '/v1/mempool/consume';
+          const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: consumedIds }) });
+          if (res.ok) {
+            logNs(`Notified gateway to consume ${consumedIds.length} tx(s)`);
+          } else {
+            logNs(`Gateway consume call failed status=${res.status} for ${consumedIds.length} tx(s)`);
+          }
         }
-      }
-    } catch (e) { logNs(`Error notifying gateway to consume txs: ${e.message}`); }
+      } catch (e) { logNs(`Error notifying gateway to consume txs: ${e.message}`); }
+    })();
   }
   // If this block extended canonical chain, update the stored snapshot to reflect post-block validators
   if (extendsCanonical) {
