@@ -4,44 +4,17 @@ Get started with NeuroSwarm by downloading the Desktop Launcher or individual no
 
 ---
 
-## 🚀 NeuroSwarm Desktop Launcher (Recommended)
+## 🚀 NeuroSwarm Desktop Launcher
 
-The **NeuroSwarm Desktop Launcher** is the easiest way to get started. It provides a one-click installation experience with an interactive setup wizard.
+> ⚠️ **Coming Soon**: The Desktop Launcher is currently under development and not yet available in releases. For now, please use the individual node binaries below.
 
-### Features
+The **NeuroSwarm Desktop Launcher** will provide a one-click installation experience with an interactive setup wizard.
+
+### Planned Features
 - ✨ **Component Selection**: Choose which parts to install (Desktop App only, or include nodes)
 - 🔄 **Auto-Download**: Automatically downloads the right binaries for your platform
 - 🎯 **AI Setup Wizard**: Guided installation of local AI models (Ollama/Llama)
-- 📦 **Lightweight**: Only ~5MB - downloads components on-demand
-
-### Download Launcher
-
-| Platform | Download Link | Size |
-|----------|--------------|------|
-| Windows  | [neuro-launcher-win-x64.zip](https://github.com/brockhager/neuroswarm/releases/latest/download/neuro-launcher-win-x64.zip) | ~138MB |
-| macOS    | [neuro-launcher-macos-x64.zip](https://github.com/brockhager/neuroswarm/releases/latest/download/neuro-launcher-macos-x64.zip) | ~138MB |
-| Linux    | [neuro-launcher-linux-x64.zip](https://github.com/brockhager/neuroswarm/releases/latest/download/neuro-launcher-linux-x64.zip) | ~138MB |
-
-### Quick Start
-```bash
-# Windows (PowerShell)
-Invoke-WebRequest -Uri https://github.com/brockhager/neuroswarm/releases/latest/download/neuro-launcher-win-x64.zip -OutFile neuro-launcher.zip
-Expand-Archive neuro-launcher.zip -DestinationPath neuro-launcher
-cd neuro-launcher
-.\\NeuroSwarm.exe
-
-# macOS/Linux
-curl -LO https://github.com/brockhager/neuroswarm/releases/latest/download/neuro-launcher-macos-x64.zip
-unzip neuro-launcher-macos-x64.zip
-cd neuro-launcher
-./NeuroSwarm
-```
-
-On first run, the launcher will:
-1. Ask which components you want to install
-2. Download selected components automatically
-3. Guide you through AI model setup (Ollama)
-4. Start all services and open the chat interface
+- 📦 **Lightweight**: Downloads components on-demand
 
 ---
 
@@ -112,8 +85,8 @@ Get-FileHash neuro-launcher-win-x64.zip -Algorithm SHA256
 
 | Use Case | Recommended Download |
 |----------|---------------------|
-| **New User** | Desktop Launcher (select "Desktop App Only") |
-| **Node Operator** | Desktop Launcher (select "Desktop + All Nodes") |
+| **New User** | Individual node binaries (launcher coming soon) |
+| **Node Operator** | Individual node binaries for your deployment needs |
 | **Developer** | Individual node binaries + clone the repo |
 | **Server Deployment** | Individual node binaries |
 

@@ -47,6 +47,8 @@ Three specialized node types power the NeuroSwarm network:
 - **Gateway Node** (port 8080): API gateway with browser interface
 - **VP Node** (port 4000): Block production and validation
 
+See **[Ports Configuration](Ports)** for detailed port assignments and firewall setup.
+
 ---
 
 ## 🎯 Key Features
