@@ -6,7 +6,7 @@ echo [1/9] Checking for IPFS daemon...
 where ipfs >nul 2>&1
 if %errorlevel% equ 0 (
     echo IPFS found! Starting IPFS daemon...
-    start "IPFS Daemon" cmd /k "ipfs daemon"
+    start "IPFS Daemon" cmd /k "ipfs init 2>nul & ipfs daemon"
     timeout /t 3 /nobreak >nul
 ) else (
     echo WARNING: IPFS not found. Blockchain payload storage will be limited.
@@ -20,8 +20,6 @@ if %errorlevel% equ 0 (
     echo Ollama found! Starting Ollama server...
     start "Ollama Server" cmd /k "ollama serve"
     timeout /t 3 /nobreak >nul
-    echo Pulling llama3 model (if not already downloaded)...
-    start "Ollama Pull" cmd /c "timeout /t 5 /nobreak >nul && ollama pull llama3 && echo Model ready! && pause"
 ) else (
     echo WARNING: Ollama not found. AI features will not work.
     echo Download Ollama from: https://ollama.com/download
