@@ -38,12 +38,12 @@ if (!ensureDirInRepoSync(tmpDir)) process.exit(1);
 }
 
 function findSrc(relPathParts) {
-  // Only consider files under the 'neuroswarm' folder. Do not fallback to the repo root.
+  // Look for files relative to current working directory
   const candidates = [
-    path.join(process.cwd(), 'neuroswarm', ...relPathParts)
+    path.join(process.cwd(), ...relPathParts)
   ];
   for (const c of candidates) if (fs.existsSync(c)) return c;
-  return path.join(process.cwd(), 'neuroswarm', ...relPathParts); // fallback (non-existing) so caller logs missing file
+  return path.join(process.cwd(), ...relPathParts); // fallback (non-existing) so caller logs missing file
 }
 
 function timestamp() { return new Date().toISOString(); }
@@ -55,20 +55,20 @@ const mapping = [
   { src: findSrc(['docs', 'run-nodes.md']), dst: 'Running-Nodes.md' },
   { src: findSrc(['docs', 'data-flow-architecture.md']), dst: 'Data-Flow-Architecture.md' },
   { src: findSrc(['docs', 'pnpm-policy.md']), dst: 'Contributor-Policy.md' },
-  { src: findSrc(['docs', 'download.md']), dst: 'Download.md' },
+  { src: findSrc(['wiki', 'Download.md']), dst: 'Download.md' },
   // Home page: canonical front page for the wiki
-  // Prefer `neuroswarm/wiki/Home.md` if present; fallback to `neuroswarm/docs/wiki/Home.md`.
-  { src: (fs.existsSync(path.join(process.cwd(), 'neuroswarm', 'wiki', 'Home.md'))
-           ? path.join(process.cwd(), 'neuroswarm', 'wiki', 'Home.md')
+  // Prefer `wiki/Home.md` if present; fallback to `docs/wiki/Home.md`.
+  { src: (fs.existsSync(path.join(process.cwd(), 'wiki', 'Home.md'))
+           ? path.join(process.cwd(), 'wiki', 'Home.md')
            : findSrc(['docs', 'wiki', 'Home.md'])), dst: 'Home.md' },
   // Sync Updates page if present (changelog/Updates.md)
   { src: findSrc(['wiki', 'Updates.md']), dst: 'Updates.md' }
 ];
 
-// Also sync any docs in neuroswarm/docs/wiki/ and neuroswarm/wiki/ automatically
+// Also sync any docs in docs/wiki/ and wiki/ automatically
 const extraCandidates = [
-  path.join(process.cwd(), 'neuroswarm', 'docs', 'wiki'),
-  path.join(process.cwd(), 'neuroswarm', 'wiki')
+  path.join(process.cwd(), 'docs', 'wiki'),
+  path.join(process.cwd(), 'wiki')
 ];
 for (const lc of extraCandidates) {
   try {
