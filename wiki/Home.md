@@ -75,17 +75,18 @@ See **[Ports Configuration](Ports)** for detailed port assignments and firewall 
 ### Getting Started
 - **[Download](Download)** - Get the latest releases
 - **[Installation Guide](Getting-Started)** - Step-by-step setup
-- **[Running Nodes](Running-Nodes)** - Node operation and monitoring
+- **[Running Nodes](Nodes/Running-Nodes)** - Node operation and monitoring
+- **[📖 Full Documentation Index](Index)** - Complete organized documentation directory
 
 ### Architecture & Design
-- **[System Overview](System-Overview)** - High-level architecture
-- **[Data Flow](data-flow-architecture)** - End-to-end pipeline
-- **[Security](Security)** - Security protocols and best practices
+- **[System Overview](Technical/System-Overview)** - High-level architecture
+- **[Data Flow](Technical/data-flow-architecture)** - End-to-end pipeline
+- **[Security](Security/SECURITY)** - Security protocols and best practices
 
 ### Development
-- **[Contributor Guide](Contributor-Guide)** - How to contribute
-- **[Governance](Governance)** - Platform governance model
-- **[Changelog](Updates)** - Release notes and updates
+- **[Contributor Guide](Development/Contributor-Guide)** - How to contribute
+- **[Governance](Governance/GOVERNANCE)** - Platform governance model
+- **[Changelog](Changelogs/Updates)** - Release notes and updates
 
 ---
 
