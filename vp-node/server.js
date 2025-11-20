@@ -170,8 +170,15 @@ async function produceLoop() {
     const txs = (mp.mempool || []).slice(0, MAX_TX).map(entry => entry.payload || entry.tx || {});
 
     let head = null;
-    try { head = await (await fetch(NS_URL + '/headers/tip')).json(); } catch (e) { logVp('WARN', 'Failed to parse head JSON from NS:', e.message); }
-    const prev = head.header || null;
+    try {
+      const headRes = await fetch(NS_URL + '/headers/tip');
+      if (headRes.ok) {
+        head = await headRes.json();
+      }
+    } catch (e) {
+      // Silently handle - empty blockchain is normal on startup
+    }
+    const prev = head && head.header ? head.header : null;
     let heightResp = { height: 0 };
     try { heightResp = await (await fetch(NS_URL + '/chain/height')).json(); } catch (e) { logVp('WARN', 'Failed to parse height JSON from NS:', e.message); }
     const slot = (heightResp.height || 0) + 1;
@@ -223,7 +230,7 @@ async function produceLoop() {
     const res = await fetch(NS_URL + '/blocks/produce', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Producer-Url': producerUrl }, body: JSON.stringify({ header, txs, signature: sig }) });
     let j = null;
     try { j = await res.json(); } catch (e) { logVp('WARN', 'Failed to parse JSON from NS /blocks/produce response:', e.message); j = null; }
-        if (j && j.ok) {
+    if (j && j.ok) {
       lastProduceSuccess = true;
       blocksProduced += 1;
       lastPayloadCid = payloadCid || null;
@@ -259,7 +266,7 @@ async function produceLoop() {
     }
   } catch (e) {
     logVp('vp err', e.message);
-    logVp(`Error in produceLoop: ${e.message.slice(0,200)}`);
+    logVp(`Error in produceLoop: ${e.message.slice(0, 200)}`);
     lastProduceSuccess = false;
   }
 }
