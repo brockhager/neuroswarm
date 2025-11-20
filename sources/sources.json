@@ -47,6 +47,12 @@
       "module": "news-aggregator.js",
       "desc": "Global news aggregator with story clustering",
       "origin": "rss-feeds"
+    },
+    {
+      "name": "duckduckgo-search",
+      "module": "duckduckgo-search.js",
+      "desc": "DuckDuckGo search with instant answers and knowledge extraction",
+      "origin": "duckduckgo-instant-answer"
     }
   ],
   "version": "0.3.0"

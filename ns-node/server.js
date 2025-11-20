@@ -6,6 +6,7 @@ import path from 'path';
 import { ensureDirInRepoSync, safeJoinRepo } from '../scripts/repoScopedFs.mjs';
 import { fileURLToPath } from 'url';
 import { computeSourcesRoot } from '../sources/index.js';
+import { queryAdapter } from '../sources/index.js';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 
@@ -61,7 +62,7 @@ function fakeProvenance() {
   };
 }
 
-app.post('/chat', (req, res) => {
+app.post('/chat', async (req, res) => {
   const body = req.body || {};
   const sender = body.sender || 'user';
   const content = body.content || '';
@@ -74,12 +75,72 @@ app.post('/chat', (req, res) => {
   const now = new Date().toISOString();
   const inMsg = { id: uuidv4(), sender, content, timestamp: now };
 
-  // Simple echo agent: respond with an echoed content
+  let responseContent = '';
+  let searchData = null;
+
+  // Check if the message looks like a question
+  const isQuestion = content.trim().endsWith('?') || 
+                     content.toLowerCase().startsWith('what ') ||
+                     content.toLowerCase().startsWith('how ') ||
+                     content.toLowerCase().startsWith('why ') ||
+                     content.toLowerCase().startsWith('when ') ||
+                     content.toLowerCase().startsWith('where ') ||
+                     content.toLowerCase().startsWith('who ') ||
+                     content.toLowerCase().startsWith('tell me ') ||
+                     content.toLowerCase().startsWith('explain ');
+
+  // If it's a question, try to find an answer using DuckDuckGo
+  if (isQuestion) {
+    try {
+      logNs(`Question detected, searching DuckDuckGo for: "${content}"`);
+      const searchResult = await queryAdapter('duckduckgo-search', { query: content, maxResults: 3 });
+      
+      if (searchResult && searchResult.value) {
+        searchData = searchResult.value;
+        
+        // Build response from search results
+        if (searchData.instantAnswer && searchData.instantAnswer.text) {
+          responseContent = searchData.instantAnswer.text;
+          if (searchData.instantAnswer.source) {
+            responseContent += `\n\n📚 Source: ${searchData.instantAnswer.source}`;
+          }
+        } else if (searchData.definition && searchData.definition.text) {
+          responseContent = searchData.definition.text;
+          if (searchData.definition.source) {
+            responseContent += `\n\n📚 Source: ${searchData.definition.source}`;
+          }
+        } else if (searchData.answer && searchData.answer.text) {
+          responseContent = searchData.answer.text;
+        } else if (searchData.results && searchData.results.length > 0) {
+          responseContent = `I found some information about that:\n\n`;
+          searchData.results.slice(0, 3).forEach((result, idx) => {
+            responseContent += `${idx + 1}. ${result.description}\n`;
+          });
+          responseContent += `\n🔍 Search performed via DuckDuckGo`;
+        } else {
+          responseContent = `I searched for information about "${content}" but couldn't find a clear answer. Could you try rephrasing your question?`;
+        }
+        
+        logNs(`DuckDuckGo search successful, found answer: ${responseContent.substring(0, 100)}...`);
+      } else {
+        responseContent = `I tried to search for an answer but didn't find anything specific. Let me echo what you said: ${content}`;
+      }
+    } catch (err) {
+      logNs(`DuckDuckGo search failed: ${err.message}`);
+      responseContent = `I tried to find an answer but encountered an error. Here's what you said: ${content}`;
+    }
+  } else {
+    // Not a question, just echo
+    responseContent = `Echoing: ${content}`;
+  }
+
+  // Create response
   const response = {
     id: uuidv4(),
     sender: 'agent',
-    content: `Echoing: ${content}`,
+    content: responseContent,
     timestamp: new Date().toISOString(),
+    searchData: searchData, // Include search data if available
     ...fakeProvenance()
   };
 

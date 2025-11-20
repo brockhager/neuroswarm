@@ -22,16 +22,30 @@ function redact(str) {
   if (!str) return str;
   return String(str).replace(new RegExp(token, 'g'), '***REDACTED***');
 }
-const tmpDir = getTmpDir('wiki-clone');
-if (fs.existsSync(tmpDir)) { try { safeRmInRepoSync(tmpDir); } catch(e) { execSync(`rm -rf ${tmpDir}`); } }
-if (!ensureDirInRepoSync(tmpDir)) process.exit(1);
-  if (!opts.dry) {
-  console.log('Cloning wiki repo', wikiUrlRedacted);
-  try {
-    execSync(`git clone ${wikiUrl} ${tmpDir}`, { stdio: 'inherit' });
-  } catch (e) {
-    console.error('git clone failed:', redact(e.message));
-    process.exit(1);
+
+// Use /ns/neuroswarm.wiki/ directory instead of temp
+const tmpDir = path.resolve('C:/JS/ns/neuroswarm.wiki');
+
+if (!opts.dry) {
+  if (fs.existsSync(path.join(tmpDir, '.git'))) {
+    console.log('Wiki repo already exists, pulling latest changes...');
+    try {
+      execSync(`cd ${tmpDir} && git pull`, { stdio: 'inherit' });
+    } catch (e) {
+      console.error('git pull failed:', redact(e.message));
+      process.exit(1);
+    }
+  } else {
+    if (!fs.existsSync(tmpDir)) {
+      fs.mkdirSync(tmpDir, { recursive: true });
+    }
+    console.log('Cloning wiki repo', wikiUrlRedacted);
+    try {
+      execSync(`git clone ${wikiUrl} ${tmpDir}`, { stdio: 'inherit' });
+    } catch (e) {
+      console.error('git clone failed:', redact(e.message));
+      process.exit(1);
+    }
   }
 } else {
   console.log('Dry-run: will copy files into', tmpDir, 'but not clone/push');
