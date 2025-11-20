@@ -41,7 +41,13 @@
       "module": "nba-scores.js",
       "desc": "Real-time NBA scores and game status",
       "origin": "espn-api"
+    },
+    {
+      "name": "news-aggregator",
+      "module": "news-aggregator.js",
+      "desc": "Global news aggregator with story clustering",
+      "origin": "rss-feeds"
     }
   ],
-  "version": "0.2.0"
+  "version": "0.3.0"
 }
