@@ -2,7 +2,7 @@
  * Test script for Certificate Management
  */
 
-import { CryptoManager } from './shared/peer-discovery/crypto.js';
+import { CryptoManager } from '../shared/peer-discovery/crypto.js';
 import fs from 'fs';
 
 console.log('=== Certificate Management Test ===\n');

@@ -180,4 +180,122 @@ export class CryptoManager {
             rejectUnauthorized: false  // Accept self-signed certificates
         });
     }
+
+    /**
+     * Generate Ed25519 identity certificate for mTLS
+     * Used for peer authentication in P2P network
+     */
+    generateIdentityCertificate() {
+        console.log('[Crypto] Generating Ed25519 identity certificate...');
+
+        try {
+            // Generate Ed25519 key pair
+            const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519', {
+                publicKeyEncoding: { type: 'spki', format: 'pem' },
+                privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
+            });
+
+            // Create certificate metadata
+            const certData = {
+                version: 1,
+                subject: {
+                    commonName: `${this.nodeType}-${this.nodeId}`,
+                    nodeId: this.nodeId,
+                    nodeType: this.nodeType
+                },
+                publicKey: publicKey,
+                notBefore: Date.now(),
+                notAfter: Date.now() + (365 * 24 * 60 * 60 * 1000), // 1 year
+                createdAt: Date.now()
+            };
+
+            // Sign the certificate data with private key
+            const certString = JSON.stringify(certData);
+            const signature = crypto.sign(null, Buffer.from(certString), {
+                key: privateKey,
+                format: 'pem'
+            });
+
+            const certificate = {
+                ...certData,
+                signature: signature.toString('base64')
+            };
+
+            // Calculate fingerprint
+            const fingerprint = crypto.createHash('sha256')
+                .update(publicKey)
+                .digest('hex')
+                .substring(0, 16);
+
+            console.log(`[Crypto] Ed25519 identity certificate generated (fingerprint: ${fingerprint})`);
+
+            return {
+                publicKey,
+                privateKey,
+                certificate,
+                fingerprint
+            };
+        } catch (err) {
+            console.error('[Crypto] Error generating identity certificate:', err.message);
+            throw err;
+        }
+    }
+
+    /**
+     * Verify peer identity certificate
+     */
+    verifyPeerCertificate(peerCert) {
+        try {
+            // Check required fields
+            if (!peerCert || !peerCert.publicKey || !peerCert.signature) {
+                return { valid: false, reason: 'MISSING_FIELDS' };
+            }
+
+            // Check expiration
+            const now = Date.now();
+            if (now < peerCert.notBefore) {
+                return { valid: false, reason: 'NOT_YET_VALID' };
+            }
+            if (now > peerCert.notAfter) {
+                return { valid: false, reason: 'EXPIRED' };
+            }
+
+            // Verify signature
+            const { signature, ...certData } = peerCert;
+            const certString = JSON.stringify(certData);
+
+            const valid = crypto.verify(
+                null,
+                Buffer.from(certString),
+                {
+                    key: peerCert.publicKey,
+                    format: 'pem'
+                },
+                Buffer.from(signature, 'base64')
+            );
+
+            if (!valid) {
+                return { valid: false, reason: 'INVALID_SIGNATURE' };
+            }
+
+            return { valid: true };
+
+        } catch (err) {
+            console.error('[Crypto] Certificate verification error:', err.message);
+            return { valid: false, reason: 'VERIFICATION_ERROR', error: err.message };
+        }
+    }
+
+    /**
+     * Get mTLS options for HTTPS server
+     */
+    async getMTLSOptions() {
+        const tlsOptions = await this.getTLSOptions();
+
+        return {
+            ...tlsOptions,
+            requestCert: true,           // Request client certificate
+            rejectUnauthorized: false    // We'll verify manually
+        };
+    }
 }
