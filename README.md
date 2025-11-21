@@ -109,11 +109,10 @@ Notes:
 
 Key design and developer docs (canonical pages are on the `Wiki`):
 
-- [Home — Wiki](https://github.com/brockhager/neuroswarm/wiki)
-- [Contributor onboarding — Wiki](https://github.com/brockhager/neuroswarm/wiki/Contributor-Onboarding)
-- [Getting Started (Wiki)](https://github.com/brockhager/neuroswarm/wiki/Getting-Started)
-- [Data flow architecture — Wiki](https://github.com/brockhager/neuroswarm/wiki/Data-Flow-Architecture)
- - [Data flow architecture (Wiki)](wiki/data-flow-architecture.md)
+- [Home](wiki/Home.md)
+- [Contributor Onboarding](wiki/Development/Contributor-Onboarding.md)
+- [Getting Started](wiki/Getting-Started/Getting-Started.md)
+- [Data Flow Architecture](wiki/Technical/data-flow-architecture.md)
 
 Run the nodes
 ------------
