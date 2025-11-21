@@ -9,8 +9,6 @@ import { computeSourcesRoot } from '../sources/index.js';
 import { queryAdapter } from '../sources/index.js';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
-import { v4 as uuidv4 } from 'uuid';
-import crypto from 'crypto';
 import { PeerManager, P2PProtocol, MessageType, startHTTPSServer } from '../shared/peer-discovery/index.js';
 import { MetricsService } from '../shared/peer-discovery/metrics-service.js';
 
@@ -35,8 +33,6 @@ const metricsService = new MetricsService({
 const peerManager = new PeerManager({
   nodeType: 'NS',
   port: PORT,
-  bootstrapPeers: process.env.BOOTSTRAP_PEERS || '',
-  maxPeers: parseInt(process.env.MAX_PEERS) || 8,
   bootstrapPeers: process.env.BOOTSTRAP_PEERS || '',
   maxPeers: parseInt(process.env.MAX_PEERS) || 8,
   dataDir: path.join(__dirname, 'data'),
