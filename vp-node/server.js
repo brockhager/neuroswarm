@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import express from 'express';
 import { computeSourcesRoot } from '../sources/index.js';
+import { PeerManager, P2PProtocol, MessageType } from '../shared/peer-discovery/index.js';
 // ipfs-http-client is an optional runtime dependency. Dynamically import it
 // inside initIpfs so the server can start without IPFS being installed.
 
@@ -22,9 +23,22 @@ function sha256Hex(buf) {
 
 const STATUS_ENABLED = process.env.STATUS === '1' || process.argv.includes('--status');
 function ts() { return new Date().toISOString(); }
+function logVp(...args) { const _ts = new Date().toISOString(); console.log(`[VP][${_ts}]`, ...args); }
 logVp(`vp-node starting on port ${PORT}`);
 if (STATUS_ENABLED) logVp(`vp-node heartbeat enabled (interval ${Number(process.env.STATUS_INTERVAL_MS || 60000)}ms)`);
-function logVp(...args) { const _ts = new Date().toISOString(); console.log(`[VP][${_ts}]`, ...args); }
+
+// Initialize Peer Discovery for VP Node
+const peerManager = new PeerManager({
+  nodeType: 'VP',
+  port: PORT,
+  bootstrapPeers: process.env.BOOTSTRAP_PEERS || '',
+  maxPeers: parseInt(process.env.MAX_PEERS) || 8,
+  dataDir: path.join(process.cwd(), 'data')
+});
+
+const p2pProtocol = new P2PProtocol(peerManager);
+logVp(`Peer discovery enabled | nodeId=${peerManager.nodeId} | nodeType=VP | bootstrapPeers=${process.env.BOOTSTRAP_PEERS || 'none'}`);
+
 let lastProduceSuccess = null;
 let nsReachable = false;
 let ipfs = null;
@@ -360,6 +374,84 @@ app.post('/proofs', async (req, res) => {
   }
 });
 
+// Peer Discovery Endpoints
+app.get('/peers', (req, res) => {
+  try {
+    const filterType = req.query.type;
+    const peers = peerManager.getAllPeers(filterType);
+    const nodeInfo = peerManager.getNodeInfo();
+    res.json({
+      node: nodeInfo,
+      peers: peers,
+      count: peers.length,
+      filter: filterType || 'none'
+    });
+  } catch (err) {
+    console.error('Error getting peers:', err);
+    res.status(500).json({ error: 'Failed to get peers', detail: err.message });
+  }
+});
+
+app.post('/peers/add', (req, res) => {
+  try {
+    const { host, port, nodeType } = req.body;
+
+    if (!host || !port) {
+      return res.status(400).json({ error: 'host and port required' });
+    }
+
+    const added = peerManager.addPeer({
+      host,
+      port: parseInt(port),
+      nodeType: nodeType || 'NS',
+      source: 'api'
+    });
+
+    if (added) {
+      res.json({ ok: true, message: `Added peer ${host}:${port} (type: ${nodeType || 'NS'})` });
+    } else {
+      res.json({ ok: false, message: `Peer ${host}:${port} already exists or max peers reached` });
+    }
+  } catch (err) {
+    console.error('Error adding peer:', err);
+    res.status(500).json({ error: 'Failed to add peer', detail: err.message });
+  }
+});
+
+app.delete('/peers/:peerId', (req, res) => {
+  try {
+    const { peerId } = req.params;
+    const removed = peerManager.removePeer(peerId);
+
+    if (removed) {
+      res.json({ ok: true, message: `Removed peer ${peerId}` });
+    } else {
+      res.status(404).json({ ok: false, message: `Peer ${peerId} not found` });
+    }
+  } catch (err) {
+    console.error('Error removing peer:', err);
+    res.status(500).json({ error: 'Failed to remove peer', detail: err.message });
+  }
+});
+
+// P2P Message Handler
+app.post('/p2p/message', async (req, res) => {
+  try {
+    const message = req.body;
+    const senderIp = req.ip || req.socket.remoteAddress;
+
+    if (!message || !message.type || !message.id) {
+      return res.status(400).json({ error: 'Invalid message format' });
+    }
+
+    const result = await p2pProtocol.handleMessage(message, senderIp);
+    res.json({ ok: true, result });
+  } catch (err) {
+    console.error('Error handling P2P message:', err);
+    res.status(500).json({ error: 'Failed to handle message', detail: err.message });
+  }
+});
+
 const server = app.listen(PORT, () => {
   logVp('VP node started, producing blocks');
   logVp(`Listening at http://localhost:${PORT}`);
@@ -371,6 +463,23 @@ server.on('connection', (socket) => {
   logVp(`Connection from ${remote}`);
   socket.on('close', () => logVp(`Connection closed ${remote}`));
 });
+
+// Periodic peer health check and peer exchange
+setInterval(async () => {
+  const peers = peerManager.getAllPeers();
+  for (const peer of peers) {
+    await p2pProtocol.pingPeer(peer);
+  }
+
+  // Prune inactive peers
+  peerManager.pruneInactivePeers();
+
+  // Send peer list to a random peer (Peer Exchange)
+  if (peers.length > 0) {
+    const randomPeer = peers[Math.floor(Math.random() * peers.length)];
+    await p2pProtocol.sendPeerList(randomPeer);
+  }
+}, 30000); // Every 30 seconds
 
 // Standardized crash handling: log and exit so the CMD window remains open for diagnostics
 process.on('uncaughtException', (err) => {

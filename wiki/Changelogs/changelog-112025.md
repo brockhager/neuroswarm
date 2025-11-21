@@ -211,6 +211,58 @@ node scripts/seed-e2e-timeline.js
 
 ---
 
+### Universal Peer Discovery System (2025-11-20)
+
+Implemented a comprehensive peer-to-peer discovery system that enables all NeuroSwarm node types (NS, Gateway, VP) to discover and communicate with each other across the network.
+
+**Key Features:**
+- **Universal Node Type Support**: Peer discovery works across NS Nodes, Gateway Nodes, and VP Nodes with type-aware filtering
+- **Gossip Protocol**: Message broadcasting with deduplication (1000 message cache, 5min TTL) and hop limiting (max 10 hops)
+- **Peer Exchange (PEX)**: Nodes automatically share peer lists every 30 seconds for network-wide discovery
+- **Health Monitoring**: Automatic peer health checks every 30 seconds with auto-removal after 5 consecutive failures
+- **Bootstrap Configuration**: Support for initial peer seeding via `BOOTSTRAP_PEERS` environment variable with optional node type specification
+- **Persistent Storage**: Peer data persisted to disk (`data/peers.json`) for recovery across restarts
+
+**Architecture:**
+- Moved peer discovery to `/shared/peer-discovery/` for reusability across all node types
+- `PeerManager` class handles peer storage, health tracking, and lifecycle management
+- `P2PProtocol` class implements message types (PEER_LIST, NEW_BLOCK, NEW_TX, PING, PONG) and gossip protocol
+- Integration with existing block and transaction broadcasting
+
+**API Endpoints:**
+- `GET /peers` - List all peers with optional `?type=Gateway|VP|NS` filtering
+- `POST /peers/add` - Manually add peers with node type specification
+- `DELETE /peers/:peerId` - Remove a peer
+- `POST /p2p/message` - Handle incoming P2P messages (internal)
+
+**Configuration:**
+```bash
+# Bootstrap format: host:port:type (type optional, defaults to NS)
+BOOTSTRAP_PEERS="localhost:3010:Gateway,localhost:4000:VP,192.168.1.5:3009:NS"
+MAX_PEERS=8  # Maximum peer connections
+```
+
+**Testing:**
+- Local multi-node testing script: `start-3-nodes.bat`
+- Verified peer discovery, peer exchange, and message propagation across 3 nodes
+- Tested type-aware peer filtering and health monitoring
+
+**Files Changed:**
+- New: `shared/peer-discovery/peer-manager.js` - Universal peer management
+- New: `shared/peer-discovery/p2p-protocol.js` - P2P messaging and gossip protocol
+- New: `shared/peer-discovery/index.js` - Module exports
+- New: `start-3-nodes.bat` - Local testing script
+- Modified: `ns-node/server.js` - Integrated peer discovery with block/transaction broadcasting
+- New: `wiki/peer-discovery/README.md` - Complete documentation
+
+**Next Steps:**
+- Integrate peer discovery into Gateway and VP nodes
+- Add encrypted peer communication
+- Implement peer reputation system
+- Add NAT traversal for home networks
+
+---
+
 ### Downloads Page Restored (2025-11-18)
 - Restored and updated the Download page for the project Wiki (`Download.md`). This includes platform-specific links, example `curl` / PowerShell commands, and checksum verification instructions.
 - Updated `docs/run-nodes.md` and `neuroswarm/wiki/Home.md` to reference the `Download` page instead of `Installation`.

@@ -8,12 +8,25 @@ import { ensureDirInRepoSync } from '../scripts/repoScopedFs.mjs';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import { loadRegistry, queryAdapter, listStatuses, queryAdapterWithOpts } from '../sources/index.js';
+import { PeerManager, P2PProtocol, MessageType } from '../shared/peer-discovery/index.js';
 
 const PORT = process.env.PORT || 8080;
+
+// Initialize Peer Discovery for Gateway Node
+const peerManager = new PeerManager({
+  nodeType: 'Gateway',
+  port: PORT,
+  bootstrapPeers: process.env.BOOTSTRAP_PEERS || '',
+  maxPeers: parseInt(process.env.MAX_PEERS) || 8,
+  dataDir: path.join(process.cwd(), 'data')
+});
+
+const p2pProtocol = new P2PProtocol(peerManager);
 
 function ts() { return new Date().toISOString(); }
 function logGw(...args) { const _ts = new Date().toISOString(); console.log(`[GW][${_ts}]`, ...args); }
 logGw(`gateway-node starting on port ${PORT}`);
+logGw(`Peer discovery enabled | nodeId=${peerManager.nodeId} | nodeType=Gateway | bootstrapPeers=${process.env.BOOTSTRAP_PEERS || 'none'}`);
 const DATA_DIR = path.join(process.cwd(), 'data');
 if (!fs.existsSync(DATA_DIR)) ensureDirInRepoSync(DATA_DIR);
 const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
@@ -120,22 +133,22 @@ app.post('/v1/tx', async (req, res) => {
     const requiredSources = tx.sourcesRequired || [];
     if (Array.isArray(requiredSources) && requiredSources.length > 0) {
       const collected = [];
-        if (requiredSources.length > SOURCES_MAX_PER_TX) {
-          gwSpamRejected += 1;
-          logGw(`Rejected tx ${entry.txId} from ${remoteIP} (${src}) too many sources requested: ${requiredSources.length} > ${SOURCES_MAX_PER_TX}`);
-          return res.status(400).json({ error: 'too_many_sources_requested', requested: requiredSources.length, limit: SOURCES_MAX_PER_TX });
+      if (requiredSources.length > SOURCES_MAX_PER_TX) {
+        gwSpamRejected += 1;
+        logGw(`Rejected tx ${entry.txId} from ${remoteIP} (${src}) too many sources requested: ${requiredSources.length} > ${SOURCES_MAX_PER_TX}`);
+        return res.status(400).json({ error: 'too_many_sources_requested', requested: requiredSources.length, limit: SOURCES_MAX_PER_TX });
+      }
+      for (const adapterName of requiredSources) {
+        try {
+          const entry = loadRegistry().adapters.find(a => a.name === adapterName);
+          const origin = entry && entry.origin ? entry.origin : 'unknown';
+          logGw(`Source adapter query adapter=${adapterName} origin=${origin} txId=${entry ? entry.name : 'unknown'}`);
+          const result = await queryAdapterWithOpts(adapterName, tx.sourceParams || {}, { timeoutMs: SOURCES_QUERY_TIMEOUT_MS, useCache: SOURCES_USE_CACHE });
+          collected.push({ adapter: adapterName, origin, result });
+        } catch (e) {
+          collected.push({ adapter: adapterName, origin: 'unknown', error: e.message });
         }
-        for (const adapterName of requiredSources) {
-          try {
-            const entry = loadRegistry().adapters.find(a => a.name === adapterName);
-            const origin = entry && entry.origin ? entry.origin : 'unknown';
-            logGw(`Source adapter query adapter=${adapterName} origin=${origin} txId=${entry ? entry.name : 'unknown'}`);
-            const result = await queryAdapterWithOpts(adapterName, tx.sourceParams || {}, { timeoutMs: SOURCES_QUERY_TIMEOUT_MS, useCache: SOURCES_USE_CACHE });
-            collected.push({ adapter: adapterName, origin, result });
-          } catch (e) {
-            collected.push({ adapter: adapterName, origin: 'unknown', error: e.message });
-          }
-        }
+      }
       tx.sources = collected;
       const sourcesVerified = collected.every(c => c && c.result && c.result.value !== null && typeof c.result.value !== 'undefined');
       tx.sourcesVerified = sourcesVerified;
@@ -148,11 +161,11 @@ app.post('/v1/tx', async (req, res) => {
     gwSpamRejected += 1; logGw(`Rejected tx ${entry.txId} from ${remoteIP} (${src}) due to adapter error ${e.message}`); return res.status(400).json({ error: 'adapter_error', message: e.message });
   }
 
-    gwMempool.set(entry.txId, entry);
-    const srcCount = (tx.sources && Array.isArray(tx.sources)) ? tx.sources.length : 0;
-    const srcsOK = tx.sourcesVerified ? 'yes' : 'no';
-    const origins = (tx.sources || []).map(s => s.origin || s.adapter || 'unknown').join(',') || 'none';
-    logGw(`Accepted tx ${entry.txId} from ${remoteIP} (${src}) type=${entry.type} fee=${entry.fee} sources=${srcCount} sourcesVerified=${srcsOK} origins=${origins}`);
+  gwMempool.set(entry.txId, entry);
+  const srcCount = (tx.sources && Array.isArray(tx.sources)) ? tx.sources.length : 0;
+  const srcsOK = tx.sourcesVerified ? 'yes' : 'no';
+  const origins = (tx.sources || []).map(s => s.origin || s.adapter || 'unknown').join(',') || 'none';
+  logGw(`Accepted tx ${entry.txId} from ${remoteIP} (${src}) type=${entry.type} fee=${entry.fee} sources=${srcCount} sourcesVerified=${srcsOK} origins=${origins}`);
   res.json({ ok: true, txId: entry.txId });
 });
 
@@ -245,6 +258,85 @@ app.get('/', (req, res) => {
   res.send('<html><body><h1>Gateway Node</h1></body></html>');
 });
 
+// Peer Discovery Endpoints
+app.get('/peers', (req, res) => {
+  try {
+    const filterType = req.query.type;
+    const peers = peerManager.getAllPeers(filterType);
+    const nodeInfo = peerManager.getNodeInfo();
+    res.json({
+      node: nodeInfo,
+      peers: peers,
+      count: peers.length,
+      filter: filterType || 'none'
+    });
+  } catch (err) {
+    console.error('Error getting peers:', err);
+    res.status(500).json({ error: 'Failed to get peers', detail: err.message });
+  }
+});
+
+app.post('/peers/add', (req, res) => {
+  try {
+    const { host, port, nodeType } = req.body;
+
+    if (!host || !port) {
+      return res.status(400).json({ error: 'host and port required' });
+    }
+
+    const added = peerManager.addPeer({
+      host,
+      port: parseInt(port),
+      nodeType: nodeType || 'NS',
+      source: 'api'
+    });
+
+    if (added) {
+      res.json({ ok: true, message: `Added peer ${host}:${port} (type: ${nodeType || 'NS'})` });
+    } else {
+      res.json({ ok: false, message: `Peer ${host}:${port} already exists or max peers reached` });
+    }
+  } catch (err) {
+    console.error('Error adding peer:', err);
+    res.status(500).json({ error: 'Failed to add peer', detail: err.message });
+  }
+});
+
+app.delete('/peers/:peerId', (req, res) => {
+  try {
+    const { peerId } = req.params;
+    const removed = peerManager.removePeer(peerId);
+
+    if (removed) {
+      res.json({ ok: true, message: `Removed peer ${peerId}` });
+    } else {
+      res.status(404).json({ ok: false, message: `Peer ${peerId} not found` });
+    }
+  } catch (err) {
+    console.error('Error removing peer:', err);
+    res.status(500).json({ error: 'Failed to remove peer', detail: err.message });
+  }
+});
+
+// P2P Message Handler
+app.post('/p2p/message', async (req, res) => {
+  try {
+    const message = req.body;
+    const senderIp = req.ip || req.socket.remoteAddress;
+
+    if (!message || !message.type || !message.id) {
+      return res.status(400).json({ error: 'Invalid message format' });
+    }
+
+    const result = await p2pProtocol.handleMessage(message, senderIp);
+    res.json({ ok: true, result });
+  } catch (err) {
+    console.error('Error handling P2P message:', err);
+    res.status(500).json({ error: 'Failed to handle message', detail: err.message });
+  }
+});
+
+
 // Health endpoint for the gateway
 let GW_VERSION = '0.1.0';
 try {
@@ -305,16 +397,34 @@ async function startServer() {
       logGw(`Connected to ns-node ${NS_NODE_URL}`);
     }
   }
-    const server = app.listen(PORT, () => {
-      logGw(`Gateway node started, listening on port ${PORT}`);
-      logGw(`Health endpoint available at /health`);
-    });
+  const server = app.listen(PORT, () => {
+    logGw(`Gateway node started, listening on port ${PORT}`);
+    logGw(`Health endpoint available at /health`);
+  });
 
   server.on('connection', (socket) => {
     const remote = `${socket.remoteAddress}:${socket.remotePort}`;
     logGw(`Connection from ${remote}`);
     socket.on('close', () => logGw(`Connection closed ${remote}`));
   });
+
+  // Periodic peer health check and peer exchange
+  setInterval(async () => {
+    const peers = peerManager.getAllPeers();
+    for (const peer of peers) {
+      await p2pProtocol.pingPeer(peer);
+    }
+
+    // Prune inactive peers
+    peerManager.pruneInactivePeers();
+
+    // Send peer list to a random peer (Peer Exchange)
+    if (peers.length > 0) {
+      const randomPeer = peers[Math.floor(Math.random() * peers.length)];
+      await p2pProtocol.sendPeerList(randomPeer);
+    }
+  }, 30000); // Every 30 seconds
+
 
   // If ns not reachable, retry in background using exponential backoff
   if (NS_NODE_URL && !nsReachable) {
@@ -351,17 +461,17 @@ async function startServer() {
     })();
   }
 
-// Periodic heartbeat status logs
-if (STATUS_ENABLED) {
-  setInterval(() => {
-    try {
-      const mempoolSize = gwMempool ? gwMempool.size : 0;
-      // Adapter query stats
-      const adapterCount = loadRegistry && typeof loadRegistry === 'function' ? (loadRegistry().adapters || []).length : 0;
-      logGw(`heartbeat | ns=${NS_NODE_URL} nsReachable=${nsReachable} mempoolSize=${mempoolSize} adapters=${adapterCount} uptime=${process.uptime().toFixed(0)}s`);
-    } catch (e) { logGw('Heartbeat error', e.message); }
-  }, Number(process.env.STATUS_INTERVAL_MS || 60000));
-}
+  // Periodic heartbeat status logs
+  if (STATUS_ENABLED) {
+    setInterval(() => {
+      try {
+        const mempoolSize = gwMempool ? gwMempool.size : 0;
+        // Adapter query stats
+        const adapterCount = loadRegistry && typeof loadRegistry === 'function' ? (loadRegistry().adapters || []).length : 0;
+        logGw(`heartbeat | ns=${NS_NODE_URL} nsReachable=${nsReachable} mempoolSize=${mempoolSize} adapters=${adapterCount} uptime=${process.uptime().toFixed(0)}s`);
+      } catch (e) { logGw('Heartbeat error', e.message); }
+    }, Number(process.env.STATUS_INTERVAL_MS || 60000));
+  }
 }
 
 startServer();
