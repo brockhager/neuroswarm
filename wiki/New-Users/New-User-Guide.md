@@ -6,7 +6,7 @@ Welcome! This page is the main entry point for new users to the NeuroSwarm proje
 - A modern web browser (Chrome, Firefox, Safari, or Edge)
 
 ## Getting Started
-- Download the latest ns-node binary for your OS from [Releases](/neuroswarm/wiki/Releases.md)
+- Download the latest ns-node binary for your OS from [Releases](../Releases.md)
 - Extract the binary (if zipped)
 - Run the binary: `./ns-node` (Linux/macOS) or `ns-node.exe` (Windows)
 - Open your browser and visit `http://localhost:3000`
