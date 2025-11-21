@@ -3,7 +3,7 @@
 Complete list of all documentation files.
 
 - [Brain-Data-Submission.md](Brain-Data-Submission.md)
-- [Definition of Trusted Data and the Fight Against Misinformation.md](Definition of Trusted Data and the Fight Against Misinformation.md)
+- [Definition of Trusted Data and the Fight Against Misinformation.md] (need to fix this link)
 - [Download.md](Download.md)
 - [ENTERPRISE-ADOPTION-MATERIALS.md](ENTERPRISE-ADOPTION-MATERIALS.md)
 - [Home.md](Home.md)
