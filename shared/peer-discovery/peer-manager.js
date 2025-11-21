@@ -47,6 +47,14 @@ export class PeerManager {
         // Security Logger (Phase 4D)
         this.securityLogger = options.securityLogger;
 
+        // Metrics Service
+        this.metricsService = options.metricsService;
+
+        if (this.metricsService) {
+            this.metricsService.registerGauge('peers_connected_count', 'Number of connected peers');
+            this.metricsService.registerGauge('peers_banned_count', 'Number of banned peers');
+        }
+
         // Certificate Validator (for mTLS)
         this.certValidator = options.crypto ? new PeerCertificateValidator(
             options.crypto,
@@ -65,6 +73,8 @@ export class PeerManager {
             this.natTraversal.startPeriodicRefresh();
             console.log('[PeerManager] NAT traversal enabled');
         }
+
+        console.log(`[PeerManager] Initialized node ${this.nodeId} on port ${this.port}`);
     }
 
     /**
@@ -125,6 +135,10 @@ export class PeerManager {
                 this.peers.set(peer.id, peer);
             }
         });
+
+        if (this.metricsService) {
+            this.metricsService.set('peers_connected_count', this.peers.size);
+        }
     }
 
     /**
@@ -199,6 +213,11 @@ export class PeerManager {
             this.reputation.initializePeer(peerId);
 
             console.log(`[PeerManager] Added peer: ${peerId} (type: ${nodeType}, source: ${source}, reputation: ${this.reputation.getScore(peerId)})`);
+
+            if (this.metricsService) {
+                this.metricsService.set('peers_connected_count', this.peers.size);
+            }
+
             this.savePeersToDisk();
             return true;
         }
@@ -214,201 +233,11 @@ export class PeerManager {
             this.peers.delete(peerId);
             this.peerHealth.delete(peerId);
             console.log(`[PeerManager] Removed peer: ${peerId}`);
-            this.savePeersToDisk();
-            return true;
-        }
-        return false;
-    }
 
-    /**
-     * Get all peers, optionally filtered by node type
-     */
-    getAllPeers(filterType = null) {
-        const allPeers = Array.from(this.peers.values());
-        if (filterType) {
-            return allPeers.filter(peer => peer.nodeType === filterType);
-        }
-        return allPeers;
-    }
-
-    /**
-     * Get a specific peer
-     */
-    getPeer(peerId) {
-        return this.peers.get(peerId);
-    }
-
-    /**
-     * Update peer health (called after successful communication)
-     */
-    updatePeerHealth(peerId, success = true) {
-        const health = this.peerHealth.get(peerId);
-        if (!health) return;
-
-        if (success) {
-            health.lastSeen = new Date().toISOString();
-            health.failCount = 0;
-        } else {
-            health.failCount += 1;
-
-            // Remove peer after 5 consecutive failures
-            if (health.failCount >= 5) {
-                console.log(`[PeerManager] Removing unhealthy peer: ${peerId} (${health.failCount} failures)`);
-                this.removePeer(peerId);
-            }
-        }
-    }
-
-    /**
-     * Prune inactive peers (called periodically)
-     */
-    pruneInactivePeers(maxAgeMs = 3600000) { // 1 hour default
-        const now = Date.now();
-        const toRemove = [];
-
-        for (const [peerId, health] of this.peerHealth.entries()) {
-            const lastSeenTime = new Date(health.lastSeen).getTime();
-            if (now - lastSeenTime > maxAgeMs) {
-                toRemove.push(peerId);
-            }
-        }
-
-        toRemove.forEach(peerId => {
-            console.log(`[PeerManager] Pruning inactive peer: ${peerId}`);
-            this.removePeer(peerId);
-        });
-
-        return toRemove.length;
-    }
-
-    /**
-     * Get peer count, optionally filtered by type
-     */
-    getPeerCount(filterType = null) {
-        if (filterType) {
-            return this.getAllPeers(filterType).length;
-        }
-        return this.peers.size;
-    }
-
-    /**
-                    addedAt: new Date().toISOString(),
-                    source: 'bootstrap'
-                };
-            });
-    }
-
-    /**
-     * Load peers from disk
-     */
-    loadPeersFromDisk() {
-        try {
-            if (fs.existsSync(this.peersFile)) {
-                const data = JSON.parse(fs.readFileSync(this.peersFile, 'utf8'));
-                data.forEach(peer => {
-                    this.peers.set(peer.id, peer);
-                });
-                console.log(`[PeerManager] Loaded ${this.peers.size} peers from disk`);
-            }
-        } catch (err) {
-            console.error('[PeerManager] Error loading peers from disk:', err.message);
-        }
-
-        // Add bootstrap peers
-        this.bootstrapPeers.forEach(peer => {
-            if (!this.peers.has(peer.id)) {
-                this.peers.set(peer.id, peer);
-            }
-        });
-    }
-
-    /**
-     * Save peers to disk
-     */
-    savePeersToDisk() {
-        try {
-            if (!fs.existsSync(this.dataDir)) {
-                fs.mkdirSync(this.dataDir, { recursive: true });
+            if (this.metricsService) {
+                this.metricsService.set('peers_connected_count', this.peers.size);
             }
 
-            const peersArray = Array.from(this.peers.values());
-            fs.writeFileSync(this.peersFile, JSON.stringify(peersArray, null, 2));
-            console.log(`[PeerManager] Saved ${peersArray.length} peers to disk`);
-        } catch (err) {
-            console.error('[PeerManager] Error saving peers to disk:', err.message);
-        }
-    }
-
-    /**
-     * Add a new peer
-     */
-    addPeer(peerInfo) {
-        const { host, port, nodeType = 'NS', source = 'manual', publicHost, publicPort, natType } = peerInfo;
-        const peerId = `${host}:${port}`;
-
-        // Don't add ourselves
-        if (port === this.port && (host === 'localhost' || host === '127.0.0.1')) {
-            return false;
-        }
-
-        // Check reputation - don't add banned peers
-        if (this.reputation.shouldBan(peerId)) {
-            console.log(`[PeerManager] Rejected peer ${peerId} - reputation too low (${this.reputation.getScore(peerId)})`);
-            return false;
-        }
-
-        // Validate certificate if validator is available
-        if (this.certValidator) {
-            const certValidation = this.certValidator.validatePeerCertificate(peerId, peerInfo);
-            if (!certValidation.valid) {
-                console.log(`[PeerManager] Rejected peer ${peerId} - certificate validation failed: ${certValidation.reason}`);
-                return false;
-            }
-        }
-
-        // Check if we're at max capacity
-        if (this.peers.size >= this.maxPeers && !this.peers.has(peerId)) {
-            console.log(`[PeerManager] At max peer capacity (${this.maxPeers}), not adding ${peerId}`);
-            return false;
-        }
-
-        if (!this.peers.has(peerId)) {
-            this.peers.set(peerId, {
-                id: peerId,
-                host,
-                port,
-                nodeType,
-                publicHost: publicHost || null,
-                publicPort: publicPort || null,
-                natType: natType || null,
-                addedAt: new Date().toISOString(),
-                source
-            });
-
-            this.peerHealth.set(peerId, {
-                lastSeen: new Date().toISOString(),
-                failCount: 0
-            });
-
-            // Initialize reputation for new peer
-            this.reputation.initializePeer(peerId);
-
-            console.log(`[PeerManager] Added peer: ${peerId} (type: ${nodeType}, source: ${source}, reputation: ${this.reputation.getScore(peerId)})`);
-            this.savePeersToDisk();
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Remove a peer
-     */
-    removePeer(peerId) {
-        if (this.peers.has(peerId)) {
-            this.peers.delete(peerId);
-            this.peerHealth.delete(peerId);
-            console.log(`[PeerManager] Removed peer: ${peerId}`);
             this.savePeersToDisk();
             return true;
         }
