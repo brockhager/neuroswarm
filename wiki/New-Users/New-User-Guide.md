@@ -14,7 +14,7 @@ Welcome! This page is the main entry point for new users to the NeuroSwarm proje
 
 ## Alternative: Build from Source (Developers)
 If you prefer to build ns-node from source or contribute to development:
-- Download the [install.bat](../dist/install.bat) script (Windows only)
+- Download the [install.bat](https://github.com/brockhager/neuro-infra/raw/master/neuroswarm/dist/install.bat) script (Windows only)
 - Run `install.bat` - this will check for Node.js, install dependencies, set up configuration, and start the server automatically
 - The script handles all setup steps and starts ns-node on port 3000
 
