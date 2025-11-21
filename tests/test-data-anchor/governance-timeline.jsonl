@@ -1,0 +1,4 @@
+{"timestamp":1763741740919,"type":"SECURITY_EVENT","eventType":"INVALID_SIGNATURE","peerId":"peer-bad-1","contributorId":"test-node-1","details":{"reason":"Bad sig"},"severity":"HIGH"}
+{"timestamp":1763741740920,"type":"SECURITY_EVENT","eventType":"RATE_LIMIT_EXCEEDED","peerId":"peer-spam-1","contributorId":"test-node-1","details":{"reason":"Too fast"},"severity":"MEDIUM"}
+{"timestamp":1763741741022,"type":"SECURITY_SNAPSHOT","contributorId":"test-node-1","stats":{"totalPeers":10,"bannedPeers":1,"invalidSignatures":1}}
+{"timestamp":1763741742025,"type":"ANCHOR_EVENT","contributorId":"test-node-1","details":{"hash":"1a02b704fcb751cb84d6db9a533b2927d9136d9c3d47e8edd7ca7797389a8fa3","signature":"mock_tx_f7c6fd4c739e655ec0950db64b07b1e4","mock":true}}

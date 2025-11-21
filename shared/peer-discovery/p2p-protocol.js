@@ -2,6 +2,8 @@ import fetch from 'node-fetch';
 import { MessageSigner } from './message-signer.js';
 import { MessageHandlers } from './message-handlers.js';
 import { RateLimiter } from './rate-limiter.js';
+import { ConsensusManager } from './consensus-manager.js';
+import { ForkChoice } from './fork-choice.js';
 
 /**
  * P2P Protocol - Handles message types and peer-to-peer communication
@@ -14,7 +16,8 @@ export const MessageType = {
     NEW_BLOCK: 'NEW_BLOCK',      // Broadcast new block
     NEW_TX: 'NEW_TX',            // Broadcast new transaction
     PING: 'PING',                // Health check
-    PONG: 'PONG'                 // Health check response
+    PONG: 'PONG',                // Health check response
+    VOTE: 'VOTE'                 // Consensus vote
 };
 
 /**
@@ -36,6 +39,17 @@ export class P2PProtocol {
         // Security Logger
         this.securityLogger = options.securityLogger || null;
 
+        // Metrics Service
+        this.metricsService = options.metricsService || null;
+
+        // Register metrics
+        if (this.metricsService) {
+            this.metricsService.registerCounter('p2p_messages_sent_total', 'Total P2P messages sent');
+            this.metricsService.registerCounter('p2p_messages_received_total', 'Total P2P messages received');
+            this.metricsService.registerCounter('p2p_bytes_sent_total', 'Total P2P bytes sent');
+            this.metricsService.registerCounter('p2p_bytes_received_total', 'Total P2P bytes received');
+        }
+
         // Message handlers with signature verification
         this.messageHandlers = new MessageHandlers(
             peerManager,
@@ -49,6 +63,19 @@ export class P2PProtocol {
             messagesPerSec: options.messagesPerSec || 10,
             bytesPerSec: options.bytesPerSec || 10240,
             enabled: options.enableRateLimiting !== false
+        });
+
+        // Consensus Manager
+        this.consensusManager = new ConsensusManager({
+            reputationManager: peerManager.reputation,
+            messageSigner: this.messageSigner,
+            metricsService: this.metricsService,
+            securityLogger: this.securityLogger
+        });
+
+        // Fork Choice Rule
+        this.forkChoice = new ForkChoice({
+            consensusManager: this.consensusManager
         });
 
         // Periodically clean up old seen messages
@@ -158,6 +185,12 @@ export class P2PProtocol {
                 if (response.ok) {
                     sent++;
                     this.peerManager.updatePeerHealth(peer.id, true);
+
+                    if (this.metricsService) {
+                        this.metricsService.inc('p2p_messages_sent_total', { type: messageToSend.type });
+                        this.metricsService.inc('p2p_bytes_sent_total', {}, JSON.stringify(messageToSend).length);
+                    }
+
                     console.log(`[P2P] Sent ${messageToSend.type} to ${peer.id}`);
                 } else {
                     failed++;
@@ -278,12 +311,37 @@ export class P2PProtocol {
 
         console.log(`[P2P] Received ${message.type} from ${senderPeerId || 'unknown'}`);
 
+        if (this.metricsService) {
+            this.metricsService.inc('p2p_messages_received_total', { type: message.type });
+            this.metricsService.inc('p2p_bytes_received_total', {}, messageSize);
+        }
+
         // Delegate to message handlers (includes signature verification)
         const result = await this.messageHandlers.handleIncoming(message, senderPeerId);
 
         // Propagate message to other peers (gossip)
         if (result.processed && message.type !== MessageType.PING && message.type !== MessageType.PONG) {
             await this.broadcastMessage(message, senderPeerId);
+        }
+
+        // Handle specific message types
+        if (message.type === MessageType.VOTE && result.processed) {
+            this.consensusManager.handleVote(message.payload, senderPeerId);
+        }
+
+        if (message.type === MessageType.NEW_BLOCK && result.processed) {
+            const newBlock = message.payload;
+            // Validate block with ForkChoice
+            // In a real system, we'd compare against our current head.
+            // For now, we just check if it's a valid extension of the finalized chain.
+            const finalizedHead = this.consensusManager.getFinalizedHead();
+
+            if (!this.forkChoice.verifyAncestry(newBlock, finalizedHead)) {
+                console.log(`[P2P] Block ${newBlock.hash} rejected: does not descend from finalized head`);
+                return { processed: false, reason: 'invalid_ancestry' };
+            }
+
+            // If we had a current head, we'd check isReorgSafe here too.
         }
 
         return result;

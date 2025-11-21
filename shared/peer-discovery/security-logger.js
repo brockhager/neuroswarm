@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { AnchorService } from './anchor-service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,6 +32,20 @@ export class SecurityLogger {
         if (this.enabled && options.enableSnapshots !== false) {
             this.startSnapshotTimer();
         }
+
+        // Initialize Anchor Service
+        this.anchorService = new AnchorService({
+            enabled: this.enabled && options.enableAnchoring !== false,
+            logFile: this.timelineFile,
+            walletPath: options.walletPath,
+            mockMode: options.mockAnchoring !== false // Default to mock for safety
+        });
+
+        // Metrics Service
+        this.metricsService = options.metricsService;
+        if (this.metricsService) {
+            this.metricsService.registerCounter('security_events_total', 'Total security events logged');
+        }
     }
 
     /**
@@ -53,6 +68,10 @@ export class SecurityLogger {
         };
 
         this.appendToTimeline(event);
+
+        if (this.metricsService) {
+            this.metricsService.inc('security_events_total', { type: eventType, severity: event.severity });
+        }
     }
 
     /**
@@ -70,6 +89,23 @@ export class SecurityLogger {
         };
 
         this.appendToTimeline(snapshot);
+
+        // Trigger anchor
+        this.anchorService.anchorSnapshot().then(result => {
+            if (result.success) {
+                // Log the anchor event to the timeline too
+                this.appendToTimeline({
+                    timestamp: Date.now(),
+                    type: 'ANCHOR_EVENT',
+                    contributorId: this.contributorId,
+                    details: {
+                        hash: result.hash,
+                        signature: result.signature,
+                        mock: result.mock
+                    }
+                });
+            }
+        });
     }
 
     /**
@@ -95,13 +131,15 @@ export class SecurityLogger {
             'INVALID_SIGNATURE',
             'REPLAY_ATTACK',
             'INVALID_CERTIFICATE',
-            'PEER_BANNED'
+            'PEER_BANNED',
+            'CONSENSUS_FINALITY' // Critical governance event
         ];
 
         const mediumSeverity = [
             'RATE_LIMIT_EXCEEDED',
             'MISSING_CERTIFICATE',
-            'EXPIRED_CERTIFICATE'
+            'EXPIRED_CERTIFICATE',
+            'CONSENSUS_QUORUM' // Important progress event
         ];
 
         if (highSeverity.includes(eventType)) return 'HIGH';

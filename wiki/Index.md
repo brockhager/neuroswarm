@@ -130,6 +130,18 @@ Complete list of all documentation files.
   - [voting-smart-contracts.md](Governance/voting-smart-contracts.md)
   - [voting.md](Governance/voting.md)
 
+- **Anchoring/**
+  - [readme.md](Anchoring/readme.md)
+
+- **Consensus/**
+  - [readme.md](Consensus/readme.md)
+
+- **IPFS/**
+  - [readme.md](IPFS/readme.md)
+
+- **Solana/**
+  - [readme.md](Solana/readme.md)
+
 - **Governance-Logging/**
   - [README.md](Governance-Logging/README.md)
 

@@ -374,6 +374,65 @@ NAT_REFRESH_INTERVAL=300000  # 5 minutes
 - Updated `docs/run-nodes.md` and `neuroswarm/wiki/Home.md` to reference the `Download` page instead of `Installation`.
 
 
+
+---
+
+### Phase 9: Consensus Finality & Fork Resolution (Enhanced) (2025-11-21)
+
+Implemented advanced consensus safety mechanisms to protect the NeuroSwarm network from deep reorganizations and malicious validator behavior.
+
+**Key Features:**
+- **Reorg Depth Limits**: Explicit `MAX_REORG_DEPTH` (default: 100 blocks) prevents deep chain reorganizations
+- **Ancestry Verification**: All blocks must descend from the finalized checkpoint
+- **Slashing Conditions**: Automatic detection and penalization of double-voting (equivocation)
+- **Fork Choice Integration**: `ForkChoice` actively validates incoming blocks in `P2PProtocol`
+
+**Implementation Details:**
+
+**ForkChoice Enhancements** ([fork-choice.js](file:///c:/JS/ns/neuroswarm/shared/peer-discovery/fork-choice.js)):
+- Added `MAX_REORG_DEPTH` configurable limit
+- Implemented `verifyAncestry(block, ancestor)` to check block lineage
+- Enhanced `isReorgSafe` to enforce depth limits and finality rules
+
+**P2PProtocol Integration** ([p2p-protocol.js](file:///c:/JS/ns/neuroswarm/shared/peer-discovery/p2p-protocol.js)):
+- Initialized `ForkChoice` in constructor
+- Added block validation for `NEW_BLOCK` messages
+- Rejects blocks that don't descend from finalized head
+
+**Slashing System** ([consensus-manager.js](file:///c:/JS/ns/neuroswarm/shared/peer-discovery/consensus-manager.js)):
+- Implemented `detectEquivocation(peerId, height, newHash)` method
+- Stores `blockHeight` in vote objects for equivocation detection
+- Logs `SLASHING_OFFENSE` events to `governance-timeline.jsonl`
+- Calls `reputationManager.slashPeer(peerId, 100)` for maximum penalty
+
+**Reputation Enhancement** ([reputation.js](file:///c:/JS/ns/neuroswarm/shared/peer-discovery/reputation.js)):
+- Added `slashPeer(peerId, penalty)` method
+- Reduces peer reputation to 0 for severe violations
+- Records slashing events in behavior history
+
+**Testing:**
+- Created comprehensive test suite: `test-fork-choice.js`
+- Verified ancestry checks, reorg limits, and slashing detection
+- All core features passing: ✅ Ancestry verification, ✅ Reorg limits, ✅ Slashing
+
+**Security Improvements:**
+- Nodes reject reorganizations deeper than `MAX_REORG_DEPTH`
+- Invalid block ancestry is automatically rejected
+- Double-voting triggers immediate reputation slash (100 points)
+- All slashing events are logged for governance audit trail
+
+**Files Changed:**
+- Modified: `shared/peer-discovery/fork-choice.js` - Added reorg limits and ancestry verification
+- Modified: `shared/peer-discovery/p2p-protocol.js` - Integrated ForkChoice validation
+- Modified: `shared/peer-discovery/consensus-manager.js` - Added equivocation detection
+- Modified: `shared/peer-discovery/reputation.js` - Added slashPeer method
+- New: `test-fork-choice.js` - Comprehensive test suite
+
+**Next Steps:**
+- Phase 10: Performance Optimization (transaction batching, block compression, parallel validation)
+
+---
+
 ## Notes & Acknowledgements
 - This work included multiple debug iterations to identify mismatched data (seed data vs. expected test data) and a fix to ensure consistency across the UI, backend, and e2e tests.
 - Special thanks to the debugging efforts that identified missing Authorization headers and path discrepancies for the timeline file.
