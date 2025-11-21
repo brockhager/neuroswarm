@@ -1,9 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { fileURLToPath, pathToFileURL } from 'url';
 
 // Simple registry loader for sources/adapters registered in sources.json
-const REGISTRY_PATH = path.resolve(new URL('.', import.meta.url).pathname, '../sources.json');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const REGISTRY_PATH = path.join(__dirname, 'sources.json');
 let registry = null;
 
 export function loadRegistry() {
@@ -74,8 +77,9 @@ export async function queryAdapter(adapterName, params) {
   const adapters = listAdapters();
   const entry = adapters.find(a => a.name === adapterName);
   if (!entry) throw new Error(`adapter-not-found:${adapterName}`);
-  const modulePath = path.resolve(new URL('.', import.meta.url).pathname, `adapters/${entry.module}`);
-  const mod = await import(modulePath);
+  const modulePath = path.join(__dirname, 'adapters', entry.module);
+  const moduleUrl = pathToFileURL(modulePath).href;
+  const mod = await import(moduleUrl);
   if (!mod || !mod.query) throw new Error(`adapter-missing-query:${adapterName}`);
   return mod.query(params);
 }
@@ -94,8 +98,9 @@ export async function queryAdapterWithOpts(adapterName, params, opts = {}) {
   const adapters = listAdapters();
   const entry = adapters.find(a => a.name === adapterName);
   if (!entry) throw new Error(`adapter-not-found:${adapterName}`);
-  const modulePath = path.resolve(new URL('.', import.meta.url).pathname, `adapters/${entry.module}`);
-  const mod = await import(modulePath);
+  const modulePath = path.join(__dirname, 'adapters', entry.module);
+  const moduleUrl = pathToFileURL(modulePath).href;
+  const mod = await import(moduleUrl);
   if (!mod || !mod.query) throw new Error(`adapter-missing-query:${adapterName}`);
   const p = mod.query(params || {});
   let timedOut = false;
@@ -110,8 +115,9 @@ export async function listStatuses() {
   const out = [];
   for (const a of adapters) {
     try {
-      const modulePath = path.resolve(new URL('.', import.meta.url).pathname, `adapters/${a.module}`);
-      const mod = await import(modulePath);
+      const modulePath = path.join(__dirname, 'adapters', a.module);
+      const moduleUrl = pathToFileURL(modulePath).href;
+      const mod = await import(moduleUrl);
       if (mod && mod.status) {
         const s = await mod.status();
         out.push({ name: a.name, ok: s.ok, message: s.message, origin: a.origin || 'unknown' });
