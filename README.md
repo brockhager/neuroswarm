@@ -152,6 +152,9 @@ Pre-built installers for `ns-node`, `gateway-node`, and `vp-node` are available 
  - https://github.com/brockhager/neuro-infra/wiki/Contributor-Policy
  - https://github.com/brockhager/neuro-infra/wiki/Updates
 
+## 🚀 Prebuilt Executables (Automated Releases)
+Download the latest binaries from [GitHub Releases](https://github.com/brockhager/neuro-infra/releases).
+
 Tip: Packaging with live status logging
 -------------------------------------
 
