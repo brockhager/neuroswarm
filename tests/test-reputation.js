@@ -3,7 +3,7 @@
  * Run this to verify reputation tracking works correctly
  */
 
-import { ReputationManager } from './shared/peer-discovery/reputation.js';
+import { ReputationManager } from '../shared/peer-discovery/reputation.js';
 
 console.log('=== Peer Reputation System Test ===\n');
 

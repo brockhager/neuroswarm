@@ -1,4 +1,7 @@
 import fetch from 'node-fetch';
+import { MessageSigner } from './message-signer.js';
+import { MessageHandlers } from './message-handlers.js';
+import { RateLimiter } from './rate-limiter.js';
 
 /**
  * P2P Protocol - Handles message types and peer-to-peer communication
@@ -23,6 +26,30 @@ export class P2PProtocol {
         this.seenMessages = new Map(); // messageId -> timestamp
         this.maxSeenMessages = options.maxSeenMessages || 1000;
         this.messageTimeout = options.messageTimeout || 300000; // 5 minutes
+
+        // Message signing
+        this.messageSigner = new MessageSigner({
+            nodeId: peerManager.nodeId,
+            enabled: options.requireSignatures !== false
+        });
+
+        // Security Logger
+        this.securityLogger = options.securityLogger || null;
+
+        // Message handlers with signature verification
+        this.messageHandlers = new MessageHandlers(
+            peerManager,
+            this.messageSigner,
+            peerManager.reputation,
+            this.securityLogger
+        );
+
+        // Rate limiting
+        this.rateLimiter = new RateLimiter({
+            messagesPerSec: options.messagesPerSec || 10,
+            bytesPerSec: options.bytesPerSec || 10240,
+            enabled: options.enableRateLimiting !== false
+        });
 
         // Periodically clean up old seen messages
         setInterval(() => this.cleanupSeenMessages(), 60000); // Every minute
@@ -88,25 +115,28 @@ export class P2PProtocol {
      * Broadcast a message to all peers using gossip protocol
      */
     async broadcastMessage(message, excludePeerId = null) {
+        // Sign message if needed
+        const messageToSend = this.messageHandlers.signIfNeeded(message);
+
         // Don't broadcast if we've already seen this message
-        if (this.hasSeenMessage(message.id)) {
-            console.log(`[P2P] Skipping broadcast of already-seen message ${message.id}`);
+        if (this.hasSeenMessage(messageToSend.id)) {
+            console.log(`[P2P] Skipping broadcast of already-seen message ${messageToSend.id}`);
             return { sent: 0, failed: 0 };
         }
 
         // Mark as seen
-        this.markMessageAsSeen(message.id);
+        this.markMessageAsSeen(messageToSend.id);
 
         const peers = this.peerManager.getAllPeers();
         let sent = 0;
         let failed = 0;
 
         // Increment hop count
-        message.hops = (message.hops || 0) + 1;
+        messageToSend.hops = (messageToSend.hops || 0) + 1;
 
         // Don't propagate messages that have traveled too far (prevent infinite loops)
-        if (message.hops > 10) {
-            console.log(`[P2P] Message ${message.id} exceeded max hops, not propagating`);
+        if (messageToSend.hops > 10) {
+            console.log(`[P2P] Message ${messageToSend.id} exceeded max hops, not propagating`);
             return { sent: 0, failed: 0 };
         }
 
@@ -121,14 +151,14 @@ export class P2PProtocol {
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(message),
+                    body: JSON.stringify(messageToSend),
                     timeout: 5000
                 });
 
                 if (response.ok) {
                     sent++;
                     this.peerManager.updatePeerHealth(peer.id, true);
-                    console.log(`[P2P] Sent ${message.type} to ${peer.id}`);
+                    console.log(`[P2P] Sent ${messageToSend.type} to ${peer.id}`);
                 } else {
                     failed++;
                     this.peerManager.updatePeerHealth(peer.id, false);
@@ -141,7 +171,7 @@ export class P2PProtocol {
             }
         }
 
-        console.log(`[P2P] Broadcast ${message.type} (${message.id}): sent=${sent}, failed=${failed}`);
+        console.log(`[P2P] Broadcast ${messageToSend.type} (${messageToSend.id}): sent=${sent}, failed=${failed}`);
         return { sent, failed };
     }
 
@@ -218,6 +248,25 @@ export class P2PProtocol {
      * Handle incoming message
      */
     async handleMessage(message, senderPeerId = null) {
+        // Check rate limit FIRST
+        const messageSize = JSON.stringify(message).length;
+        const limitCheck = this.rateLimiter.checkLimit(senderPeerId, messageSize);
+
+        if (!limitCheck.allowed) {
+            console.log(`[P2P] Rate limit exceeded from ${senderPeerId}: ${limitCheck.reason}`);
+
+            // Log security event
+            if (this.securityLogger) {
+                this.securityLogger.logSecurityEvent('RATE_LIMIT_EXCEEDED', senderPeerId, {
+                    reason: limitCheck.reason,
+                    messageSize: messageSize
+                });
+            }
+
+            this.peerManager.reputation.recordBehavior(senderPeerId, 'spamDetected');
+            return { processed: false, reason: limitCheck.reason };
+        }
+
         // Check if we've already processed this message
         if (this.hasSeenMessage(message.id)) {
             console.log(`[P2P] Ignoring duplicate message ${message.id}`);
@@ -229,35 +278,8 @@ export class P2PProtocol {
 
         console.log(`[P2P] Received ${message.type} from ${senderPeerId || 'unknown'}`);
 
-        // Process based on message type
-        let result = { processed: true };
-
-        switch (message.type) {
-            case MessageType.PEER_LIST:
-                result = await this.handlePeerList(message.payload);
-                break;
-
-            case MessageType.NEW_BLOCK:
-                result = { processed: true, action: 'block_received' };
-                // Will be handled by block processing logic
-                break;
-
-            case MessageType.NEW_TX:
-                result = { processed: true, action: 'tx_received' };
-                // Will be handled by transaction processing logic
-                break;
-
-            case MessageType.PING:
-                result = { processed: true, action: 'pong' };
-                break;
-
-            case MessageType.PONG:
-                result = { processed: true, action: 'ping_response' };
-                break;
-
-            default:
-                result = { processed: false, reason: 'unknown_type' };
-        }
+        // Delegate to message handlers (includes signature verification)
+        const result = await this.messageHandlers.handleIncoming(message, senderPeerId);
 
         // Propagate message to other peers (gossip)
         if (result.processed && message.type !== MessageType.PING && message.type !== MessageType.PONG) {
