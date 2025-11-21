@@ -9,7 +9,10 @@ import { computeSourcesRoot } from '../sources/index.js';
 import { queryAdapter } from '../sources/index.js';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
 import { PeerManager, P2PProtocol, MessageType, startHTTPSServer } from '../shared/peer-discovery/index.js';
+import { MetricsService } from '../shared/peer-discovery/metrics-service.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,17 +25,29 @@ if (!fs.existsSync(HISTORY_FILE)) fs.writeFileSync(HISTORY_FILE, JSON.stringify(
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Initialize Metrics Service
+const metricsService = new MetricsService({
+  enabled: true,
+  prefix: 'neuroswarm_'
+});
+
 // Initialize Peer Discovery
 const peerManager = new PeerManager({
   nodeType: 'NS',
   port: PORT,
   bootstrapPeers: process.env.BOOTSTRAP_PEERS || '',
   maxPeers: parseInt(process.env.MAX_PEERS) || 8,
-  dataDir: path.join(__dirname, 'data')
+  bootstrapPeers: process.env.BOOTSTRAP_PEERS || '',
+  maxPeers: parseInt(process.env.MAX_PEERS) || 8,
+  dataDir: path.join(__dirname, 'data'),
+  metricsService: metricsService
 });
 
 // Initialize P2P Protocol
-const p2pProtocol = new P2PProtocol(peerManager);
+const p2pProtocol = new P2PProtocol(peerManager, {
+  metricsService: metricsService,
+  securityLogger: peerManager.securityLogger // Use the same logger instance
+});
 
 function ts() { return new Date().toISOString(); }
 logNs(`ns-node starting on port ${PORT}`);
@@ -64,6 +79,12 @@ app.use((req, res, next) => {
 });
 app.use(bodyParser.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// Metrics Endpoint
+app.get('/metrics', (req, res) => {
+  res.set('Content-Type', 'text/plain');
+  res.send(metricsService.getMetrics());
+});
 
 // Error handler for malformed JSON bodies
 app.use((err, req, res, next) => {

@@ -1,0 +1,13 @@
+[
+  {
+    "id": "localhost:4000",
+    "host": "localhost",
+    "port": 4000,
+    "nodeType": "NS",
+    "publicHost": null,
+    "publicPort": null,
+    "natType": null,
+    "addedAt": "2025-11-21T16:26:25.202Z",
+    "source": "manual"
+  }
+]
