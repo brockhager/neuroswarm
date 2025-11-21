@@ -1,7 +1,7 @@
 Welcome to the NeuroSwarm Documentation Center. This is the main location for all guides, references, and technical documentation. Use the categories below to navigate.
 
 ## Getting Started
-- [New User Guide: Getting Started with ns-node](New-User-Guide.md)
+- [New User Guide: Getting Started with NeuroSwarm](New-Users/New-User-Guide.md)
 
 ### Security
 - [Reputation System](Reputation-System/README.md)
