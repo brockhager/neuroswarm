@@ -4,7 +4,6 @@ import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
 import { ensureDirInRepoSync, safeJoinRepo } from '../scripts/repoScopedFs.mjs';
-import { fileURLToPath } from 'url';
 import { computeSourcesRoot } from '../sources/index.js';
 import { queryAdapter } from '../sources/index.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -13,8 +12,7 @@ import { PeerManager, P2PProtocol, MessageType, startHTTPSServer } from '../shar
 import { MetricsService } from '../shared/peer-discovery/metrics-service.js';
 import { defaultLogger } from './logger.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = process.cwd();
 
 const DATA_DIR = path.join(__dirname, 'data');
 const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
