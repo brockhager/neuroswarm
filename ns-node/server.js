@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import { PeerManager, P2PProtocol, MessageType, startHTTPSServer } from '../shared/peer-discovery/index.js';
 import { MetricsService } from '../shared/peer-discovery/metrics-service.js';
+import { defaultLogger } from './logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,6 +23,9 @@ if (!fs.existsSync(HISTORY_FILE)) fs.writeFileSync(HISTORY_FILE, JSON.stringify(
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const LEARNING_SERVICE_URL = process.env.LEARNING_SERVICE_URL || 'http://localhost:3007/learning';
+const LEARNING_REQUEST_TIMEOUT = parseInt(process.env.LEARNING_SERVICE_TIMEOUT || '2500', 10);
+const interactionsLogger = defaultLogger;
 
 // Initialize Metrics Service
 const metricsService = new MetricsService({
@@ -110,6 +114,32 @@ function fakeProvenance() {
   };
 }
 
+async function requestLearningSupport(query) {
+  if (!LEARNING_SERVICE_URL) {
+    return null;
+  }
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), LEARNING_REQUEST_TIMEOUT);
+    const response = await fetch(`${LEARNING_SERVICE_URL}/recommend`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      throw new Error(`learning service responded ${response.status}`);
+    }
+    return await response.json();
+  } catch (err) {
+    logNs('WARN', 'Learning service unavailable', err.message);
+    return null;
+  }
+}
+
 app.post('/chat', async (req, res) => {
   const body = req.body || {};
   const sender = body.sender || 'user';
@@ -120,13 +150,16 @@ app.post('/chat', async (req, res) => {
 
   if (!content) return res.status(400).json({ error: 'content is required' });
 
+  const startTime = Date.now();
+  const interactionId = uuidv4();
+  const adaptersQueried = [];
+  const adapterResponses = {};
+
   const now = new Date().toISOString();
   const inMsg = { id: uuidv4(), sender, content, timestamp: now };
 
   let responseContent = '';
   let searchData = null;
-
-  // Check if the message looks like a question
   const isQuestion = content.trim().endsWith('?') ||
     content.toLowerCase().startsWith('what ') ||
     content.toLowerCase().startsWith('how ') ||
@@ -136,59 +169,77 @@ app.post('/chat', async (req, res) => {
     content.toLowerCase().startsWith('who ') ||
     content.toLowerCase().startsWith('tell me ') ||
     content.toLowerCase().startsWith('explain ');
+  const detectedIntent = isQuestion ? 'question' : 'statement';
 
-  // If it's a question, try to find an answer using DuckDuckGo
+  const learningSupport = isQuestion ? await requestLearningSupport(content) : null;
+  const recommendedAdapters = Array.isArray(learningSupport?.adapters) ? learningSupport.adapters : [];
+  const exemplars = Array.isArray(learningSupport?.exemplars) ? learningSupport.exemplars : [];
+
+  const adapterCandidates = Array.from(new Set([
+    ...recommendedAdapters,
+    'duckduckgo-search'
+  ]));
+
   if (isQuestion) {
-    try {
-      logNs(`Question detected, searching DuckDuckGo for: "${content}"`);
-      const searchResult = await queryAdapter('duckduckgo-search', { query: content, maxResults: 3 });
+    for (const adapterName of adapterCandidates) {
+      adaptersQueried.push(adapterName);
+      try {
+        logNs(`Question detected, querying adapter ${adapterName} for: "${content}"`);
+        const searchResult = await queryAdapter(adapterName, { query: content, maxResults: 3 });
+        adapterResponses[adapterName] = searchResult;
 
-      if (searchResult && searchResult.value) {
-        searchData = searchResult.value;
+        if (searchResult && searchResult.value) {
+          searchData = searchResult.value;
+          if (searchData.instantAnswer?.text) {
+            responseContent = searchData.instantAnswer.text;
+            if (searchData.instantAnswer.source) {
+              responseContent += `\n\n📚 Source: ${searchData.instantAnswer.source}`;
+            }
+          } else if (searchData.definition?.text) {
+            responseContent = searchData.definition.text;
+            if (searchData.definition.source) {
+              responseContent += `\n\n📚 Source: ${searchData.definition.source}`;
+            }
+          } else if (searchData.answer?.text) {
+            responseContent = searchData.answer.text;
+          } else if (Array.isArray(searchData.results) && searchData.results.length > 0) {
+            responseContent = `I found some information about that:\n\n`;
+            searchData.results.slice(0, 3).forEach((result, idx) => {
+              responseContent += `${idx + 1}. ${result.description}\n`;
+            });
+            responseContent += `\n🔍 Search performed via ${adapterName}`;
+          }
 
-        // Build response from search results
-        if (searchData.instantAnswer && searchData.instantAnswer.text) {
-          responseContent = searchData.instantAnswer.text;
-          if (searchData.instantAnswer.source) {
-            responseContent += `\n\n📚 Source: ${searchData.instantAnswer.source}`;
+          if (responseContent) {
+            logNs(`${adapterName} search successful, found answer: ${responseContent.substring(0, 100)}...`);
+            break;
           }
-        } else if (searchData.definition && searchData.definition.text) {
-          responseContent = searchData.definition.text;
-          if (searchData.definition.source) {
-            responseContent += `\n\n📚 Source: ${searchData.definition.source}`;
-          }
-        } else if (searchData.answer && searchData.answer.text) {
-          responseContent = searchData.answer.text;
-        } else if (searchData.results && searchData.results.length > 0) {
-          responseContent = `I found some information about that:\n\n`;
-          searchData.results.slice(0, 3).forEach((result, idx) => {
-            responseContent += `${idx + 1}. ${result.description}\n`;
-          });
-          responseContent += `\n🔍 Search performed via DuckDuckGo`;
-        } else {
-          responseContent = `I searched for information about "${content}" but couldn't find a clear answer. Could you try rephrasing your question?`;
         }
-
-        logNs(`DuckDuckGo search successful, found answer: ${responseContent.substring(0, 100)}...`);
-      } else {
-        responseContent = `I tried to search for an answer but didn't find anything specific. Let me echo what you said: ${content}`;
+      } catch (err) {
+        adapterResponses[adapterName] = { error: err.message };
+        logNs(`Adapter ${adapterName} failed: ${err.message}`);
       }
-    } catch (err) {
-      logNs(`DuckDuckGo search failed: ${err.message}`);
-      responseContent = `I tried to find an answer but encountered an error. Here's what you said: ${content}`;
+    }
+
+    if (!responseContent) {
+      responseContent = `I searched for information about "${content}" but couldn't find a clear answer. Could you try rephrasing your question?`;
     }
   } else {
-    // Not a question, just echo
     responseContent = `Echoing: ${content}`;
   }
 
-  // Create response
+  if (exemplars.length > 0) {
+    const exemplarText = exemplars.slice(0, 2).map(ex => `• ${ex.user_message} → ${ex.final_reply}`).join('\n');
+    responseContent += `\n\n🧠 Related context:\n${exemplarText}`;
+  }
+
   const response = {
     id: uuidv4(),
     sender: 'agent',
     content: responseContent,
     timestamp: new Date().toISOString(),
-    searchData: searchData, // Include search data if available
+    searchData,
+    interactionId,
     ...fakeProvenance()
   };
 
@@ -197,6 +248,18 @@ app.post('/chat', async (req, res) => {
   history.push({ direction: 'in', ...inMsg, headers: msgHeaders });
   history.push({ direction: 'out', ...response, headers: msgHeaders });
   saveHistory(history);
+
+  interactionsLogger.recordInteraction({
+    interaction_id: interactionId,
+    timestamp: response.timestamp,
+    user_message: content,
+    detected_intent: detectedIntent,
+    adapters_queried: adaptersQueried,
+    adapter_responses: adapterResponses,
+    final_reply: responseContent,
+    latency_ms: Date.now() - startTime,
+    feedback: null
+  });
 
   // Try to publish message to configured gateways in order (primary first)
   const incomingCorrelation = req.header('x-correlation-id') || uuidv4();
@@ -207,6 +270,31 @@ app.post('/chat', async (req, res) => {
     });
 
   res.json(response);
+});
+
+app.post('/feedback', async (req, res) => {
+  const { interaction_id: interactionId, score, correction } = req.body || {};
+  if (!interactionId) {
+    return res.status(400).json({ error: 'interaction_id is required' });
+  }
+  if (score !== 1 && score !== -1) {
+    return res.status(400).json({ error: 'score must be +1 or -1' });
+  }
+
+  try {
+    interactionsLogger.recordFeedback({ interaction_id: interactionId, score, correction: correction || null });
+  } catch (err) {
+    logNs('WARN', 'Failed to persist feedback', err.message);
+    return res.status(500).json({ error: 'feedback_persist_failed' });
+  }
+
+  if (LEARNING_SERVICE_URL) {
+    fetch(`${LEARNING_SERVICE_URL}/reload`, { method: 'POST' }).catch(err => {
+      logNs('WARN', 'Unable to notify learning service about feedback', err.message);
+    });
+  }
+
+  res.json({ ok: true });
 });
 
 // Endpoint to manually add to history (for syncing from other services)
