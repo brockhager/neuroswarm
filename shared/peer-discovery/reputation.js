@@ -186,6 +186,31 @@ export class ReputationManager {
     }
 
     /**
+     * Slash a peer's reputation (for severe violations)
+     * @param {string} peerId - Peer to slash
+     * @param {number} penalty - Amount to reduce (default: max penalty)
+     */
+    slashPeer(peerId, penalty = 100) {
+        this.initializePeer(peerId);
+        const currentScore = this.getScore(peerId);
+        const newScore = Math.max(this.minScore, currentScore - penalty);
+        this.scores.set(peerId, newScore);
+
+        console.log(`[Reputation] ⚔️ SLASHED ${peerId} | Penalty: -${penalty} | Score: ${currentScore} → ${newScore}`);
+
+        // Record in behavior history
+        const history = this.behaviors.get(peerId);
+        history.push({
+            type: 'SLASHED',
+            weight: -penalty,
+            timestamp: Date.now(),
+            metadata: { reason: 'slashing_offense' }
+        });
+
+        return newScore;
+    }
+
+    /**
      * Remove a peer from reputation tracking
      */
     removePeer(peerId) {
