@@ -3,15 +3,20 @@
   "version": "0.1.0",
   "description": "NeuroSwarm local node runtime server (chat UI & API)",
   "main": "server.js",
+  "bin": "server.js",
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "build:binary": "nexe server.js --output ../dist/ns-node.exe"
   },
   "dependencies": {
     "express": "^4.18.2",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "nexe": "^4.0.0-rc.2"
   }
 }
