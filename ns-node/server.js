@@ -9,6 +9,7 @@ import { computeSourcesRoot } from '../sources/index.js';
 import { queryAdapter } from '../sources/index.js';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
+import { PeerManager, P2PProtocol, MessageType } from '../shared/peer-discovery/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,8 +22,38 @@ if (!fs.existsSync(HISTORY_FILE)) fs.writeFileSync(HISTORY_FILE, JSON.stringify(
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Initialize Peer Discovery
+const peerManager = new PeerManager({
+  nodeType: 'NS',
+  port: PORT,
+  bootstrapPeers: process.env.BOOTSTRAP_PEERS || '',
+  maxPeers: parseInt(process.env.MAX_PEERS) || 8,
+  dataDir: path.join(__dirname, 'data')
+});
+
+// Initialize P2P Protocol
+const p2pProtocol = new P2PProtocol(peerManager);
+
 function ts() { return new Date().toISOString(); }
 logNs(`ns-node starting on port ${PORT}`);
+logNs(`Peer discovery enabled | nodeId=${peerManager.nodeId} | bootstrapPeers=${process.env.BOOTSTRAP_PEERS || 'none'}`);
+
+// Periodic peer health check and peer exchange
+setInterval(async () => {
+  const peers = peerManager.getAllPeers();
+  for (const peer of peers) {
+    await p2pProtocol.pingPeer(peer);
+  }
+
+  // Prune inactive peers
+  peerManager.pruneInactivePeers();
+
+  // Send peer list to a random peer (Peer Exchange)
+  if (peers.length > 0) {
+    const randomPeer = peers[Math.floor(Math.random() * peers.length)];
+    await p2pProtocol.sendPeerList(randomPeer);
+  }
+}, 30000); // Every 30 seconds
 
 app.use(cors());
 // Log incoming HTTP requests for connection visibility
@@ -79,25 +110,25 @@ app.post('/chat', async (req, res) => {
   let searchData = null;
 
   // Check if the message looks like a question
-  const isQuestion = content.trim().endsWith('?') || 
-                     content.toLowerCase().startsWith('what ') ||
-                     content.toLowerCase().startsWith('how ') ||
-                     content.toLowerCase().startsWith('why ') ||
-                     content.toLowerCase().startsWith('when ') ||
-                     content.toLowerCase().startsWith('where ') ||
-                     content.toLowerCase().startsWith('who ') ||
-                     content.toLowerCase().startsWith('tell me ') ||
-                     content.toLowerCase().startsWith('explain ');
+  const isQuestion = content.trim().endsWith('?') ||
+    content.toLowerCase().startsWith('what ') ||
+    content.toLowerCase().startsWith('how ') ||
+    content.toLowerCase().startsWith('why ') ||
+    content.toLowerCase().startsWith('when ') ||
+    content.toLowerCase().startsWith('where ') ||
+    content.toLowerCase().startsWith('who ') ||
+    content.toLowerCase().startsWith('tell me ') ||
+    content.toLowerCase().startsWith('explain ');
 
   // If it's a question, try to find an answer using DuckDuckGo
   if (isQuestion) {
     try {
       logNs(`Question detected, searching DuckDuckGo for: "${content}"`);
       const searchResult = await queryAdapter('duckduckgo-search', { query: content, maxResults: 3 });
-      
+
       if (searchResult && searchResult.value) {
         searchData = searchResult.value;
-        
+
         // Build response from search results
         if (searchData.instantAnswer && searchData.instantAnswer.text) {
           responseContent = searchData.instantAnswer.text;
@@ -120,7 +151,7 @@ app.post('/chat', async (req, res) => {
         } else {
           responseContent = `I searched for information about "${content}" but couldn't find a clear answer. Could you try rephrasing your question?`;
         }
-        
+
         logNs(`DuckDuckGo search successful, found answer: ${responseContent.substring(0, 100)}...`);
       } else {
         responseContent = `I tried to search for an answer but didn't find anything specific. Let me echo what you said: ${content}`;
@@ -159,6 +190,89 @@ app.post('/chat', async (req, res) => {
     });
 
   res.json(response);
+});
+
+// Endpoint to manually add to history (for syncing from other services)
+app.post('/history/add', (req, res) => {
+  const body = req.body || {};
+  if (!body.sender || !body.content) return res.status(400).json({ error: 'sender and content required' });
+
+  const history = loadHistory();
+  const msg = {
+    direction: body.direction || 'in',
+    id: body.id || uuidv4(),
+    sender: body.sender,
+    content: body.content,
+    timestamp: body.timestamp || new Date().toISOString(),
+    headers: body.headers || {}
+  };
+  history.push(msg);
+  saveHistory(history);
+  res.json({ ok: true, id: msg.id });
+});
+
+// Peer Discovery Endpoints
+app.get('/peers', (req, res) => {
+  try {
+    const filterType = req.query.type; // Optional: ?type=Gateway or ?type=VP or ?type=NS
+    const peers = peerManager.getAllPeers(filterType);
+    const nodeInfo = peerManager.getNodeInfo();
+    res.json({
+      node: nodeInfo,
+      peers: peers,
+      count: peers.length,
+      filter: filterType || 'none'
+    });
+  } catch (err) {
+    console.error('Error getting peers:', err);
+    res.status(500).json({ error: 'Failed to get peers', detail: err.message });
+    res.status(500).json({ error: 'Failed to add peer', detail: err.message });
+  }
+});
+
+app.delete('/peers/:peerId', (req, res) => {
+  try {
+    const { peerId } = req.params;
+    const removed = peerManager.removePeer(peerId);
+
+    if (removed) {
+      res.json({ ok: true, message: `Removed peer ${peerId}` });
+    } else {
+      res.status(404).json({ ok: false, message: `Peer ${peerId} not found` });
+    }
+  } catch (err) {
+    console.error('Error removing peer:', err);
+    res.status(500).json({ error: 'Failed to remove peer', detail: err.message });
+  }
+});
+
+// P2P Message Handler
+app.post('/p2p/message', async (req, res) => {
+  try {
+    const message = req.body;
+    const senderIp = req.ip || req.socket.remoteAddress;
+
+    if (!message || !message.type || !message.id) {
+      return res.status(400).json({ error: 'Invalid message format' });
+    }
+
+    // Handle the message
+    const result = await p2pProtocol.handleMessage(message, senderIp);
+
+    // If it's a block or transaction, process it
+    if (message.type === MessageType.NEW_BLOCK && result.processed) {
+      // Block will be processed by existing block handling logic
+      logNs(`Received block from peer: ${message.payload?.header?.height || 'unknown'}`);
+    } else if (message.type === MessageType.NEW_TX && result.processed) {
+      // Transaction will be forwarded to gateway
+      logNs(`Received transaction from peer: ${message.payload?.type || 'unknown'}`);
+    }
+
+    res.json({ ok: true, result });
+  } catch (err) {
+    console.error('Error handling P2P message:', err);
+    res.status(500).json({ error: 'Failed to handle message', detail: err.message });
+  }
 });
 
 // Gateways config
@@ -443,6 +557,17 @@ app.post('/tx', async (req, res) => {
     if (forwarded.length === 0) return res.status(500).json({ error: 'no_gateways_configured' });
     const ok = forwarded.some(f => f.resp);
     if (!ok) return res.status(502).json({ error: 'forward_failed', forwarded });
+
+    // Broadcast transaction to peers
+    const txMessage = p2pProtocol.createMessage(
+      MessageType.NEW_TX,
+      tx,
+      peerManager.nodeId
+    );
+    p2pProtocol.broadcastMessage(txMessage).catch(err => {
+      logNs('Failed to broadcast transaction to peers:', err.message);
+    });
+
     return res.json({ ok: true, forwarded });
   } catch (e) {
     return res.status(500).json({ error: 'forward_exception', message: e.message });
@@ -598,6 +723,17 @@ app.post('/blocks/produce', (req, res) => {
   const block = { header, txs };
   const result = applyBlock(block);
   if (!result.ok) return res.status(400).json({ error: result.reason });
+
+  // Broadcast block to peers
+  const blockMessage = p2pProtocol.createMessage(
+    MessageType.NEW_BLOCK,
+    { header, txs },
+    peerManager.nodeId
+  );
+  p2pProtocol.broadcastMessage(blockMessage).catch(err => {
+    logNs('Failed to broadcast block to peers:', err.message);
+  });
+
   res.json({ ok: true, blockHash: result.blockHash });
 });
 
