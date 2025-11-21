@@ -7,9 +7,9 @@ This page lists the latest releases of NeuroSwarm components, including prebuilt
 **Release Date:** November 21, 2025
 
 **Download Binaries:**
-- [Windows (x64)](https://github.com/brockhager/neuro-infra/releases/download/v0.1.0/ns-node-win-x64.exe)
-- [Linux (x64)](https://github.com/brockhager/neuro-infra/releases/download/v0.1.0/ns-node-linux-x64)
-- [macOS (x64)](https://github.com/brockhager/neuro-infra/releases/download/v0.1.0/ns-node-macos-x64)
+- [Windows (x64)](https://github.com/brockhager/neuro-infra/releases/latest/download/ns-node-win-x64.exe)
+- [Linux (x64)](https://github.com/brockhager/neuro-infra/releases/latest/download/ns-node-linux-x64)
+- [macOS (x64)](https://github.com/brockhager/neuro-infra/releases/latest/download/ns-node-macos-x64)
 
 **Installation Instructions:**
 1. Download the binary for your operating system.
