@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import express from 'express';
 import { computeSourcesRoot } from '../sources/index.js';
-import { PeerManager, P2PProtocol, MessageType } from '../shared/peer-discovery/index.js';
+import { PeerManager, P2PProtocol, MessageType, startHTTPSServer } from '../shared/peer-discovery/index.js';
 // ipfs-http-client is an optional runtime dependency. Dynamically import it
 // inside initIpfs so the server can start without IPFS being installed.
 
@@ -456,6 +456,15 @@ const server = app.listen(PORT, () => {
   logVp('VP node started, producing blocks');
   logVp(`Listening at http://localhost:${PORT}`);
   logVp('Health endpoint available at /health');
+
+  // Start HTTPS server for encrypted P2P communication
+  startHTTPSServer(app, PORT, 'VP', peerManager.nodeId).then(httpsServer => {
+    if (httpsServer) {
+      logVp(`HTTPS server enabled on port ${PORT + 1}`);
+    }
+  }).catch(err => {
+    logVp(`HTTPS server failed: ${err.message}`);
+  });
 });
 
 server.on('connection', (socket) => {

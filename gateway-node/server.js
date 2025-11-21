@@ -8,7 +8,7 @@ import { ensureDirInRepoSync } from '../scripts/repoScopedFs.mjs';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import { loadRegistry, queryAdapter, listStatuses, queryAdapterWithOpts } from '../sources/index.js';
-import { PeerManager, P2PProtocol, MessageType } from '../shared/peer-discovery/index.js';
+import { PeerManager, P2PProtocol, MessageType, startHTTPSServer } from '../shared/peer-discovery/index.js';
 
 const PORT = process.env.PORT || 8080;
 
@@ -400,6 +400,15 @@ async function startServer() {
   const server = app.listen(PORT, () => {
     logGw(`Gateway node started, listening on port ${PORT}`);
     logGw(`Health endpoint available at /health`);
+
+    // Start HTTPS server for encrypted P2P communication
+    startHTTPSServer(app, PORT, 'Gateway', peerManager.nodeId).then(httpsServer => {
+      if (httpsServer) {
+        logGw(`HTTPS server enabled on port ${PORT + 1}`);
+      }
+    }).catch(err => {
+      logGw(`HTTPS server failed: ${err.message}`);
+    });
   });
 
   server.on('connection', (socket) => {

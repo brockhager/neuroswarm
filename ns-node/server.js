@@ -9,7 +9,7 @@ import { computeSourcesRoot } from '../sources/index.js';
 import { queryAdapter } from '../sources/index.js';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
-import { PeerManager, P2PProtocol, MessageType } from '../shared/peer-discovery/index.js';
+import { PeerManager, P2PProtocol, MessageType, startHTTPSServer } from '../shared/peer-discovery/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1262,6 +1262,15 @@ const server = app.listen(PORT, () => {
   logNs(`Listening at http://localhost:${PORT}`);
   logNs('Health endpoint available at /health');
   logNs(`Open your browser at http://localhost:${PORT} to start chatting`);
+
+  // Start HTTPS server for encrypted P2P communication
+  startHTTPSServer(app, PORT, 'NS', peerManager.nodeId).then(httpsServer => {
+    if (httpsServer) {
+      logNs(`HTTPS server enabled on port ${PORT + 1}`);
+    }
+  }).catch(err => {
+    logNs(`HTTPS server failed: ${err.message}`);
+  });
 });
 
 server.on('connection', (socket) => {
