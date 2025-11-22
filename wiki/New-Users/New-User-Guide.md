@@ -9,7 +9,7 @@ Welcome to NeuroSwarm! This guide will help you join the decentralized AI networ
 **One-Click Installation** - The easiest way to get started:
 
 #### Windows Users
-1. Download [`quick-start.bat`](https://github.com/brockhager/neuro-infra/raw/master/neuroswarm/dist/quick-start.bat)
+1. Download the [`install.bat`](../../dist/install.bat) script from the dist folder
 2. Double-click the file to run it
 3. Wait for the installation to complete (2-5 minutes)
 4. Your browser will automatically open to `http://localhost:3000`
@@ -17,13 +17,17 @@ Welcome to NeuroSwarm! This guide will help you join the decentralized AI networ
 
 #### Linux/macOS Users
 ```bash
-# Download and run the quick-start script
-curl -fsSL https://raw.githubusercontent.com/brockhager/neuro-infra/master/neuroswarm/dist/quick-start.sh | bash
+# Navigate to the neuroswarm directory
+cd /path/to/neuroswarm
+
+# Install dependencies and start
+npm install
+npm start
 ```
 
-The script will:
+The installation will:
 - ✅ Check for Node.js (install if needed)
-- ✅ Download and install NeuroSwarm
+- ✅ Install NeuroSwarm dependencies
 - ✅ Configure your node
 - ✅ Start the server automatically
 - ✅ Open your browser
@@ -34,13 +38,16 @@ The script will:
 
 Perfect if you don't want to install Node.js:
 
-1. **Download** the latest `ns-node` binary for your OS from [Releases](../Releases.md)
-2. **Extract** the zip file to a folder
-3. **Run** the binary:
-   - **Windows**: Double-click `ns-node.exe`
-   - **Linux/macOS**: Open terminal, navigate to folder, run `./ns-node`
-4. **Open** your browser to `http://localhost:3000`
-5. **Start** interacting with AI agents!
+1. **Download** the latest `ns-node` binary for your OS:
+   - **Windows**: `ns-node-server-win-x64.exe` from the [dist folder](../../dist/)
+   - **Linux**: `ns-node-server-linux-x64` from the [dist folder](../../dist/)
+   - **macOS (Intel)**: `ns-node-server-macos-x64` from the [dist folder](../../dist/)
+   - **macOS (Apple Silicon)**: `ns-node-server-macos-arm64` from the [dist folder](../../dist/)
+2. **Run** the binary:
+   - **Windows**: Double-click `ns-node-server-win-x64.exe`
+   - **Linux/macOS**: Open terminal, navigate to folder, run `chmod +x ns-node-server-*` then `./ns-node-server-*`
+3. **Open** your browser to `http://localhost:3000`
+4. **Start** interacting with AI agents!
 
 ---
 
@@ -49,7 +56,7 @@ Perfect if you don't want to install Node.js:
 Want to contribute or customize your node?
 
 ```bash
-# Clone the repository
+# Clone the repository (if not already cloned)
 git clone https://github.com/brockhager/neuro-infra.git
 cd neuro-infra/neuroswarm
 
