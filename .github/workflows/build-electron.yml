@@ -49,12 +49,13 @@ jobs:
           name: electron-build-${{ matrix.os }}
           path: ./ns-node-desktop/dist/*
 
-      - name: Create GitHub Release (if tag)
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          files: ./ns-node-desktop/dist/*
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Release creation disabled - use GitHub UI to create releases manually
+      # - name: Create GitHub Release (if tag)
+      #   if: startsWith(github.ref, 'refs/tags/')
+      #   uses: softprops/action-gh-release@v1
+      #   with:
+      #     tag_name: ${{ github.ref_name }}
+      #     name: Release ${{ github.ref_name }}
+      #     files: ./ns-node-desktop/dist/*
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
