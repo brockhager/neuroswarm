@@ -1,5 +1,12 @@
 name: Security Checks
 
+# Required permissions for CodeQL and SARIF upload
+permissions:
+  security-events: read
+  actions: read
+  contents: read
+  # Needed for uploading SARIF results (default GITHUB_TOKEN has sufficient rights)
+
 on:
   push:
     branches: [ main, master ]
@@ -39,21 +46,21 @@ jobs:
         output: 'trivy-results.sarif'
 
     - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@v4
       if: always()
       with:
         sarif_file: 'trivy-results.sarif'
 
-    - name: Run CodeQL Analysis
-      uses: github/codeql-action/init@v3
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v4
       with:
         languages: javascript, typescript
 
     - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
+      uses: github/codeql-action/autobuild@v4
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      uses: github/codeql-action/analyze@v4
 
     - name: Dependency Review
       uses: actions/dependency-review-action@v4
