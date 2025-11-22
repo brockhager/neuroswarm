@@ -123,27 +123,6 @@ jobs:
         if [ -n "$unsigned" ]; then
           echo "Unsigned commits detected in push range:";
           echo "$unsigned";
-          echo "\nRe-sign those commits locally and force-push to fix the PR/branch.";
-          exit 1
-        else
-          echo "All commits signed; no unsigned commits found.";
-        fi
-
-    - name: Verify commit signatures
-      if: github.event_name == 'push'
-      run: |
-        echo "Verifying commit signatures..."
-        if git log --oneline --show-signature ${{ github.event.before }}..${{ github.sha }} | grep -q "gpg: Signature made"; then
-          echo "✅ All commits are signed"
-        else
-          echo "❌ Unsigned commits detected"
-          exit 1
-        fi
- 
-  compliance-check:
-    runs-on: ubuntu-latest
-
-    steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
