@@ -26,7 +26,15 @@ This guide is for developers who want to build NeuroSwarm from source or contrib
    npm start
    ```
 
-The node will start on port 3000 by default.
+### Building Binaries
+To create standalone executables for Windows, Linux, and macOS:
+
+```bash
+npm run build:bin
+```
+
+The binaries will be output to `../neuroswarm/dist/`.
+You can then upload these files to your server.
 
 ## Architecture
 See the [System Overview](System-Overview/README.md) for details on the architecture.
