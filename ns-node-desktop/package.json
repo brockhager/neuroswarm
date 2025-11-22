@@ -1,6 +1,6 @@
 {
     "name": "neuroswarm-desktop",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "description": "NeuroSwarm Desktop - Your Personal AI Assistant",
     "main": "main.js",
     "author": "NeuroSwarm Team",
@@ -8,7 +8,7 @@
     "scripts": {
         "start": "electron .",
         "postinstall": "electron-builder install-app-deps",
-        "build": "electron-builder --win --publish never",
+        "build": "electron-builder --publish never",
         "build:all": "electron-builder -mwl --publish never"
     },
     "build": {
