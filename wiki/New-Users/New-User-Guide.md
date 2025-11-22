@@ -28,7 +28,10 @@ Once the window opens or the terminal says "Started":
 ---
 
 ### ❓ Common Issues
-- **"Unsafe App" Warning**: This is normal for new software. Click "More Info" > "Run Anyway".
+- **Browser Blocked Download**: Browsers may flag the file as "unsafe" because it's new.
+  - **Chrome/Edge**: Click the 3 dots next to the download -> "Keep" -> "Show more" -> "Keep anyway".
+  - **Firefox**: Click the download -> "Allow download".
+- **"Unsafe App" Warning (Windows)**: Click "More Info" > "Run Anyway".
 - **Port Error**: If it fails to start, make sure you aren't running another node on the same port.
 
 ### 👩‍💻 Developers
