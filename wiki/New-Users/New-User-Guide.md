@@ -1,174 +1,35 @@
-# 🚀 New User Guide: Getting Started with NeuroSwarm
+# 🚀 Getting Started with NeuroSwarm
 
-Welcome to NeuroSwarm! This guide will help you join the decentralized AI network in just a few minutes.
+The easiest way to join the network is to download the pre-built application.
 
-## 🎯 Choose Your Path
+## 1. Download
+Go to the **[Releases Page](../Releases.md)** and download the file for your computer:
 
-### Path 1: Quick Start (Recommended for Most Users)
+- **Windows**: `ns-node-win.exe`
+- **Mac**: `ns-node-macos`
+- **Linux**: `ns-node-linux`
 
-**One-Click Installation** - The easiest way to get started:
+## 2. Run
+**Windows:**
+Double-click the downloaded `.exe` file.
 
-#### Windows Users
-1. Download the [`install.bat`](../../dist/install.bat) script from the dist folder
-2. Double-click the file to run it
-3. Wait for the installation to complete (2-5 minutes)
-4. Your browser will automatically open to `http://localhost:3000`
-5. Start chatting with AI agents! 🎉
-
-#### Linux/macOS Users
+**Mac/Linux:**
+Open your terminal and run:
 ```bash
-# Navigate to the neuroswarm directory
-cd /path/to/neuroswarm
-
-# Install dependencies and start
-npm install
-npm start
+chmod +x ns-node-*
+./ns-node-*
 ```
 
-The installation will:
-- ✅ Check for Node.js (install if needed)
-- ✅ Install NeuroSwarm dependencies
-- ✅ Configure your node
-- ✅ Start the server automatically
-- ✅ Open your browser
+## 3. Connect
+Once the window opens or the terminal says "Started":
+1. Open your browser to **[http://localhost:3000](http://localhost:3000)**
+2. Click **"Enter Portal"** to join the swarm!
 
 ---
 
-### Path 2: Pre-built Binary (No Installation Required)
+### ❓ Common Issues
+- **"Unsafe App" Warning**: This is normal for new software. Click "More Info" > "Run Anyway".
+- **Port Error**: If it fails to start, make sure you aren't running another node on the same port.
 
-Perfect if you don't want to install Node.js:
-
-1. **Download** the latest `ns-node` binary for your OS:
-   - **Windows**: `ns-node-server-win-x64.exe` from the [dist folder](../../dist/)
-   - **Linux**: `ns-node-server-linux-x64` from the [dist folder](../../dist/)
-   - **macOS (Intel)**: `ns-node-server-macos-x64` from the [dist folder](../../dist/)
-   - **macOS (Apple Silicon)**: `ns-node-server-macos-arm64` from the [dist folder](../../dist/)
-2. **Run** the binary:
-   - **Windows**: Double-click `ns-node-server-win-x64.exe`
-   - **Linux/macOS**: Open terminal, navigate to folder, run `chmod +x ns-node-server-*` then `./ns-node-server-*`
-3. **Open** your browser to `http://localhost:3000`
-4. **Start** interacting with AI agents!
-
----
-
-### Path 3: Build from Source (For Developers)
-
-Want to contribute or customize your node?
-
-```bash
-# Clone the repository (if not already cloned)
-git clone https://github.com/brockhager/neuro-infra.git
-cd neuro-infra/neuroswarm
-
-# Install dependencies
-npm install
-
-# Start the node
-npm start
-```
-
-Your node will be available at `http://localhost:3000`
-
----
-
-## ✅ Verify Your Node is Running
-
-Once your node starts, you should see:
-
-```
-✓ NeuroSwarm Node Started
-✓ P2P Network: Connected
-✓ Web Interface: http://localhost:3000
-✓ Peers Connected: 3
-```
-
-Open `http://localhost:3000` in your browser. You should see the NeuroSwarm interface.
-
----
-
-## 🎮 Your First Interaction
-
-1. **Click "Chat"** or **"Enter Portal"** on the homepage
-2. **Type a message** like "Hello, what can you do?"
-3. **Receive AI responses** from the network
-4. **Provide feedback** using 👍/👎 buttons to help improve the system
-
-Your interactions contribute to the collective Global Brain! 🧠
-
----
-
-## 🔧 Troubleshooting
-
-### Port Already in Use
-If you see `Error: Port 3000 already in use`:
-```bash
-# Windows
-netstat -ano | findstr :3000
-taskkill /PID <PID> /F
-
-# Linux/macOS
-lsof -ti:3000 | xargs kill -9
-```
-
-### Node.js Not Found
-- Download Node.js from [nodejs.org](https://nodejs.org) (v18 or higher)
-- Restart your terminal after installation
-
-### Cannot Connect to Peers
-- Check your firewall settings
-- Ensure ports 3000 (HTTP) and 3009 (P2P) are open
-- See [NAT Traversal Guide](../NAT-Traversal/README.md) for advanced setup
-
-### Browser Won't Open
-- Manually navigate to `http://localhost:3000`
-- Try a different browser
-- Clear browser cache and cookies
-
----
-
-## 📚 Next Steps
-
-Now that your node is running:
-
-- **Explore the Interface**: Try different AI agents and features
-- **Join the Community**: Connect with other node operators
-- **Read the Docs**: Learn about the system architecture
-- **Contribute**: Help improve the network
-
-### Essential Documentation
-- [System Overview](../System-Overview/README.md) - Understand how NeuroSwarm works
-- [Reputation System](../Reputation-System/README.md) - How trust is built
-- [Learning System](../Learning.md) - How the AI improves
-- [Consensus](../Consensus/readme.md) - How decisions are made
-- [Anchoring](../Anchoring/readme.md) - Governance on Solana
-
----
-
-## 🆘 Need Help?
-
-- **Discord**: Join our community server
-- **GitHub Issues**: Report bugs or request features
-- **Documentation**: Browse the [wiki](../Index.md)
-- **FAQ**: Check common questions below
-
-### Common Questions
-
-**Q: Is my data private?**  
-A: Yes! All communications are encrypted. See [Encrypted Communication](../Encrypted-Communication/README.md).
-
-**Q: Do I need to keep my node running 24/7?**  
-A: No, but running continuously helps the network and improves your reputation score.
-
-**Q: How much disk space do I need?**  
-A: Approximately 500MB for the node, plus storage for cached data (varies).
-
-**Q: Can I run multiple nodes?**  
-A: Yes! Each node needs a unique port configuration.
-
----
-
-## 🎉 Welcome to the Network!
-
-You're now part of a decentralized AI network. Every interaction you make helps build the collective intelligence of NeuroSwarm.
-
-**Happy exploring!** 🚀
+### 👩‍💻 Developers
+If you want to build from source, please see the [Developer Guide](../Developer-Guide.md).
