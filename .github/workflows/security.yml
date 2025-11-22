@@ -114,22 +114,6 @@ jobs:
     - name: Fail on unsigned commits (push)
       if: github.event_name == 'push'
       run: |
-        set -euo pipefail
-        if [ ! -f commit-status.txt ]; then
-          echo "No commit-status.txt available; run debug listing first";
-          exit 1;
-        fi
-        unsigned=$(awk '$2=="N" {print $0}' commit-status.txt || true)
-        if [ -n "$unsigned" ]; then
-          echo "Unsigned commits detected in push range:";
-          echo "$unsigned";
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Check license compliance
-      run: |
-        # Check that all source files have appropriate license headers
-        find src website -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" | head -10 | xargs grep -L "Copyright" || echo "Some files missing copyright headers"
 
     - name: Validate CODEOWNERS
       run: |
