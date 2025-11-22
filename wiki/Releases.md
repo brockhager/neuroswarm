@@ -1,16 +1,3 @@
-# NeuroSwarm Releases
-
-This page lists the latest releases of NeuroSwarm, including desktop installers and prebuilt binaries.
-
-## Latest Release: v0.1.6 🎉
-
-**Release Date:** November 22, 2025
-
-### Desktop Installers (Recommended - No Node.js Required)
-*Note: If your browser blocks the download, select "Keep" or "Allow". This is normal for unsigned software.*
-
-- **Windows**: [NeuroSwarm-0.1.6.exe](http://getblockchain.tech/neuroswarm/dist/NeuroSwarm-0.1.6.exe) (Portable)
-- **macOS**: [NeuroSwarm-0.1.6.dmg](http://getblockchain.tech/neuroswarm/dist/NeuroSwarm-0.1.6.dmg)
 - **Linux**: [NeuroSwarm-0.1.6.AppImage](http://getblockchain.tech/neuroswarm/dist/NeuroSwarm-0.1.6.AppImage)
 
 **Installation Instructions:**
