@@ -1,86 +1,123 @@
 # NeuroSwarm - Quick Start Guide
 
-**Get running in 3 steps. No technical knowledge required.**
+**Get running in 3 steps.**
 
 ---
 
 ## Step 1: Download
 
+### Option A: ZIP Package (Requires Node.js)
 Download `ns-node-complete.zip` from the [Releases page](https://github.com/brockhager/neuroswarm/releases)
 
 **File size:** ~3 MB
 
+### Option B: Installer (Coming Soon - No Node.js Required)
+Download the installer for your platform:
+- **Windows:** `NeuroSwarm-Portable-0.1.1.exe`
+- **Mac:** `NeuroSwarm-0.1.1.dmg`
+- **Linux:** `NeuroSwarm-0.1.1.AppImage`
+
+**File size:** ~150 MB (includes everything)
+
 ---
 
-## Step 2: Install Node.js (One-time setup)
+## Step 2: Install
 
-**If you already have Node.js installed, skip to Step 3.**
+### If using ZIP Package:
 
+**Install Node.js first (one-time):**
 1. Go to https://nodejs.org/
-2. Download the **LTS version** (recommended)
-3. Run the installer (accept all defaults)
+2. Download the **LTS version**
+3. Run the installer
 4. **Restart your computer**
+
+### If using Installer:
+Just run the installer - no Node.js needed!
 
 ---
 
 ## Step 3: Run
 
-### Windows:
+### ZIP Package:
+**Windows:**
 1. Extract the ZIP file
 2. Double-click `START.bat`
-3. A window will open - wait for "Starting NS Node"
-4. Open your browser to http://localhost:3000
+3. Browser opens to http://localhost:3000
 
-### Mac/Linux:
+**Mac/Linux:**
 1. Extract the ZIP file
 2. Open Terminal in that folder
 3. Run: `./START.sh`
-4. Open your browser to http://localhost:3000
+4. Open browser to http://localhost:3000
 
-**That's it!** The chat interface will open in your browser.
+### Installer:
+**Windows:**
+1. Launch NeuroSwarm from Start Menu or Desktop
+2. App opens automatically
 
----
+**Mac:**
+1. Open Applications → NeuroSwarm
+2. App opens automatically
 
-## Troubleshooting
-
-### "node is not recognized"
-- Install Node.js from https://nodejs.org/
-- Restart your computer
-- Try again
-
-### Port 3000 already in use
-- Another app is using port 3000
-- Close other apps or restart your computer
-
-### Window closes immediately
-- Right-click `START.bat` → "Run as administrator"
-- Check if Node.js is installed: open Command Prompt, type `node --version`
+**Linux:**
+1. Run the AppImage
+2. App opens automatically
 
 ---
 
 ## What You Get
 
-- **Chat interface** at http://localhost:3000
-- **Local AI** (if you have Ollama installed - optional)
-- **Data privacy** - everything runs on your computer
+✅ **Local AI** - Everything runs on your computer  
+✅ **Privacy** - Your data never leaves your machine  
+✅ **Chat Interface** - Clean, modern UI  
+✅ **Free** - No subscriptions, no cloud costs  
+
+**With Installer (when available):**
+✅ **System Tray** - Always accessible  
+✅ **Auto-Updates** - Get new features automatically  
+✅ **No Configuration** - Just works  
 
 ---
 
-## Optional: Running the Full Network
+## Troubleshooting
 
-For advanced users who want to run the complete NeuroSwarm network:
+### ZIP Package
 
-1. Download all three ZIP files:
-   - `ns-node-complete.zip`
-   - `gateway-node-complete.zip`
-   - `vp-node-complete.zip`
+**"node is not recognized"**
+- Install Node.js from https://nodejs.org/
+- Restart your computer
 
-2. Extract each to a different folder
+**Port 3000 already in use**
+- Another app is using port 3000
+- Close other apps or restart
 
-3. Start in order:
-   - NS Node (port 3000)
-   - Gateway Node (port 8080)
-   - VP Node (port 4000)
+### Installer
+
+**Windows: "Windows protected your PC"**
+- Click "More info" → "Run anyway"
+- This is normal for unsigned apps
+
+**Mac: "Cannot be opened because it is from an unidentified developer"**
+- Right-click → Open → Open
+- Or: System Preferences → Security & Privacy → Open Anyway
+
+**Linux: Permission denied**
+- Make executable: `chmod +x NeuroSwarm-0.1.1.AppImage`
+
+---
+
+## Which Should I Use?
+
+### Use ZIP Package if:
+- ✅ You already have Node.js installed
+- ✅ You want the smallest download
+- ✅ You're comfortable with command line
+
+### Use Installer if:
+- ✅ You want the easiest experience
+- ✅ You don't want to install Node.js
+- ✅ You want system tray integration
+- ✅ You want auto-updates (future)
 
 ---
 
