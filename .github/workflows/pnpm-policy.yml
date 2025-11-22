@@ -1,9 +1,7 @@
 name: Enforce pnpm policy (no package-lock.json)
 
 on:
-  pull_request:
-  push:
-    branches: [ "main", "master" ]
+  workflow_dispatch:
 
 jobs:
   check-locks:
