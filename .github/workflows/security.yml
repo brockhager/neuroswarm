@@ -87,7 +87,7 @@ jobs:
         echo "\nCommits with bad/unknown signatures (B/U):"
         awk '$2 == "B" || $2 == "U" {print $0}' commit-status.txt || true
 
-    - name: Comment on PR with unsigned commits
+    - name: Comment on PR with unsigned commits & remediation
       if: github.event_name == 'pull_request'
       uses: actions/github-script@v6
       with:
@@ -99,8 +99,12 @@ jobs:
           const lines = fs.readFileSync(path, 'utf8').trim().split(/\r?\n/).filter(Boolean);
           const unsigned = lines.filter(l => l.split(/\s+/)[1] === 'N');
           if (unsigned.length === 0) { core.info('No unsigned commits found'); return; }
+          // Build a helpful remediation message
+          const offending = unsigned.map(l => `- \\`${l.split(/\\s+/)[0]}\\` by ${l.split(/\\s+/)[2]} — ${l.split(/\\s+/).slice(3).join(' ')}`).join('\n');
+          const baseSha = context.payload.pull_request && context.payload.pull_request.base && context.payload.pull_request.base.sha ? context.payload.pull_request.base.sha : '${{ github.event.before }}';
+          const headSha = context.payload.pull_request && context.payload.pull_request.head && context.payload.pull_request.head.sha ? context.payload.pull_request.head.sha : '${{ github.sha }}';
+          const body = `⚠️ Security check found unsigned commits in this PR.\n\n**Offending commits:**\n${offending}\n\n**Suggested fixes (pick one):**\n1. Re-sign the commit(s) locally (rewrites history):\n   ```bash\n   # Re-sign all commits between ${baseSha} and ${headSha}\n   git fetch --all --prune\n   git rebase --exec 'git commit --amend --no-edit -S' -i ${baseSha}\n   git push --force-with-lease origin ${context.payload.pull_request.head.ref}\n   ```\n2. Re-sign selected commit(s) interactively:\n   ```bash\n   git checkout ${context.payload.pull_request.head.ref}\n   git rebase -i ${baseSha}\n   # mark offending commits as 'edit' and run for each: git commit --amend --no-edit -S; git rebase --continue\n   git push --force-with-lease origin ${context.payload.pull_request.head.ref}\n   ```\n\nIf you need help configuring GPG / signing keys on your machine, ask here and I can provide step-by-step instructions for Windows / macOS / Linux.`;
           const prNumber = context.payload.pull_request && context.payload.pull_request.number ? context.payload.pull_request.number : null;
-          const body = `⚠️ The security checks detected unsigned commits in this PR (commit status N):\n\n${unsigned.map(l => `- ${l}`).join('\n')}\n\nPlease re-sign these commits or rebase them with a GPG-signed history, then force-push to update the PR.\n`;
           if (prNumber) {
             await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: prNumber, body });
           } else {
