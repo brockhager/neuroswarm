@@ -27,12 +27,16 @@ Once the window opens or the terminal says "Started":
 
 ---
 
-### ❓ Common Issues
-- **Browser Blocked Download**: Browsers may flag the file as "unsafe" because it's new.
-  - **Chrome/Edge**: Click the 3 dots next to the download -> "Keep" -> "Show more" -> "Keep anyway".
-  - **Firefox**: Click the download -> "Allow download".
-- **"Unsafe App" Warning (Windows)**: Click "More Info" > "Run Anyway".
-- **Port Error**: If it fails to start, make sure you aren't running another node on the same port.
+### ❓ Troubleshooting
+**Issue 1: The window closes immediately**
+- This usually means the port is busy. **Restart your computer** and try again.
+
+**Issue 2: The browser didn't open**
+- This happens sometimes. Just **[Click Here](http://localhost:3000)** to open it manually.
+
+**Other Issues**
+- **"Unsafe App"**: Click "More Info" -> "Run Anyway".
+- **Browser Blocked**: Click "Keep" or "Allow" on the download.
 
 ### 👩‍💻 Developers
 If you want to build from source, please see the [Developer Guide](../Developer-Guide.md).
