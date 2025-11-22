@@ -1,12 +1,7 @@
 name: PR Checklist - Admin Node CI
 
 on:
-  pull_request:
-    paths:
-      - 'admin-node/**'
-      - '.github/**'
-      - 'docs/**'
-      - 'neuroswarm/wiki/**'
+  workflow_dispatch:
 
 permissions:
   contents: write
