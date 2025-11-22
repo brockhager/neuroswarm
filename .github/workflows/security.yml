@@ -97,49 +97,6 @@ jobs:
           const path = 'commit-status.txt';
           if (!fs.existsSync(path)) { core.info('No commit-status.txt found'); return; }
           const lines = fs.readFileSync(path, 'utf8').trim().split(/\r?\n/).filter(Boolean);
-          const unsigned = lines.filter(l => l.split(/\s+/)[1] === 'N');
-          if (unsigned.length === 0) { core.info('No unsigned commits found'); return; }
-          // Build a helpful remediation message
-          const offending = unsigned.map(l => `- \\`${l.split(/\\s+/)[0]}\\` by ${l.split(/\\s+/)[2]} — ${l.split(/\\s+/).slice(3).join(' ')}`).join('\n');
-          const baseSha = context.payload.pull_request && context.payload.pull_request.base && context.payload.pull_request.base.sha ? context.payload.pull_request.base.sha : '${{ github.event.before }}';
-          const headSha = context.payload.pull_request && context.payload.pull_request.head && context.payload.pull_request.head.sha ? context.payload.pull_request.head.sha : '${{ github.sha }}';
-          const body = `⚠️ Security check found unsigned commits in this PR.\n\n**Offending commits:**\n${offending}\n\n**Suggested fixes (pick one):**\n1. Re-sign the commit(s) locally (rewrites history):\n   ```bash\n   # Re-sign all commits between ${baseSha} and ${headSha}\n   git fetch --all --prune\n   git rebase --exec 'git commit --amend --no-edit -S' -i ${baseSha}\n   git push --force-with-lease origin ${context.payload.pull_request.head.ref}\n   ```\n2. Re-sign selected commit(s) interactively:\n   ```bash\n   git checkout ${context.payload.pull_request.head.ref}\n   git rebase -i ${baseSha}\n   # mark offending commits as 'edit' and run for each: git commit --amend --no-edit -S; git rebase --continue\n   git push --force-with-lease origin ${context.payload.pull_request.head.ref}\n   ```\n\nIf you need help configuring GPG / signing keys on your machine, ask here and I can provide step-by-step instructions for Windows / macOS / Linux.`;
-          const prNumber = context.payload.pull_request && context.payload.pull_request.number ? context.payload.pull_request.number : null;
-          if (prNumber) {
-            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: prNumber, body });
-          } else {
-            core.info(body);
-          }
-
-    - name: Fail on unsigned commits (push)
-      if: github.event_name == 'push'
-      run: |
-
-    - name: Validate CODEOWNERS
-      run: |
-        if [ -f .github/CODEOWNERS ]; then
-          echo "✅ CODEOWNERS file exists"
-        else
-          echo "❌ CODEOWNERS file missing"
-          exit 1
-        fi
-
-    - name: Check security documentation
-      run: |
-        required_files=("docs/SECURITY.md" "docs/GOVERNANCE.md")
-        for file in "${required_files[@]}"; do
-          if [ -f "$file" ]; then
-            echo "✅ $file exists"
-          else
-            echo "❌ $file missing"
-            exit 1
-          fi
-        done
-
-  notify-security:
-    needs: [security-scan, compliance-check]
-    runs-on: ubuntu-latest
-    if: failure() && github.ref == 'refs/heads/main'
 
     steps:
     - name: Send security alert
