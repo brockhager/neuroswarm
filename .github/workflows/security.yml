@@ -87,6 +87,44 @@ jobs:
         echo "\nCommits with bad/unknown signatures (B/U):"
         awk '$2 == "B" || $2 == "U" {print $0}' commit-status.txt || true
 
+    - name: Comment on PR with unsigned commits
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const fs = require('fs');
+          const path = 'commit-status.txt';
+          if (!fs.existsSync(path)) { core.info('No commit-status.txt found'); return; }
+          const lines = fs.readFileSync(path, 'utf8').trim().split(/\r?\n/).filter(Boolean);
+          const unsigned = lines.filter(l => l.split(/\s+/)[1] === 'N');
+          if (unsigned.length === 0) { core.info('No unsigned commits found'); return; }
+          const prNumber = context.payload.pull_request && context.payload.pull_request.number ? context.payload.pull_request.number : null;
+          const body = `⚠️ The security checks detected unsigned commits in this PR (commit status N):\n\n${unsigned.map(l => `- ${l}`).join('\n')}\n\nPlease re-sign these commits or rebase them with a GPG-signed history, then force-push to update the PR.\n`;
+          if (prNumber) {
+            await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: prNumber, body });
+          } else {
+            core.info(body);
+          }
+
+    - name: Fail on unsigned commits (push)
+      if: github.event_name == 'push'
+      run: |
+        set -euo pipefail
+        if [ ! -f commit-status.txt ]; then
+          echo "No commit-status.txt available; run debug listing first";
+          exit 1;
+        fi
+        unsigned=$(awk '$2=="N" {print $0}' commit-status.txt || true)
+        if [ -n "$unsigned" ]; then
+          echo "Unsigned commits detected in push range:";
+          echo "$unsigned";
+          echo "\nRe-sign those commits locally and force-push to fix the PR/branch.";
+          exit 1
+        else
+          echo "All commits signed; no unsigned commits found.";
+        fi
+
     - name: Verify commit signatures
       if: github.event_name == 'push'
       run: |
