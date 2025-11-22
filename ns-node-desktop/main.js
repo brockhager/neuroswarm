@@ -28,7 +28,7 @@ function startServer() {
     console.log('Server path:', serverPath);
     console.log('Resources path:', resourcesPath);
 
-    serverProcess = spawn(process.execPath, [serverPath], {
+    serverProcess = spawn('node', [serverPath], {
         env: {
             ...process.env,
             PORT: PORT,
