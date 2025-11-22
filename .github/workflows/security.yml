@@ -70,6 +70,23 @@ jobs:
         head: HEAD
         extra_args: --debug --only-verified
 
+    - name: Debug - list commits (signature status)
+      run: |
+        set -euo pipefail
+        if [ -n "${{ github.event.before || '' }}" ]; then
+          RANGE="${{ github.event.before }}..${{ github.sha }}"
+        else
+          RANGE="HEAD~50..HEAD"
+        fi
+        echo "Inspecting commits in range: $RANGE"
+        git --no-pager log --pretty=format:'%H %G? %an %s' $RANGE > commit-status.txt || true
+        echo "All commits in range (status, sha, author, subject):"
+        cat commit-status.txt || true
+        echo "\nUnsigned commits (status = N):"
+        awk '$2 == "N" {print $0}' commit-status.txt || true
+        echo "\nCommits with bad/unknown signatures (B/U):"
+        awk '$2 == "B" || $2 == "U" {print $0}' commit-status.txt || true
+
     - name: Verify commit signatures
       if: github.event_name == 'push'
       run: |
@@ -80,7 +97,7 @@ jobs:
           echo "❌ Unsigned commits detected"
           exit 1
         fi
-
+ 
   compliance-check:
     runs-on: ubuntu-latest
 
