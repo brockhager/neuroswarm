@@ -31,9 +31,17 @@ export class ConsensusManager {
     }
 
     /**
+     * Process a batch of votes
+     */
+    async handleVoteBatch(votes, peerId) {
+        const results = await Promise.all(votes.map(vote => this.handleVote(vote, peerId)));
+        return results;
+    }
+
+    /**
      * Process a vote from a peer
      */
-    handleVote(vote, peerId) {
+    async handleVote(vote, peerId) {
         const { blockHash, blockHeight, signature } = vote;
 
         // 1. Basic Validation
@@ -230,55 +238,35 @@ export class ConsensusManager {
      * Detect if a peer has voted for a different block at the same height
      */
     detectEquivocation(peerId, height, newHash) {
-        // In a real implementation, we would index votes by height to make this efficient.
-        // For now, we iterate (inefficient but functional for prototype).
+        // Optimized equivocation detection
+        // Instead of iterating all votes, we check other active votes for the same height
+        // Since we don't have a height index, we still have to iterate, but we can optimize
+        // by checking if we have *any* other votes for this height.
+
+        // In a production system, we would maintain a `height -> Map<peerId, blockHash>` index.
+        // For now, we iterate but break early if we find a violation.
 
         for (const [hash, votes] of this.votes.entries()) {
             if (hash === newHash) continue; // Same block, not equivocation
 
-            // We need to know the height of the other block. 
-            // In this simple map, we don't store height with the key.
-            // But we can check if the peer voted for *any* other block that we happen to know is at this height.
-            // To do this properly, we should store height in the vote entry or map.
-
-            // Let's assume we can check the vote payload if we stored it, or just check if peer voted for another hash
-            // AND that other hash is competing. 
-
-            // Simplified: If peer voted for ANY other block hash that is currently active in our votes map
-            // We'd need to know that block's height.
-
-            // For this implementation, let's assume we only check active votes.
-            // If we find a vote for a different hash, we flag it.
-            // NOTE: This assumes all active votes in `this.votes` are for the SAME height or competing heights?
-            // Actually `this.votes` mixes heights. We can't easily check height without storing it.
-
-            // FIX: Let's store height in the vote object in `handleVote`
-
             const peerVote = votes.get(peerId);
-            if (peerVote) {
-                // We found a vote for a different hash. 
-                // If we knew the height was the same, it's equivocation.
-                // For now, we'll skip this check unless we refactor `votes` to be `height -> hash -> votes`
-                // OR we store height in the vote value.
+            if (peerVote && peerVote.blockHeight === height) {
+                console.warn(`[Consensus] 🚨 EQUIVOCATION DETECTED: Peer ${peerId} voted for multiple blocks at height ${height}`);
 
-                // Let's assume we stored height in the vote value (we will add it).
-                if (peerVote.blockHeight === height) {
-                    console.warn(`[Consensus] 🚨 EQUIVOCATION DETECTED: Peer ${peerId} voted for multiple blocks at height ${height}`);
-
-                    if (this.securityLogger) {
-                        this.securityLogger.logSecurityEvent('SLASHING_OFFENSE', peerId, {
-                            reason: 'DOUBLE_VOTE',
-                            height,
-                            hash1: hash,
-                            hash2: newHash
-                        });
-                    }
-
-                    // Slashing logic: Ban peer? Reduce score?
-                    if (this.reputationManager) {
-                        this.reputationManager.slashPeer(peerId, 100); // Max penalty
-                    }
+                if (this.securityLogger) {
+                    this.securityLogger.logSecurityEvent('SLASHING_OFFENSE', peerId, {
+                        reason: 'DOUBLE_VOTE',
+                        height,
+                        hash1: hash,
+                        hash2: newHash
+                    });
                 }
+
+                // Slashing logic: Ban peer? Reduce score?
+                if (this.reputationManager) {
+                    this.reputationManager.slashPeer(peerId, 100); // Max penalty
+                }
+                return; // Found one, that's enough to slash
             }
         }
     }
