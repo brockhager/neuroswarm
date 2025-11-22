@@ -5,9 +5,9 @@ The easiest way to join the network is to download the pre-built application.
 ## 1. Download
 Go to the **[Releases Page](../Releases.md)** and download the file for your computer:
 
-- **Windows**: `ns-node-win.exe`
-- **Mac**: `ns-node-macos`
-- **Linux**: `ns-node-linux`
+- **Windows**: `ns-node-server-win-x64.exe`
+- **Linux**: `ns-node-server-linux-x64`
+- **Mac**: `ns-node-server-macos-x64`
 
 ## 2. Run
 **Windows:**
