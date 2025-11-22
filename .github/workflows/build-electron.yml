@@ -13,21 +13,18 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
     env:
-      # Disable automatic code signing unless secrets are provided
       CSC_IDENTITY_AUTO_DISCOVERY: ${{ secrets.CSC_IDENTITY_AUTO_DISCOVERY || 'false' }}
-      # Windows signing (optional)
       WINDOWS_CERT_FILE: ${{ secrets.WINDOWS_CERT_FILE }}
       WINDOWS_CERT_PASSWORD: ${{ secrets.WINDOWS_CERT_PASSWORD }}
-      # macOS signing (optional)
       APPLE_ID: ${{ secrets.APPLE_ID }}
       APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
@@ -48,7 +45,7 @@ jobs:
 
       - name: Upload artifacts
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: electron-build-${{ matrix.os }}
           path: ./ns-node-desktop/dist/*
