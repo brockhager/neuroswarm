@@ -1,10 +1,21 @@
 FROM node:20-alpine
 WORKDIR /app
-COPY package.json pnpm-lock.yaml* ./
-RUN corepack enable && corepack prepare pnpm@8.5.0 --activate && pnpm install --prod
-COPY server.js ./
-COPY public ./public
-COPY data ./data
+
+# Copy shared modules and scripts required by ns-node
+COPY shared ./shared
+COPY sources ./sources
+COPY scripts ./scripts
+
+# Copy ns-node application
+COPY ns-node ./ns-node
+
+# Install dependencies
+WORKDIR /app/ns-node
+RUN npm install --prod
+
+# Expose port
 ENV PORT=3000
 EXPOSE 3000
+
+# Start server
 CMD ["node", "server.js"]
