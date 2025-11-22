@@ -1,10 +1,9 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
+import { getDataDir } from '../shared/path-utils.js';
 
-const moduleDir = path.dirname(fileURLToPath(import.meta.url));
-const defaultDataDir = path.join(moduleDir, 'data');
+const defaultDataDir = getDataDir();
 const defaultLogPath = path.join(defaultDataDir, 'interactions.jsonl');
 
 function ensureDirExists(dirPath) {

@@ -1,9 +1,14 @@
 import fetch from 'node-fetch';
+import zlib from 'zlib';
+import { promisify } from 'util';
 import { MessageSigner } from './message-signer.js';
 import { MessageHandlers } from './message-handlers.js';
 import { RateLimiter } from './rate-limiter.js';
 import { ConsensusManager } from './consensus-manager.js';
 import { ForkChoice } from './fork-choice.js';
+
+const gzip = promisify(zlib.gzip);
+const gunzip = promisify(zlib.gunzip);
 
 /**
  * P2P Protocol - Handles message types and peer-to-peer communication
@@ -17,7 +22,8 @@ export const MessageType = {
     NEW_TX: 'NEW_TX',            // Broadcast new transaction
     PING: 'PING',                // Health check
     PONG: 'PONG',                // Health check response
-    VOTE: 'VOTE'                 // Consensus vote
+    VOTE: 'VOTE',                // Consensus vote
+    BATCH: 'BATCH'               // Batch of messages
 };
 
 /**
@@ -29,6 +35,17 @@ export class P2PProtocol {
         this.seenMessages = new Map(); // messageId -> timestamp
         this.maxSeenMessages = options.maxSeenMessages || 1000;
         this.messageTimeout = options.messageTimeout || 300000; // 5 minutes
+
+        // Batching Configuration
+        this.enableBatching = options.enableBatching !== false;
+        this.batchInterval = options.batchInterval || 100; // 100ms
+        this.maxBatchSize = options.maxBatchSize || 50; // 50 messages
+        this.messageBuffer = [];
+        this.batchTimer = null;
+
+        // Compression Configuration
+        this.enableCompression = options.enableCompression !== false;
+        this.compressionThreshold = options.compressionThreshold || 1024; // 1KB
 
         // Message signing
         this.messageSigner = new MessageSigner({
@@ -48,6 +65,7 @@ export class P2PProtocol {
             this.metricsService.registerCounter('p2p_messages_received_total', 'Total P2P messages received');
             this.metricsService.registerCounter('p2p_bytes_sent_total', 'Total P2P bytes sent');
             this.metricsService.registerCounter('p2p_bytes_received_total', 'Total P2P bytes received');
+            this.metricsService.registerCounter('p2p_batches_sent_total', 'Total P2P batches sent');
         }
 
         // Message handlers with signature verification
@@ -139,7 +157,7 @@ export class P2PProtocol {
     }
 
     /**
-     * Broadcast a message to all peers using gossip protocol
+     * Queue message for batching or send immediately
      */
     async broadcastMessage(message, excludePeerId = null) {
         // Sign message if needed
@@ -154,31 +172,120 @@ export class P2PProtocol {
         // Mark as seen
         this.markMessageAsSeen(messageToSend.id);
 
+        // Check if message is suitable for batching (small messages like VOTES or TXs)
+        const isBatchable = this.enableBatching &&
+            (messageToSend.type === MessageType.VOTE ||
+                messageToSend.type === MessageType.NEW_TX);
+
+        if (isBatchable) {
+            this.queueMessageForBatch(messageToSend, excludePeerId);
+            return { sent: 0, failed: 0, queued: true };
+        }
+
+        return this.sendDirectBroadcast(messageToSend, excludePeerId);
+    }
+
+    /**
+     * Queue message for batch sending
+     */
+    queueMessageForBatch(message, excludePeerId) {
+        this.messageBuffer.push({ message, excludePeerId });
+
+        if (this.messageBuffer.length >= this.maxBatchSize) {
+            this.flushMessageBuffer();
+        } else if (!this.batchTimer) {
+            this.batchTimer = setTimeout(() => this.flushMessageBuffer(), this.batchInterval);
+        }
+    }
+
+    /**
+     * Flush batched messages
+     */
+    async flushMessageBuffer() {
+        if (this.batchTimer) {
+            clearTimeout(this.batchTimer);
+            this.batchTimer = null;
+        }
+
+        if (this.messageBuffer.length === 0) return;
+
+        const messagesToFlush = [...this.messageBuffer];
+        this.messageBuffer = [];
+
+        // Group by excludePeerId to optimize broadcasting
+        // Simplified: Just broadcast batch to everyone, peers will ignore duplicates
+        // But we should respect excludePeerId if possible. 
+        // For simplicity in this phase, we'll create one batch for all.
+
+        const batchPayload = messagesToFlush.map(item => item.message);
+
+        const batchMessage = this.createMessage(
+            MessageType.BATCH,
+            batchPayload,
+            this.peerManager.nodeId
+        );
+
+        console.log(`[P2P] Flushing batch of ${batchPayload.length} messages`);
+
+        if (this.metricsService) {
+            this.metricsService.inc('p2p_batches_sent_total');
+        }
+
+        await this.sendDirectBroadcast(batchMessage, null);
+    }
+
+    /**
+     * Send message directly to peers (internal implementation)
+     */
+    async sendDirectBroadcast(message, excludePeerId) {
         const peers = this.peerManager.getAllPeers();
         let sent = 0;
         let failed = 0;
 
         // Increment hop count
-        messageToSend.hops = (messageToSend.hops || 0) + 1;
+        message.hops = (message.hops || 0) + 1;
 
-        // Don't propagate messages that have traveled too far (prevent infinite loops)
-        if (messageToSend.hops > 10) {
-            console.log(`[P2P] Message ${messageToSend.id} exceeded max hops, not propagating`);
+        // Don't propagate messages that have traveled too far
+        if (message.hops > 10) {
+            console.log(`[P2P] Message ${message.id} exceeded max hops, not propagating`);
             return { sent: 0, failed: 0 };
         }
 
-        for (const peer of peers) {
-            // Don't send back to the peer we received from
-            if (excludePeerId && peer.id === excludePeerId) {
-                continue;
+        // Compression Logic
+        let finalBody = JSON.stringify(message);
+        let isCompressed = false;
+
+        if (this.enableCompression && finalBody.length > this.compressionThreshold) {
+            try {
+                const compressedBuffer = await gzip(finalBody);
+                // We need to wrap it to indicate compression
+                // But standard fetch body is string or buffer. 
+                // We'll send a custom header or wrap in a new envelope?
+                // Let's modify the message structure itself if possible, OR
+                // use a specific content-encoding header if our server supports it.
+                // Our simple HTTP server might not handle content-encoding automatically.
+                // Let's wrap in a "CompressedMessage" envelope for application-level handling.
+
+                const compressedEnvelope = {
+                    compressed: true,
+                    data: compressedBuffer.toString('base64')
+                };
+                finalBody = JSON.stringify(compressedEnvelope);
+                isCompressed = true;
+            } catch (err) {
+                console.error('[P2P] Compression failed, sending uncompressed', err);
             }
+        }
+
+        for (const peer of peers) {
+            if (excludePeerId && peer.id === excludePeerId) continue;
 
             try {
                 const url = `http://${peer.host}:${peer.port}/p2p/message`;
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(messageToSend),
+                    body: finalBody,
                     timeout: 5000
                 });
 
@@ -187,24 +294,19 @@ export class P2PProtocol {
                     this.peerManager.updatePeerHealth(peer.id, true);
 
                     if (this.metricsService) {
-                        this.metricsService.inc('p2p_messages_sent_total', { type: messageToSend.type });
-                        this.metricsService.inc('p2p_bytes_sent_total', {}, JSON.stringify(messageToSend).length);
+                        this.metricsService.inc('p2p_messages_sent_total', { type: message.type });
+                        this.metricsService.inc('p2p_bytes_sent_total', {}, finalBody.length);
                     }
-
-                    console.log(`[P2P] Sent ${messageToSend.type} to ${peer.id}`);
                 } else {
                     failed++;
                     this.peerManager.updatePeerHealth(peer.id, false);
-                    console.log(`[P2P] Failed to send to ${peer.id}: HTTP ${response.status}`);
                 }
             } catch (err) {
                 failed++;
                 this.peerManager.updatePeerHealth(peer.id, false);
-                console.log(`[P2P] Error sending to ${peer.id}: ${err.message}`);
             }
         }
 
-        console.log(`[P2P] Broadcast ${messageToSend.type} (${messageToSend.id}): sent=${sent}, failed=${failed}`);
         return { sent, failed };
     }
 
@@ -280,7 +382,45 @@ export class P2PProtocol {
     /**
      * Handle incoming message
      */
-    async handleMessage(message, senderPeerId = null) {
+    async handleMessage(rawMessage, senderPeerId = null) {
+        // Decompression Logic
+        let message = rawMessage;
+        if (rawMessage.compressed && rawMessage.data) {
+            try {
+                const buffer = Buffer.from(rawMessage.data, 'base64');
+                const decompressed = await gunzip(buffer);
+                message = JSON.parse(decompressed.toString());
+            } catch (err) {
+                console.error('[P2P] Decompression failed', err);
+                return { processed: false, reason: 'decompression_failed' };
+            }
+        }
+
+        // Handle Batch Messages
+        if (message.type === MessageType.BATCH) {
+            const batchMessages = message.payload;
+            console.log(`[P2P] Received BATCH of ${batchMessages.length} messages`);
+
+            const results = [];
+            for (const subMsg of batchMessages) {
+                // Recursively handle each message
+                // Note: We don't re-broadcast the batch itself, but we might broadcast individual messages
+                // if they are new. 
+                // However, to prevent storm, we should probably NOT broadcast if they came in a batch
+                // unless we are a gateway. For now, let's process them.
+                const result = await this.handleSingleMessage(subMsg, senderPeerId);
+                results.push(result);
+            }
+            return { processed: true, batchResults: results };
+        }
+
+        return this.handleSingleMessage(message, senderPeerId);
+    }
+
+    /**
+     * Handle a single (non-batch) message
+     */
+    async handleSingleMessage(message, senderPeerId) {
         // Check rate limit FIRST
         const messageSize = JSON.stringify(message).length;
         const limitCheck = this.rateLimiter.checkLimit(senderPeerId, messageSize);
@@ -302,7 +442,7 @@ export class P2PProtocol {
 
         // Check if we've already processed this message
         if (this.hasSeenMessage(message.id)) {
-            console.log(`[P2P] Ignoring duplicate message ${message.id}`);
+            // console.log(`[P2P] Ignoring duplicate message ${message.id}`);
             return { processed: false, reason: 'duplicate' };
         }
 
@@ -331,17 +471,12 @@ export class P2PProtocol {
 
         if (message.type === MessageType.NEW_BLOCK && result.processed) {
             const newBlock = message.payload;
-            // Validate block with ForkChoice
-            // In a real system, we'd compare against our current head.
-            // For now, we just check if it's a valid extension of the finalized chain.
             const finalizedHead = this.consensusManager.getFinalizedHead();
 
             if (!this.forkChoice.verifyAncestry(newBlock, finalizedHead)) {
                 console.log(`[P2P] Block ${newBlock.hash} rejected: does not descend from finalized head`);
                 return { processed: false, reason: 'invalid_ancestry' };
             }
-
-            // If we had a current head, we'd check isReorgSafe here too.
         }
 
         return result;
@@ -379,3 +514,4 @@ export class P2PProtocol {
         return { processed: true, added };
     }
 }
+

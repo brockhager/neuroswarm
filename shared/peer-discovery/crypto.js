@@ -6,10 +6,7 @@
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { getDataDir } from '../path-utils.js';
 
 /**
  * CryptoManager - Manages TLS certificates for encrypted P2P communication
@@ -18,7 +15,7 @@ export class CryptoManager {
     constructor(options = {}) {
         this.nodeId = options.nodeId || 'unknown';
         this.nodeType = options.nodeType || 'NS';
-        this.certDir = options.certDir || path.join(__dirname, '../data/certs');
+        this.certDir = options.certDir || path.join(getDataDir(), 'certs');
         this.certPath = path.join(this.certDir, 'cert.pem');
         this.keyPath = path.join(this.certDir, 'key.pem');
 
