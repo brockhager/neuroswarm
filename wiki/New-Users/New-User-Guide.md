@@ -11,11 +11,12 @@ Download `ns-node-complete.zip` from the [Releases page](https://github.com/broc
 
 **File size:** ~3 MB
 
-### Option B: Installer (Coming Soon - No Node.js Required)
-Download the installer for your platform:
-- **Windows:** `NeuroSwarm-Portable-0.1.1.exe`
-- **Mac:** `NeuroSwarm-0.1.1.dmg`
-- **Linux:** `NeuroSwarm-0.1.1.AppImage`
+### Option B: Desktop Installer (Recommended - No Node.js Required) ✨
+Download the installer for your platform from the [**Releases page**](https://github.com/brockhager/neuroswarm/releases):
+
+- **Windows:** `NeuroSwarm-0.1.6.exe` (Portable)
+- **Mac:** `NeuroSwarm-0.1.6.dmg`
+- **Linux:** `NeuroSwarm-0.1.6.AppImage`
 
 **File size:** ~150 MB (includes everything)
 
@@ -72,10 +73,10 @@ Just run the installer - no Node.js needed!
 ✅ **Chat Interface** - Clean, modern UI  
 ✅ **Free** - No subscriptions, no cloud costs  
 
-**With Installer (when available):**
+**With Installer:**
 ✅ **System Tray** - Always accessible  
-✅ **Auto-Updates** - Get new features automatically  
 ✅ **No Configuration** - Just works  
+✅ **Cross-Platform** - Windows, Mac, Linux  
 
 ---
 
@@ -102,7 +103,7 @@ Just run the installer - no Node.js needed!
 - Or: System Preferences → Security & Privacy → Open Anyway
 
 **Linux: Permission denied**
-- Make executable: `chmod +x NeuroSwarm-0.1.1.AppImage`
+- Make executable: `chmod +x NeuroSwarm-0.1.6.AppImage`
 
 ---
 
@@ -117,7 +118,6 @@ Just run the installer - no Node.js needed!
 - ✅ You want the easiest experience
 - ✅ You don't want to install Node.js
 - ✅ You want system tray integration
-- ✅ You want auto-updates (future)
 
 ---
 
