@@ -39,7 +39,7 @@ jobs:
       - name: Build Electron app
         run: |
           npm run build --if-present
-          npx electron-builder --publish=always
+          npx electron-builder --publish=never
         working-directory: ./ns-node-desktop
 
       - name: Upload artifacts
