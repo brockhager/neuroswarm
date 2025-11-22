@@ -1,7 +1,7 @@
 import { CheckCircle, AlertTriangle, ExternalLink, Shield, Eye, Users } from 'lucide-react'
 import Link from 'next/link'
 
-const GENESIS_ANCHOR_JSON = '&quot;action&quot;: &quot;genesis-anchor&quot;' // eslint-disable-line react/no-unescaped-entities
+const GENESIS_ANCHOR_JSON = '"action": "genesis-anchor"'
 
 export default function AdminNodeMilestone() {
   return (
@@ -152,7 +152,7 @@ export default function AdminNodeMilestone() {
                 <div>
                   <h4 className="font-medium mb-2">2. Find the Anchor Transaction:</h4>
                   <ul className="list-disc list-inside text-sm ml-4 space-y-1">
-                    <li>Check governance logs: <code className="bg-gray-100 px-1 rounded">wp_publish_log.jsonl</code> for <code className="bg-gray-100 px-1 rounded" dangerouslySetInnerHTML={{__html: GENESIS_ANCHOR_JSON}} /></li>
+                    <li>Check governance logs: <code className="bg-gray-100 px-1 rounded">wp_publish_log.jsonl</code> for <code className="bg-gray-100 px-1 rounded" dangerouslySetInnerHTML={{ __html: GENESIS_ANCHOR_JSON }} /></li>
                     <li>Extract the <code className="bg-gray-100 px-1 rounded">txSignature</code> and <code className="bg-gray-100 px-1 rounded">hash</code> values</li>
                   </ul>
                 </div>

@@ -54,7 +54,7 @@ export default function GovernancePage() {
     }
   ]
 
-  const handleProposalSubmitted = (newProposal: any) => {
+  const handleProposalSubmitted = (newProposal: Omit<Proposal, 'status' | 'votes' | 'voters' | 'totalVotingPower'>) => {
     const proposal: Proposal = {
       ...newProposal,
       status: 'active',
@@ -111,11 +111,10 @@ export default function GovernancePage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 flex items-center justify-center px-4 py-3 rounded-md text-sm font-medium transition-all ${
-                    activeTab === tab.id
+                  className={`flex-1 flex items-center justify-center px-4 py-3 rounded-md text-sm font-medium transition-all ${activeTab === tab.id
                       ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm'
                       : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                  }`}
+                    }`}
                 >
                   <Icon className="h-4 w-4 mr-2" />
                   <span className="hidden sm:inline">{tab.label}</span>
@@ -217,13 +216,12 @@ export default function GovernancePage() {
                           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mr-3">
                             {proposal.title}
                           </h3>
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            proposal.status === 'active'
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${proposal.status === 'active'
                               ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                               : proposal.status === 'passed'
-                              ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                              : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
-                          }`}>
+                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
+                                : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200'
+                            }`}>
                             {proposal.status}
                           </span>
                         </div>

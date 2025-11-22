@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { TrendingUp, Users, Vote, BookOpen, Target, Award, Play, CheckCircle } from 'lucide-react'
+import { Users, Vote, BookOpen, Target, Award } from 'lucide-react'
 
 export default function PortalDashboard() {
   const [userTier] = useState<'bronze' | 'silver' | 'gold' | 'diamond'>('silver')
@@ -116,11 +116,10 @@ export default function PortalDashboard() {
                         <span className="text-sm font-medium text-gray-900 dark:text-white">
                           {module.title}
                         </span>
-                        <span className={`text-xs px-2 py-1 rounded-full ${
-                          module.status === 'completed'
+                        <span className={`text-xs px-2 py-1 rounded-full ${module.status === 'completed'
                             ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                             : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
-                        }`}>
+                          }`}>
                           {module.status}
                         </span>
                       </div>
@@ -144,12 +143,11 @@ export default function PortalDashboard() {
               <div className="space-y-4">
                 {recentActivity.map((activity, index) => (
                   <div key={index} className="flex items-start space-x-3">
-                    <div className={`p-2 rounded-full ${
-                      activity.type === 'vote' ? 'bg-blue-100 dark:bg-blue-900' :
-                      activity.type === 'learn' ? 'bg-green-100 dark:bg-green-900' :
-                      activity.type === 'achievement' ? 'bg-yellow-100 dark:bg-yellow-900' :
-                      'bg-purple-100 dark:bg-purple-900'
-                    }`}>
+                    <div className={`p-2 rounded-full ${activity.type === 'vote' ? 'bg-blue-100 dark:bg-blue-900' :
+                        activity.type === 'learn' ? 'bg-green-100 dark:bg-green-900' :
+                          activity.type === 'achievement' ? 'bg-yellow-100 dark:bg-yellow-900' :
+                            'bg-purple-100 dark:bg-purple-900'
+                      }`}>
                       {activity.type === 'vote' && <Vote className="h-4 w-4 text-blue-600 dark:text-blue-400" />}
                       {activity.type === 'learn' && <BookOpen className="h-4 w-4 text-green-600 dark:text-green-400" />}
                       {activity.type === 'achievement' && <Award className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />}
