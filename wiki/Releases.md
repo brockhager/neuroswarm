@@ -7,16 +7,14 @@ This page lists the latest releases of NeuroSwarm components, including prebuilt
 **Release Date:** November 21, 2025
 
 **Download Binaries:**
-*Note: Binaries will be available after the first automated release is published via GitHub Actions.*
-- Windows (x64): https://github.com/brockhager/neuro-infra/releases/latest/download/ns-node-win-x64.exe
-- Linux (x64): https://github.com/brockhager/neuro-infra/releases/latest/download/ns-node-linux-x64
-- macOS (x64): https://github.com/brockhager/neuro-infra/releases/latest/download/ns-node-macos-x64
+- **Windows**: [ns-node-server-win-x64.exe](http://getblockchain.tech/neuroswarm/dist/ns-node-server-win-x64.exe)
+- **Linux**: [ns-node-server-linux-x64](http://getblockchain.tech/neuroswarm/dist/ns-node-server-linux-x64)
+- **macOS**: [ns-node-server-macos-x64](http://getblockchain.tech/neuroswarm/dist/ns-node-server-macos-x64)
 
 **Installation Instructions:**
-1. Download the binary for your operating system.
-2. Extract if necessary.
-3. Run the executable: `./ns-node` (Linux/macOS) or double-click `ns-node.exe` (Windows).
-4. Open `http://localhost:3000` in your browser.
+1. Download the binary for your operating system from the releases page.
+2. Run the executable: `./ns-node` (Linux/macOS) or double-click `ns-node.exe` (Windows).
+3. Open `http://localhost:3000` in your browser.
 
 **Changelog:**
 - Initial release with ns-node binaries.
