@@ -3,7 +3,7 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
-import { ensureDirInRepoSync, safeJoinRepo } from '../scripts/repoScopedFs.mjs';
+import { safeJoinRepo } from '../scripts/repoScopedFs.mjs';
 import { computeSourcesRoot } from '../sources/index.js';
 import { queryAdapter } from '../sources/index.js';
 import { v4 as uuidv4 } from 'uuid';
@@ -16,7 +16,7 @@ const __dirname = process.cwd();
 
 const DATA_DIR = path.join(__dirname, 'data');
 const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
-if (!fs.existsSync(DATA_DIR)) ensureDirInRepoSync(DATA_DIR);
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 if (!fs.existsSync(HISTORY_FILE)) fs.writeFileSync(HISTORY_FILE, JSON.stringify([]));
 
 const app = express();
