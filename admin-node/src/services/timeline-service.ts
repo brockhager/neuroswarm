@@ -5,7 +5,12 @@ import { logger } from '../index';
 import { governanceLogger } from './governance-logger';
 import { getGovernanceTimelinePath, getGovernanceAlertsPath } from '../utils/paths';
 import { discordService } from '../../../discord/src/discord-service';
-import { ensureDirInRepoSync } from '../../shared/repoScopedFs';
+// Helper to ensure a directory exists (replaces missing repoScopedFs)
+function ensureDirSync(dir: string) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
 
 export interface AnchorTimelineEntry {
   id: string;
@@ -101,7 +106,7 @@ export class TimelineService {
     // Write to timeline file (append-only)
     try {
       const dir = path.dirname(this.timelinePath);
-      if (!fs.existsSync(dir)) ensureDirInRepoSync(dir);
+      if (!fs.existsSync(dir)) ensureDirSync(dir);
       const line = JSON.stringify(timelineEntry) + '\n';
       fs.appendFileSync(this.timelinePath, line);
 
@@ -164,7 +169,7 @@ export class TimelineService {
 
     try {
       const dir = path.dirname(this.timelinePath);
-      if (!fs.existsSync(dir)) ensureDirInRepoSync(dir);
+      if (!fs.existsSync(dir)) ensureDirSync(dir);
       const line = JSON.stringify(timelineEntry) + '\n';
       fs.appendFileSync(this.timelinePath, line);
 
@@ -474,7 +479,7 @@ export class TimelineService {
     // Write to alerts file
     try {
       const dir = path.dirname(this.alertsPath);
-      if (!fs.existsSync(dir)) ensureDirInRepoSync(dir);
+      if (!fs.existsSync(dir)) ensureDirSync(dir);
       const line = JSON.stringify(alertEntry) + '\n';
       fs.appendFileSync(this.alertsPath, line);
 
