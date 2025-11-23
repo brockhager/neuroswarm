@@ -61,6 +61,28 @@ function checkServerReady(retries = 45) { // Increased retries for slower machin
     });
 }
 
+// Load configuration
+function loadConfig() {
+    const configPath = path.join(app.getPath('userData'), 'neuroswarm.config.json');
+    const defaultConfig = {
+        bootstrapPeers: "",
+        note: "To connect to a remote node, add its IP:PORT here. Example: '192.168.1.10:3009'"
+    };
+
+    try {
+        if (fs.existsSync(configPath)) {
+            const data = fs.readFileSync(configPath, 'utf8');
+            return JSON.parse(data);
+        } else {
+            fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2));
+            return defaultConfig;
+        }
+    } catch (e) {
+        log(`Failed to load config: ${e.message}`);
+        return defaultConfig;
+    }
+}
+
 // Start the Node.js server
 function startServer() {
     log('Starting NeuroSwarm server...');
@@ -68,9 +90,13 @@ function startServer() {
     const resourcesPath = getResourcesPath();
     const serverPath = path.join(resourcesPath, 'ns-node', 'server.js');
     const cwd = path.join(resourcesPath, 'ns-node');
+    const config = loadConfig();
 
     log(`Server path: ${serverPath}`);
     log(`Working directory: ${cwd}`);
+    if (config.bootstrapPeers) {
+        log(`Using bootstrap peers: ${config.bootstrapPeers}`);
+    }
 
     if (!fs.existsSync(serverPath)) {
         log(`ERROR: Server file not found at ${serverPath}`);
@@ -82,7 +108,8 @@ function startServer() {
             ...process.env,
             ELECTRON_RUN_AS_NODE: '1',
             PORT: PORT,
-            NODE_ENV: 'production'
+            NODE_ENV: 'production',
+            BOOTSTRAP_PEERS: config.bootstrapPeers || process.env.BOOTSTRAP_PEERS || ''
         },
         cwd: cwd,
         stdio: ['ignore', 'pipe', 'pipe']
