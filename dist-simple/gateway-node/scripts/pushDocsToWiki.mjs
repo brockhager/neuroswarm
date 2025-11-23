@@ -1,0 +1,261 @@
+#!/usr/bin/env node
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import { ensureDirInRepoSync, safeJoinRepo, safeRmInRepoSync, getTmpDir } from './repoScopedFs.mjs';
+
+const argv = process.argv.slice(2);
+const opts = { dry: false };
+for (let i = 0; i < argv.length; i++) {
+  if (argv[i] === '--dry-run') opts.dry = true;
+}
+// Prefer GH_PAT if provided, fallback to GITHUB_TOKEN
+const token = process.env.GH_PAT || process.env.GITHUB_TOKEN;
+// Hard-code the target repo to the neuroswarm project per user request
+const repo = process.env.GITHUB_REPOSITORY || 'brockhager/neuroswarm';
+if (!token && !opts.dry) { console.error('GH_PAT or GITHUB_TOKEN required unless --dry-run is used'); process.exit(1); }
+const [owner, name] = repo.split('/');
+const wikiUrl = `https://x-access-token:${token}@github.com/${owner}/${name}.wiki.git`;
+const wikiUrlRedacted = wikiUrl.replace(/(x-access-token:)([^@]+)(@)/, (m, p1, p2, p3) => `${p1}***REDACTED***${p3}`);
+
+function redact(str) {
+  if (!str) return str;
+  return String(str).replace(new RegExp(token, 'g'), '***REDACTED***');
+}
+
+// Use /ns/neuroswarm.wiki/ directory instead of temp
+const tmpDir = path.resolve('C:/JS/ns/neuroswarm.wiki');
+
+if (!opts.dry) {
+  if (fs.existsSync(path.join(tmpDir, '.git'))) {
+    console.log('Wiki repo already exists, pulling latest changes...');
+    try {
+      execSync(`cd ${tmpDir} && git pull`, { stdio: 'inherit' });
+    } catch (e) {
+      console.error('git pull failed:', redact(e.message));
+      process.exit(1);
+    }
+  } else {
+    if (!fs.existsSync(tmpDir)) {
+      fs.mkdirSync(tmpDir, { recursive: true });
+    }
+    console.log('Cloning wiki repo', wikiUrlRedacted);
+    try {
+      execSync(`git clone ${wikiUrl} ${tmpDir}`, { stdio: 'inherit' });
+    } catch (e) {
+      console.error('git clone failed:', redact(e.message));
+      process.exit(1);
+    }
+  }
+} else {
+  console.log('Dry-run: will copy files into', tmpDir, 'but not clone/push');
+}
+
+function findSrc(relPathParts) {
+  // Look for files relative to current working directory
+  const candidates = [
+    path.join(process.cwd(), ...relPathParts)
+  ];
+  for (const c of candidates) if (fs.existsSync(c)) return c;
+  return path.join(process.cwd(), ...relPathParts); // fallback (non-existing) so caller logs missing file
+}
+
+function timestamp() { return new Date().toISOString(); }
+function wikiLog(level, ...args) { console.log(`[WIKI][${timestamp()}] ${level}:`, ...args); }
+
+const allowHomeOverwrite = process.env.ALLOW_WIKI_HOME_OVERWRITE === '1' || argv.includes('--allow-home-overwrite');
+
+const mapping = [
+  { src: findSrc(['docs', 'run-nodes.md']), dst: 'Running-Nodes.md' },
+  { src: findSrc(['docs', 'data-flow-architecture.md']), dst: 'Data-Flow-Architecture.md' },
+  { src: findSrc(['docs', 'pnpm-policy.md']), dst: 'Contributor-Policy.md' },
+  { src: findSrc(['wiki', 'Download.md']), dst: 'Download.md' },
+  // Home page: canonical front page for the wiki
+  // Prefer `wiki/Home.md` if present; fallback to `docs/wiki/Home.md`.
+  { src: (fs.existsSync(path.join(process.cwd(), 'wiki', 'Home.md'))
+           ? path.join(process.cwd(), 'wiki', 'Home.md')
+           : findSrc(['docs', 'wiki', 'Home.md'])), dst: 'Home.md' },
+  // Sync Updates page if present (changelog/Updates.md)
+  { src: findSrc(['wiki', 'Updates.md']), dst: 'Updates.md' }
+];
+
+// Also sync any docs in docs/wiki/ and wiki/ automatically
+const extraCandidates = [
+  path.join(process.cwd(), 'docs', 'wiki'),
+  path.join(process.cwd(), 'wiki')
+];
+for (const lc of extraCandidates) {
+  try {
+    if (fs.existsSync(lc) && fs.lstatSync(lc).isDirectory()) {
+      const files = fs.readdirSync(lc).filter(f => f.endsWith('.md'));
+      for (const f of files) {
+        const src = path.join(lc, f);
+        // only add if not already mapped
+        if (!mapping.some(m => path.resolve(m.src) === path.resolve(src))) {
+          mapping.push({ src, dst: f });
+        }
+      }
+    }
+  } catch(e) { /* ignore */ }
+}
+
+let changed = false;
+let copiedFiles = []; // track files we intentionally copied to avoid `git add --all` deletions
+let blockedHomeAttempt = false;
+for (const m of mapping) {
+  if (!fs.existsSync(m.src)) { console.warn('Source doc missing', m.src); continue; }
+  const dstPath = path.join(tmpDir, m.dst);
+  // Protect Home.md: only allow if explicitly allowed via env or CLI flag
+  if (m.dst === 'Home.md') {
+    // if wiki repo has an existing Home.md, compare contents
+    let dstExists = fs.existsSync(dstPath);
+    let dstContent = dstExists ? fs.readFileSync(dstPath, 'utf8') : null;
+    let srcContent = fs.readFileSync(m.src, 'utf8');
+    
+    // SAFEGUARD: If source Home.md is empty, restore from default template
+    if (!srcContent || srcContent.trim().length === 0) {
+      console.error('ERROR: Source Home.md is empty; attempting restoration from default template');
+      wikiLog('ERROR', 'Source Home.md empty - restoring from default template', `src=${m.src}`);
+      
+      // Try to restore from default-Home.md
+      const defaultHomePath = path.join(process.cwd(), 'neuroswarm', 'scripts', 'default-Home.md');
+      if (fs.existsSync(defaultHomePath)) {
+        srcContent = fs.readFileSync(defaultHomePath, 'utf8');
+        wikiLog('INFO', 'Restored Home.md from default template');
+        // Write restored content back to source to prevent repeated restoration
+        try {
+          fs.writeFileSync(m.src, srcContent, 'utf8');
+          wikiLog('INFO', 'Wrote restored content back to source:', m.src);
+        } catch (e) {
+          wikiLog('WARN', 'Failed to write restored content to source:', e.message);
+        }
+      } else {
+        wikiLog('ERROR', 'default-Home.md not found; cannot restore');
+        blockedHomeAttempt = true;
+        continue;
+      }
+    }
+    if (dstExists && dstContent === srcContent) {
+      // nothing to do
+      console.log('Home.md is identical; skipping overwrite.');
+      continue;
+    }
+    if (!allowHomeOverwrite) {
+      // Block automated overwrite
+      console.error('ERROR: Attempted overwrite of Home.md blocked.');
+      wikiLog('ERROR', 'Attempted overwrite of Home.md blocked by automation guard', `src=${m.src}`, `dst=${dstPath}`);
+      wikiLog('WARN', 'Unauthorized attempt to modify Home.md; blocked by guard.');
+      blockedHomeAttempt = true;
+      continue; // do not copy
+    }
+    // If we reach here, allow overwrite (explicit permission). Make a backup before overwriting.
+      console.log('Home.md overwrite allowed (explicit flag present). Preparing to backup and copy', m.src, '->', dstPath);
+      // Create a timestamped backup of existing Home.md (if present) for audit/trouble shooting
+      if (dstExists) {
+        try {
+          const tsSafe = new Date().toISOString().replace(/[:.]/g, '-');
+          const backupName = `Home.md.backup.${tsSafe}.md`;
+          const backupPath = path.join(tmpDir, backupName);
+          fs.copyFileSync(dstPath, backupPath);
+          console.log('Home.md backup created:', backupPath);
+        } catch (e) {
+          wikiLog('WARN', 'Failed to create Home.md backup before overwrite', e.message);
+        }
+      }
+      console.log('Home.md overwrite allowed (explicit flag present). Copying', m.src, '->', dstPath);
+    fs.copyFileSync(m.src, dstPath);
+    changed = true;
+    copiedFiles.push(m.dst);
+    continue;
+  }
+  console.log('Copying', m.src, '->', dstPath);
+  fs.copyFileSync(m.src, dstPath);
+  changed = true;
+  copiedFiles.push(m.dst);
+}
+
+if (!changed) {
+  console.log('No docs copied; exiting.');
+  process.exit(0);
+}
+
+if (opts.dry) {
+  console.log('Dry-run mode - no git commit or push will be performed. Files copied to:', tmpDir);
+  process.exit(0);
+}
+
+try{
+  // Only stage the files we explicitly wrote, so we don't delete other files in the wiki clone.
+  if (copiedFiles.length > 0) {
+    execSync(`git add ${copiedFiles.map(f => `"${f.replace(/"/g, '\\"')}"`).join(' ')}`, { cwd: tmpDir, stdio: 'inherit' });
+  } else {
+    // fallback to safe add so nothing else accidentally included
+    execSync('git add -N .', { cwd: tmpDir, stdio: 'inherit' });
+  }
+  
+  // Safety check: detect any deletions that would be committed and abort unless explicitly allowed.
+  // We only care about Home.md and any other high-profile files detected in deletions.
+  try {
+    const status = execSync('git status --porcelain', { cwd: tmpDir, encoding: 'utf8' });
+    const deleteLines = status.split('\n').filter(Boolean).filter(l => l.startsWith(' D') || l.startsWith('D '));
+    const deletedFiles = deleteLines.map(l => l.slice(3).trim());
+    if (deletedFiles.length > 0) {
+      // If Home.md is slated for deletion, and we are not explicitly allowing overwrite, abort to prevent accidental removal
+      if (deletedFiles.includes('Home.md') && !allowHomeOverwrite) {
+        console.error('ERROR: Home.md would be deleted by this sync. Aborting to prevent removal.');
+        wikiLog('ERROR', 'Attempt to delete Home.md detected; aborting commit to avoid data loss', `deleted=${deletedFiles.join(',')}`);
+        process.exit(2);
+      }
+      // For other deletions, if Home.md is not amongst them, continue but warn
+      if (deletedFiles.length > 0) wikiLog('WARN', 'Files will be deleted from the wiki repo by this sync:', deletedFiles.join(', '));
+    }
+  } catch (e) {
+    // non-fatal - log and continue
+    wikiLog('WARN', 'Failed to detect deletions in wiki clone:', e.message);
+  }
+
+  // Ensure Home.md exists in the wiki clone before commit. If missing, restore from default or source.
+  const wikiHomePath = path.join(tmpDir, 'Home.md');
+  if (!fs.existsSync(wikiHomePath)) {
+    wikiLog('WARN', 'Wiki Home.md missing in clone before commit - restoring default to prevent deletion');
+    let primaryHome = path.join(process.cwd(), 'neuroswarm', 'wiki', 'Home.md');
+    if (!fs.existsSync(primaryHome)) {
+      // fallback to docs source
+      primaryHome = path.join(process.cwd(), 'neuroswarm', 'docs', 'wiki', 'Home.md');
+    }
+    let homeContent = '';
+    if (fs.existsSync(primaryHome)) {
+      try {
+        homeContent = fs.readFileSync(primaryHome, 'utf8');
+      } catch(e) { /* ignore */ }
+    }
+    if (!homeContent || homeContent.trim().length === 0) {
+      const defaultHomePath = path.join(process.cwd(), 'neuroswarm', 'scripts', 'default-Home.md');
+      try { homeContent = fs.readFileSync(defaultHomePath, 'utf8'); } catch(e) { /* ignore */ }
+    }
+    if (!homeContent || homeContent.trim().length === 0) {
+      wikiLog('ERROR', 'Impossible to restore Home.md: no source or default template was found');
+      process.exit(1);
+    }
+    fs.writeFileSync(wikiHomePath, homeContent, 'utf8');
+    execSync('git add Home.md', { cwd: tmpDir, stdio: 'inherit' });
+    changed = true; // ensure we commit
+  }
+  execSync(`git commit -m "docs(wiki): sync docs from repo"`, { cwd: tmpDir, stdio: 'inherit' });
+  // Determine remote default branch (main or master) to push correctly
+  let remoteDefaultBranch = 'main';
+  try {
+    const remShow = execSync('git remote show origin', { cwd: tmpDir }).toString();
+    const m = remShow.match(/HEAD branch: (\S+)/);
+    if (m && m[1]) remoteDefaultBranch = m[1];
+  } catch (e) { /* ignore and fallback to main */ }
+  execSync(`git push origin ${remoteDefaultBranch}`, { cwd: tmpDir, stdio: 'inherit' });
+  console.log('Published wiki updates');
+} catch (e) {
+  // Redact any token present in the error message
+  console.error('git commit/push failed', redact(e.message));
+}
+if (blockedHomeAttempt && (process.env.CI === 'true' || process.env.GITHUB_ACTIONS)) {
+  console.error('CI detected unauthorized Home.md overwrite attempt; failing the job to prevent automation from modifying the wiki home page.');
+  process.exit(2);
+}

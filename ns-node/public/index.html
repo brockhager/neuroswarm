@@ -1,32 +1,71 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>NeuroSwarm Local Chat</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 2rem; }
-    /* Keep the chat UI centered and constrain width to 60% on larger screens */
-    #chat-container { width: 100%; margin: 0 auto; }
-    @media (min-width: 640px) { /* small (sm) */
-      #chat-container { max-width: 60%; }
-    }
-    #messages { border: 1px solid #ddd; padding: 1rem; height: 300px; overflow: auto; background: #fafafa; }
-    .msg { margin-bottom: 0.5rem; }
-    .sender { font-weight: bold; }
-    #input { margin-top: 1rem; display:flex; gap: 0.5rem; }
-    input[type=text] { flex: 1; padding: 0.5rem; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroSwarm - Your Personal AI</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>NeuroSwarm Local Chat</h1>
-  <div id="chat-container">
-    <div id="messages"></div>
-    <div id="input">
-      <input id="text" type="text" placeholder="Type a message..." />
-      <button id="send">Send</button>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">🧠</div>
+                <h1>NeuroSwarm</h1>
+            </div>
+            <div class="status">
+                <span class="status-indicator"></span>
+                <span class="status-text">Connected</span>
+            </div>
+        </div>
+
+        <!-- Quick Access Buttons -->
+        <div class="quick-access">
+            <button class="quick-btn" onclick="askQuestion('What\\'s the latest news?')">
+                <span class="btn-icon">📰</span>
+                <span class="btn-label">News</span>
+            </button>
+            <button class="quick-btn" onclick="askQuestion('What\\'s the weather today?')">
+                <span class="btn-icon">🌤️</span>
+                <span class="btn-label">Weather</span>
+            </button>
+            <button class="quick-btn" onclick="askQuestion('NBA scores today')">
+                <span class="btn-icon">🏀</span>
+                <span class="btn-label">NBA Scores</span>
+            </button>
+            <button class="quick-btn" onclick="askQuestion('Tell me something interesting')">
+                <span class="btn-icon">✨</span>
+                <span class="btn-label">Surprise Me</span>
+            </button>
+        </div>
+
+        <!-- Chat Messages -->
+        <div class="chat-container" id="chatContainer">
+            <div class="welcome-message">
+                <h2>👋 Welcome to NeuroSwarm!</h2>
+                <p>Your personal AI assistant is ready to help. Ask me anything!</p>
+            </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="input-container">
+            <div class="input-wrapper">
+                <textarea 
+                    id="userInput" 
+                    placeholder="Ask me anything..." 
+                    rows="1"
+                    onkeydown="handleKeyPress(event)"
+                ></textarea>
+                <button class="send-btn" onclick="sendMessage()">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
     </div>
-  </div>
-  <script type="module" src="/app.js"></script>
+
+    <script src="app.js"></script>
 </body>
 </html>
