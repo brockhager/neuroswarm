@@ -304,6 +304,10 @@ app.on('window-all-closed', () => {
 app.on('before-quit', () => {
     app.isQuitting = true;
     stopServer();
+    if (tray) {
+        tray.destroy();
+        tray = null;
+    }
 });
 
 app.on('will-quit', () => {
