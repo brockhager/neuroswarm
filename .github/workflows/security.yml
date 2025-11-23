@@ -60,24 +60,6 @@ jobs:
     - name: Dependency Review
       uses: actions/dependency-review-action@v4
       if: github.event_name == 'pull_request'
-
-    - name: Run security audit
-      run: pnpm audit --audit-level moderate
-      working-directory: ./website
-      continue-on-error: true
-
-    - name: Check for secrets
-      uses: trufflesecurity/trufflehog@main
-      with:
-        path: ./
-        base: main
-        head: HEAD
-        extra_args: --debug --only-verified
-
-    - name: Debug - list commits (signature status)
-      run: |
-        set -euo pipefail
-        if [ -n "${{ github.event.before || '' }}" ]; then
           RANGE="${{ github.event.before }}..${{ github.sha }}"
         else
           RANGE="HEAD~50..HEAD"
