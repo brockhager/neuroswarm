@@ -58,14 +58,31 @@ export class PeerManager {
 
         // Certificate Validator (for mTLS)
         this.certValidator = options.crypto ? new PeerCertificateValidator(
-            // Local Discovery (UDP Broadcast)
-            this.localDiscovery = new LocalDiscovery({
-                nodeId: this.nodeId,
-                port: this.port,
-                type: this.nodeType,
-                enabled: options.localDiscovery !== false,
-                onPeerDiscovered: (peer) => this.handleDiscoveredPeer(peer)
-            });
+            options.crypto,
+            this.reputation,
+            {
+                requireMTLS: options.requireMTLS || false,
+                mtlsMigrationMode: options.mtlsMigrationMode !== false,
+                securityLogger: this.securityLogger
+            }
+        ) : null;
+
+        this.loadPeersFromDisk();
+
+        // Start NAT traversal if enabled
+        if (this.natTraversal.enabled) {
+            this.natTraversal.startPeriodicRefresh();
+            console.log('[PeerManager] NAT traversal enabled');
+        }
+
+        // Local Discovery (UDP Broadcast)
+        this.localDiscovery = new LocalDiscovery({
+            nodeId: this.nodeId,
+            port: this.port,
+            type: this.nodeType,
+            enabled: options.localDiscovery !== false,
+            onPeerDiscovered: (peer) => this.handleDiscoveredPeer(peer)
+        });
         this.localDiscovery.start();
 
         console.log(`[PeerManager] Initialized node ${this.nodeId} on port ${this.port}`);
