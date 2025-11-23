@@ -1,10 +1,11 @@
-const { app, BrowserWindow, Tray, Menu, shell } = require('electron');
+const { app, BrowserWindow, Tray, Menu, shell, nativeImage } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
 const fs = require('fs');
 const http = require('http');
 
 let mainWindow;
+let splashWindow;
 let tray;
 let serverProcess;
 const PORT = 3000;
@@ -32,7 +33,7 @@ function getResourcesPath() {
 }
 
 // Check if server is ready
-function checkServerReady(retries = 30) {
+function checkServerReady(retries = 45) { // Increased retries for slower machines
     return new Promise((resolve, reject) => {
         const check = (attempt) => {
             http.get(`http://localhost:${PORT}`, (res) => {
@@ -50,7 +51,7 @@ function checkServerReady(retries = 30) {
         const retry = (attempt) => {
             if (attempt <= 0) {
                 log('Server failed to become ready in time');
-                resolve(false); // Don't reject, just return false to show error page
+                resolve(false);
             } else {
                 setTimeout(() => check(attempt - 1), 1000);
             }
@@ -114,8 +115,33 @@ function stopServer() {
     }
 }
 
+// Create splash window
+function createSplash() {
+    splashWindow = new BrowserWindow({
+        width: 400,
+        height: 300,
+        transparent: false,
+        frame: false,
+        alwaysOnTop: true,
+        icon: path.join(__dirname, 'icon.png'),
+        webPreferences: {
+            nodeIntegration: false
+        },
+        backgroundColor: '#1e3a8a'
+    });
+    splashWindow.loadFile('splash.html');
+    splashWindow.center();
+}
+
 // Create the main window
 async function createWindow() {
+    // Create splash first
+    createSplash();
+
+    // Start server in background
+    startServer();
+
+    // Prepare main window (hidden)
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
@@ -128,15 +154,10 @@ async function createWindow() {
         title: 'NeuroSwarm',
         autoHideMenuBar: true,
         show: false,
-        backgroundColor: '#1e3a8a' // Match the dark blue theme
+        backgroundColor: '#1e3a8a'
     });
 
-    // Show window when ready
-    mainWindow.once('ready-to-show', () => {
-        mainWindow.show();
-    });
-
-    // Load loading page or wait for server
+    // Wait for server
     const isReady = await checkServerReady();
 
     if (isReady) {
@@ -160,11 +181,17 @@ async function createWindow() {
         return { action: 'deny' };
     });
 
+    // Close splash and show main window
+    if (splashWindow && !splashWindow.isDestroyed()) {
+        splashWindow.close();
+    }
+    mainWindow.show();
+
     mainWindow.on('close', (event) => {
-        if (!app.isQuitting) {
-            event.preventDefault();
-            mainWindow.hide();
-        }
+        // Default behavior: Quit app when window is closed
+        // If user wants to minimize to tray, they can use the minimize button
+        // This resolves the "app won't close" complaint
+        app.quit();
     });
 
     mainWindow.on('closed', () => {
@@ -175,7 +202,9 @@ async function createWindow() {
 // Create system tray
 function createTray() {
     const iconPath = path.join(__dirname, 'icon.png');
-    tray = new Tray(iconPath);
+    const trayIcon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 });
+
+    tray = new Tray(trayIcon);
 
     const contextMenu = Menu.buildFromTemplate([
         {
@@ -227,8 +256,7 @@ function createTray() {
 // App ready
 app.whenReady().then(() => {
     log('Application starting...');
-    startServer();
-    createWindow();
+    createWindow(); // This now handles splash + server start
     createTray();
 
     app.on('activate', () => {
@@ -240,7 +268,9 @@ app.whenReady().then(() => {
 
 // Quit when all windows are closed (except on macOS)
 app.on('window-all-closed', () => {
-    // Keep running in tray
+    if (process.platform !== 'darwin') {
+        app.quit();
+    }
 });
 
 // Clean up on quit
