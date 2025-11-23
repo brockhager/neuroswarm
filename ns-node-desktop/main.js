@@ -28,9 +28,10 @@ function startServer() {
     console.log('Server path:', serverPath);
     console.log('Resources path:', resourcesPath);
 
-    serverProcess = spawn('node', [serverPath], {
+    serverProcess = spawn(process.execPath, [serverPath], {
         env: {
             ...process.env,
+            ELECTRON_RUN_AS_NODE: '1',
             PORT: PORT,
             NODE_ENV: 'production'
         },
