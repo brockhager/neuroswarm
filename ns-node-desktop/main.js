@@ -1,32 +1,80 @@
-const { app, BrowserWindow, Tray, Menu } = require('electron');
+const { app, BrowserWindow, Tray, Menu, shell } = require('electron');
 const path = require('path');
 const { spawn } = require('child_process');
+const fs = require('fs');
+const http = require('http');
 
 let mainWindow;
 let tray;
 let serverProcess;
 const PORT = 3000;
+const LOG_FILE = path.join(app.getPath('userData'), 'neuroswarm.log');
 
-// Get the resources path (works in both dev and production)
+// Simple logger
+function log(message) {
+    const timestamp = new Date().toISOString();
+    const logMessage = `${timestamp} - ${message}\n`;
+    try {
+        fs.appendFileSync(LOG_FILE, logMessage);
+    } catch (e) {
+        console.error('Failed to write log:', e);
+    }
+    console.log(message);
+}
+
+// Get the resources path
 function getResourcesPath() {
     if (app.isPackaged) {
-        // In production, resources are in process.resourcesPath/app
         return path.join(process.resourcesPath, 'app');
     } else {
-        // In development, go up one level from ns-node-desktop
         return path.join(__dirname, '..');
     }
 }
 
+// Check if server is ready
+function checkServerReady(retries = 30) {
+    return new Promise((resolve, reject) => {
+        const check = (attempt) => {
+            http.get(`http://localhost:${PORT}`, (res) => {
+                if (res.statusCode === 200) {
+                    log('Server is ready!');
+                    resolve(true);
+                } else {
+                    retry(attempt);
+                }
+            }).on('error', () => {
+                retry(attempt);
+            });
+        };
+
+        const retry = (attempt) => {
+            if (attempt <= 0) {
+                log('Server failed to become ready in time');
+                resolve(false); // Don't reject, just return false to show error page
+            } else {
+                setTimeout(() => check(attempt - 1), 1000);
+            }
+        };
+
+        check(retries);
+    });
+}
+
 // Start the Node.js server
 function startServer() {
-    console.log('Starting NeuroSwarm server...');
+    log('Starting NeuroSwarm server...');
 
     const resourcesPath = getResourcesPath();
     const serverPath = path.join(resourcesPath, 'ns-node', 'server.js');
+    const cwd = path.join(resourcesPath, 'ns-node');
 
-    console.log('Server path:', serverPath);
-    console.log('Resources path:', resourcesPath);
+    log(`Server path: ${serverPath}`);
+    log(`Working directory: ${cwd}`);
+
+    if (!fs.existsSync(serverPath)) {
+        log(`ERROR: Server file not found at ${serverPath}`);
+        return;
+    }
 
     serverProcess = spawn(process.execPath, [serverPath], {
         env: {
@@ -35,24 +83,24 @@ function startServer() {
             PORT: PORT,
             NODE_ENV: 'production'
         },
-        cwd: path.join(resourcesPath, 'ns-node'),
+        cwd: cwd,
         stdio: ['ignore', 'pipe', 'pipe']
     });
 
     serverProcess.stdout.on('data', (data) => {
-        console.log(`Server: ${data}`);
+        log(`Server: ${data}`);
     });
 
     serverProcess.stderr.on('data', (data) => {
-        console.error(`Server Error: ${data}`);
+        log(`Server Error: ${data}`);
     });
 
     serverProcess.on('error', (err) => {
-        console.error('Failed to start server:', err);
+        log(`Failed to start server process: ${err.message}`);
     });
 
     serverProcess.on('exit', (code) => {
-        console.log(`Server exited with code ${code}`);
+        log(`Server exited with code ${code}`);
         serverProcess = null;
     });
 }
@@ -60,13 +108,14 @@ function startServer() {
 // Stop the server
 function stopServer() {
     if (serverProcess) {
+        log('Stopping server...');
         serverProcess.kill();
         serverProcess = null;
     }
 }
 
 // Create the main window
-function createWindow() {
+async function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
@@ -78,7 +127,8 @@ function createWindow() {
         },
         title: 'NeuroSwarm',
         autoHideMenuBar: true,
-        show: false
+        show: false,
+        backgroundColor: '#1e3a8a' // Match the dark blue theme
     });
 
     // Show window when ready
@@ -86,10 +136,29 @@ function createWindow() {
         mainWindow.show();
     });
 
-    // Wait for server to start, then load the page
-    setTimeout(() => {
+    // Load loading page or wait for server
+    const isReady = await checkServerReady();
+
+    if (isReady) {
         mainWindow.loadURL(`http://localhost:${PORT}`);
-    }, 3000);
+    } else {
+        const errorHtml = `
+            <html>
+            <body style="background: #1e3a8a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
+                <h2>Failed to connect to server</h2>
+                <p>Please check the logs at: ${LOG_FILE}</p>
+                <button onclick="location.reload()" style="padding: 10px 20px; cursor: pointer;">Retry</button>
+            </body>
+            </html>
+        `;
+        mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(errorHtml)}`);
+    }
+
+    // Handle external links
+    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+        shell.openExternal(url);
+        return { action: 'deny' };
+    });
 
     mainWindow.on('close', (event) => {
         if (!app.isQuitting) {
@@ -120,10 +189,17 @@ function createTray() {
             }
         },
         {
+            label: 'View Logs',
+            click: () => {
+                shell.openPath(LOG_FILE);
+            }
+        },
+        {
             label: 'Restart Server',
             click: () => {
                 stopServer();
                 setTimeout(startServer, 1000);
+                if (mainWindow) mainWindow.reload();
             }
         },
         { type: 'separator' },
@@ -150,6 +226,7 @@ function createTray() {
 
 // App ready
 app.whenReady().then(() => {
+    log('Application starting...');
     startServer();
     createWindow();
     createTray();
