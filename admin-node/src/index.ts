@@ -10,7 +10,7 @@ import dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
-logger.info('Environment variables loaded. GOVERNANCE_PRIVATE_KEY_PATH:', process.env.GOVERNANCE_PRIVATE_KEY_PATH);
+// logger.info moved below after logger initialization
 
 // Import routes and middleware
 import { authMiddleware } from './middleware/auth';
@@ -43,6 +43,9 @@ const logger = winston.createLogger({
     new winston.transports.File({ filename: 'logs/combined.log' }),
   ],
 });
+
+// Log env after logger is ready
+logger.info('Environment variables loaded. GOVERNANCE_PRIVATE_KEY_PATH:', process.env.GOVERNANCE_PRIVATE_KEY_PATH);
 
 if (process.env.NODE_ENV !== 'production') {
   logger.add(new winston.transports.Console({
