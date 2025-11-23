@@ -8,3 +8,4 @@ export { MessageSigner } from './message-signer.js';
 export { RateLimiter } from './rate-limiter.js';
 export { PeerCertificateValidator } from './peer-certificate-validator.js';
 export { SecurityLogger } from './security-logger.js';
+export { LocalDiscovery } from './local-discovery.js';
