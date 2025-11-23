@@ -1,6 +1,11 @@
 import fs from 'fs';
 import path from 'path';
-import { ensureDirInRepoSync } from '../../shared/repoScopedFs';
+// Helper to ensure a directory exists (replaces missing repoScopedFs)
+function ensureDirSync(dir: string) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+}
 import { getWpPublishLogPath } from '../utils/paths';
 import crypto from 'crypto';
 
@@ -78,7 +83,7 @@ export class GovernanceLogger {
     // Write to log file
     try {
       const dir = path.dirname(this.logPath);
-      if (!fs.existsSync(dir)) ensureDirInRepoSync(dir);
+      if (!fs.existsSync(dir)) ensureDirSync(dir);
       const logLine = JSON.stringify(entry) + '\n';
       fs.appendFileSync(this.logPath, logLine);
       this.logger.info(`Governance action logged: ${action}`, { actor: entry.actor });
