@@ -21,16 +21,14 @@
         "files": [
             "main.js",
             "preload.js",
+            "splash.html",
+            "icon.png",
             "package.json"
         ],
         "extraResources": [
             {
                 "from": "../ns-node",
-                "to": "app/ns-node",
-                "filter": [
-                    "**/*",
-                    "!node_modules"
-                ]
+                "to": "app/ns-node"
             },
             {
                 "from": "../shared",
