@@ -2,7 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
-import { logger } from '../index';
+// Use console as fallback logger to avoid circular dependency
+const logger = console;
 import { governanceLogger } from '../services/governance-logger';
 
 // Extend Express Request interface to include user
