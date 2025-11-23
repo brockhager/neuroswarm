@@ -1,0 +1,59 @@
+{
+  "adapters": [
+    {
+      "name": "coingecko",
+      "module": "coingecko.js",
+      "desc": "CoinGecko price adapter",
+      "origin": "coingecko"
+    },
+    {
+      "name": "allie-price",
+      "module": "allie-price.js",
+      "desc": "Allie-AI price (wrap) adapter",
+      "origin": "allie-ai"
+    },
+    {
+      "name": "allie-weather",
+      "module": "allie-weather.js",
+      "desc": "Allie-AI weather (wrap) adapter",
+      "origin": "allie-ai"
+    },
+    {
+      "name": "allie-news",
+      "module": "allie-news.js",
+      "desc": "Allie-AI news (wrap) adapter",
+      "origin": "allie-ai"
+    },
+    {
+      "name": "allie-eth",
+      "module": "allie-eth.js",
+      "desc": "Allie-AI Ethereum price (wrap) adapter",
+      "origin": "allie-ai"
+    },
+    {
+      "name": "allie-oracle",
+      "module": "allie-oracle.js",
+      "desc": "Allie-AI generic oracle wrapper",
+      "origin": "allie-ai"
+    },
+    {
+      "name": "nba-scores",
+      "module": "nba-scores.js",
+      "desc": "Real-time NBA scores and game status",
+      "origin": "espn-api"
+    },
+    {
+      "name": "news-aggregator",
+      "module": "news-aggregator.js",
+      "desc": "Global news aggregator with story clustering",
+      "origin": "rss-feeds"
+    },
+    {
+      "name": "duckduckgo-search",
+      "module": "duckduckgo-search.js",
+      "desc": "DuckDuckGo search with instant answers and knowledge extraction",
+      "origin": "duckduckgo-instant-answer"
+    }
+  ],
+  "version": "0.3.0"
+}
