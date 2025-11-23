@@ -330,7 +330,6 @@ app.get('/peers', (req, res) => {
   } catch (err) {
     console.error('Error getting peers:', err);
     res.status(500).json({ error: 'Failed to get peers', detail: err.message });
-    res.status(500).json({ error: 'Failed to add peer', detail: err.message });
   }
 });
 
