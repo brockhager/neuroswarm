@@ -38,7 +38,8 @@ const peerManager = new PeerManager({
   bootstrapPeers: process.env.BOOTSTRAP_PEERS || '',
   maxPeers: parseInt(process.env.MAX_PEERS) || 8,
   dataDir: path.join(__dirname, 'data'),
-  metricsService: metricsService
+  metricsService: metricsService,
+  localDiscovery: true
 });
 
 // Initialize P2P Protocol
