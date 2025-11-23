@@ -9,21 +9,6 @@
 ### Option A: ZIP Package (Requires Node.js)
 Download `ns-node-complete.zip` from the [Releases page](https://github.com/brockhager/neuroswarm/releases)
 
-**File size:** ~3 MB
-
-### Option B: Desktop Installer (Recommended - No Node.js Required) ✨
-Download the installer for your platform from the [**Releases page**](https://github.com/brockhager/neuroswarm/releases):
-
-- **Windows:** `NeuroSwarm-0.1.6.exe` (Portable)
-- **Mac:** `NeuroSwarm-0.1.6.dmg`
-- **Linux:** `NeuroSwarm-0.1.6.AppImage`
-
-**File size:** ~150 MB (includes everything)
-
----
-
-## Step 2: Install
-
 ### If using ZIP Package:
 
 **Install Node.js first (one-time):**
