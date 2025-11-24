@@ -1,5 +1,9 @@
 Welcome to the NeuroSwarm Documentation Center. This is the main location for all guides, references, and technical documentation. Use the categories below to navigate.
 
+## New Features
+- [Top Five](top-five/readme.md) - Community consensus voting mechanism.
+- **Desktop Installers** - Standalone apps for Windows, macOS, and Linux (v0.1.6).
+
 ## Getting Started
 - [New User Guide: Getting Started with NeuroSwarm](New-Users/New-User-Guide.md)
 
