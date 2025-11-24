@@ -53,6 +53,18 @@
       "module": "duckduckgo-search.js",
       "desc": "DuckDuckGo search with instant answers and knowledge extraction",
       "origin": "duckduckgo-instant-answer"
+    },
+    {
+      "name": "openai-chat",
+      "module": "openai-chat.js",
+      "desc": "OpenAI GPT-4 Chat Adapter",
+      "origin": "openai-api"
+    },
+    {
+      "name": "local-llm",
+      "module": "local-llm.js",
+      "desc": "Local LLM (Ollama/LocalAI) Adapter",
+      "origin": "local-llm"
     }
   ],
   "version": "0.3.0"

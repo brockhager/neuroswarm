@@ -1,0 +1,301 @@
+import express from 'express';
+import { v4 as uuidv4 } from 'uuid';
+import fetch from 'node-fetch';
+import { queryAdapter } from '../../sources/index.js';
+import { defaultLogger } from '../../logger.js';
+import { logNs } from '../utils/logger.js';
+import { publishToGateways } from '../services/gateway.js';
+import { loadHistory, saveHistory } from '../services/history.js';
+import { SERVICE_URLS } from '../../../shared/ports.js';
+
+const router = express.Router();
+const interactionsLogger = defaultLogger;
+const LEARNING_SERVICE_URL = process.env.LEARNING_SERVICE_URL || SERVICE_URLS.LEARNING_SERVICE;
+const LEARNING_REQUEST_TIMEOUT = parseInt(process.env.LEARNING_SERVICE_TIMEOUT || '2500', 10);
+
+function fakeProvenance() {
+    return {
+        cid: `Qm${Math.random().toString(36).substr(2, 9)}`,
+        txSignature: `sig_${Math.random().toString(36).substr(2, 12)}`
+    };
+}
+
+async function requestLearningSupport(query) {
+    if (!LEARNING_SERVICE_URL) {
+        return null;
+    }
+
+    try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), LEARNING_REQUEST_TIMEOUT);
+        const response = await fetch(`${LEARNING_SERVICE_URL}/recommend`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query }),
+            signal: controller.signal
+        });
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+            throw new Error(`learning service responded ${response.status}`);
+        }
+        return await response.json();
+    } catch (err) {
+        logNs('WARN', 'Learning service unavailable', err.message);
+        return null;
+    }
+}
+
+router.post('/', async (req, res) => {
+    const body = req.body || {};
+    const sender = body.sender || 'user';
+    const content = body.content || '';
+    const auth = req.header('authorization') || '';
+    const forwardedFor = req.header('x-forwarded-for') || req.socket.remoteAddress || '';
+    const forwardedUser = req.header('x-forwarded-user') || '';
+
+    if (!content) return res.status(400).json({ error: 'content is required' });
+
+    const startTime = Date.now();
+    const interactionId = uuidv4();
+    const adaptersQueried = [];
+    const adapterResponses = {};
+
+    const now = new Date().toISOString();
+    const inMsg = { id: uuidv4(), sender, content, timestamp: now };
+
+    let responseContent = '';
+    let searchData = null;
+
+    // Enhanced question detection with implicit query patterns
+    const isQuestion = content.trim().endsWith('?') ||
+        content.toLowerCase().startsWith('what ') ||
+        content.toLowerCase().startsWith('how ') ||
+        content.toLowerCase().startsWith('why ') ||
+        content.toLowerCase().startsWith('when ') ||
+        content.toLowerCase().startsWith('where ') ||
+        content.toLowerCase().startsWith('who ') ||
+        content.toLowerCase().startsWith('tell me ') ||
+        content.toLowerCase().startsWith('explain ') ||
+        // Implicit query patterns
+        /\b(scores?|game|match)\b/i.test(content) ||  // Sports queries
+        /\b(news|headlines?|latest|breaking)\b/i.test(content) ||  // News queries
+        /\b(weather|temperature|forecast)\b/i.test(content) ||  // Weather queries
+        /\b(price|value|worth)\b/i.test(content);  // Price queries
+
+    logNs(`Incoming chat: "${content}" | isQuestion: ${isQuestion}`);
+
+    const detectedIntent = isQuestion ? 'question' : 'statement';
+
+    const learningSupport = isQuestion ? await requestLearningSupport(content) : null;
+    const recommendedAdapters = Array.isArray(learningSupport?.adapters) ? learningSupport.adapters : [];
+    const exemplars = Array.isArray(learningSupport?.exemplars) ? learningSupport.exemplars : [];
+
+    // Intelligent adapter selection based on query content
+    const intelligentAdapters = [];
+
+    // NBA/Sports queries
+    if (/\b(nba|basketball|scores?|lakers|warriors|celtics|nets|knicks|heat)\b/i.test(content)) {
+        intelligentAdapters.push('nba-scores');
+    }
+
+    // News queries
+    if (/\b(news|headlines?|latest|breaking)\b/i.test(content)) {
+        intelligentAdapters.push('news-aggregator');
+    }
+
+    // Weather queries
+    if (/\b(weather|temperature|forecast|rain|sunny|cloudy)\b/i.test(content)) {
+        intelligentAdapters.push('allie-weather');
+    }
+
+    // Always include DuckDuckGo as fallback
+    intelligentAdapters.push('duckduckgo-search');
+
+    const adapterCandidates = Array.from(new Set([
+        ...recommendedAdapters,
+        ...intelligentAdapters
+    ]));
+
+    if (isQuestion) {
+        for (const adapterName of adapterCandidates) {
+            adaptersQueried.push(adapterName);
+            try {
+                logNs(`Question detected, querying adapter ${adapterName} for: "${content}"`);
+                const searchResult = await queryAdapter(adapterName, { query: content, maxResults: 3 });
+                adapterResponses[adapterName] = searchResult;
+
+                // Debug log for adapter result
+                logNs(`Adapter ${adapterName} result: ${JSON.stringify(searchResult?.value ? 'found-value' : 'no-value')}`);
+                if (searchResult?.value) {
+                    logNs(`Adapter ${adapterName} value keys: ${Object.keys(searchResult.value).join(',')}`);
+                }
+
+                if (searchResult && searchResult.value) {
+                    searchData = searchResult.value;
+
+                    // NBA scores formatting
+                    if (adapterName === 'nba-scores') {
+                        if (searchData.games && searchData.games.length > 0) {
+                            responseContent = `🏀 NBA Scores (${searchData.date}):\n\n`;
+                            searchData.games.forEach(g => {
+                                const status = g.state === 'post' ? 'Final' : g.state === 'in' ? `${g.clock} ${g.period}Q` : g.status;
+                                responseContent += `${g.away} ${g.awayScore} @ ${g.home} ${g.homeScore} - ${status}\n`;
+                            });
+                            responseContent += `\n📊 Source: ESPN`;
+                        } else if (searchData.home) {
+                            const status = searchData.state === 'post' ? 'Final' : searchData.state === 'in' ? `${searchData.clock} ${searchData.period}Q` : searchData.status;
+                            responseContent = `🏀 ${searchData.away} ${searchData.awayScore} @ ${searchData.home} ${searchData.homeScore}\n`;
+                            responseContent += `Status: ${status}\n📊 Source: ESPN`;
+                        }
+                    }
+                    // News formatting
+                    else if (adapterName === 'news-aggregator') {
+                        // Handle array response directly (it returns array of stories)
+                        const stories = Array.isArray(searchData) ? searchData : (searchData.stories || []);
+
+                        if (stories.length > 0) {
+                            responseContent = `📰 Top News Headlines:\n\n`;
+                            stories.slice(0, 5).forEach((story, idx) => {
+                                responseContent += `${idx + 1}. ${story.title}${story.sources?.[0]?.name ? ` (${story.sources[0].name})` : ''}\n`;
+                            });
+                            responseContent += `\n📡 Updated: ${new Date().toLocaleTimeString()}`;
+                        }
+                    }
+                    // Weather formatting
+                    else if (adapterName === 'allie-weather') {
+                        if (searchData.current) {
+                            responseContent = `🌤️ Current Weather:\n`;
+                            responseContent += `Temperature: ${searchData.current.temp}°F\n`;
+                            responseContent += `Conditions: ${searchData.current.conditions}\n`;
+                            if (searchData.location) responseContent += `Location: ${searchData.location}\n`;
+                            responseContent += `\n📍 Source: Weather API`;
+                        }
+                    }
+                    // DuckDuckGo and other adapters
+                    else if (searchData.instantAnswer?.text || searchData.AbstractText) {
+                        responseContent = searchData.instantAnswer?.text || searchData.AbstractText;
+                        const source = searchData.instantAnswer?.source || searchData.AbstractSource;
+                        if (source) {
+                            responseContent += `\n\n📚 Source: ${source}`;
+                        }
+                    } else if (searchData.definition?.text) {
+                        responseContent = searchData.definition.text;
+                        if (searchData.definition.source) {
+                            responseContent += `\n\n📚 Source: ${searchData.definition.source}`;
+                        }
+                    } else if (searchData.answer?.text) {
+                        responseContent = searchData.answer.text;
+                    } else if (Array.isArray(searchData.results) && searchData.results.length > 0) {
+                        responseContent = `I found some information about that:\n\n`;
+                        searchData.results.slice(0, 3).forEach((result, idx) => {
+                            responseContent += `${idx + 1}. ${result.description}\n`;
+                        });
+                        responseContent += `\n🔍 Search performed via ${adapterName}`;
+                    }
+
+                    if (responseContent) {
+                        logNs(`${adapterName} search successful, found answer: ${responseContent.substring(0, 100)}...`);
+                        break;
+                    }
+                }
+            } catch (err) {
+                adapterResponses[adapterName] = { error: err.message };
+                logNs(`Adapter ${adapterName} failed: ${err.message}`);
+            }
+        }
+
+        if (!responseContent) {
+            responseContent = `I searched for information about "${content}" but couldn't find a clear answer. Could you try rephrasing your question?`;
+        }
+    } else {
+        // Fallback for non-questions: Try LLM Chat
+        logNs(`No specific adapter matched. Trying LLM chat for: "${content}"`);
+
+        // 1. Try Local LLM first (free/private)
+        let llmResponse = null;
+        try {
+            const localRes = await queryAdapter('local-llm', { query: content });
+            if (localRes && localRes.value) {
+                // Handle both object return (with answer property) and direct string return
+                llmResponse = typeof localRes.value === 'string' ? localRes.value : localRes.value.answer;
+                logNs(`Local LLM response: ${llmResponse.substring(0, 50)}...`);
+            } else if (localRes && localRes.error) {
+                logNs(`Local LLM failed: ${localRes.error}`);
+            }
+        } catch (e) {
+            logNs(`Local LLM exception: ${e.message}`);
+        }
+
+        // 2. Try OpenAI if Local failed
+        if (!llmResponse) {
+            try {
+                const aiRes = await queryAdapter('openai-chat', { query: content });
+                if (aiRes && aiRes.value && aiRes.value.answer) {
+                    llmResponse = aiRes.value.answer;
+                    logNs(`OpenAI response: ${llmResponse.substring(0, 50)}...`);
+                } else if (aiRes && aiRes.error) {
+                    logNs(`OpenAI failed: ${aiRes.error}`);
+                }
+            } catch (e) {
+                logNs(`OpenAI exception: ${e.message}`);
+            }
+        }
+
+        if (llmResponse) {
+            responseContent = llmResponse;
+        } else {
+            // Final Fallback if no LLM available
+            if (content.match(/^(hi|hello|hey|greetings)/i)) {
+                responseContent = "Hello! I'm NeuroSwarm. I can help you with:\n\n🏀 NBA Scores\n📰 Latest News\n🌤️ Weather\n🔍 General Search\n\nTo chat with me, please configure an OpenAI Key or run a Local LLM (Ollama).";
+            } else {
+                responseContent = `I'm currently configured as a Search Node. I tried to chat but couldn't connect to a brain (LLM).\n\nTo enable chat:\n1. Set OPENAI_API_KEY environment variable\n2. OR run Ollama locally (http://localhost:11434)`;
+            }
+        }
+    }
+
+    if (exemplars.length > 0) {
+        const exemplarText = exemplars.slice(0, 2).map(ex => `• ${ex.user_message} → ${ex.final_reply}`).join('\n');
+        responseContent += `\n\n🧠 Related context:\n${exemplarText}`;
+    }
+
+    const response = {
+        id: uuidv4(),
+        sender: 'agent',
+        content: responseContent,
+        timestamp: new Date().toISOString(),
+        searchData,
+        interactionId,
+        ...fakeProvenance()
+    };
+
+    const history = loadHistory();
+    const msgHeaders = { authorization: auth, 'x-forwarded-for': forwardedFor, 'x-forwarded-user': forwardedUser };
+    history.push({ direction: 'in', ...inMsg, headers: msgHeaders });
+    history.push({ direction: 'out', ...response, headers: msgHeaders });
+    saveHistory(history);
+
+    interactionsLogger.recordInteraction({
+        interaction_id: interactionId,
+        timestamp: response.timestamp,
+        user_message: content,
+        detected_intent: detectedIntent,
+        adapters_queried: adaptersQueried,
+        adapter_responses: adapterResponses,
+        final_reply: responseContent,
+        latency_ms: Date.now() - startTime,
+        feedback: null
+    });
+
+    // Try to publish message to configured gateways in order (primary first)
+    const incomingCorrelation = req.header('x-correlation-id') || uuidv4();
+    const forwardedHeaders = { authorization: auth, 'x-forwarded-for': forwardedFor, 'x-forwarded-user': forwardedUser, 'x-correlation-id': incomingCorrelation };
+    publishToGateways({ id: response.id, sender: response.sender, content: response.content, timestamp: response.timestamp }, forwardedHeaders)
+        .catch((err) => {
+            logNs('Failed to publish to gateways:', err);
+        });
+
+    res.json(response);
+});
+
+export default router;

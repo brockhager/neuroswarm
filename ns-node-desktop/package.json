@@ -28,7 +28,14 @@
         "extraResources": [
             {
                 "from": "../ns-node",
-                "to": "app/ns-node"
+                "to": "app/ns-node",
+                "filter": [
+                    "!node_modules"
+                ]
+            },
+            {
+                "from": "../ns-node/node_modules",
+                "to": "app/ns-node/node_modules"
             },
             {
                 "from": "../shared",
@@ -36,7 +43,14 @@
             },
             {
                 "from": "../sources",
-                "to": "app/sources"
+                "to": "app/sources",
+                "filter": [
+                    "!node_modules"
+                ]
+            },
+            {
+                "from": "../sources/node_modules",
+                "to": "app/sources/node_modules"
             },
             {
                 "from": "../scripts",

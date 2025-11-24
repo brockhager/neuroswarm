@@ -4,7 +4,8 @@ This document lists the reserved ports for all NeuroSwarm services and nodes.
 
 | Service | Port | Description |
 | :--- | :--- | :--- |
-| **NS Node** | `3009` | Core coordination node (Moved from 3000) |
+| **NS-B (Browser)** | `3009` | Browser-based NS Node (Moved from 3000) |
+| **NS-E (Electron)** | `3011` | Electron Desktop App (Moved from 3000) |
 | **Neuro Services** | `3007` | API Gateway & Adapter Service (Moved from 3001/3006) |
 | **Neuro Runner** | `3008` | AI Bridge (Moved from 3002) |
 | **Neuro Web** | `3005` | Chat Interface & Frontend (Moved from 3003) |
