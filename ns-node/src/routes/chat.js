@@ -1,7 +1,7 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import fetch from 'node-fetch';
-import { queryAdapter } from '../../sources/index.js';
+import { queryAdapter } from '../../../sources/index.js';
 import { defaultLogger } from '../../logger.js';
 import { logNs } from '../utils/logger.js';
 import { publishToGateways } from '../services/gateway.js';

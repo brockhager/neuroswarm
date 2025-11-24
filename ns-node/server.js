@@ -15,7 +15,7 @@ import { logNs } from './src/utils/logger.js';
 import { loadGatewayConfig, getGatewayConfig } from './src/services/gateway.js';
 import { state, getCanonicalHeight, validators } from './src/services/state.js';
 import { chooseCanonicalTipAndReorg } from './src/services/chain.js';
-import { computeSourcesRoot } from './sources/index.js';
+import { computeSourcesRoot } from '../sources/index.js';
 
 // Routes
 import chatRouter from './src/routes/chat.js';
@@ -96,13 +96,7 @@ app.get('/metrics', async (req, res) => {
 const server = app.listen(PORT, '0.0.0.0', () => {
   logNs(`NeuroSwarm Node (NS) listening on port ${PORT}`);
   logNs(`Mode: ${process.env.NODE_ENV || 'development'}`);
-
-  // Start P2P
-  peerManager.start().then(() => {
-    logNs(`P2P Network started. Node ID: ${peerManager.nodeId}`);
-  }).catch(err => {
-    logNs('Failed to start P2P network:', err);
-  });
+  logNs(`P2P Network initialized. Node ID: ${peerManager.nodeId}`);
 });
 
 // Periodic heartbeat for operator/debugging visibility
@@ -140,7 +134,6 @@ process.on('SIGTERM', () => {
   logNs('SIGTERM received. Shutting down...');
   server.close(() => {
     logNs('HTTP server closed');
-    peerManager.stop();
     process.exit(0);
   });
 });
