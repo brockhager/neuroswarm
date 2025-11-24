@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NeuroSwarm - Your Personal AI</title>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <div class="container">
         <!-- Header -->
@@ -22,11 +24,11 @@
 
         <!-- Quick Access Buttons -->
         <div class="quick-access">
-            <button class="quick-btn" onclick="askQuestion('What\\'s the latest news?')">
+            <button class="quick-btn" onclick="askQuestion('What\'s the latest news?')">
                 <span class="btn-icon">📰</span>
                 <span class="btn-label">News</span>
             </button>
-            <button class="quick-btn" onclick="askQuestion('What\\'s the weather today?')">
+            <button class="quick-btn" onclick="askQuestion('What\'s the weather today?')">
                 <span class="btn-icon">🌤️</span>
                 <span class="btn-label">Weather</span>
             </button>
@@ -34,7 +36,7 @@
                 <span class="btn-icon">🏀</span>
                 <span class="btn-label">NBA Scores</span>
             </button>
-            <button class="quick-btn" onclick="askQuestion('Tell me something interesting')">
+            <button class="quick-btn" onclick="askQuestion('random interesting fact')">
                 <span class="btn-icon">✨</span>
                 <span class="btn-label">Surprise Me</span>
             </button>
@@ -51,15 +53,11 @@
         <!-- Input Area -->
         <div class="input-container">
             <div class="input-wrapper">
-                <textarea 
-                    id="userInput" 
-                    placeholder="Ask me anything..." 
-                    rows="1"
-                    onkeydown="handleKeyPress(event)"
-                ></textarea>
+                <textarea id="userInput" placeholder="Ask me anything..." rows="1"
+                    onkeydown="handleKeyPress(event)"></textarea>
                 <button class="send-btn" onclick="sendMessage()">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
                     </svg>
                 </button>
             </div>
@@ -68,4 +66,5 @@
 
     <script src="app.js"></script>
 </body>
+
 </html>

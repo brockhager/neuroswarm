@@ -8,7 +8,7 @@ let mainWindow;
 let splashWindow;
 let tray;
 let serverProcess;
-const PORT = 3000;
+const PORT = 3011;
 const LOG_FILE = path.join(app.getPath('userData'), 'neuroswarm.log');
 
 // Simple logger
@@ -144,19 +144,96 @@ function stopServer() {
 
 // Create splash window
 function createSplash() {
+    const splashHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>NeuroSwarm</title>
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+                background: linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%);
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                user-select: none;
+                -webkit-app-region: drag;
+            }
+            .logo {
+                font-size: 64px;
+                margin-bottom: 20px;
+                animation: pulse 2s infinite ease-in-out;
+            }
+            h1 {
+                font-size: 24px;
+                font-weight: 600;
+                margin: 0 0 10px 0;
+                letter-spacing: 1px;
+            }
+            .status {
+                font-size: 14px;
+                color: #94a3b8;
+                margin-top: 10px;
+            }
+            .loader {
+                width: 200px;
+                height: 4px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 2px;
+                margin-top: 20px;
+                overflow: hidden;
+            }
+            .loader-bar {
+                width: 50%;
+                height: 100%;
+                background: #3b82f6;
+                border-radius: 2px;
+                animation: loading 1.5s infinite ease-in-out;
+            }
+            @keyframes pulse {
+                0% { transform: scale(1); opacity: 1; }
+                50% { transform: scale(1.05); opacity: 0.8; }
+                100% { transform: scale(1); opacity: 1; }
+            }
+            @keyframes loading {
+                0% { transform: translateX(-100%); }
+                100% { transform: translateX(200%); }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="logo">🧠</div>
+        <h1>NeuroSwarm</h1>
+        <div class="loader">
+            <div class="loader-bar"></div>
+        </div>
+        <div class="status">Starting local AI node...</div>
+    </body>
+    </html>
+    `;
+
     splashWindow = new BrowserWindow({
         width: 400,
         height: 300,
         transparent: false,
         frame: false,
         alwaysOnTop: true,
+        show: true,  // Show immediately
         icon: path.join(__dirname, 'icon.png'),
         webPreferences: {
             nodeIntegration: false
         },
         backgroundColor: '#1e3a8a'
     });
-    splashWindow.loadFile('splash.html');
+
+    // Use data URL for instant rendering instead of loading file
+    splashWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(splashHTML)}`);
     splashWindow.center();
 }
 
