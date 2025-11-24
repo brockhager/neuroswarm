@@ -12,8 +12,8 @@ import {
     canonicalize, verifyEd25519, txIdFor, computeMerkleRoot, sha256Hex
 } from '../utils/crypto.js';
 import { logNs } from '../utils/logger.js';
-import { MessageType } from '../../shared/peer-discovery/index.js';
-import { computeSourcesRoot } from '../../sources/index.js';
+import { MessageType } from '../../../shared/peer-discovery/index.js';
+import { computeSourcesRoot } from '../../../sources/index.js';
 
 export default function createValidatorsRouter(p2pProtocol, peerManager) {
     const router = express.Router();
