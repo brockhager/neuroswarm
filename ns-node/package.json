@@ -15,7 +15,11 @@
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "uuid": "^9.0.0",
-    "node-fetch": "^3.3.1"
+    "node-fetch": "^3.3.1",
+    "helia": "^5.1.0",
+    "@helia/unixfs": "^4.0.1",
+    "blockstore-fs": "^2.0.2",
+    "datastore-fs": "^10.0.2"
   },
   "devDependencies": {
     "nexe": "^4.0.0-rc.2"
