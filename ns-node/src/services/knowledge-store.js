@@ -1,4 +1,3 @@
-```
 // src/services/knowledge-store.js
 import { createHelia } from 'helia';
 import { unixfs } from '@helia/unixfs';
@@ -8,7 +7,15 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { fileURLToPath } from 'url';
-import { embed } from '../services/embedding.js';
+
+// Conditional embed import
+let embed = null;
+try {
+    const embeddingModule = await import('./embedding.js');
+    embed = embeddingModule.embed;
+} catch (e) {
+    console.warn('Embedding service unavailable:', e.message);
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -30,7 +37,7 @@ async function getHeliaNode() {
     const datastore = new FsDatastore(path.join(IPFS_REPO_DIR, 'data'));
     heliaNode = await createHelia({ blockstore, datastore });
     heliaFs = unixfs(heliaNode);
-    console.log(`Helia IPFS node started.Peer ID: ${ heliaNode.libp2p.peerId.toString() } `);
+    console.log(`Helia IPFS node started. Peer ID: ${heliaNode.libp2p.peerId.toString()}`);
     return { helia: heliaNode, fs: heliaFs };
   } catch (e) {
     console.warn('Helia IPFS node disabled:', e.message);
@@ -89,7 +96,7 @@ export async function storeKnowledge(params) {
     const normQ = normalizeQuestion(question);
     const keywords = extractKeywords(question);
     const categories = categorizeQuestion(question);
-    const embedding = await embed(answer);
+    const embedding = embed ? await embed(answer) : null;
     const knowledge = { question, normalizedQuestion: normQ, answer, source, categories, confidence, confidenceBreakdown, embedding, timestamp, expiresAt: calculateExpiry(question) };
     const content = new TextEncoder().encode(JSON.stringify(knowledge));
     const cid = await node.fs.addBytes(content);
@@ -139,10 +146,52 @@ export async function queryKnowledge(question) {
   }
 }
 
-export async function checkIPFSStatus() {
-  const node = await getHeliaNode();
-  if (!node) return { ok:false, message:'Helia node failed to start' };
-  try { const pid = node.helia.libp2p.peerId.toString(); return { ok:true, message:`Helia running.Peer ID: ${ pid } ` }; }
-  catch(e){ return { ok:false, message:`Helia error: ${ e.message } ` }; }
+function cosineSimilarity(vecA, vecB) {
+  if (!vecA || !vecB || vecA.length !== vecB.length) return 0;
+  let dot = 0, normA = 0, normB = 0;
+  for (let i = 0; i < vecA.length; i++) {
+    dot += vecA[i] * vecB[i];
+    normA += vecA[i] * vecA[i];
+    normB += vecB[i] * vecB[i];
+  }
+  if (normA === 0 || normB === 0) return 0;
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
-```
+
+export async function semanticQueryKnowledge(question, threshold = 0.8) {
+  if (!embed) return null;
+  const index = loadIndex();
+  const queryEmbedding = await embed(question);
+  let bestMatch = null;
+  let bestSimilarity = 0;
+  for (const [hash, entry] of Object.entries(index)) {
+    if (entry.embedding && Array.isArray(entry.embedding)) {
+      const similarity = cosineSimilarity(queryEmbedding, entry.embedding);
+      if (similarity > bestSimilarity && similarity >= threshold) {
+        bestSimilarity = similarity;
+        bestMatch = { ...entry, similarity, hash };
+      }
+    }
+  }
+  if (!bestMatch) return null;
+  if (new Date(bestMatch.expiresAt) < new Date()) {
+    delete index[bestMatch.hash];
+    saveIndex(index);
+    return null;
+  }
+  const node = await getHeliaNode();
+  if (!node) return null;
+  try {
+    const { CID } = await import('multiformats/cid');
+    const cid = CID.parse(bestMatch.cid);
+    const chunks = [];
+    for await (const c of node.fs.cat(cid)) chunks.push(c);
+    const data = Buffer.concat(chunks).toString('utf8');
+    const knowledge = JSON.parse(data);
+    console.log(`Semantic cache hit: similarity ${bestSimilarity.toFixed(3)} for "${question}"`);
+    return { ...knowledge, similarity: bestSimilarity };
+  } catch (e) {
+    console.error('Failed to retrieve knowledge from IPFS:', e.message);
+    return null;
+  }
+}

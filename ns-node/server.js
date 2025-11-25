@@ -16,6 +16,9 @@ import { loadGatewayConfig, getGatewayConfig } from './src/services/gateway.js';
 import { state, getCanonicalHeight, validators } from './src/services/state.js';
 import { chooseCanonicalTipAndReorg } from './src/services/chain.js';
 import { computeSourcesRoot } from '../sources/index.js';
+import QueryHistoryService from './src/services/query-history.js';
+import GovernanceService from './src/services/governance.js';
+import CacheVisualizationService from './src/services/cache-visualization.js';
 
 // Routes
 import chatRouter from './src/routes/chat.js';
@@ -36,6 +39,15 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Initialize Metrics
 const metricsService = new MetricsService();
+
+// Initialize Query History Service
+const queryHistoryService = new QueryHistoryService();
+
+// Initialize Governance Service
+const governanceService = new GovernanceService();
+
+// Initialize Cache Visualization Service
+const cacheVisualizationService = new CacheVisualizationService();
 
 // Initialize Peer Manager
 const peerManager = new PeerManager({
@@ -66,6 +78,148 @@ app.use('/tx', createTxRouter(p2pProtocol, peerManager));
 app.use('/blocks', createBlocksRouter(p2pProtocol, peerManager));
 app.use('/', createChainRouter(p2pProtocol, peerManager)); // Handles /proof, /verify/proof, /ipfs/verify, /governance, /mempool, /chain/height, /headers/tip, /debug/verifyHeader
 
+// Dashboard Route
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
+});
+
+// Query History Routes
+app.get('/api/query-history', (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 50;
+    const offset = parseInt(req.query.offset) || 0;
+    const history = queryHistoryService.getHistory(limit, offset);
+    res.json({ history, total: queryHistoryService.history.length });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch query history', details: error.message });
+  }
+});
+
+app.get('/api/query-history/stats', (req, res) => {
+  try {
+    const hours = parseInt(req.query.hours) || 24;
+    const stats = queryHistoryService.getStats(hours);
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch query stats', details: error.message });
+  }
+});
+
+app.get('/api/query-history/:id', (req, res) => {
+  try {
+    const query = queryHistoryService.getQueryById(req.params.id);
+    if (!query) {
+      return res.status(404).json({ error: 'Query not found' });
+    }
+    res.json(query);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch query', details: error.message });
+  }
+});
+
+app.post('/api/query-history/:id/replay', (req, res) => {
+  try {
+    const replay = queryHistoryService.replayQuery(req.params.id);
+    res.json(replay);
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+// Governance Routes
+app.get('/api/governance', (req, res) => {
+  try {
+    const state = governanceService.getGovernanceState();
+    res.json(state);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch governance state', details: error.message });
+  }
+});
+
+app.get('/api/governance/stats', (req, res) => {
+  try {
+    const stats = governanceService.getStatistics();
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch governance stats', details: error.message });
+  }
+});
+
+app.post('/api/governance/proposals', (req, res) => {
+  try {
+    const { parameterKey, proposedValue, proposerId, reason } = req.body;
+    if (!parameterKey || proposedValue === undefined || !proposerId) {
+      return res.status(400).json({ error: 'Missing required fields: parameterKey, proposedValue, proposerId' });
+    }
+
+    const proposal = governanceService.createProposal(parameterKey, proposedValue, proposerId, reason);
+    res.json(proposal);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/governance/proposals/:id/vote', (req, res) => {
+  try {
+    const { voterId, vote } = req.body;
+    if (!voterId || !vote) {
+      return res.status(400).json({ error: 'Missing required fields: voterId, vote' });
+    }
+
+    const proposal = governanceService.voteOnProposal(req.params.id, voterId, vote);
+    res.json(proposal);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/governance/proposals/:id', (req, res) => {
+  try {
+    const proposal = governanceService.getProposal(req.params.id);
+    res.json(proposal);
+  } catch (error) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
+// Cache Visualization Endpoints (Phase 4a.2)
+app.get('/api/cache/visualization', (req, res) => {
+  try {
+    const data = cacheVisualizationService.getVisualizationData();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch visualization data', details: error.message });
+  }
+});
+
+app.get('/api/cache/stats', (req, res) => {
+  try {
+    const stats = cacheVisualizationService.getCacheStats();
+    res.json(stats);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch cache stats', details: error.message });
+  }
+});
+
+app.get('/api/cache/clusters', (req, res) => {
+  try {
+    const threshold = parseFloat(req.query.threshold) || 0.7;
+    const clusters = cacheVisualizationService.getSimilarityClusters(threshold);
+    res.json({ clusters, threshold });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch similarity clusters', details: error.message });
+  }
+});
+
+app.post('/api/cache/refresh', (req, res) => {
+  try {
+    const data = cacheVisualizationService.refresh();
+    res.json({ success: true, data });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to refresh cache visualization', details: error.message });
+  }
+});
+
 // Health Endpoint
 let VERSION = '0.1.0';
 try {
@@ -78,8 +232,71 @@ try {
   // ignore
 }
 
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', version: VERSION, uptime: process.uptime() });
+app.get('/health', async (req, res) => {
+  try {
+    // Check semantic features
+    let semanticStatus = { available: false, message: 'Semantic features disabled' };
+    try {
+      const ipfsStatus = { ok: false, message: 'IPFS check skipped' };
+      let ollamaHealthy = false;
+      try {
+        const response = await fetch('http://localhost:11434/api/tags', {
+          method: 'GET',
+          signal: AbortSignal.timeout(2000)
+        });
+        if (response.ok) {
+          const data = await response.json();
+          ollamaHealthy = data.models && data.models.some(m => m.name.includes('llama3.2'));
+        }
+      } catch (e) {
+        // Ollama not available
+      }
+      semanticStatus = {
+        available: ollamaHealthy,
+        ipfs: ipfsStatus,
+        ollama: ollamaHealthy
+      };
+    } catch (e) {
+      semanticStatus.message = `Semantic check failed: ${e.message}`;
+    }
+
+    // Knowledge index metrics
+    let knowledgeMetrics = { total: 0, withEmbeddings: 0, avgConfidence: 0 };
+    try {
+      const { loadIndex } = await import('./src/services/knowledge-store.js');
+      const index = loadIndex();
+      const entries = Object.values(index);
+      knowledgeMetrics.total = entries.length;
+      knowledgeMetrics.withEmbeddings = entries.filter(e => e.embedding && Array.isArray(e.embedding)).length;
+
+      const confidences = entries.filter(e => e.confidence).map(e => e.confidence);
+      if (confidences.length > 0) {
+        knowledgeMetrics.avgConfidence = confidences.reduce((a, b) => a + b, 0) / confidences.length;
+      }
+    } catch (e) {
+      knowledgeMetrics.error = e.message;
+    }
+
+    // Recent activity (last 24 hours)
+    const recentActivity = queryHistoryService.getStats(24);
+
+    res.json({
+      status: 'ok',
+      version: VERSION,
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      semantic: semanticStatus,
+      knowledge: knowledgeMetrics,
+      activity: recentActivity,
+      system: {
+        memory: process.memoryUsage(),
+        platform: process.platform,
+        nodeVersion: process.version
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Health check failed', details: error.message });
+  }
 });
 
 // Metrics Endpoint

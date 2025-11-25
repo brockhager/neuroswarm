@@ -8,7 +8,29 @@ import { publishToGateways } from '../services/gateway.js';
 import { loadHistory, saveHistory } from '../services/history.js';
 import { SERVICE_URLS } from '../../../shared/ports.js';
 import { storeKnowledge } from '../services/knowledge-store.js';
+
+// Try to import semantic function asynchronously
+let semanticQueryKnowledge = null;
+(async () => {
+    try {
+        const knowledgeStore = await import('../services/knowledge-store.js');
+        semanticQueryKnowledge = knowledgeStore.semanticQueryKnowledge;
+    } catch (e) {
+        console.warn('Semantic cache import failed:', e.message);
+    }
+})();
 import { calculateConfidence } from '../services/confidence-scorer.js';
+
+// Import query history service
+let queryHistoryService = null;
+(async () => {
+    try {
+        const { default: QueryHistoryService } = await import('../services/query-history.js');
+        queryHistoryService = new QueryHistoryService();
+    } catch (e) {
+        console.warn('Query history service import failed:', e.message);
+    }
+})();
 
 const router = express.Router();
 const interactionsLogger = defaultLogger;
@@ -156,6 +178,29 @@ router.post('/', async (req, res) => {
         ...recommendedAdapters,
         ...intelligentAdapters
     ]));
+
+    // STEP 1.5: Semantic Cache Lookup (before adapters)
+    // Check for semantically similar cached answers
+    if (isQuestion && !responseContent && semanticQueryKnowledge) {
+        try {
+            // Dynamic threshold based on query type
+            const isDeterministic = /\d+\s*[+\-*/×÷]\s*\d+|what\s+is\s+[\d\s+\-*/().]+|calculate/i.test(content) ||
+                /\b(price|value|worth|cost)\b.*\b(btc|bitcoin|eth|ethereum|crypto|coin)/i.test(content) ||
+                /\b(nba|basketball|scores?|lakers|warriors|celtics|nets|knicks|heat)\b/i.test(content) ||
+                /\b(news|headlines?|latest|breaking)\b/i.test(content);
+            const semanticThreshold = isDeterministic ? 0.9 : 0.7; // higher for deterministic, lower for fuzzy
+            const semanticCacheResult = await semanticQueryKnowledge(content, semanticThreshold);
+            if (semanticCacheResult) {
+                logNs(`Semantic cache hit: similarity ${semanticCacheResult.similarity.toFixed(3)}, threshold ${semanticThreshold} for "${content}"`);
+                responseContent = semanticCacheResult.answer;
+                searchData = { cached: true, similarity: semanticCacheResult.similarity, confidence: semanticCacheResult.confidence, threshold: semanticThreshold, source: semanticCacheResult.source };
+                // Skip adapters and go to response
+            }
+        } catch (e) {
+            logNs(`Semantic cache lookup failed: ${e.message}`);
+            // Continue to adapters
+        }
+    }
 
     if (isQuestion) {
         for (const adapterCandidate of adapterCandidates) {
@@ -438,6 +483,27 @@ router.post('/', async (req, res) => {
         .catch((err) => {
             logNs('Failed to publish to gateways:', err);
         });
+
+    // Log query to history service
+    if (queryHistoryService) {
+        try {
+            const responseTime = Date.now() - startTime;
+            const isCacheHit = searchData && searchData.cached;
+            const adapterUsed = adaptersQueried.length > 0 ? adaptersQueried[adaptersQueried.length - 1] : null;
+
+            queryHistoryService.addQuery(content, responseContent, {
+                responseTime,
+                cacheHit: isCacheHit,
+                confidence: confidenceResult?.score || 0,
+                adapterUsed,
+                ipfsHash: response.cid || null,
+                intent: detectedIntent,
+                adaptersQueried: adaptersQueried.length
+            });
+        } catch (error) {
+            logNs('Failed to log query to history:', error.message);
+        }
+    }
 
     res.json(response);
 });

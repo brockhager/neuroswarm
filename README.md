@@ -4,6 +4,30 @@
 
 # NeuroSwarm
 
+## 🚀 Phase 3 Status: Contributor Experience & Scaling
+
+### ✅ Phase 3b: Error Handling & Stability - COMPLETED
+- Server stability with conditional imports and graceful degradation
+- Ollama health checks with retry logic (3 attempts, 1s delay, 30s timeout)
+- Semantic cache with dynamic thresholds (0.9 deterministic, 0.7 fuzzy)
+- IPFS/Helia knowledge storage with automatic embedding generation
+
+### ⚠️ Phase 3c: Scaling Knowledge - PARTIALLY IMPLEMENTED
+- Batch embedding script for existing knowledge entries
+- Distributed storage via IPFS with semantic indexing
+- Keyword and category-based fallback search
+- Needs IPFS integration for full batch processing
+
+### ✅ Phase 3a: Contributor Dashboard - COMPLETED
+- **Real-time monitoring**: System health, knowledge metrics, semantic status
+- **Dashboard URL**: `http://localhost:3009/dashboard`
+- **Metrics exposed**: Cache hits, confidence scores, embedding coverage, system performance
+- **Auto-refresh**: Updates every 30 seconds
+
+**Test Results**: See [test-results.md](test-results.md) for detailed testing outcomes.
+
+---
+
 ## About
 
 NeuroSwarm is a decentralized AI platform where personal AI agents run locally on user devices and connect to a shared Global Brain. The system combines local personalization with collaborative, auditable knowledge sharing.
