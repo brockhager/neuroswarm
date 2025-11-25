@@ -7,7 +7,6 @@ import { logNs } from '../utils/logger.js';
 import { publishToGateways } from '../services/gateway.js';
 import { loadHistory, saveHistory } from '../services/history.js';
 import { SERVICE_URLS } from '../../../shared/ports.js';
-import { storeKnowledge } from '../services/knowledge-store.js';
 
 const router = express.Router();
 const interactionsLogger = defaultLogger;
@@ -95,17 +94,6 @@ router.post('/', async (req, res) => {
     // Intelligent adapter selection based on query content
     const intelligentAdapters = [];
 
-    // Math queries (HIGHEST PRIORITY - deterministic, instant)
-    if (/\d+\s*[+\-*/×÷]\s*\d+|what\s+is\s+[\d\s+\-*/().]+|calculate/i.test(content)) {
-        intelligentAdapters.push('math-calculator');
-    }
-
-    // IPFS Knowledge Cache (SECOND PRIORITY - check cache before web search)
-    // Always check cache for all questions
-    if (isQuestion) {
-        intelligentAdapters.push('ipfs-knowledge');
-    }
-
     // NBA/Sports queries
     if (/\b(nba|basketball|scores?|lakers|warriors|celtics|nets|knicks|heat)\b/i.test(content)) {
         intelligentAdapters.push('nba-scores');
@@ -114,6 +102,11 @@ router.post('/', async (req, res) => {
     // News queries
     if (/\b(news|headlines?|latest|breaking)\b/i.test(content)) {
         intelligentAdapters.push('news-aggregator');
+    }
+
+    // Weather queries
+    if (/\b(weather|temperature|forecast|rain|sunny|cloudy)\b/i.test(content)) {
+        intelligentAdapters.push('allie-weather');
     }
 
     // Always include DuckDuckGo and Web Search as fallback
@@ -216,22 +209,6 @@ router.post('/', async (req, res) => {
 
                     if (responseContent) {
                         logNs(`${adapterName} search successful, found answer: ${responseContent.substring(0, 100)}...`);
-
-                        // Store high-confidence answers to IPFS for future retrieval
-                        // This builds the knowledge base over time
-                        const confidence = searchResult.confidence || 0.85;
-                        if (confidence >= 0.8) {
-                            storeKnowledge({
-                                question: content,
-                                answer: responseContent,
-                                source: adapterName,
-                                confidence: confidence,
-                                nodeId: process.env.NODE_ID || 'ns-node'
-                            }).catch(err => {
-                                logNs(`IPFS storage failed: ${err.message}`);
-                            });
-                        }
-
                         break;
                     }
                 }
