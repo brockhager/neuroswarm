@@ -36,14 +36,17 @@ function getResourcesPath() {
 function checkServerReady(retries = 45) { // Increased retries for slower machines
     return new Promise((resolve, reject) => {
         const check = (attempt) => {
-            http.get(`http://localhost:${PORT}`, (res) => {
+            const url = `http://127.0.0.1:${PORT}/health`;
+            http.get(url, (res) => {
                 if (res.statusCode === 200) {
-                    log('Server is ready!');
+                    log('Server is ready! (Health check passed)');
                     resolve(true);
                 } else {
+                    log(`Server not ready yet. Status code: ${res.statusCode}`);
                     retry(attempt);
                 }
-            }).on('error', () => {
+            }).on('error', (err) => {
+                log(`Server check failed: ${err.message}`);
                 retry(attempt);
             });
         };
@@ -224,83 +227,16 @@ function createSplash() {
         transparent: false,
         frame: false,
         alwaysOnTop: true,
-        show: true,  // Show immediately
+        show: true,
         icon: path.join(__dirname, 'icon.png'),
         webPreferences: {
             nodeIntegration: false
         },
         backgroundColor: '#1e3a8a'
     });
-
-    // Use data URL for instant rendering instead of loading file
+    // Use data URL for instant rendering
     splashWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(splashHTML)}`);
     splashWindow.center();
-}
-
-// Create the main window
-async function createWindow() {
-    // Create splash first
-    createSplash();
-
-    // Start server in background
-    startServer();
-
-    // Prepare main window (hidden)
-    mainWindow = new BrowserWindow({
-        width: 1200,
-        height: 800,
-        icon: path.join(__dirname, 'icon.png'),
-        webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
-            nodeIntegration: false,
-            contextIsolation: true
-        },
-        title: 'NeuroSwarm',
-        autoHideMenuBar: true,
-        show: false,
-        backgroundColor: '#1e3a8a'
-    });
-
-    // Wait for server
-    const isReady = await checkServerReady();
-
-    if (isReady) {
-        mainWindow.loadURL(`http://localhost:${PORT}`);
-    } else {
-        const errorHtml = `
-            <html>
-            <body style="background: #1e3a8a; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh;">
-                <h2>Failed to connect to server</h2>
-                <p>Please check the logs at: ${LOG_FILE}</p>
-                <button onclick="location.reload()" style="padding: 10px 20px; cursor: pointer;">Retry</button>
-            </body>
-            </html>
-        `;
-        mainWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(errorHtml)}`);
-    }
-
-    // Handle external links
-    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-        shell.openExternal(url);
-        return { action: 'deny' };
-    });
-
-    // Close splash and show main window
-    if (splashWindow && !splashWindow.isDestroyed()) {
-        splashWindow.close();
-    }
-    mainWindow.show();
-
-    mainWindow.on('close', (event) => {
-        // Default behavior: Quit app when window is closed
-        // If user wants to minimize to tray, they can use the minimize button
-        // This resolves the "app won't close" complaint
-        app.quit();
-    });
-
-    mainWindow.on('closed', () => {
-        mainWindow = null;
-    });
 }
 
 // Create system tray
