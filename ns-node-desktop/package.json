@@ -23,7 +23,8 @@
             "preload.js",
             "splash.html",
             "icon.png",
-            "package.json"
+            "package.json",
+            "services/**"
         ],
         "extraResources": [
             {
