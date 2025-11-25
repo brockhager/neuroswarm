@@ -13,6 +13,14 @@ export async function query(params) {
             throw new Error('query parameter required');
         }
 
+        // Preprocess: Convert word-based operators to symbols
+        let processedQuery = queryText
+            .replace(/\btimes\b/gi, '*')
+            .replace(/\bmultiplied\s+by\b/gi, '*')
+            .replace(/\bdivided\s+by\b/gi, '/')
+            .replace(/\bplus\b/gi, '+')
+            .replace(/\bminus\b/gi, '-');
+
         // Detect if this is a math question
         const mathPatterns = [
             /what\s+is\s+([\d\s+\-*/().]+)\??/i,
@@ -23,7 +31,7 @@ export async function query(params) {
 
         let expression = null;
         for (const pattern of mathPatterns) {
-            const match = queryText.match(pattern);
+            const match = processedQuery.match(pattern);
             if (match) {
                 expression = match[1] || `${match[1]} ${match[2]} ${match[3]}`;
                 break;

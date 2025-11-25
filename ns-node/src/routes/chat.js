@@ -8,6 +8,7 @@ import { publishToGateways } from '../services/gateway.js';
 import { loadHistory, saveHistory } from '../services/history.js';
 import { SERVICE_URLS } from '../../../shared/ports.js';
 import { storeKnowledge } from '../services/knowledge-store.js';
+import { calculateConfidence } from '../services/confidence-scorer.js';
 
 const router = express.Router();
 const interactionsLogger = defaultLogger;
@@ -92,18 +93,47 @@ router.post('/', async (req, res) => {
     const recommendedAdapters = Array.isArray(learningSupport?.adapters) ? learningSupport.adapters : [];
     const exemplars = Array.isArray(learningSupport?.exemplars) ? learningSupport.exemplars : [];
 
-    // Intelligent adapter selection based on query content
+    // STEP 1: Intelligent adapter selection based on query content
+    // Following Knowledge Retrieval Pipeline design
     const intelligentAdapters = [];
+    let contextForLLM = []; // Collect context from adapters for LLM synthesis
 
     // Math queries (HIGHEST PRIORITY - deterministic, instant)
     if (/\d+\s*[+\-*/×÷]\s*\d+|what\s+is\s+[\d\s+\-*/().]+|calculate/i.test(content)) {
         intelligentAdapters.push('math-calculator');
     }
 
-    // IPFS Knowledge Cache (SECOND PRIORITY - check cache before web search)
-    // Always check cache for all questions
-    if (isQuestion) {
-        intelligentAdapters.push('ipfs-knowledge');
+    // Crypto/Price queries with entity extraction
+    if (/\b(price|value|worth|cost)\b.*\b(btc|bitcoin|eth|ethereum|crypto|coin)/i.test(content)) {
+        // Extract crypto symbol/name and map to CoinGecko ID
+        const cryptoMap = {
+            'btc': 'bitcoin',
+            'bitcoin': 'bitcoin',
+            'eth': 'ethereum',
+            'ethereum': 'ethereum',
+            'sol': 'solana',
+            'solana': 'solana',
+            'ada': 'cardano',
+            'cardano': 'cardano',
+            'dot': 'polkadot',
+            'polkadot': 'polkadot',
+            'matic': 'matic-network',
+            'polygon': 'matic-network',
+            'avax': 'avalanche-2',
+            'avalanche': 'avalanche-2'
+        };
+
+        // Extract coin from query
+        let coinId = 'bitcoin'; // default
+        const lowerContent = content.toLowerCase();
+        for (const [symbol, id] of Object.entries(cryptoMap)) {
+            if (lowerContent.includes(symbol)) {
+                coinId = id;
+                break;
+            }
+        }
+
+        intelligentAdapters.push({ name: 'coingecko', params: { coin: coinId } });
     }
 
     // NBA/Sports queries
@@ -116,9 +146,11 @@ router.post('/', async (req, res) => {
         intelligentAdapters.push('news-aggregator');
     }
 
-    // Always include DuckDuckGo and Web Search as fallback
-    intelligentAdapters.push('duckduckgo-search');
-    intelligentAdapters.push('web-search');
+    // STEP 2: IPFS Knowledge Cache (check for stored answers)
+    // Always check cache for all questions
+    if (isQuestion) {
+        intelligentAdapters.push('ipfs-knowledge');
+    }
 
     const adapterCandidates = Array.from(new Set([
         ...recommendedAdapters,
@@ -126,11 +158,18 @@ router.post('/', async (req, res) => {
     ]));
 
     if (isQuestion) {
-        for (const adapterName of adapterCandidates) {
+        for (const adapterCandidate of adapterCandidates) {
+            // Handle both string adapter names and objects with parameters
+            const adapterName = typeof adapterCandidate === 'string' ? adapterCandidate : adapterCandidate.name;
+            const adapterParams = typeof adapterCandidate === 'object' ? adapterCandidate.params : {};
+
             adaptersQueried.push(adapterName);
             try {
                 logNs(`Question detected, querying adapter ${adapterName} for: "${content}"`);
-                const searchResult = await queryAdapter(adapterName, { query: content, maxResults: 3 });
+
+                // Merge query with any adapter-specific parameters
+                const queryParams = { query: content, maxResults: 3, ...adapterParams };
+                const searchResult = await queryAdapter(adapterName, queryParams);
                 adapterResponses[adapterName] = searchResult;
 
                 // Debug log for adapter result
@@ -142,6 +181,21 @@ router.post('/', async (req, res) => {
                 if (searchResult && searchResult.value) {
                     searchData = searchResult.value;
 
+                    // Collect context for LLM synthesis (even if we don't use it immediately)
+                    contextForLLM.push({
+                        source: adapterName,
+                        data: searchData
+                    });
+
+                    // CoinGecko price formatting
+                    if (adapterName === 'coingecko') {
+                        if (typeof searchData === 'number') {
+                            // searchData is the price directly
+                            const coinName = adapterParams.coin || 'Bitcoin';
+                            const coinDisplay = coinName.charAt(0).toUpperCase() + coinName.slice(1);
+                            responseContent = `💰 ${coinDisplay} Price: $${searchData.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}\n\n📊 Source: CoinGecko`;
+                        }
+                    }
                     // NBA scores formatting
                     if (adapterName === 'nba-scores') {
                         if (searchData.games && searchData.games.length > 0) {
@@ -243,18 +297,33 @@ router.post('/', async (req, res) => {
 
     }
 
-    // If no answer found from adapters (or it wasn't a question), try LLM
-    if (!responseContent) {
-        logNs(`No answer from adapters. Trying LLM chat for: "${content}"`);
+    // STEP 3: Local LLM with context (if no direct answer found)
+    // The LLM synthesizes information from adapters and IPFS
+    if (!responseContent && isQuestion) {
+        logNs(`No direct answer found. Invoking Local LLM with context for: "${content}"`);
 
-        // 1. Try Local LLM first (free/private)
-        let llmResponse = null;
+        // Build context string from collected adapter data
+        let contextString = '';
+        if (contextForLLM.length > 0) {
+            contextString = '\n\nContext from data sources:\n' + contextForLLM.map((ctx, idx) =>
+                `${idx + 1}. [${ctx.source}]: ${JSON.stringify(ctx.data).substring(0, 200)}`
+            ).join('\n');
+        }
+
+        const llmPrompt = content + contextString;
+
         try {
-            const localRes = await queryAdapter('local-llm', { query: content });
+            const localRes = await queryAdapter('local-llm', { query: llmPrompt });
             if (localRes && localRes.value) {
-                // Handle both object return (with answer property) and direct string return
-                llmResponse = typeof localRes.value === 'string' ? localRes.value : localRes.value.answer;
-                logNs(`Local LLM response: ${llmResponse.substring(0, 50)}...`);
+                const llmAnswer = typeof localRes.value === 'string' ? localRes.value : localRes.value.answer;
+
+                // Filter out uncertain responses
+                if (llmAnswer && !llmAnswer.match(/I don't know|I cannot answer|I am not sure/i)) {
+                    responseContent = llmAnswer;
+                    logNs(`Local LLM synthesized answer: ${responseContent.substring(0, 50)}...`);
+                } else {
+                    logNs(`Local LLM returned uncertain response`);
+                }
             } else if (localRes && localRes.error) {
                 logNs(`Local LLM failed: ${localRes.error}`);
             }
@@ -262,13 +331,13 @@ router.post('/', async (req, res) => {
             logNs(`Local LLM exception: ${e.message}`);
         }
 
-        // 2. Try OpenAI if Local failed
-        if (!llmResponse) {
+        // Fallback to OpenAI if Local LLM failed
+        if (!responseContent) {
             try {
-                const aiRes = await queryAdapter('openai-chat', { query: content });
+                const aiRes = await queryAdapter('openai-chat', { query: llmPrompt });
                 if (aiRes && aiRes.value && aiRes.value.answer) {
-                    llmResponse = aiRes.value.answer;
-                    logNs(`OpenAI response: ${llmResponse.substring(0, 50)}...`);
+                    responseContent = aiRes.value.answer;
+                    logNs(`OpenAI synthesized answer: ${responseContent.substring(0, 50)}...`);
                 } else if (aiRes && aiRes.error) {
                     logNs(`OpenAI failed: ${aiRes.error}`);
                 }
@@ -276,24 +345,60 @@ router.post('/', async (req, res) => {
                 logNs(`OpenAI exception: ${e.message}`);
             }
         }
+    }
 
-        if (llmResponse) {
-            responseContent = llmResponse;
+    // Final fallback if no LLM available
+    if (!responseContent) {
+        // Final Fallback if no LLM available
+        if (content.match(/^(hi|hello|hey|greetings)/i)) {
+            responseContent = "Hello! I'm NeuroSwarm. I can help you with:\n\n🏀 NBA Scores\n📰 Latest News\n🌤️ Weather\n🔍 General Search\n\nTo chat with me, please configure an OpenAI Key or run a Local LLM (Ollama).";
+        } else if (isQuestion) {
+            responseContent = `I searched for information about "${content}" but couldn't find a clear answer, and I'm not connected to a brain (LLM) to help further.\n\nTo enable chat:\n1. Set OPENAI_API_KEY environment variable\n2. OR run Ollama locally (http://localhost:11434)`;
         } else {
-            // Final Fallback if no LLM available
-            if (content.match(/^(hi|hello|hey|greetings)/i)) {
-                responseContent = "Hello! I'm NeuroSwarm. I can help you with:\n\n🏀 NBA Scores\n📰 Latest News\n🌤️ Weather\n🔍 General Search\n\nTo chat with me, please configure an OpenAI Key or run a Local LLM (Ollama).";
-            } else if (isQuestion) {
-                responseContent = `I searched for information about "${content}" but couldn't find a clear answer, and I'm not connected to a brain (LLM) to help further.\n\nTo enable chat:\n1. Set OPENAI_API_KEY environment variable\n2. OR run Ollama locally (http://localhost:11434)`;
-            } else {
-                responseContent = `I'm currently configured as a Search Node. I tried to chat but couldn't connect to a brain (LLM).\n\nTo enable chat:\n1. Set OPENAI_API_KEY environment variable\n2. OR run Ollama locally (http://localhost:11434)`;
-            }
+            responseContent = `I'm currently configured as a Search Node. I tried to chat but couldn't connect to a brain (LLM).\n\nTo enable chat:\n1. Set OPENAI_API_KEY environment variable\n2. OR run Ollama locally (http://localhost:11434)`;
         }
     }
 
     if (exemplars.length > 0) {
         const exemplarText = exemplars.slice(0, 2).map(ex => `• ${ex.user_message} → ${ex.final_reply}`).join('\n');
         responseContent += `\n\n🧠 Related context:\n${exemplarText}`;
+    }
+
+    // Calculate confidence score for the answer
+    let confidenceResult = null;
+    if (responseContent && isQuestion) {
+        confidenceResult = calculateConfidence(responseContent, {
+            source: adaptersQueried[adaptersQueried.length - 1] || 'unknown', // Last adapter used
+            query: content,
+            contextUsed: contextForLLM.length > 0,
+            contextAvailable: contextForLLM,
+            sources: adaptersQueried,
+            hasSourceCitation: /source:|from:|via:|📊|📡|📚/i.test(responseContent),
+            isFormatted: /[🏀💰📰🌤️📊💡🔍]/.test(responseContent)
+        });
+
+        logNs(`Confidence score: ${confidenceResult.score} (${confidenceResult.shouldStore ? 'WILL STORE' : 'will not store'})`);
+        logNs(`Breakdown: ${JSON.stringify(confidenceResult.breakdown)}`);
+
+        // Only store to IPFS if confidence is high enough
+        if (confidenceResult.shouldStore) {
+            try {
+                await storeKnowledge({
+                    question: content,
+                    answer: responseContent,
+                    source: adaptersQueried[adaptersQueried.length - 1],
+                    confidence: confidenceResult.score,
+                    confidenceBreakdown: confidenceResult.breakdown,
+                    nodeId: process.env.NODE_ID || 'ns-node',
+                    timestamp: new Date().toISOString()
+                });
+                logNs(`Stored to IPFS with confidence ${confidenceResult.score}`);
+            } catch (err) {
+                logNs(`Failed to store to IPFS: ${err.message}`);
+            }
+        } else {
+            logNs(`Not storing to IPFS - confidence ${confidenceResult.score} below threshold ${confidenceResult.threshold}`);
+        }
     }
 
     const response = {
@@ -303,6 +408,8 @@ router.post('/', async (req, res) => {
         timestamp: new Date().toISOString(),
         searchData,
         interactionId,
+        confidence: confidenceResult?.score,
+        confidenceBreakdown: confidenceResult?.breakdown,
         ...fakeProvenance()
     };
 
