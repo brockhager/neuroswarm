@@ -3,6 +3,7 @@
 This is the master changelog for all November 2025 releases and updates.
 
 ## Quick Links
+- [Phase 4 Detailed Changes (Nov 25)](docs/changelog/changelog-112025.md) - Advanced contributor tools, governance, and performance optimization
 - [Detailed November 15-21 Changes](changelog-112025.md) - Comprehensive changelog including Gateway/Mempool, Downloads, and all architectural changes
 
 ---
@@ -82,6 +83,120 @@ Implemented a layered knowledge system that makes NeuroSwarm smarter over time b
 
 ---
 
+## [v0.1.8] - 2025-11-25
+
+### 🚀 Major Release: Phase 4 - Advanced Contributor Experience & Governance
+
+Implemented comprehensive Phase 4 features focusing on enhanced contributor tools, decentralized governance, and performance optimization.
+
+### Added
+
+#### Phase 4a: Enhanced Contributor Tools
+- **Query History & Replay System** - Complete implementation of query logging and historical analysis
+  - Real-time query logging with comprehensive metadata (response time, cache hits, confidence scores, adapter usage)
+  - REST API endpoints for query history retrieval (`/api/query-history`, `/api/query-history/stats`)
+  - Interactive query replay system for debugging and performance analysis
+  - 24-hour activity metrics integration with live dashboard updates
+
+- **Enhanced Contributor Dashboard** - Major UI overhaul with professional multi-tab interface
+  - Tabbed navigation: Overview, Query History, Analytics, Governance tabs
+  - Real-time auto-refresh capabilities (30-second intervals)
+  - Interactive query history browser with replay buttons
+  - Live activity metrics from actual system usage data
+
+#### Phase 4b: Governance & Trust Framework
+- **Decentralized Governance System** - Community-driven parameter management
+  - Voting system for system parameters (confidence thresholds, similarity settings, adapter limits)
+  - Proposal creation and community voting mechanism with majority rule
+  - Automatic parameter updates when proposals pass voting
+  - REST API for governance operations (`/api/governance`, `/api/governance/proposals`)
+
+- **Dashboard Governance Integration** - Full governance UI in contributor dashboard
+  - Current parameter display with governance status
+  - Interactive proposal creation form with parameter selection
+  - Real-time voting interface for active proposals
+  - Active proposal tracking and status monitoring
+
+#### Phase 4c: Performance Optimization Framework
+- **Automated Performance Benchmarking** - Comprehensive optimization testing suite
+  - Baseline performance measurement for embedding generation (~3.32s average)
+  - Quantized model testing and comparison framework
+  - GPU acceleration benchmarking capabilities
+  - Batch processing optimization analysis
+
+- **Performance Analysis Tools** - Advanced monitoring and reporting
+  - Detailed speedup calculations and success rate tracking
+  - Memory usage and response time analytics
+  - Model comparison and optimization recommendations
+  - Automated performance regression testing
+
+### Changed
+- **Dashboard Architecture** - Complete redesign with modular tabbed interface
+  - Responsive design with mobile compatibility
+  - Real-time data updates and comprehensive error handling
+  - Interactive forms and voting interfaces
+  - Professional styling and enhanced user experience
+
+- **API Architecture** - Extended REST API with 10+ new endpoints
+  - Query history endpoints for activity logging and analytics
+  - Governance endpoints for community decision-making
+  - Enhanced health endpoint with activity metrics
+  - Consistent JSON request/response formats
+
+### Technical Details
+- **QueryHistoryService** - New service for comprehensive query logging and analytics
+  - Persistent JSON storage with configurable retention (1000 queries max)
+  - Metadata-rich logging (timing, caching, confidence, adapters)
+  - Statistical analysis and reporting capabilities
+
+- **GovernanceService** - Complete governance framework implementation
+  - Parameter management with validation and constraints
+  - Proposal lifecycle management (creation, voting, implementation)
+  - Voter tracking and audit trail integrity
+  - Community decision-making transparency
+
+- **PerformanceOptimizer** - Automated benchmarking and optimization tools
+  - Multi-strategy performance testing (baseline, quantized, GPU, batch)
+  - Statistical analysis and reporting with speedup calculations
+  - Model comparison and recommendation engine
+
+### Files Added/Modified
+- `src/services/query-history.js` - Query logging and replay service
+- `src/services/governance.js` - Community governance system
+- `src/services/performance-optimizer.js` - Performance benchmarking suite
+- `server.js` - Added Phase 4 API endpoints and services
+- `public/dashboard.html` - Enhanced with tabs and Phase 4 features
+- `phase-4-demo.js` - Demonstration script for all new features
+- `docs/changelog/changelog-112025.md` - Detailed Phase 4 changelog
+- `phase-4-roadmap.md` - Comprehensive Phase 4 development roadmap
+
+### Testing
+- **Phase 4 Testing Suite** - Comprehensive testing of new features
+  - API endpoint testing and validation
+  - UI component testing and integration
+  - Performance benchmarking validation
+  - Governance workflow testing
+
+### Performance Baseline
+- **Current Metrics**: Established baseline for future optimizations
+  - Embedding generation: ~3.32 seconds average
+  - Memory usage: ~44MB heap usage
+  - Response time: 2-3 seconds for adapter queries
+  - Cache hit potential: Framework ready for implementation
+
+### Future Roadmap
+- **Phase 4a.2**: Advanced analytics and cache visualization
+- **Phase 4b.1**: Expanded governance with model selection voting
+- **Phase 4c.1**: Production deployment of optimizations and GPU acceleration
+
+### Impact
+- **Contributor Experience**: Powerful dashboard and analytics capabilities with complete transparency
+- **Community Governance**: Active role in system evolution through voting and proposal systems
+- **Performance Foundation**: Framework for enterprise-grade performance optimizations
+- **Architecture Maturity**: Modular, scalable design ready for advanced features
+
+---
+
 ## [v0.1.6] - 2025-11-22
 
 ### 🎉 Major Release: Desktop Installers Available
@@ -132,6 +247,7 @@ For detailed information about earlier November releases and architectural chang
 
 | Version | Date | Status | Key Changes |
 |---------|------|--------|-------------|
+| v0.1.8 | Nov 25 | ✅ **Success** | Phase 4: Contributor tools, governance, performance optimization |
 | v0.1.7 | Nov 24 | ✅ **Success** | Learning system, Helia IPFS, semantic search |
 | v0.1.6 | Nov 22 | ✅ **Success** | Desktop installers, CI/CD fixes |
 | v0.1.5 | Nov 22 | ❌ Failed | Wine dependency issues |
@@ -143,6 +259,7 @@ For detailed information about earlier November releases and architectural chang
 ---
 
 **For detailed technical documentation, see:**
+- [Phase 4: Advanced Contributor Experience & Governance (Nov 25)](docs/changelog/changelog-112025.md)
 - [Gateway/Mempool/IPFS Changes (Nov 17)](changelog-2025-11-17-gateway-mempool-ipfs.md)
 - [Downloads Page Restored (Nov 18)](changelog-2025-11-18-download-restored.md)
 - [Comprehensive November Changes (Nov 15-21)](changelog-112025.md)
