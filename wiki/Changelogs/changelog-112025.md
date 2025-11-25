@@ -54,11 +54,79 @@ Key outcomes:
 
 ### Gateway / Mempool / VP / NS architectural changes (2025-11-17)
 
-Detailed coverage of the Gateway-owned mempool, VP IPFS payload signing, and requeue behavior has been moved to a separate changelog entry. See:
+This section contains the detailed changes for the Gateway-owned mempool, VP IPFS integration with payload signatures, NS lightweight behavior and the requeue site for reorg resilience.
 
-- `docs/changelog/changelog-2025-11-17-gateway-mempool-ipfs.md`
+#### Summary
 
-This entry contains a full description of the behavior changes, endpoints, and integration tests.
+- Gateway now owns the canonical mempool. Gateways accept transactions, add admission control (fee & spam checks), rate-limiting, and maintain the authoritative mempool.
+- NS remains lightweight, forwarding inbound txs to gateways and proxying `/mempool` to the gateway for compatibility.
+- VP consumes curated transactions from the gateway mempool and produces blocks; the VP publishes block payloads and proofs to IPFS and includes `payloadCid` in block headers.
+- Payload signing: VP signs payload content before publishing to IPFS and includes `payloadSignature` and `signer` in IPFS content. NS fetches and verifies signatures and merkle roots before accepting blocks, enforcing signer matching header.validatorId.
+- On reorgs, NS reconstructs removed txs and asks gateway to requeue them via `/v1/mempool/requeue` to be included again by other validators.
+
+#### Behavior & API changes
+
+Gateway endpoints:
+- `POST /v1/tx` — Accept a transaction, apply checks, add to gateway mempool and return id.
+- `GET /v1/mempool` — List curated transactions (`{ txId, type, payload, fee, timestamp, status }`).
+- `GET /v1/stats` — Mempool size, rejected counters, and rate limiters.
+- `POST /v1/mempool/consume` — Remove consumed txs, called by VP after a block is produced and accepted.
+- `POST /v1/mempool/requeue` — Re-add tx payloads to the gateway mempool after a reorg (called by NS).
+
+#### Sources adapaters & Allie-AI integration
+- Gateway now supports querying external `sources` adapters during admission when a tx includes `sourcesRequired`. Adapters live in `/sources/adapters/` and are normalized via `sources/index.js`.
+- We add Allie-AI wrappers (Allie Price / Weather / News) under `/sources/adapters` with `origin: 'allie-ai'`. Gateway logs queries with `origin=allie-ai` and attaches the returned metadata as `tx.sources` and sets `tx.sourcesVerified` accordingly.
+- VP includes `sources` metadata in IPFS payloads and `sourcesRoot` in headers; NS verifies `sourcesRoot` during block acceptance. Integration tests added to validate `allie-price` queries and the negative case where `sourcesRoot` mismatches cause block rejection.
+
+NS Node changes:
+- `POST /tx` — NS forwards to the gateway and does not own a mempool.
+- `GET /mempool` — Proxy to gateway mempool for compatibility.
+- Reorg handling: NS collects removed txs and calls the gateway `POST /v1/mempool/requeue` to re-add them.
+- `POST /blocks/produce` — If header contains `payloadCid`, NS fetches IPFS content via `X-Producer-Url/ipfs/:cid` and validates:
+  - Merkle root vs header
+  - Payload signature (if present) against the signer public key in `validators` map
+  - Ensures the signer matches `header.validatorId` before accepting the block
+
+VP Node changes:
+- Poll `GET /v1/mempool` on the gateway to fetch curated txs for block generation.
+- Sign the serialized payload object and publish `{ payload, signer, payloadSignature }` to IPFS; `payloadSignature` is stored with the IPFS payload.
+- After block is accepted by NS, call `POST /v1/mempool/consume` on the gateway to remove included txs.
+
+#### Reorg & Requeue behavior
+- During `performReorg`, NS reconstructs txs that were removed and calls the configured gateway to requeue them via `/v1/mempool/requeue`.
+- Gateway requeue endpoint checks tx format and re-adds to the canonical mempool with `status: 'pending'`.
+
+#### Integration tests & CI
+- The following integration scripts were added or updated:
+  - `scripts/integration/gateway-to-ns.mjs` — Verify gateway -> NS -> gateway mempool path
+  - `scripts/integration/ns-to-gateway.mjs` — Verify NS forwards txs -> gateway
+  - `scripts/integration/vp-block-ipfs.mjs` — Verify VP publishes signed payload to IPFS and NS verifies both merkle root and signature
+  - `scripts/integration/gateway-requeue-test.mjs` — Validates gateway requeue behavior (consume -> requeue -> verify)
+
+- CI updates to start an IPFS daemon via Docker and run the new integration tests (Linux, macOS, and Windows runners).
+
+---
+
+### Downloads Page Restored (2025-11-18)
+
+Restored and updated the Wiki "Downloads" page for NeuroSwarm.
+
+#### Summary
+- The Download page was restored and updated across the repository docs and wiki to provide clear, copy‑paste friendly links for Linux, macOS, and Windows release artifacts.
+- Updated `docs/run-nodes.md` and the project `README.md` to reference the Download page instead of the old Installation page.
+- Added a release checklist and maintainer guidance for updating asset links and checksums.
+
+#### What changed
+- New `docs/download.md` and wiki `neuroswarm/wiki/Download.md` and `neuroswarm/neuroswarm/wiki/Download.md` with platform-specific examples and verification instructions (sha256 / GPG).
+- Updated `docs/run-nodes.md` to point users to the Download page for canonical artifacts rather than embedding static links.
+- Updated `neuroswarm/README.md` and Home wiki pages to point to Download.
+
+#### Why
+- This simplifies discoverability for end users (single page with OS/platform links) and reduces confusion from the previous Installation page while we stabilize packaging and CI flow.
+
+#### Maintainer note
+- Release assets must remain consistent in naming and include a `checksums.txt` file (sha256 sums) and optionally a `checksums.sig` for GPG verification.
+- CI follows the `neuroswarm/.github/workflows/build-release-installers.yml` flow; when new version tags are created, the Release assets in GitHub should follow the naming convention documented on the Downloads page.
 
 ---
 

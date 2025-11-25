@@ -1,40 +1,22 @@
 {
   "adapters": [
     {
+      "name": "math-calculator",
+      "module": "math-calculator.js",
+      "desc": "Simple arithmetic calculator for instant math answers",
+      "origin": "math-calculator"
+    },
+    {
+      "name": "ipfs-knowledge",
+      "module": "ipfs-knowledge.js",
+      "desc": "IPFS knowledge base cache retrieval",
+      "origin": "ipfs-helia"
+    },
+    {
       "name": "coingecko",
       "module": "coingecko.js",
       "desc": "CoinGecko price adapter",
       "origin": "coingecko"
-    },
-    {
-      "name": "allie-price",
-      "module": "allie-price.js",
-      "desc": "Allie-AI price (wrap) adapter",
-      "origin": "allie-ai"
-    },
-    {
-      "name": "allie-weather",
-      "module": "allie-weather.js",
-      "desc": "Allie-AI weather (wrap) adapter",
-      "origin": "allie-ai"
-    },
-    {
-      "name": "allie-news",
-      "module": "allie-news.js",
-      "desc": "Allie-AI news (wrap) adapter",
-      "origin": "allie-ai"
-    },
-    {
-      "name": "allie-eth",
-      "module": "allie-eth.js",
-      "desc": "Allie-AI Ethereum price (wrap) adapter",
-      "origin": "allie-ai"
-    },
-    {
-      "name": "allie-oracle",
-      "module": "allie-oracle.js",
-      "desc": "Allie-AI generic oracle wrapper",
-      "origin": "allie-ai"
     },
     {
       "name": "nba-scores",
@@ -65,7 +47,13 @@
       "module": "local-llm.js",
       "desc": "Local LLM (Ollama/LocalAI) Adapter",
       "origin": "local-llm"
+    },
+    {
+      "name": "web-search",
+      "module": "web-search.js",
+      "desc": "General Web Search Scraper (Fallback)",
+      "origin": "web-search-scraper"
     }
   ],
-  "version": "0.3.0"
+  "version": "0.4.0"
 }
