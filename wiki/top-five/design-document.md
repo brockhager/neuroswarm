@@ -121,7 +121,7 @@
 *   **Quality Standards**: Questions must be objective or have a clear community-consensus answer.
 *   **Ambiguity**: Questions found to be ambiguous can be voided by Moderators, refunding all participants.
 
-## Roadmap (Phase 16)
+## Roadmap (Phase TBD)
 ### Milestones
 1.  **Question Pool Backend**: Develop submission, storage, and upvoting logic.
 2.  **Interval Engine**: Implement the scheduler for transitioning questions from Pool to Active.
