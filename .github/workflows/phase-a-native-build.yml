@@ -78,7 +78,9 @@ jobs:
         shell: bash
 
       - name: Prepare native build directory
+        working-directory: ${{ github.workspace }}
         run: |
+
           echo "Looking for NS-LLM/native in $(pwd)"
           ls -F
           if [ ! -d "NS-LLM/native" ]; then
