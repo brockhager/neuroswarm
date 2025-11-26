@@ -310,6 +310,7 @@ jobs:
           Pop-Location
 
       - name: Run native unit smoke tests (if built)
+        shell: bash
         run: |
           set -e
           node test-native-inference.js || echo 'native inference tests failed (or missing)'
