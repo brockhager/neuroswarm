@@ -214,6 +214,7 @@ jobs:
           }
 
       - name: Sign checksums (optional)
+        continue-on-error: true
         run: |
           set -e
           if [ -z "${{ secrets.GPG_PRIVATE_KEY }}" ]; then
