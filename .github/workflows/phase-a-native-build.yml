@@ -331,11 +331,11 @@ jobs:
           node-version: '18'
 
       - name: Install NS-LLM prototype deps
-        working-directory: ${{ github.workspace }}/NS-LLM
+        working-directory: NS-LLM
         run: npm ci
 
       - name: Install NS Node deps
-        working-directory: ${{ github.workspace }}/ns-node
+        working-directory: ns-node
         run: npm ci
 
       - name: Try to download native binary artifact (for this runner)
@@ -347,7 +347,7 @@ jobs:
 
       - name: Start NS-LLM backend (Linux/macOS - prefer native artifact)
         if: matrix.runner-os != 'windows-latest'
-        working-directory: ${{ github.workspace }}/NS-LLM
+        working-directory: NS-LLM
         run: |
           # Find any candidate native binary inside the downloaded artifact
           BIN=$(find NS-LLM/native/artifact -type f -iname 'ns-llm-native*' -print -quit || true)
@@ -362,13 +362,13 @@ jobs:
 
       - name: Start NS Node (Linux/macOS)
         if: matrix.runner-os != 'windows-latest'
-        working-directory: ${{ github.workspace }}/ns-node
+        working-directory: ns-node
         run: |
           nohup node server.js > ns-node.log 2>&1 &
 
       - name: Start NS Node (Windows)
         if: matrix.runner-os == 'windows-latest'
-        working-directory: ${{ github.workspace }}/ns-node
+        working-directory: ns-node
         shell: pwsh
         run: |
           Start-Process -FilePath node -ArgumentList 'server.js' -NoNewWindow
@@ -415,14 +415,14 @@ jobs:
           if (-not $ready) { Write-Error 'ns-node did not become healthy' ; exit 1 }
 
       - name: Run smoke + e2e tests (prototype/native)
-        working-directory: ${{ github.workspace }}/ns-node
+        working-directory: ns-node
         run: |
           set -e
           npm run test:smoke:ns-llm
           npm run test:e2e:embed
 
       - name: Run strict embed test (native path validation)
-        working-directory: ${{ github.workspace }}/ns-node
+        working-directory: ns-node
         run: |
           set -e
           echo "Running strict embed check (STRICT_EMBED_DIM=1)"
