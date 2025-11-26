@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'neuroswarm/NS-LLM/**'
+      - 'NS-LLM/**'
 
 jobs:
   package-model:
@@ -28,20 +28,20 @@ jobs:
       - name: Install packaging deps
         run: |
           python -m pip install --upgrade pip
-          pip install -r neuroswarm/NS-LLM/model-pipeline/requirements.txt
+          pip install -r NS-LLM/model-pipeline/requirements.txt
       - name: Package model (ONNX export + quantize)
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          python neuroswarm/NS-LLM/model-pipeline/download_and_export.py --model sentence-transformers/all-MiniLM-L6-v2 --out neuroswarm/NS-LLM/models/all-MiniLM-L6-v2.onnx --quantize --force
+          python NS-LLM/model-pipeline/download_and_export.py --model sentence-transformers/all-MiniLM-L6-v2 --out NS-LLM/models/all-MiniLM-L6-v2.onnx --quantize --force
       - name: Compute checksums
         run: |
-          node neuroswarm/NS-LLM/compute-checksums.js
+          node NS-LLM/compute-checksums.js
       - name: Verify models
         run: |
-          node neuroswarm/NS-LLM/verify-models.js
+          node NS-LLM/verify-models.js
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ns-llm-models-v${{ env.VERSION }}
-          path: neuroswarm/NS-LLM/models/
+          path: NS-LLM/models/

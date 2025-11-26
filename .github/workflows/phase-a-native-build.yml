@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'neuroswarm/NS-LLM/**'
+      - 'NS-LLM/**'
     tags:
       - 'v*.*.*'
 
@@ -71,7 +71,7 @@ jobs:
         shell: bash
 
       - name: Prepare native build directory
-        working-directory: neuroswarm/NS-LLM/native
+        working-directory: NS-LLM/native
         run: |
           mkdir -p build
           cd build
@@ -92,7 +92,7 @@ jobs:
           if [ -f /tmp/onnxruntime/onnx.tgz ]; then
             tar -xzf /tmp/onnxruntime/onnx.tgz -C /tmp/onnxruntime || true
             # Set a portable ONNXRUNTIME_DIR under project for CMake
-            export ONNXRUNTIME_DIR=$(pwd)/neuroswarm/NS-LLM/native/onnxruntime
+            export ONNXRUNTIME_DIR=$(pwd)/NS-LLM/native/onnxruntime
             mkdir -p "$ONNXRUNTIME_DIR"
             cp -r /tmp/onnxruntime/* "$ONNXRUNTIME_DIR/" || true
             echo "Exported ONNXRUNTIME_DIR=$ONNXRUNTIME_DIR"
@@ -102,13 +102,13 @@ jobs:
 
           echo "Installing python deps for model export (may take time)"
           python -m pip install --upgrade pip
-          pip install -r neuroswarm/NS-LLM/model-pipeline/requirements.txt
+          pip install -r NS-LLM/model-pipeline/requirements.txt
 
-          echo "Running model pipeline export (all-MiniLM-L6-v2) -> neuroswarm/NS-LLM/models"
-          python neuroswarm/NS-LLM/model-pipeline/download_and_export.py --model sentence-transformers/all-MiniLM-L6-v2 --out neuroswarm/NS-LLM/models/all-MiniLM-L6-v2.onnx --quantize --force
+          echo "Running model pipeline export (all-MiniLM-L6-v2) -> NS-LLM/models"
+          python NS-LLM/model-pipeline/download_and_export.py --model sentence-transformers/all-MiniLM-L6-v2 --out NS-LLM/models/all-MiniLM-L6-v2.onnx --quantize --force
 
           echo "Re-configure native build to link with ONNX runtime (PROTOTYPE_ONLY=OFF) — VERSION=${VERSION}"
-          cd neuroswarm/NS-LLM/native/build
+          cd NS-LLM/native/build
           cmake .. -DPROTOTYPE_ONLY=OFF -DONNXRUNTIME_DIR="$ONNXRUNTIME_DIR"
           cmake --build . --config Release
 
@@ -129,7 +129,7 @@ jobs:
           fi
           if [ -f /tmp/onnxruntime/onnx.tgz ]; then
             tar -xzf /tmp/onnxruntime/onnx.tgz -C /tmp/onnxruntime || true
-            export ONNXRUNTIME_DIR=$(pwd)/neuroswarm/NS-LLM/native/onnxruntime
+            export ONNXRUNTIME_DIR=$(pwd)/NS-LLM/native/onnxruntime
             mkdir -p "$ONNXRUNTIME_DIR"
             cp -r /tmp/onnxruntime/* "$ONNXRUNTIME_DIR/" || true
             echo "ONNXRUNTIME_DIR=$ONNXRUNTIME_DIR"
@@ -138,24 +138,24 @@ jobs:
           fi
 
           python -m pip install --upgrade pip
-          pip install -r neuroswarm/NS-LLM/model-pipeline/requirements.txt || true
+          pip install -r NS-LLM/model-pipeline/requirements.txt || true
 
-          python neuroswarm/NS-LLM/model-pipeline/download_and_export.py --model sentence-transformers/all-MiniLM-L6-v2 --out neuroswarm/NS-LLM/models/all-MiniLM-L6-v2.onnx --quantize --force || true
+          python NS-LLM/model-pipeline/download_and_export.py --model sentence-transformers/all-MiniLM-L6-v2 --out NS-LLM/models/all-MiniLM-L6-v2.onnx --quantize --force || true
 
-          cd neuroswarm/NS-LLM/native/build
+          cd NS-LLM/native/build
           cmake .. -DPROTOTYPE_ONLY=OFF -DONNXRUNTIME_DIR="$ONNXRUNTIME_DIR" || true
           cmake --build . --config Release || true
 
       - name: "macOS: Run native inference smoke tests (if built)"
         if: matrix.os == 'macos-latest' && startsWith(github.ref, 'refs/tags/')
-        working-directory: neuroswarm/NS-LLM
+        working-directory: NS-LLM
         run: |
           set -e
           node test-native-inference.js || echo 'native inference tests failed (or missing)'
 
       - name: "Ubuntu: Run native inference smoke tests (if built)"
         if: matrix.os == 'ubuntu-latest'
-        working-directory: neuroswarm/NS-LLM
+        working-directory: NS-LLM
         run: |
           set -e
           node test-native-inference.js || echo 'native inference tests failed (or missing)'
@@ -164,7 +164,7 @@ jobs:
         if: matrix.os != 'windows-latest'
         run: |
           set -e
-          ARTDIR=neuroswarm/NS-LLM/native/build
+          ARTDIR=NS-LLM/native/build
           OUTDIR=${{ runner.temp }}/ns-llm-artifacts
           mkdir -p "$OUTDIR"
           echo "Computing checksums in $ARTDIR"
@@ -189,7 +189,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          $artdir = Join-Path $PWD 'neuroswarm\NS-LLM\native\build'
+          $artdir = Join-Path $PWD 'NS-LLM\native\build'
           $outdir = Join-Path $env:RUNNER_TEMP 'ns-llm-artifacts'
           New-Item -ItemType Directory -Path $outdir -Force | Out-Null
           if (Test-Path $artdir) {
@@ -224,7 +224,7 @@ jobs:
         with:
           name: ns-llm-native-${{ matrix.os }}-v${{ env.VERSION }}
           path: |
-            neuroswarm/NS-LLM/native/build
+            NS-LLM/native/build
             ${{ runner.temp }}/ns-llm-artifacts/checksums.txt
             ${{ runner.temp }}/ns-llm-artifacts/manifest.json
             ${{ runner.temp }}/ns-llm-artifacts/checksums.txt.sig
@@ -239,19 +239,19 @@ jobs:
           Write-Host "Downloading $url"
           Invoke-WebRequest -Uri $url -OutFile $out -UseBasicParsing -ErrorAction SilentlyContinue
           if (Test-Path $out) {
-            Expand-Archive -Path $out -DestinationPath (Join-Path $PWD 'neuroswarm\NS-LLM\native\onnxruntime') -Force
-            $env:ONNXRUNTIME_DIR = Join-Path $PWD 'neuroswarm\NS-LLM\native\onnxruntime'
+            Expand-Archive -Path $out -DestinationPath (Join-Path $PWD 'NS-LLM\native\onnxruntime') -Force
+            $env:ONNXRUNTIME_DIR = Join-Path $PWD 'NS-LLM\native\onnxruntime'
             Write-Host "ONNXRUNTIME_DIR=$env:ONNXRUNTIME_DIR"
           } else {
             Write-Host 'ONNX Runtime zip not found — will try prototype-only build'
           }
 
           python -m pip install --upgrade pip
-          pip install -r neuroswarm/NS-LLM/model-pipeline/requirements.txt -ErrorAction SilentlyContinue
-          python neuroswarm/NS-LLM/model-pipeline/download_and_export.py --model sentence-transformers/all-MiniLM-L6-v2 --out neuroswarm/NS-LLM/models/all-MiniLM-L6-v2.onnx --quantize --force -ErrorAction SilentlyContinue
+          pip install -r NS-LLM/model-pipeline/requirements.txt -ErrorAction SilentlyContinue
+          python NS-LLM/model-pipeline/download_and_export.py --model sentence-transformers/all-MiniLM-L6-v2 --out NS-LLM/models/all-MiniLM-L6-v2.onnx --quantize --force -ErrorAction SilentlyContinue
 
           # Reconfigure CMake with ONNXRUNTIME_DIR for Windows
-          Push-Location neuroswarm/NS-LLM/native/build
+          Push-Location NS-LLM/native/build
           cmake .. -DPROTOTYPE_ONLY=OFF -DONNXRUNTIME_DIR="$env:ONNXRUNTIME_DIR" || Write-Host 'cmake configure failed'
           cmake --build . --config Release || Write-Host 'cmake build failed'
           Pop-Location
@@ -259,13 +259,13 @@ jobs:
       - name: "Windows: Run native inference smoke tests (if built)"
         if: matrix.os == 'windows-latest' && startsWith(github.ref, 'refs/tags/')
         shell: pwsh
-        working-directory: neuroswarm/NS-LLM
+        working-directory: NS-LLM
         run: |
           node test-native-inference.js || Write-Host 'native inference tests failed (or missing)'
 
       - name: Configure + Build native binary (Linux/macOS)
         if: matrix.os != 'windows-latest'
-        working-directory: neuroswarm/NS-LLM/native/build
+        working-directory: NS-LLM/native/build
         run: |
           set -e
           # If ONNXRUNTIME_DIR is present OR this is a tag push, build with ONNX support.
@@ -282,7 +282,7 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: pwsh
         run: |
-          Push-Location neuroswarm/NS-LLM/native/build
+          Push-Location NS-LLM/native/build
           if ($env:ONNXRUNTIME_DIR -or $env:GITHUB_REF -like 'refs/tags/*') {
             Write-Host 'Configuring with ONNX support'
             cmake .. -DPROTOTYPE_ONLY=OFF -DONNXRUNTIME_DIR="$env:ONNXRUNTIME_DIR"
@@ -318,26 +318,26 @@ jobs:
           node-version: '18'
 
       - name: Install NS-LLM prototype deps
-        working-directory: neuroswarm/NS-LLM
+        working-directory: NS-LLM
         run: npm ci
 
       - name: Install NS Node deps
-        working-directory: neuroswarm/ns-node
+        working-directory: ns-node
         run: npm ci
 
       - name: Try to download native binary artifact (for this runner)
         uses: actions/download-artifact@v4
         with:
           name: ns-llm-native-${{ matrix.runner-os }}-v${{ env.VERSION }}
-          path: neuroswarm/NS-LLM/native/artifact
+          path: NS-LLM/native/artifact
         continue-on-error: true
 
       - name: Start NS-LLM backend (Linux/macOS - prefer native artifact)
         if: matrix.runner-os != 'windows-latest'
-        working-directory: neuroswarm/NS-LLM
+        working-directory: NS-LLM
         run: |
           # Find any candidate native binary inside the downloaded artifact
-          BIN=$(find neuroswarm/NS-LLM/native/artifact -type f -iname 'ns-llm-native*' -print -quit || true)
+          BIN=$(find NS-LLM/native/artifact -type f -iname 'ns-llm-native*' -print -quit || true)
           if [ -n "$BIN" ]; then
             echo "Found native binary: $BIN — starting with --stub"
             chmod +x "$BIN" || true
@@ -349,13 +349,13 @@ jobs:
 
       - name: Start NS Node (Linux/macOS)
         if: matrix.runner-os != 'windows-latest'
-        working-directory: neuroswarm/ns-node
+        working-directory: ns-node
         run: |
           nohup node server.js > ns-node.log 2>&1 &
 
       - name: Start NS Node (Windows)
         if: matrix.runner-os == 'windows-latest'
-        working-directory: neuroswarm/ns-node
+        working-directory: ns-node
         shell: pwsh
         run: |
           Start-Process -FilePath node -ArgumentList 'server.js' -NoNewWindow
@@ -402,14 +402,14 @@ jobs:
           if (-not $ready) { Write-Error 'ns-node did not become healthy' ; exit 1 }
 
       - name: Run smoke + e2e tests (prototype/native)
-        working-directory: neuroswarm/ns-node
+        working-directory: ns-node
         run: |
           set -e
           npm run test:smoke:ns-llm
           npm run test:e2e:embed
 
       - name: Run strict embed test (native path validation)
-        working-directory: neuroswarm/ns-node
+        working-directory: ns-node
         run: |
           set -e
           echo "Running strict embed check (STRICT_EMBED_DIM=1)"
