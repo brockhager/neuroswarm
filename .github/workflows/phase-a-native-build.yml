@@ -336,7 +336,7 @@ jobs:
 
       - name: Install NS-LLM prototype deps
         working-directory: NS-LLM
-        run: npm ci
+        run: npm install
 
       - name: Install NS Node deps
         working-directory: ns-node
