@@ -4,6 +4,5 @@ transformers>=4.30.0
 optimum>=1.7.0
 onnx>=1.14.0
 onnxruntime>=1.15.0
-onnxruntime-tools>=1.10.0
 huggingface-hub>=0.18.0
 numpy
