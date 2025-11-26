@@ -264,7 +264,9 @@ export default function GovernancePage() {
                 description: formData.get('description') as string,
                 category: formData.get('category') as string,
                 proposer: 'Current User',
-                timestamp: new Date().toLocaleDateString()
+                timestamp: new Date().toLocaleDateString(),
+                votingPeriod: 7, // Default 7 days
+                quorum: 25 // Default 25%
               }
               handleProposalSubmitted(newProposal)
               setActiveTab('feed')
