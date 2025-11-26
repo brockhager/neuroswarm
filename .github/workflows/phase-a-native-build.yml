@@ -76,6 +76,7 @@ jobs:
         shell: bash
 
       - name: Prepare native build directory
+        shell: bash
         run: |
           echo "Looking for NS-LLM/native in $(pwd)"
           ls -F
