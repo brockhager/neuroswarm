@@ -15,9 +15,10 @@ else()
 endif()
 
 configure_file(${CMAKE_SOURCE_DIR}/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/version.h @ONLY)
-target_include_directories(ns-llm-native PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable(ns-llm-native src/main.cpp)
+
+target_include_directories(ns-llm-native PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 if(NOT PROTOTYPE_ONLY)
   message(STATUS "PROTOTYPE_ONLY=OFF - looking for ONNX Runtime (C++ libs and headers)")
