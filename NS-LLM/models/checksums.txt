@@ -1,0 +1,4 @@
+91ac7e845de8d276b4839a6de38b4c12d7143d620332ef9bd0c6fdf4ab81cdbd  all-MiniLM-L6-v2.onnx
+6ebc77bda056518b731dc765e7506aba018b3122bbed310bca930e8fa58a0db4  checksums.example.txt
+54c3e22d24f93b393b9911ccd81353b8106c1955fef9c8b61f3263d7e3d83c5f  manifest.example.json
+a659ec21e3c3f7fff3f40559b94e6dba3918751f5b69fad86108d3c9c7681437  manifest.json
