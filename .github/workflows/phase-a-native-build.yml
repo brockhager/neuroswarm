@@ -351,17 +351,16 @@ jobs:
 
       - name: Start NS-LLM backend (Linux/macOS - prefer native artifact)
         if: matrix.runner-os != 'windows-latest'
-        working-directory: NS-LLM
         run: |
           # Find any candidate native binary inside the downloaded artifact
           BIN=$(find NS-LLM/native/artifact -type f -iname 'ns-llm-native*' -print -quit || true)
           if [ -n "$BIN" ]; then
             echo "Found native binary: $BIN — starting with --stub"
             chmod +x "$BIN" || true
-            nohup "$BIN" --stub > ns-llm-native.log 2>&1 &
+            nohup "$BIN" --stub > NS-LLM/ns-llm-native.log 2>&1 &
           else
             echo "Native artifact not found — starting Node.js prototype"
-            nohup node index.js > ns-llm.log 2>&1 &
+            cd NS-LLM && nohup node index.js > ns-llm.log 2>&1 &
           fi
 
       - name: Start NS Node (Linux/macOS)
@@ -381,20 +380,40 @@ jobs:
         if: matrix.runner-os != 'windows-latest'
         run: |
           set -e
+          NS_LLM_UP=false
           for i in {1..30}; do
             echo "Checking ns-llm at http://127.0.0.1:5555/health... ($i)"
             if curl --silent --fail http://127.0.0.1:5555/health >/dev/null 2>&1; then
-              echo "ns-llm is up"; break
+              echo "ns-llm is up"
+              NS_LLM_UP=true
+              break
             fi
             sleep 1
           done
+          
+          NS_NODE_UP=false
           for i in {1..30}; do
             echo "Checking ns-node at http://127.0.0.1:3009/health... ($i)"
             if curl --silent --fail http://127.0.0.1:3009/health >/dev/null 2>&1; then
-              echo "ns-node is up"; break
+              echo "ns-node is up"
+              NS_NODE_UP=true
+              break
             fi
             sleep 1
           done
+          
+          # Check if services started successfully
+          if [ "$NS_LLM_UP" = false ]; then
+            echo "ERROR: ns-llm failed to start. Logs:"
+            cat NS-LLM/ns-llm.log 2>/dev/null || cat NS-LLM/ns-llm-native.log 2>/dev/null || echo "No logs found"
+            exit 1
+          fi
+          
+          if [ "$NS_NODE_UP" = false ]; then
+            echo "ERROR: ns-node failed to start. Logs:"
+            cat ns-node/ns-node.log 2>/dev/null || echo "No logs found"
+            exit 1
+          fi
 
       - name: Wait for services to be healthy (Windows)
         if: matrix.runner-os == 'windows-latest'
