@@ -16,9 +16,14 @@ What CI guarantees
 
 Artifacts
 ---------
-- Names: `ns-llm-native-ubuntu-latest`, `ns-llm-native-macos-latest`, `ns-llm-native-windows-latest`
+- Names: `ns-llm-native-ubuntu-latest-v<VERSION>`, `ns-llm-native-macos-latest-v<VERSION>`, `ns-llm-native-windows-latest-v<VERSION>`
+	- Artifacts are named using the repository `version-id.txt` value. Bump `version-id.txt` before creating a release tag so CI produces artifacts and binaries with matching version suffixes.
 - Each artifact can be downloaded from the Actions run (or attached to a release when published).
 
 Notes
 -----
 This release certifies Phase A and the native packaging + CI integration. Proceed to Phase B (generative backend) with confidence that the embedding runtime is production validated.
+
+Linking versions to tags
+------------------------
+When assembling release notes, link the version string to the GitHub release tag (for example `v0.1.8` → `https://github.com/brockhager/neuroswarm/releases/tag/v0.1.8`). The canonical source-of-truth for artifact and build versions is `version-id.txt` at the repository root.

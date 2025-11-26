@@ -1,10 +1,21 @@
 cmake_minimum_required(VERSION 3.12)
-project(ns-llm-native VERSION 0.1.0 LANGUAGES CXX)
+project(ns-llm-native LANGUAGES CXX)
 
 option(PROTOTYPE_ONLY "Build without ONNX runtime, run in stub mode" ON)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Read top-level version-id.txt (if present) and configure a header with the version.
+if(EXISTS "${CMAKE_SOURCE_DIR}/../../version-id.txt")
+  file(READ "${CMAKE_SOURCE_DIR}/../../version-id.txt" _ver)
+  string(STRIP "${_ver}" PROJECT_VERSION)
+else()
+  set(PROJECT_VERSION "0.1.0")
+endif()
+
+configure_file(${CMAKE_SOURCE_DIR}/version.h.in ${CMAKE_CURRENT_BINARY_DIR}/version.h @ONLY)
+target_include_directories(ns-llm-native PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable(ns-llm-native src/main.cpp)
 

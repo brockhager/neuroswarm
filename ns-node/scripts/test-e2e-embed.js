@@ -7,6 +7,23 @@ const URL = `http://127.0.0.1:${PORT}/embed`;
 (async () => {
   console.log(`E2E embed test → POST ${URL}`);
   try {
+    // Print current node / backend version for traceability
+    try {
+      const verResp = await fetch(`http://127.0.0.1:${PORT}/health`, { timeout: 3000 });
+      if (verResp.ok) {
+        const verJ = await verResp.json().catch(() => null);
+        if (verJ && verJ.version) console.log('Server version:', verJ.version);
+        if (verJ && verJ.nsLlm && verJ.nsLlm.version) console.log('NS-LLM backend version:', verJ.nsLlm.version);
+        if (process.env.EXPECT_VERSION && verJ && verJ.version) {
+          if (String(verJ.version).trim() !== String(process.env.EXPECT_VERSION).trim()) {
+            console.error('FAIL: server version does not match EXPECT_VERSION');
+            process.exit(8);
+          }
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
     const body = { text: 'The quick brown fox jumps over the lazy dog' };
     const res = await fetch(URL, {
       method: 'POST',

@@ -4,9 +4,9 @@ This document explains how to download and run the native NS‑LLM artifacts we 
 
 Supported platforms: Ubuntu (x64), macOS (x64/arm64), Windows (x64). Artifacts appear in the CI build job as:
 
-- `ns-llm-native-ubuntu-latest` (tarball / build dir)
-- `ns-llm-native-macos-latest` (tarball / build dir)
-- `ns-llm-native-windows-latest` (zip / build dir)
+- `ns-llm-native-ubuntu-latest-v<VERSION>` (tarball / build dir)
+- `ns-llm-native-macos-latest-v<VERSION>` (tarball / build dir)
+- `ns-llm-native-windows-latest-v<VERSION>` (zip / build dir)
 
 Where to get them
 - From GitHub Actions: artifacts are uploaded by the build job and can be downloaded via the Actions UI.
@@ -69,7 +69,11 @@ When a release is published CI will:
 1. Build native artifacts for all platforms (Ubuntu/macOS/Windows).
 2. Compute `checksums.txt` and `manifest.json` for the artifact contents.
 3. Sign `checksums.txt` producing `checksums.txt.sig` (if `GPG_PRIVATE_KEY` is present).
-4. Create a GitHub Release with the tag name (the workflow uses `${{ github.ref_name }}` when triggered by a tag) and attach the artifact builds and metadata files.
+4. Create a GitHub Release with the tag name (the workflow uses `${{ github.ref_name }}` when triggered by a tag) and attach the artifact builds and metadata files. All artifacts are versioned using the repository `version-id.txt` value and are named with `-v<VERSION>` so each release is self-describing.
+
+Version bumping
+----------------
+Before creating a release tag please bump the repository `version-id.txt` file at the repo root (e.g. `0.1.9`) so CI and binaries consistently embed the same version string. This single source-of-truth ensures artifact names, logs and runtime version values remain consistent across builds and releases.
 
 Verifying releases locally
 -------------------------

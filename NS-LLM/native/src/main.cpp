@@ -1,4 +1,5 @@
 #include <iostream>
+#include "version.h"
 #include <string>
 #include <vector>
 #include <sstream>
@@ -54,6 +55,7 @@ static std::string json_health(const std::string &status, const std::string &mod
     o << "\"model\":\"" << jstr_escape(model) << "\",";
     o << "\"backend\":\"" << jstr_escape(backend) << "\",";
     o << "\"memory_mb\":" << memory_mb << ",";
+    o << "\"version\":\"" << NS_LLM_VERSION << "\",";
     o << "\"uptime_seconds\":" << uptime_seconds;
     o << "}";
     return o.str();

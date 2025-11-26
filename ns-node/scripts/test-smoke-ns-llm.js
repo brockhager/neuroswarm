@@ -13,6 +13,7 @@ const URL = `http://127.0.0.1:${PORT}/health`;
       process.exit(2);
     }
     const j = await r.json();
+    console.log('Server version:', j.version || '<no-version>');
     if (!j.nsLlm) {
       console.error('FAIL: nsLlm field missing from /health response');
       console.error('Full /health response:', JSON.stringify(j, null, 2));
@@ -20,6 +21,19 @@ const URL = `http://127.0.0.1:${PORT}/health`;
     }
 
     console.log('nsLlm found in /health:', JSON.stringify(j.nsLlm, null, 2));
+    console.log('ns-llm backend version:', j.nsLlm.version || j.nsLlm.model_version || '<unknown>');
+
+    // Optional strict check: if EXPECT_VERSION is set in the environment, assert it matches
+    if (process.env.EXPECT_VERSION) {
+      const expected = process.env.EXPECT_VERSION.trim();
+      const actual = (j.version || '').toString().trim();
+      if (actual !== expected) {
+        console.error(`FAIL: server version ${actual} did not match EXPECT_VERSION ${expected}`);
+        process.exit(8);
+      } else {
+        console.log(`Version assertion passed: ${actual}`);
+      }
+    }
     if (j.nsLlm.available || j.nsLlm.status === 'healthy' || j.nsLlm.model) {
       console.log('PASS: NS-LLM appears healthy or present');
       process.exit(0);

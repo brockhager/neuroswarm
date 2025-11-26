@@ -8,6 +8,19 @@ const os = require('os');
 
 const PORT = process.env.PORT || 5555;
 
+// Try to read a repo-level version file if present (two levels up from this file)
+let VERSION = process.env.VERSION || 'dev';
+try {
+  const fs = require('fs');
+  const path = require('path');
+  const rootVersion = path.resolve(__dirname, '..', '..', 'version-id.txt');
+  if (fs.existsSync(rootVersion)) {
+    VERSION = fs.readFileSync(rootVersion, 'utf8').trim();
+  }
+} catch (e) {
+  // ignore
+}
+
 let metrics = {
   requests_total: 0,
   requests_failed: 0,
@@ -104,6 +117,7 @@ const server = http.createServer(async (req, res) => {
         status: 'healthy',
         model: 'all-MiniLM-L6-v2-prototype',
         backend: 'node-prototype',
+        version: VERSION,
         memory_mb: metrics.memory_usage_mb,
         uptime_seconds: uptime,
         load: { cpu: os.loadavg()[0] || 0.0, gpu: 0.0 },
@@ -136,7 +150,7 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, '127.0.0.1', () => {
-  console.log(`ns-llm-prototype listening on http://127.0.0.1:${PORT}`);
+  console.log(`ns-llm-prototype listening on http://127.0.0.1:${PORT} — version=${VERSION}`);
 });
 
 module.exports = { server };

@@ -1,0 +1,4 @@
+#pragma once
+
+// Auto-generated from CMake: PROJECT_VERSION
+#define NS_LLM_VERSION "@PROJECT_VERSION@"
