@@ -17,13 +17,53 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Read repo VERSION (version-id.txt) — Linux / macOS
+        if: runner.os != 'Windows'
+        run: |
+          if [ -f "version-id.txt" ]; then
+            VERSION=$(cat version-id.txt | tr -d '\n' | tr -d '\r')
+          else
+            VERSION=dev
+          fi
+          echo "Read VERSION=$VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Read repo VERSION (version-id.txt) — Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (Test-Path -Path version-id.txt) { $v = (Get-Content version-id.txt -Raw).Trim() } else { $v = 'dev' }
+          Write-Host "Read VERSION=$v"
+          Add-Content -Path $env:GITHUB_ENV -Value "VERSION=$v"
+
+      - name: Read repo VERSION (version-id.txt) — Linux / macOS
+        if: runner.os != 'Windows'
+        run: |
+          if [ -f "version-id.txt" ]; then
+            VERSION=$(cat version-id.txt | tr -d '\n' | tr -d '\r')
+          else
+            VERSION=dev
+          fi
+          echo "Read VERSION=$VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Read repo VERSION (version-id.txt) — Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (Test-Path -Path version-id.txt) { $v = (Get-Content version-id.txt -Raw).Trim() } else { $v = 'dev' }
+          Write-Host "Read VERSION=$v"
+          Add-Content -Path $env:GITHUB_ENV -Value "VERSION=$v"
+
       - name: Setup CMake
         uses: jwlawson/actions-setup-cmake@v1
 
 
       - name: Install ONNX Runtime (best-effort)
         run: |
-          echo "Attempting to install ONNX Runtime for ${RUNNER_OS} (this step is best-effort; configure ONNXRUNTIME_DIR if required)"
+          echo "VERSION=${VERSION} — Attempting to install ONNX Runtime for ${RUNNER_OS} (this step is best-effort; configure ONNXRUNTIME_DIR if required)"
           if [ "${RUNNER_OS}" = "Linux" ]; then
             python -m pip install --upgrade pip
             pip install onnxruntime
@@ -67,7 +107,7 @@ jobs:
           echo "Running model pipeline export (all-MiniLM-L6-v2) -> neuroswarm/NS-LLM/models"
           python neuroswarm/NS-LLM/model-pipeline/download_and_export.py --model sentence-transformers/all-MiniLM-L6-v2 --out neuroswarm/NS-LLM/models/all-MiniLM-L6-v2.onnx --quantize --force
 
-          echo "Re-configure native build to link with ONNX runtime (PROTOTYPE_ONLY=OFF)"
+          echo "Re-configure native build to link with ONNX runtime (PROTOTYPE_ONLY=OFF) — VERSION=${VERSION}"
           cd neuroswarm/NS-LLM/native/build
           cmake .. -DPROTOTYPE_ONLY=OFF -DONNXRUNTIME_DIR="$ONNXRUNTIME_DIR"
           cmake --build . --config Release
@@ -182,7 +222,7 @@ jobs:
       - name: Upload native artifacts and metadata
         uses: actions/upload-artifact@v4
         with:
-          name: ns-llm-native-${{ matrix.os }}
+          name: ns-llm-native-${{ matrix.os }}-v${{ env.VERSION }}
           path: |
             neuroswarm/NS-LLM/native/build
             ${{ runner.temp }}/ns-llm-artifacts/checksums.txt
@@ -288,7 +328,7 @@ jobs:
       - name: Try to download native binary artifact (for this runner)
         uses: actions/download-artifact@v4
         with:
-          name: ns-llm-native-${{ matrix.runner-os }}
+          name: ns-llm-native-${{ matrix.runner-os }}-v${{ env.VERSION }}
           path: neuroswarm/NS-LLM/native/artifact
         continue-on-error: true
 
@@ -383,6 +423,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Read repo VERSION (version-id.txt) — Linux / macOS
+        if: runner.os != 'Windows'
+        run: |
+          if [ -f "version-id.txt" ]; then
+            VERSION=$(cat version-id.txt | tr -d '\n' | tr -d '\r')
+          else
+            VERSION=dev
+          fi
+          echo "Read VERSION=$VERSION"
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Read repo VERSION (version-id.txt) — Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (Test-Path -Path version-id.txt) { $v = (Get-Content version-id.txt -Raw).Trim() } else { $v = 'dev' }
+          Write-Host "Read VERSION=$v"
+          Add-Content -Path $env:GITHUB_ENV -Value "VERSION=$v"
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -391,19 +451,19 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: ns-llm-native-ubuntu-latest
+          name: ns-llm-native-ubuntu-latest-v${{ env.VERSION }}
           path: release-artifacts/ubuntu || true
 
       - name: Download macOS artifact
         uses: actions/download-artifact@v4
         with:
-          name: ns-llm-native-macos-latest
+          name: ns-llm-native-macos-latest-v${{ env.VERSION }}
           path: release-artifacts/macos || true
 
       - name: Download Windows artifact
         uses: actions/download-artifact@v4
         with:
-          name: ns-llm-native-windows-latest
+          name: ns-llm-native-windows-latest-v${{ env.VERSION }}
           path: release-artifacts/windows || true
 
       - name: Create GitHub Release
