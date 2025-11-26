@@ -51,9 +51,10 @@ echo [8/9] Starting neuro-web (port 3005)...
 start "neuro-web" cmd /k "cd /d c:\JS\ns\neuro-web && npm run dev -- -p 3005"
 timeout /t 3 /nobreak >nul
 
-echo [9/9] Opening Monitor Dashboard...
+echo [9/9] Starting Dashboard HTTP Server and opening Monitor Dashboard...
+start "Dashboard Server" cmd /k "cd /d c:\JS\ns\neuroswarm && python -m http.server 8000"
 timeout /t 2 /nobreak >nul
-start "" "c:\JS\ns\neuroswarm\monitor-dashboard.html"
+start "" "http://localhost:8000/monitor-dashboard.html"
 
 echo.
 echo ========================================
@@ -69,8 +70,10 @@ echo neuro-services: http://localhost:3007
 echo neuro-runner:   http://localhost:3008
 echo neuro-web:      http://localhost:3005
 echo.
-echo Monitor Dashboard: file:///c:/JS/ns/neuroswarm/monitor-dashboard.html
-echo Chat Interface:   http://localhost:3005/chat
+echo Monitor Dashboard: http://localhost:8000/monitor-dashboard.html
+echo Brain Dashboard:  http://localhost:8000/brain-dashboard.html
+echo NS-E Chat (Simple): http://localhost:3009/
+echo NS-B Chat (Browser): http://localhost:3005/chat
 echo.
 echo TIP: Login with "Login as Demo User" button in chat settings
 echo.

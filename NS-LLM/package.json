@@ -1,0 +1,18 @@
+{
+  "name": "ns-llm-prototype",
+  "version": "0.1.0",
+  "description": "Prototype embedding backend for NeuroSwarm (demo-only). No ONNX here — deterministic embeddings for integration tests.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test-integration.js",
+    "test-client": "node test-client.js",
+    "benchmark": "node benchmark.js",
+    "test-shim": "node test-shim.js",
+    "checksums": "node compute-checksums.js",
+    "verify-models": "node verify-models.js"
+    ,"package-model": "python model-pipeline/download_and_export.py --model sentence-transformers/all-MiniLM-L6-v2 --out models/all-MiniLM-L6-v2.onnx --quantize --force"
+  },
+  "author": "neuroswarm",
+  "license": "MIT"
+}

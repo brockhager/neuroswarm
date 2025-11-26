@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NeuroSwarm Brain Dashboard</title>
+    <title>NeuroSwarm Brain Dashboard v2</title>
     <style>
         * {
             margin: 0;
@@ -85,7 +85,7 @@
 
         .stat-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 15px;
             margin-top: 15px;
         }
@@ -302,6 +302,14 @@
                         <div class="stat-label">Active Peers</div>
                         <div class="stat-value" id="peer-count">-</div>
                     </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Learning Score</div>
+                        <div class="stat-value" id="learning-score">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Knowledge Base</div>
+                        <div class="stat-value" id="knowledge-size">-</div>
+                    </div>
                 </div>
             </div>
 
@@ -458,13 +466,55 @@
             }, 10000);
         };
 
+        // Calculate learning score (1-1000) based on AI performance
+        // Start at 100, +1 for each right answer known, -2 for each lookup needed
+        function calculateLearningScore(healthData) {
+            if (!healthData) return 100;
+            
+            let score = 100; // Base score
+            
+            // Activity metrics for learning performance
+            const activity = healthData.activity || {};
+            const totalQueries = activity.totalQueries || 0;
+            const cacheHits = activity.cacheHits || 0;
+            const lookups = totalQueries - cacheHits; // Times it had to look things up
+            
+            // +1 for each right answer it knew (cache hits)
+            score += cacheHits * 1;
+            
+            // -2 for each time it didn't know and had to look up
+            score -= lookups * 2;
+            
+            // Bonus for knowledge base growth
+            const knowledgeTotal = healthData.knowledge?.total || 0;
+            score += Math.min(knowledgeTotal * 0.5, 50); // Small bonus for knowledge accumulation
+            
+            // Bonus for semantic features (shows learning capability)
+            if (healthData.semantic?.available && healthData.semantic?.ollama) {
+                score += 25;
+            }
+            
+            // Cap between 1 and 1000
+            return Math.max(1, Math.min(1000, Math.round(score)));
+        }
+
         async function loadNSStatus() {
             try {
                 // Health check
                 const health = await fetch(`${NS_URL}/health`);
+                let healthData = null;
                 if (health.ok) {
+                    healthData = await health.json();
                     document.getElementById('ns-status').textContent = 'Online';
                     document.getElementById('ns-status').className = 'status-badge status-online';
+                    
+                    // Calculate learning score
+                    const learningScore = calculateLearningScore(healthData);
+                    document.getElementById('learning-score').textContent = learningScore;
+                    
+                    // Display knowledge base size
+                    const knowledgeSize = healthData.knowledge?.total || 0;
+                    document.getElementById('knowledge-size').textContent = knowledgeSize;
                 }
 
                 // Chain height
@@ -492,7 +542,9 @@
                 const peerRes = await fetch(`${NS_URL}/debug/peers`);
                 if (peerRes.ok) {
                     const data = await peerRes.json();
-                    document.getElementById('peer-count').textContent = data.peers?.length || 0;
+                    const gatewayCount = data.peers?.gateways?.length || 0;
+                    const validatorCount = data.peers?.validators?.length || 0;
+                    document.getElementById('peer-count').textContent = gatewayCount + validatorCount;
                 }
 
             } catch (err) {
