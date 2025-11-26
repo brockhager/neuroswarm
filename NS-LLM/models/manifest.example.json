@@ -1,0 +1,11 @@
+{
+  "model_name": "all-MiniLM-L6-v2",
+  "version": "v1.0.0",
+  "format": "onnx",
+  "quantization": "q4_0",
+  "size_bytes": 23800000,
+  "sha256": "<sha256-checksum-here>",
+  "ipfs_cid": "<bafy...>",
+  "license": "Apache-2.0",
+  "notes": "Example model manifest template for packaging and verification"
+}

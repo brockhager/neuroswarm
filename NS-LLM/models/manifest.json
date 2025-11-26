@@ -1,0 +1,10 @@
+{
+  "model_name": "all-MiniLM-L6-v2.onnx",
+  "version": "v1.0.0",
+  "format": "onnx",
+  "quantization": "q4_0",
+  "size_bytes": 15,
+  "sha256": "91ac7e845de8d276b4839a6de38b4c12d7143d620332ef9bd0c6fdf4ab81cdbd",
+  "ipfs_cid": null,
+  "license": "Apache-2.0"
+}

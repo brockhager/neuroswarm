@@ -13,6 +13,7 @@ import { PORTS } from '../shared/ports.js';
 import { defaultLogger } from './logger.js';
 import { logNs } from './src/utils/logger.js';
 import { loadGatewayConfig, getGatewayConfig } from './src/services/gateway.js';
+import * as nsLlmService from './src/services/ns-llm.js';
 import { state, getCanonicalHeight, validators } from './src/services/state.js';
 import { chooseCanonicalTipAndReorg } from './src/services/chain.js';
 import { computeSourcesRoot } from '../sources/index.js';
@@ -123,6 +124,24 @@ app.post('/api/query-history/:id/replay', (req, res) => {
     res.json(replay);
   } catch (error) {
     res.status(404).json({ error: error.message });
+  }
+});
+
+// Embed proxy endpoint (NS Node → NS-LLM)
+app.post('/embed', async (req, res) => {
+  try {
+    const { text, model } = req.body || {};
+    if (!text || typeof text !== 'string') return res.status(400).json({ error: "missing 'text' string" });
+
+    // Forward to NS-LLM adapter (native shim or HTTP prototype)
+    try {
+      const result = await nsLlmService.embed(text, { model });
+      return res.json(result);
+    } catch (e) {
+      return res.status(502).json({ error: 'ns-llm-unavailable', details: e.message });
+    }
+  } catch (err) {
+    return res.status(500).json({ error: 'embed-failed', details: err.message });
   }
 });
 
@@ -280,6 +299,14 @@ app.get('/health', async (req, res) => {
     // Recent activity (last 24 hours)
     const recentActivity = queryHistoryService.getStats(24);
 
+    // NS-LLM health (if available)
+    let nsLlm = { available: false };
+    try {
+      nsLlm = await nsLlmService.health();
+    } catch (e) {
+      nsLlm = { available: false, error: e.message };
+    }
+
     res.json({
       status: 'ok',
       version: VERSION,
@@ -288,6 +315,7 @@ app.get('/health', async (req, res) => {
       semantic: semanticStatus,
       knowledge: knowledgeMetrics,
       activity: recentActivity,
+      nsLlm,
       system: {
         memory: process.memoryUsage(),
         platform: process.platform,
