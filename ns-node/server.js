@@ -242,13 +242,19 @@ app.post('/api/cache/refresh', (req, res) => {
 // Health Endpoint
 let VERSION = '0.1.0';
 try {
-  const pkgPath = path.join(__dirname, 'package.json');
-  if (fs.existsSync(pkgPath)) {
-    const pj = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-    VERSION = pj.version || VERSION;
+  // Prefer repository-level VERSION file when present (project root -> version-id.txt)
+  const rootVersionPath = path.join(__dirname, '..', 'version-id.txt');
+  if (fs.existsSync(rootVersionPath)) {
+    VERSION = fs.readFileSync(rootVersionPath, 'utf8').trim() || VERSION;
+  } else {
+    const pkgPath = path.join(__dirname, 'package.json');
+    if (fs.existsSync(pkgPath)) {
+      const pj = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+      VERSION = pj.version || VERSION;
+    }
   }
 } catch (e) {
-  // ignore
+  // ignore errors reading version file
 }
 
 app.get('/health', async (req, res) => {
@@ -341,6 +347,7 @@ app.get('/metrics', async (req, res) => {
 const server = app.listen(PORT, '0.0.0.0', () => {
   logNs(`NeuroSwarm Node (NS) listening on port ${PORT}`);
   logNs(`Mode: ${process.env.NODE_ENV || 'development'}`);
+  logNs(`Version: ${VERSION}`);
   logNs(`P2P Network initialized. Node ID: ${peerManager.nodeId}`);
 });
 

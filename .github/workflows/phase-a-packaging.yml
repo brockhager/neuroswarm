@@ -11,6 +11,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Read repo VERSION (version-id.txt)
+        run: |
+          if [ -f "version-id.txt" ]; then
+            VERSION=$(cat version-id.txt | tr -d '\n' | tr -d '\r')
+          else
+            VERSION=dev
+          fi
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+        shell: bash
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -33,5 +43,5 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ns-llm-models
+          name: ns-llm-models-v${{ env.VERSION }}
           path: neuroswarm/NS-LLM/models/

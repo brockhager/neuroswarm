@@ -52,6 +52,7 @@ function run(cmd, args, options = {}) {
     console.log('shim.health() ->');
     const h = await shim.health();
     console.log(h);
+    if (h && h.version) console.log('native backend version:', h.version);
     if (!h || typeof h.status !== 'string') throw new Error('health response missing status');
 
     console.log('shim.embed("test native inference") ->');
