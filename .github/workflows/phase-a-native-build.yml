@@ -91,6 +91,7 @@ jobs:
 
           echo "Installing python deps for model export (may take time)"
           python -m pip install --upgrade pip
+          pip install optimum[exporters] onnxruntime
           pip install -r ${{ github.workspace }}/NS-LLM/model-pipeline/requirements.txt
 
           echo "Running model pipeline export (all-MiniLM-L6-v2) -> NS-LLM/models"
@@ -134,6 +135,7 @@ jobs:
           fi
 
           python -m pip install --upgrade pip
+          pip install optimum[exporters] onnxruntime || true
           pip install -r ${{ github.workspace }}/NS-LLM/model-pipeline/requirements.txt || true
 
           python ${{ github.workspace }}/NS-LLM/model-pipeline/download_and_export.py --model sentence-transformers/all-MiniLM-L6-v2 --out ${{ github.workspace }}/NS-LLM/models/all-MiniLM-L6-v2.onnx --quantize --force || true
@@ -380,18 +382,6 @@ jobs:
           # cleanup and set env
           Remove-Item -Path $tmp -Recurse -Force -ErrorAction SilentlyContinue
           $env:ONNXRUNTIME_DIR = $dest
-          Write-Host "ONNXRUNTIME_DIR=$env:ONNXRUNTIME_DIR"
-
-          # Install python deps and attempt model export — run in try/catch so failures don't break the build
-          try {
-            python -m pip install --upgrade pip
-            pip install -r "${{ github.workspace }}\NS-LLM\model-pipeline\requirements.txt"
-          } catch {
-            Write-Host "Warning: Installing model-pipeline Python deps failed; continuing." 
-          }
-
-          try {
-            python "${{ github.workspace }}\NS-LLM\model-pipeline\download_and_export.py" --model sentence-transformers/all-MiniLM-L6-v2 --out "${{ github.workspace }}\NS-LLM\models\all-MiniLM-L6-v2.onnx" --quantize --force
           } catch {
             Write-Host "Info: model download_and_export.py failed (likely missing dependencies); continuing." 
           }
