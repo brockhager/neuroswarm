@@ -226,6 +226,7 @@ jobs:
           }
 
       - name: Sign checksums (optional)
+        if: matrix.os != 'windows-latest'
         continue-on-error: true
         run: |
           set -e
@@ -348,35 +349,59 @@ jobs:
           if ($env:DOWNLOAD_SUFFIX -and $env:DOWNLOAD_SUFFIX -match '\.tgz$') { $out = Join-Path $env:TEMP 'onnxruntime.tgz' } else { $out = Join-Path $env:TEMP 'onnxruntime.zip' }
 
           Write-Host "Downloading $url to $out"
-          Invoke-WebRequest -Uri $url -OutFile $out -UseBasicParsing -ErrorAction SilentlyContinue
-          if (Test-Path $out) {
-            $dest = Join-Path "${{ github.workspace }}" 'NS-LLM\native\onnxruntime'
-            New-Item -ItemType Directory -Path $dest -Force | Out-Null
+          # Download and extract to a temporary folder first, then normalize layout so lib/ include/ are at the dest root
+          Invoke-WebRequest -Uri $url -OutFile $out -UseBasicParsing -ErrorAction Stop
 
-            if ($env:DOWNLOAD_SUFFIX -and $env:DOWNLOAD_SUFFIX -match '\.zip$') {
-              Expand-Archive -Path $out -DestinationPath $dest -Force
-            } elseif ($env:DOWNLOAD_SUFFIX -and $env:DOWNLOAD_SUFFIX -match '\.(tgz|tar.gz)$') {
-              # Extract .tgz to a temporary folder, then copy all contents into the target
-              $tmp = Join-Path $env:TEMP ('onnxruntime_extract_' + [guid]::NewGuid().ToString())
-              New-Item -ItemType Directory -Path $tmp -Force | Out-Null
-              tar -xzf $out -C $tmp
-              Get-ChildItem -Path $tmp | ForEach-Object { Copy-Item -Path $_.FullName -Destination $dest -Recurse -Force }
-            } else {
-              Write-Host "Unknown archive type, attempting zip extraction"
-              Expand-Archive -Path $out -DestinationPath $dest -Force
-            }
-            $env:ONNXRUNTIME_DIR = Join-Path "${{ github.workspace }}" 'NS-LLM\native\onnxruntime'
-            Write-Host "ONNXRUNTIME_DIR=$env:ONNXRUNTIME_DIR"
+          $tmp = Join-Path $env:TEMP ('onnxruntime_extract_' + [guid]::NewGuid().ToString())
+          New-Item -ItemType Directory -Path $tmp -Force | Out-Null
+
+          if ($out -match '\.zip$') {
+            Expand-Archive -Path $out -DestinationPath $tmp -Force
           } else {
-            Write-Host 'ONNX Runtime zip not found — will try prototype-only build'
+            # tar extract for tgz
+            tar -xzf $out -C $tmp
           }
 
-          python -m pip install --upgrade pip
-          pip install -r ${{ github.workspace }}/NS-LLM/model-pipeline/requirements.txt -ErrorAction SilentlyContinue
-          python ${{ github.workspace }}/NS-LLM/model-pipeline/download_and_export.py --model sentence-transformers/all-MiniLM-L6-v2 --out ${{ github.workspace }}/NS-LLM/models/all-MiniLM-L6-v2.onnx --quantize --force -ErrorAction SilentlyContinue
+          # If the archive unpacks into a single top-level directory (eg onnxruntime-win-x64-1.15.1), use its child contents
+          $entries = Get-ChildItem -Path $tmp
+          $sourceFolder = $tmp
+          if ($entries.Count -eq 1 -and $entries[0].PSIsContainer) { $sourceFolder = $entries[0].FullName }
+
+          $dest = Join-Path "${{ github.workspace }}" 'NS-LLM\native\onnxruntime'
+          New-Item -ItemType Directory -Path $dest -Force | Out-Null
+
+          # Move contents from sourceFolder into dest (lib, include, tools, etc.). If items already exist remove+replace.
+          Get-ChildItem -Path $sourceFolder | ForEach-Object {
+            $target = Join-Path $dest $_.Name
+            if (Test-Path $target) { Remove-Item -Path $target -Recurse -Force -ErrorAction SilentlyContinue }
+            Move-Item -Path $_.FullName -Destination $dest -Force
+          }
+
+          # cleanup and set env
+          Remove-Item -Path $tmp -Recurse -Force -ErrorAction SilentlyContinue
+          $env:ONNXRUNTIME_DIR = $dest
+          Write-Host "ONNXRUNTIME_DIR=$env:ONNXRUNTIME_DIR"
+
+          # Install python deps and attempt model export — run in try/catch so failures don't break the build
+          try {
+            python -m pip install --upgrade pip
+            pip install -r "${{ github.workspace }}\NS-LLM\model-pipeline\requirements.txt"
+          } catch {
+            Write-Host "Warning: Installing model-pipeline Python deps failed; continuing." 
+          }
+
+          try {
+            python "${{ github.workspace }}\NS-LLM\model-pipeline\download_and_export.py" --model sentence-transformers/all-MiniLM-L6-v2 --out "${{ github.workspace }}\NS-LLM\models\all-MiniLM-L6-v2.onnx" --quantize --force
+          } catch {
+            Write-Host "Info: model download_and_export.py failed (likely missing dependencies); continuing." 
+          }
 
           Write-Host "Running generative model export (gpt2) -> NS-LLM/models"
-          python ${{ github.workspace }}/NS-LLM/model-pipeline/export_generative.py --model gpt2 --out ${{ github.workspace }}/NS-LLM/models/gpt2.onnx --quantize -ErrorAction SilentlyContinue
+          try {
+            python "${{ github.workspace }}\NS-LLM\model-pipeline\export_generative.py" --model gpt2 --out "${{ github.workspace }}\NS-LLM\models\gpt2.onnx" --quantize
+          } catch {
+            Write-Host "Info: export_generative.py failed (likely missing dependencies); continuing." 
+          }
 
           # Copy models to build directory for tests
           $modelsDest = Join-Path "${{ github.workspace }}" 'NS-LLM\native\build\Release\models'
