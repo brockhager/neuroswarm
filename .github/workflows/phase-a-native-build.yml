@@ -340,7 +340,7 @@ jobs:
 
       - name: Install Shared deps
         working-directory: shared
-        run: npm ci
+        run: npm install
 
       - name: Install NS Node deps
         working-directory: ns-node
