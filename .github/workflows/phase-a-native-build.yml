@@ -269,17 +269,116 @@ jobs:
             ${{ runner.temp }}/ns-llm-artifacts/checksums.txt.sig
 
       - name: "Windows: Prepare ONNX runtime + quantized model for native inference"
+        id: set_ort_version
         if: matrix.os == 'windows-latest' && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
         shell: pwsh
         run: |
+          # 1) Initialize with a safe default
           $ORT_VER = '1.15.1'
-          if ($env:ONNXRUNTIME_VERSION -and $env:ONNXRUNTIME_VERSION -ne 'True') { $ORT_VER = $env:ONNXRUNTIME_VERSION }
-          $url = "https://github.com/microsoft/onnxruntime/releases/download/v$ORT_VER/onnxruntime-win-x64-$ORT_VER.zip"
-          $out = Join-Path $env:TEMP 'onnxruntime.zip'
-          Write-Host "Downloading $url"
+
+          # 2) Read the environment variable safely
+          $EnvVar = $env:ONNXRUNTIME_VERSION
+
+          # 3) Only overwrite if the env var is non-empty and not the problematic string 'True'
+          if (-not [string]::IsNullOrEmpty($EnvVar) -and $EnvVar -ne 'True') {
+              $ORT_VER = $EnvVar
+          }
+
+          Write-Host "Resolved ONNXRUNTIME_VERSION: $ORT_VER"
+
+          # Write outputs the recommended way for GitHub Actions
+          "ort_version=$ORT_VER" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          $DownloadBaseName = "v${ORT_VER}"
+          "download_prefix=$DownloadBaseName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: "Windows: Validate ONNX Runtime Download URL"
+        id: validate_ort_url
+        if: matrix.os == 'windows-latest' && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+        shell: pwsh
+        env:
+          ORT_VER: ${{ steps.set_ort_version.outputs.ort_version }}
+          DOWNLOAD_PREFIX: ${{ steps.set_ort_version.outputs.download_prefix }}
+        run: |
+          # Build candidate URLs and test primary -> fallback
+          $BaseUrl = 'https://github.com/microsoft/onnxruntime/releases/download/'
+          $DownloadPrefix = $env:DOWNLOAD_PREFIX
+
+          # Normalize version for creating filenames (strip leading 'v' if present)
+          if ($DownloadPrefix.StartsWith('v')) { $TestVersion = $DownloadPrefix.Substring(1) } else { $TestVersion = $DownloadPrefix }
+
+          $PrimarySuffix = "onnxruntime-win-x64-${TestVersion}.zip"
+          $FallbackSuffix = "onnxruntime-win-x64-${TestVersion}.tgz"
+
+          $PrimaryUrl = "$BaseUrl$DownloadPrefix/$PrimarySuffix"
+          $FallbackUrl = "$BaseUrl$DownloadPrefix/$FallbackSuffix"
+
+          Write-Host "Attempting primary URL: $PrimaryUrl"
+
+          function Test-UrlExistence {
+            param([Parameter(Mandatory=$true)][string]$Url)
+            try {
+              $response = Invoke-WebRequest -Uri $Url -Method Head -MaximumRedirection 5 -UseBasicParsing -ErrorAction Stop
+              if ($response.StatusCode -ge 200 -and $response.StatusCode -lt 400) {
+                Write-Host "✅ Success — URL responded with $($response.StatusCode). Package found at: $Url"
+                return $true
+              } else {
+                Write-Host "URL responded with unacceptable status code: $($response.StatusCode)."
+                return $false
+              }
+            } catch {
+              Write-Host "URL check failed (likely 404/Connection Error). Error: $($_.Exception.Message)"
+              return $false
+            }
+          }
+
+          $chosen = $null
+          if (Test-UrlExistence -Url $PrimaryUrl) {
+            $chosen = $PrimaryUrl
+            $chosenSuffix = $PrimarySuffix
+          } elseif (Test-UrlExistence -Url $FallbackUrl) {
+            Write-Host "Note: Primary URL not found; using fallback URL: $FallbackUrl"
+            $chosen = $FallbackUrl
+            $chosenSuffix = $FallbackSuffix
+          } else {
+            Write-Host "❌ FATAL ERROR: Neither the primary ($PrimarySuffix) nor the fallback ($FallbackSuffix) ONNX Runtime package was found at the expected release location."
+            exit 1
+          }
+
+          # Export chosen info to GITHUB_OUTPUT for downstream steps
+          "download_url=$chosen" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "download_suffix=$chosenSuffix" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: "Windows: Download and extract ONNX Runtime (if URL validated)"
+        if: matrix.os == 'windows-latest' && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+        shell: pwsh
+        env:
+          ORT_VER: ${{ steps.set_ort_version.outputs.ort_version }}
+          DOWNLOAD_PREFIX: ${{ steps.set_ort_version.outputs.download_prefix }}
+          DOWNLOAD_URL: ${{ steps.validate_ort_url.outputs.download_url }}
+          DOWNLOAD_SUFFIX: ${{ steps.validate_ort_url.outputs.download_suffix }}
+        run: |
+          $url = $env:DOWNLOAD_URL
+          # Pick a temporary filename that matches the chosen suffix so extraction works correctly
+          if ($env:DOWNLOAD_SUFFIX -and $env:DOWNLOAD_SUFFIX -match '\.tgz$') { $out = Join-Path $env:TEMP 'onnxruntime.tgz' } else { $out = Join-Path $env:TEMP 'onnxruntime.zip' }
+
+          Write-Host "Downloading $url to $out"
           Invoke-WebRequest -Uri $url -OutFile $out -UseBasicParsing -ErrorAction SilentlyContinue
           if (Test-Path $out) {
-            Expand-Archive -Path $out -DestinationPath (Join-Path "${{ github.workspace }}" 'NS-LLM\native\onnxruntime') -Force
+            $dest = Join-Path "${{ github.workspace }}" 'NS-LLM\native\onnxruntime'
+            New-Item -ItemType Directory -Path $dest -Force | Out-Null
+
+            if ($env:DOWNLOAD_SUFFIX -and $env:DOWNLOAD_SUFFIX -match '\.zip$') {
+              Expand-Archive -Path $out -DestinationPath $dest -Force
+            } elseif ($env:DOWNLOAD_SUFFIX -and $env:DOWNLOAD_SUFFIX -match '\.(tgz|tar.gz)$') {
+              # Extract .tgz to a temporary folder, then copy all contents into the target
+              $tmp = Join-Path $env:TEMP ('onnxruntime_extract_' + [guid]::NewGuid().ToString())
+              New-Item -ItemType Directory -Path $tmp -Force | Out-Null
+              tar -xzf $out -C $tmp
+              Get-ChildItem -Path $tmp | ForEach-Object { Copy-Item -Path $_.FullName -Destination $dest -Recurse -Force }
+            } else {
+              Write-Host "Unknown archive type, attempting zip extraction"
+              Expand-Archive -Path $out -DestinationPath $dest -Force
+            }
             $env:ONNXRUNTIME_DIR = Join-Path "${{ github.workspace }}" 'NS-LLM\native\onnxruntime'
             Write-Host "ONNXRUNTIME_DIR=$env:ONNXRUNTIME_DIR"
           } else {
@@ -303,6 +402,20 @@ jobs:
           cmake .. -DPROTOTYPE_ONLY=OFF -DONNXRUNTIME_DIR="$env:ONNXRUNTIME_DIR" || Write-Host 'cmake configure failed'
           cmake --build . --config Release || Write-Host 'cmake build failed'
           Pop-Location
+
+      - name: "Windows: Smoke Test Extracted ONNX Runtime"
+        if: matrix.os == 'windows-latest' && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+        shell: pwsh
+        run: |
+          $LibraryPath = Join-Path -Path $env:GITHUB_WORKSPACE -ChildPath "NS-LLM/native/onnxruntime/lib/onnxruntime.lib"
+          Write-Host "Verifying existence of core library file: $LibraryPath"
+          if (Test-Path $LibraryPath -PathType Leaf) {
+              Write-Host "✅ Smoke Test Passed: onnxruntime.lib found! The package was successfully downloaded and extracted."
+          } else {
+              Write-Host "❌ FATAL ERROR: Smoke Test Failed. Expected library file not found at $LibraryPath."
+              Write-Host "This indicates a failure in download, extraction, or an unexpected change in the ONNX Runtime package structure."
+              exit 1
+          }
 
       - name: "Windows: Run native inference smoke tests (if built)"
         if: matrix.os == 'windows-latest' && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
