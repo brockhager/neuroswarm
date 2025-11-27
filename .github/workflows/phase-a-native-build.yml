@@ -269,6 +269,7 @@ jobs:
             ${{ runner.temp }}/ns-llm-artifacts/checksums.txt.sig
 
       - name: "Windows: Prepare ONNX runtime + quantized model for native inference"
+        id: set_ort_version
         if: matrix.os == 'windows-latest' && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
         shell: pwsh
         run: |
@@ -285,12 +286,42 @@ jobs:
 
           Write-Host "Resolved ONNXRUNTIME_VERSION: $ORT_VER"
 
-          # Export outputs for later steps (where useful)
-          echo "::set-output name=ort_version::$ORT_VER"
+          # Write outputs the recommended way for GitHub Actions
+          "ort_version=$ORT_VER" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           $DownloadBaseName = "v${ORT_VER}"
-          echo "::set-output name=download_prefix::$DownloadBaseName"
+          "download_prefix=$DownloadBaseName" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
 
-          $url = "https://github.com/microsoft/onnxruntime/releases/download/v$ORT_VER/onnxruntime-win-x64-$ORT_VER.zip"
+      - name: "Windows: Validate ONNX Runtime Download URL"
+        if: matrix.os == 'windows-latest' && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+        shell: pwsh
+        env:
+          ORT_VER: ${{ steps.set_ort_version.outputs.ort_version }}
+          DOWNLOAD_PREFIX: ${{ steps.set_ort_version.outputs.download_prefix }}
+        run: |
+          # Construct a test URL using the resolved prefix/version and perform a HEAD request
+          $BaseUrl = 'https://github.com/microsoft/onnxruntime/releases/download/'
+          $TestUrl = "${BaseUrl}${env:DOWNLOAD_PREFIX}/onnxruntime-win-x64-${env:ORT_VER}.zip"
+          Write-Host "Testing ONNX Runtime URL: $TestUrl"
+          try {
+              $resp = Invoke-WebRequest -Uri $TestUrl -Method Head -MaximumRedirection 5 -UseBasicParsing -ErrorAction Stop
+              if ($resp.StatusCode -ge 200 -and $resp.StatusCode -lt 400) {
+                  Write-Host "✅ Success — URL responded with $($resp.StatusCode). Proceeding."
+              } else {
+                  throw "Unacceptable status code: $($resp.StatusCode)"
+              }
+          } catch {
+              Write-Host "❌ FATAL ERROR: Cannot confirm existence of ONNX Runtime package at $TestUrl"
+              exit 1
+          }
+
+      - name: "Windows: Download and extract ONNX Runtime (if URL validated)"
+        if: matrix.os == 'windows-latest' && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+        shell: pwsh
+        env:
+          ORT_VER: ${{ steps.set_ort_version.outputs.ort_version }}
+          DOWNLOAD_PREFIX: ${{ steps.set_ort_version.outputs.download_prefix }}
+        run: |
+          $url = "https://github.com/microsoft/onnxruntime/releases/download/${env:DOWNLOAD_PREFIX}/onnxruntime-win-x64-${env:ORT_VER}.zip"
           $out = Join-Path $env:TEMP 'onnxruntime.zip'
           Write-Host "Downloading $url"
           Invoke-WebRequest -Uri $url -OutFile $out -UseBasicParsing -ErrorAction SilentlyContinue
