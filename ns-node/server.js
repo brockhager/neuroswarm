@@ -145,6 +145,28 @@ app.post('/embed', async (req, res) => {
   }
 });
 
+// Generate proxy endpoint (NS Node → NS-LLM)
+app.post('/api/generate', async (req, res) => {
+  try {
+    const { text, prompt, maxTokens, timeout } = req.body || {};
+    const inputText = text || prompt;
+
+    if (!inputText || typeof inputText !== 'string') {
+      return res.status(400).json({ error: "missing 'text' or 'prompt' string" });
+    }
+
+    // Forward to NS-LLM adapter
+    try {
+      const result = await nsLlmService.generate(inputText, { maxTokens, timeout });
+      return res.json(result);
+    } catch (e) {
+      return res.status(502).json({ error: 'ns-llm-unavailable', details: e.message });
+    }
+  } catch (err) {
+    return res.status(500).json({ error: 'generate-failed', details: err.message });
+  }
+});
+
 // Governance Routes
 app.get('/api/governance', (req, res) => {
   try {
@@ -309,6 +331,12 @@ app.get('/health', async (req, res) => {
     let nsLlm = { available: false };
     try {
       nsLlm = await nsLlmService.health();
+      // Add metrics if using HTTP client
+      const clientMetrics = await nsLlmService.metrics();
+      if (clientMetrics) {
+        nsLlm.metrics = clientMetrics;
+        nsLlm.clientType = nsLlmService.getClientType();
+      }
     } catch (e) {
       nsLlm = { available: false, error: e.message };
     }
