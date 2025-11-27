@@ -166,12 +166,21 @@ jobs:
           cd NS-LLM
           node test-native-inference.js || echo 'native inference tests failed (or missing)'
 
-      - name: "Ubuntu: Run native inference smoke tests (if built)"
+      - name: "macOS: Run native generative smoke tests (stub)"
+        if: matrix.os == 'macos-latest' && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+        run: |
+          set -e
+          cd NS-LLM/native/build
+          echo '{"cmd":"generate", "text":"Hello"}' | ./ns-llm-native --stub | grep "STUB GENERATION"
+
+          node test-native-inference.js || echo 'native inference tests failed (or missing)'
+
+      - name: "Ubuntu: Run native generative smoke tests (stub)"
         if: matrix.os == 'ubuntu-latest'
         run: |
           set -e
-          cd NS-LLM
-          node test-native-inference.js || echo 'native inference tests failed (or missing)'
+          cd NS-LLM/native/build
+          echo '{"cmd":"generate", "text":"Hello"}' | ./ns-llm-native --stub | grep "STUB GENERATION"
 
       - name: Compute checksums and manifest (Linux/macOS)
         if: matrix.os != 'windows-latest'
@@ -277,6 +286,13 @@ jobs:
         run: |
           Set-Location NS-LLM
           node test-native-inference.js || Write-Host 'native inference tests failed (or missing)'
+
+      - name: "Windows: Run native generative smoke tests (stub)"
+        if: matrix.os == 'windows-latest' && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
+        shell: pwsh
+        run: |
+          Set-Location NS-LLM/native/build/Release
+          echo '{"cmd":"generate", "text":"Hello"}' | .\ns-llm-native.exe --stub | Select-String "STUB GENERATION"
 
       - name: Configure + Build native binary (Linux/macOS)
         if: matrix.os != 'windows-latest'

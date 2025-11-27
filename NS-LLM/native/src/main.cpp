@@ -99,6 +99,16 @@ static std::vector<double> deterministic_embedding(const std::string &text, int 
     return vec;
 }
 
+static std::string json_generate(const std::string &text, const std::string &model, int tokens_generated) {
+    std::ostringstream o;
+    o << "{";
+    o << "\"text\":\"" << jstr_escape(text) << "\",";
+    o << "\"model\":\"" << jstr_escape(model) << "\",";
+    o << "\"tokens_generated\":" << tokens_generated;
+    o << "}";
+    return o.str();
+}
+
 int main(int argc, char** argv) {
     bool stub = false;
     for (int i=1;i<argc;i++) {
@@ -169,6 +179,31 @@ int main(int argc, char** argv) {
 #endif
 
                 std::cout << json_error("onnx runtime not implemented in scaffold or model missing") << std::endl;
+                continue;
+            }
+
+            if (cmd == "generate") {
+                requests_total++;
+                const std::string text = get_json_field(line, "text");
+                if (text.empty()) {
+                    requests_failed++;
+                    std::cout << json_error("missing text") << std::endl;
+                    continue;
+                }
+
+                if (stub) {
+                    // Stub generation: just append some text
+                    std::string generated = " [STUB GENERATION: " + text + "]";
+                    std::cout << json_generate(generated, "gpt2-stub", 5) << std::endl;
+                    continue;
+                }
+
+#ifdef ONNXRUNTIME_FOUND
+                // Real generation placeholder
+                std::cout << json_error("real generation not yet implemented") << std::endl;
+                continue;
+#endif
+                std::cout << json_error("onnx runtime not available") << std::endl;
                 continue;
             }
 
