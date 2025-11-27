@@ -79,6 +79,18 @@ app.use('/tx', createTxRouter(p2pProtocol, peerManager));
 app.use('/blocks', createBlocksRouter(p2pProtocol, peerManager));
 app.use('/', createChainRouter(p2pProtocol, peerManager)); // Handles /proof, /verify/proof, /ipfs/verify, /governance, /mempool, /chain/height, /headers/tip, /debug/verifyHeader
 
+// Import and mount new routes
+import nsLlmRouter from './src/routes/ns-llm.js';
+import cacheRouter, { setCacheVisualizationService } from './src/routes/cache.js';
+import hybridRouter from './src/routes/hybrid.js';
+import generativeRouter from './src/routes/generative.js';
+
+app.use('/', nsLlmRouter); // /embed
+setCacheVisualizationService(cacheVisualizationService);
+app.use('/api/cache', cacheRouter);
+app.use('/api/hybrid', hybridRouter);
+app.use('/api', generativeRouter); // /api/generate with governance
+
 // Dashboard Route
 app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
