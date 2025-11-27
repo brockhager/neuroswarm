@@ -358,11 +358,27 @@ jobs:
           DOWNLOAD_SUFFIX: ${{ steps.validate_ort_url.outputs.download_suffix }}
         run: |
           $url = $env:DOWNLOAD_URL
-          $out = Join-Path $env:TEMP 'onnxruntime.zip'
-          Write-Host "Downloading $url"
+          # Pick a temporary filename that matches the chosen suffix so extraction works correctly
+          if ($env:DOWNLOAD_SUFFIX -and $env:DOWNLOAD_SUFFIX -match '\.tgz$') { $out = Join-Path $env:TEMP 'onnxruntime.tgz' } else { $out = Join-Path $env:TEMP 'onnxruntime.zip' }
+
+          Write-Host "Downloading $url to $out"
           Invoke-WebRequest -Uri $url -OutFile $out -UseBasicParsing -ErrorAction SilentlyContinue
           if (Test-Path $out) {
-            Expand-Archive -Path $out -DestinationPath (Join-Path "${{ github.workspace }}" 'NS-LLM\native\onnxruntime') -Force
+            $dest = Join-Path "${{ github.workspace }}" 'NS-LLM\native\onnxruntime'
+            New-Item -ItemType Directory -Path $dest -Force | Out-Null
+
+            if ($env:DOWNLOAD_SUFFIX -and $env:DOWNLOAD_SUFFIX -match '\.zip$') {
+              Expand-Archive -Path $out -DestinationPath $dest -Force
+            } elseif ($env:DOWNLOAD_SUFFIX -and $env:DOWNLOAD_SUFFIX -match '\.(tgz|tar.gz)$') {
+              # Extract .tgz to a temporary folder, then copy all contents into the target
+              $tmp = Join-Path $env:TEMP ('onnxruntime_extract_' + [guid]::NewGuid().ToString())
+              New-Item -ItemType Directory -Path $tmp -Force | Out-Null
+              tar -xzf $out -C $tmp
+              Get-ChildItem -Path $tmp | ForEach-Object { Copy-Item -Path $_.FullName -Destination $dest -Recurse -Force }
+            } else {
+              Write-Host "Unknown archive type, attempting zip extraction"
+              Expand-Archive -Path $out -DestinationPath $dest -Force
+            }
             $env:ONNXRUNTIME_DIR = Join-Path "${{ github.workspace }}" 'NS-LLM\native\onnxruntime'
             Write-Host "ONNXRUNTIME_DIR=$env:ONNXRUNTIME_DIR"
           } else {
