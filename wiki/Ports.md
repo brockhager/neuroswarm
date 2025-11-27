@@ -9,6 +9,7 @@ This document lists the reserved ports for all NeuroSwarm services and nodes.
 | **Neuro Services** | `3007` | API Gateway & Adapter Service (Moved from 3001/3006) |
 | **Neuro Runner** | `3008` | AI Bridge (Moved from 3002) |
 | **Neuro Web** | `3005` | Chat Interface & Frontend (Moved from 3003) |
+| **NS Web (Docker)** | `3010` | React Web Interface (Phase E) |
 | **VP Node** | `4000` | Validator & Consensus Node |
 | **Gateway Node** | `8080` | Public HTTP Gateway |
 | **IPFS Daemon** | `5001` | Decentralized Storage API |
