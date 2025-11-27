@@ -382,16 +382,19 @@ jobs:
           # cleanup and set env
           Remove-Item -Path $tmp -Recurse -Force -ErrorAction SilentlyContinue
           $env:ONNXRUNTIME_DIR = $dest
-          } catch {
-            Write-Host "Info: model download_and_export.py failed (likely missing dependencies); continuing." 
-          }
+          Write-Host "ONNXRUNTIME_DIR=$env:ONNXRUNTIME_DIR"
 
+          # Install python deps for model export
+          python -m pip install --upgrade pip
+          pip install optimum[exporters] onnxruntime -ErrorAction SilentlyContinue
+          pip install -r "${{ github.workspace }}\NS-LLM\model-pipeline\requirements.txt" -ErrorAction SilentlyContinue
+          
+          # Export embedding model
+          python "${{ github.workspace }}\NS-LLM\model-pipeline\download_and_export.py" --model sentence-transformers/all-MiniLM-L6-v2 --out "${{ github.workspace }}\NS-LLM\models\all-MiniLM-L6-v2.onnx" --quantize --force -ErrorAction SilentlyContinue
+
+          # Export generative model
           Write-Host "Running generative model export (gpt2) -> NS-LLM/models"
-          try {
-            python "${{ github.workspace }}\NS-LLM\model-pipeline\export_generative.py" --model gpt2 --out "${{ github.workspace }}\NS-LLM\models\gpt2.onnx" --quantize
-          } catch {
-            Write-Host "Info: export_generative.py failed (likely missing dependencies); continuing." 
-          }
+          python "${{ github.workspace }}\NS-LLM\model-pipeline\export_generative.py" --model gpt2 --out "${{ github.workspace }}\NS-LLM\models\gpt2.onnx" --quantize -ErrorAction SilentlyContinue
 
           # Copy models to build directory for tests
           $modelsDest = Join-Path "${{ github.workspace }}" 'NS-LLM\native\build\Release\models'
