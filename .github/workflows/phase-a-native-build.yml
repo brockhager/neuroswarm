@@ -272,8 +272,24 @@ jobs:
         if: matrix.os == 'windows-latest' && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
         shell: pwsh
         run: |
+          # 1) Initialize with a safe default
           $ORT_VER = '1.15.1'
-          if ($env:ONNXRUNTIME_VERSION -and $env:ONNXRUNTIME_VERSION -ne 'True') { $ORT_VER = $env:ONNXRUNTIME_VERSION }
+
+          # 2) Read the environment variable safely
+          $EnvVar = $env:ONNXRUNTIME_VERSION
+
+          # 3) Only overwrite if the env var is non-empty and not the problematic string 'True'
+          if (-not [string]::IsNullOrEmpty($EnvVar) -and $EnvVar -ne 'True') {
+              $ORT_VER = $EnvVar
+          }
+
+          Write-Host "Resolved ONNXRUNTIME_VERSION: $ORT_VER"
+
+          # Export outputs for later steps (where useful)
+          echo "::set-output name=ort_version::$ORT_VER"
+          $DownloadBaseName = "v${ORT_VER}"
+          echo "::set-output name=download_prefix::$DownloadBaseName"
+
           $url = "https://github.com/microsoft/onnxruntime/releases/download/v$ORT_VER/onnxruntime-win-x64-$ORT_VER.zip"
           $out = Join-Path $env:TEMP 'onnxruntime.zip'
           Write-Host "Downloading $url"
