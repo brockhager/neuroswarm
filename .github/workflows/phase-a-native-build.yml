@@ -338,6 +338,10 @@ jobs:
         working-directory: NS-LLM
         run: npm install
 
+      - name: Install Shared deps
+        working-directory: shared
+        run: npm ci
+
       - name: Install NS Node deps
         working-directory: ns-node
         run: npm ci
