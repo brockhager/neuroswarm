@@ -50,6 +50,13 @@ def main():
             no_post_process=False
         )
         print(f"Successfully exported model to {out_dir}")
+        
+        # Save tokenizer files
+        from transformers import AutoTokenizer
+        tokenizer = AutoTokenizer.from_pretrained(args.model, cache_dir=os.path.expanduser(args.cache_dir))
+        tokenizer.save_pretrained(out_dir)
+        print(f"Saved tokenizer files to {out_dir}")
+
     except Exception as e:
         print(f"Export failed: {e}")
         sys.exit(1)

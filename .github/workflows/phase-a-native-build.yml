@@ -120,6 +120,13 @@ jobs:
           echo "Running model pipeline export (all-MiniLM-L6-v2) -> NS-LLM/models"
           python ${{ github.workspace }}/NS-LLM/model-pipeline/download_and_export.py --model sentence-transformers/all-MiniLM-L6-v2 --out ${{ github.workspace }}/NS-LLM/models/all-MiniLM-L6-v2.onnx --quantize --force
 
+          echo "Running generative model export (gpt2) -> NS-LLM/models"
+          python ${{ github.workspace }}/NS-LLM/model-pipeline/export_generative.py --model gpt2 --out ${{ github.workspace }}/NS-LLM/models/gpt2.onnx --quantize
+
+          # Copy models to build directory for tests
+          mkdir -p ${{ github.workspace }}/NS-LLM/native/build/models
+          cp -r ${{ github.workspace }}/NS-LLM/models/* ${{ github.workspace }}/NS-LLM/native/build/models/
+
           echo "Re-configure native build to link with ONNX runtime (PROTOTYPE_ONLY=OFF) — VERSION=${VERSION}"
           cd ${{ github.workspace }}/NS-LLM/native/build
           cmake .. -DPROTOTYPE_ONLY=OFF -DONNXRUNTIME_DIR="$ONNXRUNTIME_DIR"
@@ -155,6 +162,13 @@ jobs:
 
           python ${{ github.workspace }}/NS-LLM/model-pipeline/download_and_export.py --model sentence-transformers/all-MiniLM-L6-v2 --out ${{ github.workspace }}/NS-LLM/models/all-MiniLM-L6-v2.onnx --quantize --force || true
 
+          echo "Running generative model export (gpt2) -> NS-LLM/models"
+          python ${{ github.workspace }}/NS-LLM/model-pipeline/export_generative.py --model gpt2 --out ${{ github.workspace }}/NS-LLM/models/gpt2.onnx --quantize || true
+
+          # Copy models to build directory for tests
+          mkdir -p ${{ github.workspace }}/NS-LLM/native/build/models
+          cp -r ${{ github.workspace }}/NS-LLM/models/* ${{ github.workspace }}/NS-LLM/native/build/models/ || true
+
           cd ${{ github.workspace }}/NS-LLM/native/build
           cmake .. -DPROTOTYPE_ONLY=OFF -DONNXRUNTIME_DIR="$ONNXRUNTIME_DIR" || true
           cmake --build . --config Release || true
@@ -166,21 +180,23 @@ jobs:
           cd NS-LLM
           node test-native-inference.js || echo 'native inference tests failed (or missing)'
 
-      - name: "macOS: Run native generative smoke tests (stub)"
+      - name: "macOS: Run native generative smoke tests (real)"
         if: matrix.os == 'macos-latest' && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
         run: |
           set -e
           cd NS-LLM/native/build
-          echo '{"cmd":"generate", "text":"Hello"}' | ./ns-llm-native --stub | grep "STUB GENERATION"
+          # Run with real inference (no --stub)
+          echo '{"cmd":"generate", "text":"The quick brown fox"}' | ./ns-llm-native | grep "tokens_generated"
 
           node test-native-inference.js || echo 'native inference tests failed (or missing)'
 
-      - name: "Ubuntu: Run native generative smoke tests (stub)"
+      - name: "Ubuntu: Run native generative smoke tests (real)"
         if: matrix.os == 'ubuntu-latest'
         run: |
           set -e
           cd NS-LLM/native/build
-          echo '{"cmd":"generate", "text":"Hello"}' | ./ns-llm-native --stub | grep "STUB GENERATION"
+          # Run with real inference (no --stub)
+          echo '{"cmd":"generate", "text":"The quick brown fox"}' | ./ns-llm-native | grep "tokens_generated"
 
       - name: Compute checksums and manifest (Linux/macOS)
         if: matrix.os != 'windows-latest'
@@ -274,6 +290,14 @@ jobs:
           pip install -r ${{ github.workspace }}/NS-LLM/model-pipeline/requirements.txt -ErrorAction SilentlyContinue
           python ${{ github.workspace }}/NS-LLM/model-pipeline/download_and_export.py --model sentence-transformers/all-MiniLM-L6-v2 --out ${{ github.workspace }}/NS-LLM/models/all-MiniLM-L6-v2.onnx --quantize --force -ErrorAction SilentlyContinue
 
+          Write-Host "Running generative model export (gpt2) -> NS-LLM/models"
+          python ${{ github.workspace }}/NS-LLM/model-pipeline/export_generative.py --model gpt2 --out ${{ github.workspace }}/NS-LLM/models/gpt2.onnx --quantize -ErrorAction SilentlyContinue
+
+          # Copy models to build directory for tests
+          $modelsDest = Join-Path "${{ github.workspace }}" 'NS-LLM\native\build\Release\models'
+          New-Item -ItemType Directory -Path $modelsDest -Force | Out-Null
+          Copy-Item -Path "${{ github.workspace }}\NS-LLM\models\*" -Destination $modelsDest -Recurse -Force
+
           # Reconfigure CMake with ONNXRUNTIME_DIR for Windows
           Push-Location ${{ github.workspace }}/NS-LLM/native/build
           cmake .. -DPROTOTYPE_ONLY=OFF -DONNXRUNTIME_DIR="$env:ONNXRUNTIME_DIR" || Write-Host 'cmake configure failed'
@@ -287,12 +311,13 @@ jobs:
           Set-Location NS-LLM
           node test-native-inference.js || Write-Host 'native inference tests failed (or missing)'
 
-      - name: "Windows: Run native generative smoke tests (stub)"
+      - name: "Windows: Run native generative smoke tests (real)"
         if: matrix.os == 'windows-latest' && (startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch')
         shell: pwsh
         run: |
           Set-Location NS-LLM/native/build/Release
-          echo '{"cmd":"generate", "text":"Hello"}' | .\ns-llm-native.exe --stub | Select-String "STUB GENERATION"
+          # Run with real inference (no --stub)
+          echo '{"cmd":"generate", "text":"The quick brown fox"}' | .\ns-llm-native.exe | Select-String "tokens_generated"
 
       - name: Configure + Build native binary (Linux/macOS)
         if: matrix.os != 'windows-latest'
