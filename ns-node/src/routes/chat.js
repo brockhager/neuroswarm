@@ -180,20 +180,36 @@ router.post('/', async (req, res) => {
     ]));
 
     // STEP 1.5: Semantic Cache Lookup (before adapters)
-    // Check for semantically similar cached answers
-    if (isQuestion && !responseContent && semanticQueryKnowledge) {
+    // Check for semantically similar cached answers (Local + Federated)
+    if (isQuestion && !responseContent) {
         try {
+            const federatedCache = req.app.locals.federatedCacheService;
+
             // Dynamic threshold based on query type
             const isDeterministic = /\d+\s*[+\-*/×÷]\s*\d+|what\s+is\s+[\d\s+\-*/().]+|calculate/i.test(content) ||
                 /\b(price|value|worth|cost)\b.*\b(btc|bitcoin|eth|ethereum|crypto|coin)/i.test(content) ||
                 /\b(nba|basketball|scores?|lakers|warriors|celtics|nets|knicks|heat)\b/i.test(content) ||
                 /\b(news|headlines?|latest|breaking)\b/i.test(content);
             const semanticThreshold = isDeterministic ? 0.9 : 0.7; // higher for deterministic, lower for fuzzy
-            const semanticCacheResult = await semanticQueryKnowledge(content, semanticThreshold);
+
+            let semanticCacheResult = null;
+            if (federatedCache) {
+                semanticCacheResult = await federatedCache.semanticQuery(content, semanticThreshold);
+            } else if (semanticQueryKnowledge) {
+                // Fallback to local only if service not available
+                semanticCacheResult = await semanticQueryKnowledge(content, semanticThreshold);
+            }
+
             if (semanticCacheResult) {
-                logNs(`Semantic cache hit: similarity ${semanticCacheResult.similarity.toFixed(3)}, threshold ${semanticThreshold} for "${content}"`);
+                logNs(`Semantic cache hit (${semanticCacheResult.source}): similarity ${semanticCacheResult.similarity?.toFixed(3)}, threshold ${semanticThreshold} for "${content}"`);
                 responseContent = semanticCacheResult.answer;
-                searchData = { cached: true, similarity: semanticCacheResult.similarity, confidence: semanticCacheResult.confidence, threshold: semanticThreshold, source: semanticCacheResult.source };
+                searchData = {
+                    cached: true,
+                    similarity: semanticCacheResult.similarity,
+                    confidence: semanticCacheResult.confidence,
+                    threshold: semanticThreshold,
+                    source: semanticCacheResult.source
+                };
                 // Skip adapters and go to response
             }
         } catch (e) {

@@ -38,6 +38,35 @@ const GOVERNANCE_PARAMETERS = {
         current: 30,
         options: [7, 14, 30, 60, 90],
         unit: 'days'
+    },
+    // Generative Governance Parameters (Phase G)
+    minTokens: {
+        name: 'Minimum Generation Tokens',
+        description: 'Minimum length of generated content',
+        current: 5,
+        options: [1, 5, 10, 20],
+        unit: 'tokens'
+    },
+    maxTokens: {
+        name: 'Maximum Generation Tokens',
+        description: 'Maximum length of generated content',
+        current: 500,
+        options: [100, 250, 500, 1000, 2000],
+        unit: 'tokens'
+    },
+    minCoherence: {
+        name: 'Minimum Coherence Score',
+        description: 'Minimum required coherence for generated content',
+        current: 0.3,
+        options: [0.1, 0.3, 0.5, 0.7, 0.9],
+        unit: 'score'
+    },
+    toxicityEnabled: {
+        name: 'Enable Toxicity Detection',
+        description: 'Whether to check for toxic content',
+        current: true,
+        options: [true, false],
+        unit: 'boolean'
     }
 };
 
@@ -100,7 +129,24 @@ class GovernanceService {
         this.proposals = {};
         this.modelProposals = {};
         this.policyProposals = {};
+        this.listeners = []; // Event listeners
         this.loadData();
+    }
+
+    // Subscribe to parameter changes
+    addListener(callback) {
+        this.listeners.push(callback);
+    }
+
+    // Notify listeners of changes
+    notifyListeners(parameterKey, newValue) {
+        this.listeners.forEach(callback => {
+            try {
+                callback(parameterKey, newValue);
+            } catch (e) {
+                console.error('Error in governance listener:', e);
+            }
+        });
     }
 
     loadData() {
@@ -252,6 +298,7 @@ class GovernanceService {
         proposal.implementedAt = new Date().toISOString();
 
         console.log(`✅ Governance: ${proposal.parameterKey} updated to ${proposal.proposedValue}`);
+        this.notifyListeners(proposal.parameterKey, proposal.proposedValue);
         this.saveData();
     }
 
