@@ -116,6 +116,12 @@ Quorum & thresholds
 - Quorum q: minimum participation fraction required for a vote to be valid (e.g., 20% of active stake)
 - Threshold T: minimum weighted support required for acceptance (e.g., 50% for DAOs, 90% for knowledge inclusion)
 
+### Generative Governance Parameters
+- **minTokens**: The minimum number of tokens a generated response must have.
+- **maxTokens**: The maximum number of tokens a generated response can have.
+- **minCoherence**: The minimum coherence score a generated response must have.
+- **toxicityEnabled**: A boolean flag to enable or disable toxicity detection in generated responses.
+
 ---
 
 ## Consensus Flow (step-by-step)
