@@ -1,0 +1,12 @@
+[
+    {
+        "instruction": "Explain quantum computing.",
+        "input": "",
+        "output": "Quantum computing uses quantum bits or qubits to perform calculations."
+    },
+    {
+        "instruction": "Write a poem about code.",
+        "input": "",
+        "output": "Lines of logic, flows of thought, in silicon valleys, battles fought."
+    }
+]

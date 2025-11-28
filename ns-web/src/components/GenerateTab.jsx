@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import './GenerateTab.css'
+import MultiModalInput from './MultiModalInput'
 
 function GenerateTab() {
     const [prompt, setPrompt] = useState('')
@@ -11,10 +12,10 @@ function GenerateTab() {
         if (!prompt.trim()) return
 
         setLoading(true)
-        setResponse(null)
+        setResponse({ text: '', tokens_generated: 0 }) // Reset response
 
         try {
-            const res = await fetch('/api/generate', {
+            const res = await fetch('/api/generate/stream', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -23,12 +24,67 @@ function GenerateTab() {
                 })
             })
 
-            const data = await res.json()
-
-            if (res.ok) {
-                setResponse(data)
-            } else {
+            if (!res.ok) {
+                const data = await res.json()
                 setResponse({ error: data.error, details: data.details })
+                setLoading(false)
+                return
+            }
+
+            const reader = res.body.getReader()
+            const decoder = new TextDecoder()
+            let buffer = ''
+
+            while (true) {
+                const { done, value } = await reader.read()
+                if (done) break
+
+                buffer += decoder.decode(value, { stream: true })
+
+                // Process buffer for SSE events
+                let idx
+                while ((idx = buffer.indexOf('\n\n')) >= 0) {
+                    const eventBlock = buffer.slice(0, idx)
+                    buffer = buffer.slice(idx + 2)
+
+                    const lines = eventBlock.split('\n')
+                    let eventType = 'message'
+                    let data = ''
+
+                    for (const line of lines) {
+                        if (line.startsWith('event: ')) {
+                            eventType = line.slice(7).trim()
+                        } else if (line.startsWith('data: ')) {
+                            data = line.slice(6)
+                        }
+                    }
+
+                    if (eventType === 'done') {
+                        setLoading(false)
+                        return
+                    } else if (eventType === 'error') {
+                        const err = JSON.parse(data)
+                        setResponse(prev => ({ ...prev, error: err.error, details: err.details }))
+                        setLoading(false)
+                        return
+                    } else if (eventType === 'governance') {
+                        const gov = JSON.parse(data)
+                        setResponse(prev => ({ ...prev, governance: gov }))
+                    } else if (data) {
+                        try {
+                            const tokenData = JSON.parse(data)
+                            if (tokenData.stream_token) {
+                                setResponse(prev => ({
+                                    ...prev,
+                                    text: (prev.text || '') + tokenData.stream_token,
+                                    tokens_generated: (prev.tokens_generated || 0) + 1
+                                }))
+                            }
+                        } catch (e) {
+                            console.error('JSON parse error:', e)
+                        }
+                    }
+                }
             }
         } catch (err) {
             setResponse({ error: 'request-failed', details: err.message })
@@ -61,6 +117,10 @@ function GenerateTab() {
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         rows={4}
+                    />
+                    <MultiModalInput
+                        onImageUpload={(text) => setPrompt(prev => prev + `\n[Image Context: ${text}]`)}
+                        onAudioUpload={(text) => setPrompt(prev => prev + ` ${text}`)}
                     />
                 </div>
 

@@ -98,6 +98,17 @@ export async function generate(text, opts = {}) {
   }
 }
 
+export async function generateStream(text, opts = {}, onToken) {
+  const c = await initClient();
+  if (!c) throw new Error('ns-llm client missing');
+
+  try {
+    return await c.generateStream(text, opts, onToken);
+  } catch (e) {
+    throw e;
+  }
+}
+
 export function getClientType() {
   return clientType;
 }

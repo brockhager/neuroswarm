@@ -1,110 +1,137 @@
-/**
- * Generative Governance Routes
- * Endpoints for managing generative content governance
- */
-
 import express from 'express';
-import GenerativeGovernanceService from '../services/generative-governance.js';
-import * as nsLlmService from '../services/ns-llm.js';
+import * as nsLlm from '../services/ns-llm.js';
 
-const router = express.Router();
+export default function createGenerativeRouter(governanceService, blockchainAnchor) {
+    const router = express.Router();
 
-// Initialize governance service
-const governanceService = new GenerativeGovernanceService({
-    minTokens: 5,
-    maxTokens: 500,
-    minCoherence: 0.3,
-    strictMode: false
-});
-
-// Generate with governance validation
-router.post('/generate', async (req, res) => {
-    try {
-        const { text, prompt, maxTokens, timeout, skipGovernance } = req.body || {};
-        const inputText = text || prompt;
-
-        if (!inputText || typeof inputText !== 'string') {
-            return res.status(400).json({ error: "missing 'text' or 'prompt' string" });
-        }
-
+    // GET /audit - Retrieve audit logs
+    router.get('/audit', (req, res) => {
         try {
-            const result = await nsLlmService.generate(inputText, { maxTokens, timeout });
+            const logs = governanceService.getAuditLog();
+            res.json(logs);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to retrieve audit logs', details: error.message });
+        }
+    });
 
-            // Apply governance validation (unless explicitly skipped)
-            if (!skipGovernance) {
-                const validation = governanceService.validate(result.text, {
-                    query: inputText
-                });
+    // GET /metrics - Retrieve governance metrics
+    router.get('/metrics', (req, res) => {
+        try {
+            const metrics = governanceService.getMetrics();
+            res.json(metrics);
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to retrieve metrics', details: error.message });
+        }
+    });
 
-                result.governance = {
-                    status: validation.status,
-                    score: validation.score,
-                    violations: validation.violations,
-                    tokenCount: validation.tokenCount
-                };
+    // GET /chain - Retrieve blockchain status
+    router.get('/chain', (req, res) => {
+        try {
+            const chain = blockchainAnchor.getChain();
+            const verified = blockchainAnchor.verifyChain();
+            res.json({
+                height: chain.length,
+                verified,
+                latestBlocks: chain.slice(-10).reverse()
+            });
+        } catch (error) {
+            res.status(500).json({ error: 'Failed to retrieve blockchain status', details: error.message });
+        }
+    });
 
-                // Reject if governance fails
-                if (validation.status === 'reject') {
-                    return res.status(422).json({
-                        error: 'governance-rejected',
-                        text: result.text,
-                        governance: result.governance
-                    });
-                }
+    // POST /generate - Generate text with governance checks
+    router.post('/generate', async (req, res) => {
+        try {
+            const { text, model, maxTokens, timeout } = req.body;
+
+            if (!text) {
+                return res.status(400).json({ error: 'Text prompt is required' });
             }
 
-            return res.json(result);
-        } catch (e) {
-            return res.status(502).json({ error: 'ns-llm-unavailable', details: e.message });
+            // 1. Governance Validation (pre-generation)
+            const validation = await governanceService.validate(text, {
+                query: text,
+                coherenceScore: 0.8, // Placeholder
+                federatedCacheService: req.app.locals.federatedCacheService
+            });
+
+            if (validation.status === 'reject') {
+                return res.status(403).json({
+                    error: 'Content rejected by governance policy',
+                    violations: validation.violations,
+                    score: validation.score
+                });
+            }
+
+            // 2. Generate Content (if passed)
+            const result = await nsLlm.generate(text, { model, maxTokens, timeout });
+
+            // 3. Return Response
+            res.json({
+                ...result,
+                governance: {
+                    status: validation.status,
+                    score: validation.score,
+                    violations: validation.violations
+                }
+            });
+
+        } catch (error) {
+            console.error('Generation error:', error);
+            res.status(500).json({ error: 'Internal server error', details: error.message });
         }
-    } catch (err) {
-        return res.status(500).json({ error: 'generate-failed', details: err.message });
-    }
-});
+    });
 
-// Get governance metrics
-router.get('/metrics', (req, res) => {
-    try {
-        const metrics = governanceService.getMetrics();
-        return res.json(metrics);
-    } catch (err) {
-        return res.status(500).json({ error: 'metrics-failed', details: err.message });
-    }
-});
+    // POST /generate/stream - Stream generated text
+    router.post('/generate/stream', async (req, res) => {
+        try {
+            const { text, model, maxTokens, timeout } = req.body;
 
-// Get governance configuration
-router.get('/config', (req, res) => {
-    try {
-        const config = governanceService.getConfig();
-        return res.json(config);
-    } catch (err) {
-        return res.status(500).json({ error: 'config-failed', details: err.message });
-    }
-});
+            if (!text) {
+                return res.status(400).json({ error: 'Text prompt is required' });
+            }
 
-// Update governance configuration
-router.put('/config', (req, res) => {
-    try {
-        governanceService.updateConfig(req.body);
-        return res.json({ success: true, config: governanceService.getConfig() });
-    } catch (err) {
-        return res.status(500).json({ error: 'config-update-failed', details: err.message });
-    }
-});
+            // 1. Governance Validation (Pre-generation)
+            const validation = await governanceService.validate(text, {
+                query: text,
+                coherenceScore: 0.8, // Placeholder
+                federatedCacheService: req.app.locals.federatedCacheService
+            });
 
-// Get audit log
-router.get('/audit', (req, res) => {
-    try {
-        const { status, since, limit } = req.query;
-        const log = governanceService.getAuditLog({
-            status,
-            since: since ? parseInt(since) : undefined,
-            limit: limit ? parseInt(limit) : undefined
-        });
-        return res.json({ entries: log, total: log.length });
-    } catch (err) {
-        return res.status(500).json({ error: 'audit-failed', details: err.message });
-    }
-});
+            if (validation.status === 'reject') {
+                return res.status(403).json({
+                    error: 'Content rejected by governance policy',
+                    violations: validation.violations
+                });
+            }
 
-export default router;
+            // 2. Setup SSE Stream
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.setHeader('Cache-Control', 'no-cache');
+            res.setHeader('Connection', 'keep-alive');
+
+            // 3. Stream Generation
+            let accumulatedText = '';
+            await nsLlm.generateStream(text, { model, maxTokens, timeout }, (tokenData) => {
+                if (tokenData.stream_token) {
+                    accumulatedText += tokenData.stream_token;
+                    res.write(`data: ${JSON.stringify(tokenData)}\n\n`);
+                }
+            });
+
+            res.write('event: done\ndata: [DONE]\n\n');
+            res.end();
+
+        } catch (error) {
+            console.error('Streaming error:', error);
+            if (!res.headersSent) {
+                res.status(500).json({ error: 'Internal server error', details: error.message });
+            } else {
+                res.write(`event: error\ndata: ${JSON.stringify({ error: error.message })}\n\n`);
+                res.end();
+            }
+        }
+    });
+
+    return router;
+}

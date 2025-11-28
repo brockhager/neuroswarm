@@ -235,6 +235,96 @@ class NSLLMClient {
     }
 
     /**
+     * Generate text stream
+     * @param {string} text - Input prompt
+     * @param {Object} options - Generation options
+     * @param {Function} onToken - Callback for each token
+     * @returns {Promise<void>}
+     */
+    async generateStream(text, options = {}, onToken) {
+        this._checkCircuitBreaker();
+        this.metrics.totalRequests++;
+        const startTime = Date.now();
+        const maxTokens = options.maxTokens || 20;
+
+        const parsedUrl = new URL(this.baseUrl);
+        const isHttps = parsedUrl.protocol === 'https:';
+        const httpModule = isHttps ? https : http;
+
+        const postData = JSON.stringify({
+            cmd: 'generate',
+            text: text,
+            max_tokens: maxTokens,
+            stream: true
+        });
+
+        return new Promise((resolve, reject) => {
+            const reqOptions = {
+                hostname: parsedUrl.hostname,
+                port: parsedUrl.port || (isHttps ? 443 : 80),
+                path: '/api/generate',
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(postData)
+                },
+                agent: this.agent
+            };
+
+            const req = httpModule.request(reqOptions, (res) => {
+                if (res.statusCode !== 200) {
+                    this._recordFailure();
+                    reject(new Error(`HTTP ${res.statusCode}`));
+                    return;
+                }
+
+                res.setEncoding('utf8');
+                let buffer = '';
+
+                res.on('data', (chunk) => {
+                    buffer += chunk;
+                    let idx;
+                    while ((idx = buffer.indexOf('\n\n')) >= 0) {
+                        const event = buffer.slice(0, idx);
+                        buffer = buffer.slice(idx + 2);
+
+                        const lines = event.split('\n');
+                        for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                                const data = line.slice(6);
+                                if (data === '[DONE]') {
+                                    // Done
+                                } else {
+                                    try {
+                                        const parsed = JSON.parse(data);
+                                        if (onToken) onToken(parsed);
+                                    } catch (e) {
+                                        // ignore invalid json
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                res.on('end', () => {
+                    const latency = Date.now() - startTime;
+                    this._recordSuccess(latency);
+                    resolve();
+                });
+            });
+
+            req.on('error', (err) => {
+                this._recordFailure();
+                reject(err);
+            });
+
+            req.write(postData);
+            req.end();
+        });
+    }
+
+    /**
      * Generate embedding for text
      * @param {string} text - Input text
      * @param {Object} options - Embedding options

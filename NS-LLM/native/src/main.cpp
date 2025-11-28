@@ -263,6 +263,29 @@ int main(int argc, char** argv) {
                         Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "ns-llm");
                         Ort::SessionOptions sessionOptions;
                         sessionOptions.SetIntraOpNumThreads(1);
+                        
+                        // GPU Acceleration
+                        try {
+                            // Try CUDA (NVIDIA)
+                            OrtCUDAProviderOptions cuda_opts;
+                            sessionOptions.AppendExecutionProvider_CUDA(cuda_opts);
+                            if (!stub) std::cerr << "[NS-LLM] Enabled CUDA Provider" << std::endl;
+                        } catch (...) {}
+
+                        try {
+                            // Try CoreML (Apple Silicon)
+                            // Note: Requires build with CoreML support
+                            uint32_t coreml_flags = 0; // COREML_FLAG_USE_CPU_ONLY = 0x001 (we want GPU)
+                            sessionOptions.AppendExecutionProvider_CoreML(coreml_flags);
+                            if (!stub) std::cerr << "[NS-LLM] Enabled CoreML Provider" << std::endl;
+                        } catch (...) {}
+                        
+                        try {
+                            // Try DirectML (Windows)
+                            sessionOptions.AppendExecutionProvider_DML(0);
+                            if (!stub) std::cerr << "[NS-LLM] Enabled DirectML Provider" << std::endl;
+                        } catch (...) {}
+
                         Ort::Session session(env, modelPath.c_str(), sessionOptions);
 
                         // NOTE: Real inference requires tokenizer/inputs; for now return model-loaded info
@@ -276,6 +299,100 @@ int main(int argc, char** argv) {
 #endif
 
                 std::cout << json_error("onnx runtime not implemented in scaffold or model missing") << std::endl;
+                continue;
+            }
+
+            if (cmd == "batch_embed") {
+                requests_total++;
+                // Naive parsing of "texts":["a","b"]
+                std::vector<std::string> texts;
+                size_t pos = line.find("\"texts\":[");
+                if (pos != std::string::npos) {
+                    pos += 9;
+                    while (pos < line.size()) {
+                        size_t start = line.find('"', pos);
+                        if (start == std::string::npos) break;
+                        size_t end = line.find('"', start + 1);
+                        if (end == std::string::npos) break;
+                        texts.push_back(line.substr(start + 1, end - start - 1));
+                        pos = line.find(',', end);
+                        if (pos == std::string::npos) break; // End of array or error
+                        pos++;
+                    }
+                }
+
+                if (texts.empty()) {
+                    requests_failed++;
+                    std::cout << json_error("missing texts array") << std::endl;
+                    continue;
+                }
+
+                std::cout << "{\"embeddings\":[";
+                for (size_t i = 0; i < texts.size(); i++) {
+                    if (i > 0) std::cout << ",";
+                    if (stub) {
+                        auto emb = deterministic_embedding(texts[i]);
+                        std::cout << "[";
+                        for (size_t j = 0; j < emb.size(); j++) {
+                            if (j > 0) std::cout << ",";
+                            std::cout << emb[j];
+                        }
+                        std::cout << "]";
+                    } else {
+                        // TODO: Real batch inference
+                        // For now, loop single inference (MVP)
+                        // In real impl, we would stack inputs into [batch, seq] tensor
+                        std::cout << "[]"; 
+                    }
+                }
+                std::cout << "],\"count\":" << texts.size() << "}" << std::endl;
+                continue;
+            }
+
+            if (cmd == "batch_embed") {
+                requests_total++;
+                // Naive parsing of "texts":["a","b"]
+                std::vector<std::string> texts;
+                size_t pos = line.find("\"texts\":[");
+                if (pos != std::string::npos) {
+                    pos += 9;
+                    while (pos < line.size()) {
+                        size_t start = line.find('"', pos);
+                        if (start == std::string::npos) break;
+                        size_t end = line.find('"', start + 1);
+                        if (end == std::string::npos) break;
+                        texts.push_back(line.substr(start + 1, end - start - 1));
+                        pos = line.find(',', end);
+                        if (pos == std::string::npos) break; // End of array or error
+                        pos++;
+                    }
+                }
+
+                if (texts.empty()) {
+                    requests_failed++;
+                    std::cout << json_error("missing texts array") << std::endl;
+                    continue;
+                }
+
+                std::cout << "{\"embeddings\":[";
+                for (size_t i = 0; i < texts.size(); i++) {
+                    if (i > 0) std::cout << ",";
+                    if (stub) {
+                        auto emb = deterministic_embedding(texts[i]);
+                        std::cout << "[";
+                        for (size_t j = 0; j < emb.size(); j++) {
+                            if (j > 0) std::cout << ",";
+                            std::cout << emb[j];
+                        }
+                        std::cout << "]";
+                    } else {
+                        // TODO: Real batch inference
+                        // For now, loop single inference (MVP)
+                        // In real impl, we would stack inputs into [batch, seq] tensor
+                        std::cout << "[]"; 
+                    }
+                }
+                std::cout << "],\"count\":" << texts.size() << "}" << std::endl;
                 continue;
             }
 
@@ -326,9 +443,31 @@ int main(int argc, char** argv) {
                     Ort::Env env(ORT_LOGGING_LEVEL_WARNING, "ns-llm-gen");
                     Ort::SessionOptions sessionOptions;
                     sessionOptions.SetIntraOpNumThreads(1);
+
+                    // GPU Acceleration
+                    try {
+                        OrtCUDAProviderOptions cuda_opts;
+                        sessionOptions.AppendExecutionProvider_CUDA(cuda_opts);
+                    } catch (...) {}
+                    try {
+                        sessionOptions.AppendExecutionProvider_CoreML(0);
+                    } catch (...) {}
+                    try {
+                        sessionOptions.AppendExecutionProvider_DML(0);
+                    } catch (...) {}
+
                     Ort::Session session(env, modelPath.c_str(), sessionOptions);
                     
+                    bool stream = false;
+                    std::string stream_val = get_json_field(line, "stream");
+                    if (stream_val == "true") stream = true;
+
                     int max_new_tokens = 20; // limit for safety
+                    std::string max_tokens_str = get_json_field(line, "max_tokens");
+                    if (!max_tokens_str.empty()) {
+                        try { max_new_tokens = std::stoi(max_tokens_str); } catch(...) {}
+                    }
+                    
                     int tokens_generated = 0;
                     
                     for (int i=0; i<max_new_tokens; i++) {
@@ -374,12 +513,21 @@ int main(int argc, char** argv) {
                         
                         tokens.push_back(next_token);
                         tokens_generated++;
+
+                        if (stream) {
+                            std::string token_str = tokenizer.decode({next_token});
+                            std::cout << "{\"stream_token\":\"" << jstr_escape(token_str) << "\",\"done\":false}" << std::endl;
+                        }
                         
                         if (next_token == 50256) break; // EOS
                     }
                     
                     std::string result = tokenizer.decode(tokens);
-                    std::cout << json_generate(result, "gpt2", tokens_generated) << std::endl;
+                    if (stream) {
+                        std::cout << "{\"stream_token\":\"\",\"done\":true,\"text\":\"" << jstr_escape(result) << "\",\"tokens_generated\":" << tokens_generated << "}" << std::endl;
+                    } else {
+                        std::cout << json_generate(result, "gpt2", tokens_generated) << std::endl;
+                    }
                     continue;
 
                 } catch (const std::exception &e) {
