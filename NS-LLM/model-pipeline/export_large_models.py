@@ -104,13 +104,23 @@ def export_model(model_key, output_dir, quantize=True, force=False):
         
         # Quantize if requested
         if quantize and model_info["quantize"]:
-            print("4. Applying dynamic quantization (int8)...")
+            print("4. Applying dynamic quantization...")
+            
+            # Default to QInt8 (closest to Q4_K_M in spirit for ONNX)
+            # ONNX Runtime mainly supports QInt8/QUInt8 for dynamic quantization
+            # For more advanced types (Q4, Q5), we'd need OQT or specific block quantization
+            # Here we expose a few standard ONNX types
+            
+            q_type = QuantType.QInt8
+            if os.environ.get("QUANT_TYPE") == "QUInt8":
+                q_type = QuantType.QUInt8
+            
             quantize_dynamic(
                 str(onnx_path),
                 str(quantized_path),
-                weight_type=QuantType.QInt8
+                weight_type=q_type
             )
-            print(f"✓ Quantized model saved: {quantized_path}")
+            print(f"✓ Quantized model saved: {quantized_path} (Type: {q_type})")
             
             # Remove unquantized version to save space
             if onnx_path.exists():

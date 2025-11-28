@@ -44,9 +44,12 @@ RUN python3 export_generative.py --model gpt2 --out /models --quantize
 # Runtime stage
 FROM ubuntu:22.04
 
-# Install runtime dependencies
+# Install runtime dependencies and Node.js
 RUN apt-get update && apt-get install -y \
     libgomp1 \
+    curl \
+    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy ONNX Runtime libraries
@@ -63,12 +66,18 @@ ENV LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
 WORKDIR /app
 
+# Copy server files
+COPY NS-LLM/package.json NS-LLM/server.js NS-LLM/native-shim.js ./
+
+# Install server dependencies
+RUN npm install --production
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD echo '{"cmd":"health"}' | /usr/local/bin/ns-llm-native || exit 1
+    CMD curl -f http://localhost:8080/health || exit 1
 
 # Expose port
 EXPOSE 8080
 
-# Run NS-LLM backend
-CMD ["/usr/local/bin/ns-llm-native"]
+# Run NS-LLM server
+CMD ["npm", "start"]
