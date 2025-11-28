@@ -100,33 +100,6 @@ class GenerativeGovernanceService {
             }
         }
 
-        // 3. Coherence validation
-        if (context.coherenceScore !== undefined && context.coherenceScore < this.config.minCoherence) {
-            violations.push({
-                type: 'coherence',
-                severity: 'warn',
-                message: `Low coherence score: ${context.coherenceScore.toFixed(2)} (min: ${this.config.minCoherence})`
-            });
-            this.metrics.coherenceViolations++;
-        }
-
-        // 4. Custom validators
-        for (const [name, validatorFn] of this.customValidators) {
-            try {
-                const result = await validatorFn(text, context);
-                if (result.status !== 'pass') {
-                    violations.push({
-                        type: `custom:${name}`,
-                        severity: result.status,
-                        message: result.message || `Validation failed for ${name}`
-                    });
-                    this.metrics.customViolations++;
-                }
-            } catch (e) {
-                console.warn(`Validator ${name} failed:`, e.message);
-            }
-        }
-
         // Determine overall status
         const hasReject = violations.some(v => v.severity === 'reject');
         const hasWarn = violations.some(v => v.severity === 'warn');

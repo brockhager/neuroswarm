@@ -1,0 +1,18 @@
+{
+    "id": "length-validator",
+    "name": "Length Validator",
+    "version": "1.0.0",
+    "type": "validator",
+    "author": "NeuroSwarm Team",
+    "description": "Validates content length against minimum and maximum thresholds",
+    "entrypoint": "index.js",
+    "config": {
+        "minWords": 5,
+        "maxWords": 500,
+        "severity": "reject"
+    },
+    "permissions": [
+        "read:text",
+        "write:validation-result"
+    ]
+}
