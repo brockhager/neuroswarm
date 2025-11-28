@@ -32,12 +32,22 @@ class NativeShim {
       path.join(__dirname, 'native', 'build', 'Release', 'ns-llm-native.exe'),
       path.join(__dirname, 'native', 'ns-llm-native.exe'),
     ];
-    for (const c of candidates) if (fs.existsSync(c)) return c;
+    for (const c of candidates) {
+      console.log(`[NativeShim] Checking candidate: ${c}`);
+      if (fs.existsSync(c)) {
+        console.log(`[NativeShim] Found binary: ${c}`);
+        return c;
+      }
+    }
+    console.warn('[NativeShim] No binary found in candidates');
     return null;
   }
 
   spawnBinary(binPath) {
-    const child = spawn(binPath, ['--stub'], { stdio: ['pipe', 'pipe', process.stderr] });
+    const child = spawn(binPath, ['--stub'], {
+      stdio: ['pipe', 'pipe', process.stderr],
+      cwd: __dirname
+    });
     child.on('spawn', () => {
       this.process = child;
       this.ready = true;
@@ -47,7 +57,7 @@ class NativeShim {
       this.ready = false;
       this.process = null;
       this.fallback = true;
-      console.warn('native binary exited, switching to fallback HTTP prototype');
+      console.warn(`native binary exited with code ${code} and signal ${signal}, switching to fallback HTTP prototype`);
     });
 
     // Buffer stdout lines

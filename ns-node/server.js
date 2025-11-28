@@ -22,6 +22,10 @@ import BlockchainAnchorService from './src/services/blockchain-anchor.js';
 import OrchestrationService from './src/services/orchestration.js';
 import ScoringConsensus from './src/services/scoring-consensus.js';
 import FederatedCacheService from './src/services/federated-cache.js';
+import GpuResourceManager from './src/services/gpu-resource-manager.js';
+import KvCacheService from './src/services/kv-cache.js';
+import PerformanceProfiler from './src/services/performance-profiler.js';
+import PluginManager from './src/services/plugin-manager.js';
 
 // Routes
 import chatRouter from './src/routes/chat.js';
@@ -32,6 +36,10 @@ import createOrchestrationRouter from './src/routes/orchestration.js';
 import createConsensusRouter from './src/routes/consensus.js';
 import createGovernanceRouter from './src/routes/governance.js';
 import createCacheRouter from './src/routes/cache.js';
+import createGpuRouter from './src/routes/gpu.js';
+import createKvCacheRouter from './src/routes/kv-cache.js';
+import createPerformanceRouter from './src/routes/performance.js';
+import createPluginRouter from './src/routes/plugins.js';
 import createValidatorsRouter, { createTxRouter, createBlocksRouter, createChainRouter } from './src/routes/validators.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -68,6 +76,17 @@ const p2pProtocol = new P2PProtocol(peerManager, {
 });
 
 // Initialize Phase G Services
+const gpuResourceManager = new GpuResourceManager();
+await gpuResourceManager.initialize();
+
+const kvCacheService = new KvCacheService();
+await kvCacheService.initialize();
+
+const performanceProfiler = new PerformanceProfiler();
+
+const pluginManager = new PluginManager();
+await pluginManager.initialize();
+
 const orchestrationService = new OrchestrationService(peerManager, metricsService);
 const scoringConsensus = new ScoringConsensus(peerManager.reputation, { minVotes: 2 });
 const federatedCacheService = new FederatedCacheService(orchestrationService);
@@ -131,6 +150,10 @@ app.use('/api/orchestration', createOrchestrationRouter(orchestrationService));
 app.use('/api/consensus', createConsensusRouter(scoringConsensus));
 app.use('/api/governance', createGovernanceRouter(governanceService));
 app.use('/api/cache', createCacheRouter(cacheVisualizationService));
+app.use('/api/gpu', createGpuRouter(gpuResourceManager));
+app.use('/api/kv-cache', createKvCacheRouter(kvCacheService));
+app.use('/api/performance', createPerformanceRouter(performanceProfiler));
+app.use('/api/plugins', createPluginRouter(pluginManager));
 app.use('/api/generative', createGenerativeRouter(generativeGovernanceService, blockchainAnchor));
 
 // Query History Routes

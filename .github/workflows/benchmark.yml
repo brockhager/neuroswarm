@@ -1,0 +1,134 @@
+name: Performance Benchmarks
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: ns-node/package-lock.json
+          
+      - name: Install dependencies
+        run: |
+          cd ns-node
+          npm ci
+          
+      - name: Start NS-Node server
+        run: |
+          cd ns-node
+          node server.js &
+          SERVER_PID=$!
+          echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
+          
+          # Wait for server to be ready
+          echo "Waiting for server to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:3009/health > /dev/null; then
+              echo "Server is ready!"
+              break
+            fi
+            echo "Attempt $i/30..."
+            sleep 1
+          done
+          
+      - name: Run inference latency benchmark
+        id: benchmark
+        run: |
+          cd ns-node/benchmarks
+          node inference_latency.js | tee benchmark-output.txt
+          
+      - name: Parse benchmark results
+        id: parse
+        run: |
+          node .github/scripts/parse-benchmark-results.js ns-node/benchmarks/benchmark-output.txt
+          
+      - name: Load baseline metrics
+        id: baseline
+        continue-on-error: true
+        run: |
+          if [ -f benchmark-baseline.json ]; then
+            echo "Baseline found"
+            cat benchmark-baseline.json
+          else
+            echo "No baseline found, this will be the new baseline"
+          fi
+          
+      - name: Check for performance regression
+        id: regression
+        continue-on-error: true
+        run: |
+          node .github/scripts/check-performance-regression.js
+          
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const summary = JSON.parse(fs.readFileSync('benchmark-summary.json', 'utf8'));
+            
+            const comment = `## 📊 Performance Benchmark Results
+            
+${summary.markdown}
+
+<details>
+<summary>View detailed metrics</summary>
+
+\`\`\`json
+${JSON.stringify(summary.metrics, null, 2)}
+\`\`\`
+
+</details>
+
+---
+*Automated benchmark run on commit ${context.sha.substring(0, 7)}*
+`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+            
+      - name: Update baseline (main branch only)
+        if: github.ref == 'refs/heads/main' && success()
+        run: |
+          cp benchmark-summary.json benchmark-baseline.json
+          
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark-results
+          path: |
+            benchmark-summary.json
+            ns-node/benchmarks/benchmark-output.txt
+          retention-days: 30
+          
+      - name: Fail if regression detected
+        if: steps.regression.outcome == 'failure'
+        run: |
+          echo "❌ Performance regression detected!"
+          exit 1
+          
+      - name: Stop server
+        if: always()
+        run: |
+          if [ ! -z "$SERVER_PID" ]; then
+            kill $SERVER_PID || true
+          fi

@@ -13,15 +13,16 @@
     "build:binary": "nexe server.js --output ../dist/ns-node.exe"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "body-parser": "^1.20.2",
-    "cors": "^2.8.5",
-    "uuid": "^9.0.0",
-    "node-fetch": "^3.3.1",
-    "helia": "^5.1.0",
     "@helia/unixfs": "^4.0.1",
     "blockstore-fs": "^2.0.2",
-    "datastore-fs": "^10.0.2"
+    "body-parser": "^1.20.2",
+    "cors": "^2.8.5",
+    "datastore-fs": "^10.0.2",
+    "express": "^4.18.2",
+    "helia": "^5.1.0",
+    "lru-cache": "^11.2.2",
+    "node-fetch": "^3.3.1",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "nexe": "^4.0.0-rc.2"
