@@ -1,0 +1,17 @@
+{
+    "id": "no-profanity",
+    "name": "Profanity Filter",
+    "version": "1.0.0",
+    "type": "validator",
+    "author": "NeuroSwarm Team",
+    "description": "Detects profanity and offensive language in generated content",
+    "entrypoint": "index.js",
+    "config": {
+        "severity": "warn",
+        "dictionary": "en-US"
+    },
+    "permissions": [
+        "read:text",
+        "write:validation-result"
+    ]
+}

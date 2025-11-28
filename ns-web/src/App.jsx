@@ -3,6 +3,8 @@ import './App.css'
 import GenerateTab from './components/GenerateTab'
 import RAGTab from './components/RAGTab'
 import GovernanceTab from './components/GovernanceTab'
+import PerformanceTab from './components/PerformanceTab'
+import PluginDashboard from './components/PluginDashboard'
 import ModelsTab from './components/ModelsTab'
 
 function App() {
@@ -21,6 +23,8 @@ function App() {
         { id: 'generate', label: 'Generate', icon: '✨' },
         { id: 'rag', label: 'RAG Query', icon: '🔍' },
         { id: 'governance', label: 'Governance', icon: '🛡️' },
+        { id: 'performance', label: 'Performance', icon: '📊' },
+        { id: 'extensions', label: 'Extensions', icon: '🧩' },
         { id: 'models', label: 'Models', icon: '🤖' }
     ]
 
@@ -69,6 +73,8 @@ function App() {
                     {activeTab === 'generate' && <GenerateTab />}
                     {activeTab === 'rag' && <RAGTab />}
                     {activeTab === 'governance' && <GovernanceTab />}
+                    {activeTab === 'performance' && <PerformanceTab />}
+                    {activeTab === 'extensions' && <PluginDashboard />}
                     {activeTab === 'models' && <ModelsTab />}
                 </div>
             </main>
