@@ -1,5 +1,5 @@
 # Sources / Allie‑AI Adapters
-[← Home](Home.md)
+[← Home](../Getting-Started/Home.md)
 
 NeuroSwarm's sources adapters provide a way to attach external data attestation to transactions prior to block inclusion. They are managed under `neuroswarm/sources/` and the gateway performs queries at admission time.
 
