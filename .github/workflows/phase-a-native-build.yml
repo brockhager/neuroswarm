@@ -386,15 +386,15 @@ jobs:
 
           # Install python deps for model export
           python -m pip install --upgrade pip
-          pip install optimum[exporters] onnxruntime -ErrorAction SilentlyContinue
-          pip install -r "${{ github.workspace }}\NS-LLM\model-pipeline\requirements.txt" -ErrorAction SilentlyContinue
+          pip install optimum[exporters] onnxruntime
+          pip install -r "${{ github.workspace }}\NS-LLM\model-pipeline\requirements.txt"
           
           # Export embedding model
-          python "${{ github.workspace }}\NS-LLM\model-pipeline\download_and_export.py" --model sentence-transformers/all-MiniLM-L6-v2 --out "${{ github.workspace }}\NS-LLM\models\all-MiniLM-L6-v2.onnx" --quantize --force -ErrorAction SilentlyContinue
+          python "${{ github.workspace }}\NS-LLM\model-pipeline\download_and_export.py" --model sentence-transformers/all-MiniLM-L6-v2 --out "${{ github.workspace }}\NS-LLM\models\all-MiniLM-L6-v2.onnx" --quantize --force
 
           # Export generative model
           Write-Host "Running generative model export (gpt2) -> NS-LLM/models"
-          python "${{ github.workspace }}\NS-LLM\model-pipeline\export_generative.py" --model gpt2 --out "${{ github.workspace }}\NS-LLM\models\gpt2.onnx" --quantize -ErrorAction SilentlyContinue
+          python "${{ github.workspace }}\NS-LLM\model-pipeline\export_generative.py" --model gpt2 --out "${{ github.workspace }}\NS-LLM\models\gpt2.onnx" --quantize
 
           # Copy models to build directory for tests
           $modelsDest = Join-Path "${{ github.workspace }}" 'NS-LLM\native\build\Release\models'

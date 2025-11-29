@@ -259,8 +259,7 @@ int main(int argc, char** argv) {
                             OrtCUDAProviderOptions cuda_opts;
                             sessionOptions.AppendExecutionProvider_CUDA(cuda_opts);
                         } catch (...) {}
-                        try { sessionOptions.AppendExecutionProvider_CoreML(0); } catch (...) {}
-                        try { sessionOptions.AppendExecutionProvider_DML(0); } catch (...) {}
+                        // Note: CoreML and DML providers require specific ONNX Runtime builds
 
                         session_ptr->session = std::make_unique<Ort::Session>(*session_ptr->env, modelPath.c_str(), sessionOptions);
                         session_ptr->loaded = true;
@@ -313,8 +312,7 @@ int main(int argc, char** argv) {
                             OrtCUDAProviderOptions cuda_opts;
                             sessionOptions.AppendExecutionProvider_CUDA(cuda_opts);
                         } catch (...) {}
-                        try { sessionOptions.AppendExecutionProvider_CoreML(0); } catch (...) {}
-                        try { sessionOptions.AppendExecutionProvider_DML(0); } catch (...) {}
+                        // Note: CoreML and DML providers require specific ONNX Runtime builds
 
                         session_ptr->session = std::make_unique<Ort::Session>(*session_ptr->env, modelPath.c_str(), sessionOptions);
                         session_ptr->loaded = true;
