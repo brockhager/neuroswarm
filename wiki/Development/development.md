@@ -240,7 +240,7 @@ Contributing to NeuroSwarm follows a structured workflow that integrates plannin
   - **Infrastructure:** Core networking, storage, and deployment
 
 #### 2. **Setup Development Environment** 🛠️
-- **Follow [Getting Started](../getting-started.md)** to set up all repositories
+- **Follow [Getting Started](../Getting-Started/Getting-Started.md)** to set up all repositories
 - **Configure your IDE** with recommended extensions (Rust Analyzer, ESLint, etc.)
 - **Run the test suite** to ensure your environment is working
 
@@ -304,7 +304,7 @@ Contributing to NeuroSwarm follows a structured workflow that integrates plannin
 
 ### Getting Help
 
-- **Documentation:** Start with [Getting Started](../getting-started.md)
+- **Documentation:** Start with [Getting Started](../Getting-Started/Getting-Started.md)
 - **Issues:** Open GitHub issues for bugs or questions
 - **Discussions:** Use GitHub Discussions for design questions
 - **Discord/Telegram:** Join community chat for real-time help

@@ -10,7 +10,7 @@
 - A GitHub account for collaboration
 
 ### Q: How do I set up my development environment?
-**A:** Follow our [Getting Started Guide](Getting-Started.md) for step-by-step instructions. We also provide automated setup scripts in the `/scripts/` directory.
+**A:** Follow our [Getting Started Guide](../Getting-Started/Getting-Started.md) for step-by-step instructions. We also provide automated setup scripts in the `/scripts/` directory.
 
 ### Q: I'm getting build errors. What should I do?
 **A:** Check these common solutions:
@@ -96,4 +96,4 @@ The hygiene checker will automatically enforce these rules.
 **A:** Create issues in the [GitHub repository](https://github.com/brockhager/neuro-infra/issues) with appropriate labels.
 
 ### Q: I want to contribute but don't know where to start.
-**A:** Start with the [Getting Started Guide](Getting-Started.md), then look for "good first issue" labels in our repository.
+**A:** Start with the [Getting Started Guide](../Getting-Started/Getting-Started.md), then look for "good first issue" labels in our repository.

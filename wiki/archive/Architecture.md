@@ -1,5 +1,5 @@
 # Architecture: NeuroSwarm Node Roles & Data Flow
-[← Home](Home.md)
+[← Home](../Getting-Started/Home.md)
 
 ## Goals
 This page explains the responsibilities and interactions of the core nodes in NeuroSwarm: `ns-node` (brain), `gateway-node` (mempool/validation), `vp-node` (producer and IPFS publisher), and the `sources/` adapters.

@@ -1,5 +1,5 @@
 # Governance & Anchoring
-[← Index](Index.md)
+[← Index](../Index.md)
 
 Overview
 

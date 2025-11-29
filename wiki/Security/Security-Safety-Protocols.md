@@ -1,5 +1,5 @@
 # Security & Safety Protocols
-[← Index](Index.md)
+[← Index](../Index.md)
 
 Overview
 

@@ -1,5 +1,5 @@
 # Testing & CI: How to validate the NeuroSwarm pipeline
-[← Home](Home.md)
+[← Home](../Getting-Started/Home.md)
 
 This page documents the tests and CI workflow used to validate the system including `ns-node` (brain), `gateway-node` (mempool), `vp-node` (producer), and IPFS integration.
 
