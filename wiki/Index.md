@@ -2,11 +2,105 @@
 
 **Welcome to the NeuroSwarm Documentation!** This is your complete navigation guide to all 200+ wiki documents, organized into logical categories.
 
+> 💡 **First time here?** Follow the [📍 Learning Path](#-recommended-learning-path) below for a guided tour!
+
+---
+
+## 📍 Recommended Learning Path
+
+**Follow this path to understand NeuroSwarm step-by-step:**
+
+### Step 1: Understand What NeuroSwarm Is
+👉 **Start here:** [System Overview](System-Overview/README.md) - Complete catalog of all system entities
+
+**What you'll learn:**
+- All 6 node types (NS, Gateway, VP, Admin, NS-LLM, NS-Web)
+- Core components and their purposes
+- Data structures and tools
+- Quick reference by user type
+
+**Time:** 15-20 minutes
+
+---
+
+### Step 2: Learn the Architecture
+👉 **Next:** [Architecture Tutorial](Learning-Hub/Core-Concepts/Architecture.md) - 12-section comprehensive guide
+
+**What you'll learn:**
+- How nodes communicate
+- Transaction lifecycle
+- Global Brain concept
+- Security and verification
+- Performance targets
+
+**Time:** 30-40 minutes
+
+---
+
+### Step 3: Understand Governance
+👉 **Then:** [Governance Tutorial](Learning-Hub/Core-Concepts/Governance.md) - 10-section governance guide
+
+**What you'll learn:**
+- Proposal and voting process
+- Blockchain anchoring
+- Validator responsibilities
+- Audit trail transparency
+
+**Time:** 20-30 minutes
+
+---
+
+### Step 4: Run Your First Node
+👉 **Next:** [Run Node Tutorial](Learning-Hub/Tutorials/Run-Node.md) - Complete setup guide
+
+**What you'll learn:**
+- Quick start with Docker (< 5 minutes)
+- Node types and their purposes
+- Production configuration
+- Troubleshooting
+
+**Time:** 5-15 minutes (setup) + 20 minutes (reading)
+
+---
+
+### Step 5: Build Your First Plugin
+👉 **Choose your path:**
+
+**Option A - Validator Plugin:**
+- [Validator Plugin Starter Kit](../plugins/validator-plugin/) - Complete template with tests
+- Use case: Content validation, spam detection, custom rules
+
+**Option B - Visualization Plugin:**
+- [Visualization Plugin Starter Kit](../plugins/visualization-plugin/) - Dashboard widget template
+- [Create Visualization Tutorial](Learning-Hub/Tutorials/Create-Visualization.md) - Step-by-step guide
+- Use case: Real-time metrics, custom dashboards, charts
+
+**Time:** 30-60 minutes
+
+---
+
+### Step 6: Dive Deeper
+
+**Choose based on your interest:**
+
+**For Developers:**
+- [Contributor Guide](Development/Contributor-Guide.md) - How to contribute code
+- [Developer Guide](Development/Developer-Guide.md) - Complete developer handbook
+- [API Reference](API/) - Complete API documentation
+
+**For Validators:**
+- [Validator Guide](Governance/Validator-Guide.md) - Registration and operations
+- [Staking Guide](Governance/Staking.md) - Stake tokens and earn rewards
+
+**For Data Scientists:**
+- [Analytics & SDK](Technical/Analytics-and-SDK.md) - Analytics integration
+- [Performance Metrics](Technical/performance-metrics.md) - Benchmarks and optimization
+
 ---
 
 ## 🚀 Quick Start
 
-Start here if you're new to NeuroSwarm:
+Alternative quick links if you know what you need:
 
 - [Getting Started Guide](Getting-Started/Getting-Started.md) - Complete onboarding for new users
 - [Quickstart](Getting-Started/Quickstart.md) - Fast track setup and first steps
