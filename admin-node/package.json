@@ -1,12 +1,3 @@
-{
-  "name": "admin-node",
-  "version": "1.0.0",
-  "description": "NeuroSwarm Admin Node - Founder control plane for observability and emergency controls",
-  "main": "dist/index.js",
-  "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "ts-node src/index.ts",
     "test": "jest",
     "integration": "jest --testPathPattern=src/integration --runInBand",
     "lint": "eslint src/**/*.ts",
