@@ -1,7 +1,10 @@
-const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
-const { ensureDirInRepoSync } = require('../scripts/repoScopedFs.cjs');
+import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+const repoFs = await import('../scripts/repoScopedFs.cjs');
+const { ensureDirInRepoSync } = repoFs.default || repoFs;
+
+const force = process.argv.includes('--force') || process.env.OVERWRITE_KEYS === 'true';
 
 // Generate founder key pair
 const founderKeys = crypto.generateKeyPairSync('rsa', {
@@ -36,12 +39,17 @@ if (!fs.existsSync(secretsDir)) {
   ensureDirInRepoSync(secretsDir);
 }
 
-fs.writeFileSync(path.join(secretsDir, 'founder.jwt.key'), founderKeys.privateKey);
-fs.writeFileSync(path.join(secretsDir, 'founder.jwt.pub'), founderKeys.publicKey);
-fs.writeFileSync(path.join(secretsDir, 'admin-node.jwt.key'), adminKeys.privateKey);
+const founderPriv = path.join(secretsDir, 'founder.jwt.key');
+const founderPub = path.join(secretsDir, 'founder.jwt.pub');
+const adminPriv = path.join(secretsDir, 'admin-node.jwt.key');
 
-console.log('JWT keys generated successfully!');
-console.log('Files created:');
-console.log('- secrets/founder.jwt.key (private)');
-console.log('- secrets/founder.jwt.pub (public)');
-console.log('- secrets/admin-node.jwt.key (private)');
+if (!force && fs.existsSync(founderPriv) && fs.existsSync(founderPub) && fs.existsSync(adminPriv)) {
+  console.log('JWT key files already exist under governance/secrets — skipping generation (use --force to overwrite)');
+} else {
+  fs.writeFileSync(founderPriv, founderKeys.privateKey);
+  fs.writeFileSync(founderPub, founderKeys.publicKey);
+  fs.writeFileSync(adminPriv, adminKeys.privateKey);
+  console.log('JWT keys generated successfully (governance/secrets).');
+}
+
+console.log('Done.');
