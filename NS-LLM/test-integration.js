@@ -1,8 +1,8 @@
 (async function(){
   // Integration smoke tests for the prototype embedding backend
   const port = process.env.PORT || 5555;
-  // Start server (index.js auto-starts on require)
-  require('./index.js');
+  // Start server (index.js auto-starts on import)
+  await import('./index.js');
   const base = `http://127.0.0.1:${port}`;
   
   const wait = ms => new Promise(r => setTimeout(r, ms));

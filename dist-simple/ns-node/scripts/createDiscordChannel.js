@@ -4,7 +4,7 @@
 // Requires: DISCORD_BOT_TOKEN and GUILD_ID environment variables.
 // Use with caution - bot must have 'Manage Channels' permission.
 
-const https = require('https');
+import https from 'https';
 
 function usageAndExit() { console.error('Usage: node createDiscordChannel.js --name channel-name --type text'); process.exit(1); }
 function parseArgs() {

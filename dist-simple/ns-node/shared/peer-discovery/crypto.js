@@ -7,6 +7,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import { getDataDir } from '../path-utils.js';
+import https from 'https';
 
 /**
  * CryptoManager - Manages TLS certificates for encrypted P2P communication
@@ -171,8 +172,6 @@ export class CryptoManager {
      * Get HTTPS agent for client requests
      */
     getHTTPSAgent() {
-        const https = require('https');
-
         return new https.Agent({
             rejectUnauthorized: false  // Accept self-signed certificates
         });

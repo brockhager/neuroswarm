@@ -1,6 +1,7 @@
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+import { fileURLToPath } from 'url';
 
 async function walk(dir) {
   const files = await fs.promises.readdir(dir);
@@ -13,6 +14,9 @@ async function walk(dir) {
   }
   return out;
 }
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 (async function() {
   const modelsDir = path.join(__dirname, 'models');

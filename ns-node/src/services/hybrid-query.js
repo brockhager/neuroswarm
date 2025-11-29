@@ -8,7 +8,7 @@
  * 4. Score the response for quality
  */
 
-const VectorIndex = require('../../shared/vector-index.js');
+import VectorIndex from '../../shared/vector-index.js';
 
 class HybridQueryService {
     constructor(nsLlmClient, options = {}) {
@@ -217,4 +217,4 @@ class HybridQueryService {
     }
 }
 
-module.exports = HybridQueryService;
+export default HybridQueryService;

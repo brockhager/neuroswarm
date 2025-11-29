@@ -1,5 +1,9 @@
 name: NS-LLM Native Build
 
+# Make sure the workflow has write access to repo contents so release actions can create releases + upload assets
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
     inputs:
@@ -576,10 +580,12 @@ jobs:
                 $proc = Start-Process -FilePath $exe.FullName -NoNewWindow -RedirectStandardOutput $nativeOut -RedirectStandardError $nativeErr -PassThru
                 Start-Sleep -Seconds 2
                 if (Get-Process -Id $proc.Id -ErrorAction SilentlyContinue) {
-                  Write-Host "Started native executable (pid=$($proc.Id)); logs -> $nativeLog"
+                  Write-Host "Started native executable (pid=$($proc.Id)); stdout -> $nativeOut stderr -> $nativeErr"
                   exit 0
                 } else {
-                  Write-Host "Native executable failed to start, dumping log:"; Get-Content $nativeLog -ErrorAction SilentlyContinue | Write-Host
+                  Write-Host "Native executable failed to start, dumping logs (if present):"
+                  if (Test-Path $nativeOut) { Write-Host "--- native stdout ---"; Get-Content $nativeOut -ErrorAction SilentlyContinue | Write-Host }
+                  if (Test-Path $nativeErr) { Write-Host "--- native stderr ---"; Get-Content $nativeErr -ErrorAction SilentlyContinue | Write-Host }
                   # continue to fallback below
                 }
             } else {
@@ -596,9 +602,11 @@ jobs:
           $proc = Start-Process -FilePath node -ArgumentList 'index.js' -WorkingDirectory $PSScriptRoot -RedirectStandardOutput $out -RedirectStandardError $err -PassThru
           Start-Sleep -Seconds 2
           if (Get-Process -Id $proc.Id -ErrorAction SilentlyContinue) {
-            Write-Host "Started node prototype (pid=$($proc.Id)); logs -> $log"
+            Write-Host "Started node prototype (pid=$($proc.Id)); stdout -> $out stderr -> $err"
           } else {
-            Write-Host "Failed to start node prototype; log follows:"; Get-Content $log -ErrorAction SilentlyContinue | Write-Host
+            Write-Host "Failed to start node prototype; dumping logs (if present):"
+            if (Test-Path $out) { Write-Host "--- prototype stdout ---"; Get-Content $out -ErrorAction SilentlyContinue | Write-Host }
+            if (Test-Path $err) { Write-Host "--- prototype stderr ---"; Get-Content $err -ErrorAction SilentlyContinue | Write-Host }
           }
 
       - name: Wait for services to be healthy (Linux/macOS)

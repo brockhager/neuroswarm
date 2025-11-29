@@ -1,8 +1,6 @@
-/**
- * Deprecated CommonJS wrapper for publishUpdate.
- * Use `publishUpdate.mjs` (ESM) instead. This file only prints a message.
- */
-console.error('publishUpdate.js (CommonJS) is deprecated. Please use publishUpdate.mjs (ESM).');
+#!/usr/bin/env node
+// Deprecated wrapper for publishUpdate — use the canonical ESM script in neuroswarm/scripts/publishUpdate.js
+console.error('publishUpdate.js (deprecated) — use neuroswarm/scripts/publishUpdate.js (ESM)');
 process.exit(1);
 
   if (opts.push) {
@@ -30,7 +28,7 @@ process.exit(1);
 main().catch(e => { console.error('publishUpdate failed:', e); process.exit(1); });
 #!/usr/bin/env node
 "use strict";
-// publishUpdate.js (CommonJS)
+// This file is a deprecated wrapper and intentionally does nothing but print a message.
 const fs = require('fs');
 const path = require('path');
 const child_process = require('child_process');
