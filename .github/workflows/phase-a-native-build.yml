@@ -523,6 +523,7 @@ jobs:
         if: matrix.runner-os != 'windows-latest'
         working-directory: NS-LLM
         run: |
+          if [ -f package.json ]; then echo 'Installing NS-LLM dependencies'; npm ci; else echo 'No package.json found; skipping npm ci'; fi
           echo "Starting Node.js prototype for E2E tests"
           nohup node index.js > ns-llm.log 2>&1 &
           NS_LLM_PID=$!
@@ -548,6 +549,37 @@ jobs:
         shell: pwsh
         run: |
           Start-Process -FilePath node -ArgumentList 'server.js' -NoNewWindow
+
+      - name: Start NS-LLM backend (Windows - fallback to Node prototype)
+        if: matrix.runner-os == 'windows-latest'
+        working-directory: NS-LLM
+        shell: pwsh
+        run: |
+          Write-Host "Preparing NS-LLM on Windows runner..."
+          # Install local deps (safe, index.js is dependency-free but this helps surface missing files during CI)
+          if (Test-Path -Path package.json) { Write-Host 'Installing NS-LLM dependencies'; npm ci } else { Write-Host 'No package.json' }
+
+          # If native windows artifact exists under release-artifacts/windows, attempt to start it.
+          $nativeDir = Join-Path $PSScriptRoot '..\release-artifacts\windows'
+          if (Test-Path $nativeDir) {
+            Write-Host "Found native artifacts in $nativeDir - attempting to locate an executable"
+            $exe = Get-ChildItem -Path $nativeDir -Recurse -Filter '*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($exe) {
+              Write-Host "Found native executable: $($exe.FullName) - starting"
+              Start-Process -FilePath $exe.FullName -NoNewWindow
+              Start-Sleep -Seconds 2
+              Write-Host 'Started native executable (Windows)'
+              exit 0
+            } else {
+              Write-Host 'No native executable found in artifact path; falling back to node prototype'
+            }
+          } else {
+            Write-Host 'No windows artifacts directory present, falling back to node prototype'
+          }
+
+          # Fallback: start the prototype Node server so downstream checks can run
+          Write-Host 'Starting Node prototype (index.js) on Windows'
+          Start-Process -FilePath node -ArgumentList 'index.js' -NoNewWindow
 
       - name: Wait for services to be healthy (Linux/macOS)
         if: matrix.runner-os != 'windows-latest'
@@ -599,7 +631,14 @@ jobs:
               if ($r.StatusCode -eq 200) { Write-Host 'ns-llm is up'; $ready = $true; break }
             } catch { Start-Sleep -Seconds 1 }
           }
-          if (-not $ready) { Write-Error 'ns-llm did not become healthy' ; exit 1 }
+          if (-not $ready) {
+            Write-Error 'ns-llm did not become healthy'
+            # Try to dump potential logs to help CI debugging
+            if (Test-Path -Path 'NS-LLM\ns-llm.log') { Get-Content NS-LLM\ns-llm.log -Raw | Write-Host }
+            if (Test-Path -Path 'NS-LLM\ns-llm-native.log') { Get-Content NS-LLM\ns-llm-native.log -Raw | Write-Host }
+            Write-Host 'Listing NS-LLM dir:'; Get-ChildItem -Path NS-LLM -Recurse -Depth 2 | Select-Object -First 50 | Format-Table
+            exit 1
+          }
 
           $ready = $false
           for ($i=1; $i -le 60; $i++) {
