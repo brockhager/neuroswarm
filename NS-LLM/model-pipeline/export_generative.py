@@ -32,9 +32,10 @@ def main():
     try:
         from optimum.exporters.onnx import main_export
         from onnxruntime.quantization import quantize_dynamic, QuantType
-    except ImportError:
-        print("Error: optimum and onnxruntime are required. Install with:")
-        print("pip install optimum[exporters] onnxruntime")
+    except ImportError as e:
+        print(f"Error: Required packages not available: {e}")
+        print("Install with:")
+        print("pip install optimum optimum-exporters onnxruntime transformers")
         sys.exit(1)
 
     print(f"Exporting {args.model} to ONNX...")
