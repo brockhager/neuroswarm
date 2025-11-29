@@ -37,7 +37,7 @@ WordPress Site ←───── REST API ←─────── JSON Payload
 
 **Usage**:
 ```bash
-python3 scripts/wp_publisher.py \
+python3 admin-node/scripts/wp_publisher.py \
   --username your_username \
   --password your_app_password \
   --content content-file.json
@@ -55,7 +55,7 @@ python3 scripts/wp_publisher.py \
 
 **Usage**:
 ```bash
-python3 scripts/batch_publish.py \
+python3 admin-node/scripts/batch_publish.py \
   --username your_username \
   --password your_app_password \
   --directory ./content \
@@ -75,10 +75,10 @@ python3 scripts/batch_publish.py \
 **Usage**:
 ```bash
 # One-time sync
-python3 scripts/content_sync.py --content-dirs ./docs ./content
+python3 admin-node/scripts/content_sync.py --content-dirs ./docs ./content
 
 # Watch mode (syncs every 5 minutes)
-python3 scripts/content_sync.py --watch --interval 300
+python3 admin-node/scripts/content_sync.py --watch --interval 300
 ```
 
 ### 4. Connection Tester (`test_connection.py`)
@@ -93,7 +93,7 @@ python3 scripts/content_sync.py --watch --interval 300
 
 **Usage**:
 ```bash
-python3 tests/test_connection.py \
+python3 admin-node/scripts/test_connection.py \
   --username your_username \
   --password your_app_password
 ```
@@ -160,13 +160,13 @@ cp .wp_publisher.env.example .wp_publisher.env
 
 ### 3. Test Connection
 ```bash
-python3 tests/test_connection.py
+python3 admin-node/scripts/test_connection.py
 ```
 
 ### 4. Initial Content Sync
 ```bash
 # Sync existing documentation
-python3 scripts/content_sync.py --content-dirs ./docs ./website/content
+python3 admin-node/scripts/content_sync.py --content-dirs ./docs ./website/content
 ```
 
 ## Integration Examples
@@ -179,7 +179,7 @@ When a new governance proposal is approved:
 python3 scripts/generate_proposal_content.py --proposal-id 123
 
 # Publish to WordPress
-python3 wp_publisher.py --content content/proposal-123-approved.json
+python3 admin-node/scripts/wp_publisher.py --content content/proposal-123-approved.json
 ```
 
 ### Knowledge Base Sync
@@ -187,7 +187,7 @@ Automated sync of documentation updates:
 
 ```bash
 # Start continuous sync
-python3 content_sync.py --watch --content-dirs ./docs --interval 600
+python3 admin-node/scripts/content_sync.py --watch --content-dirs ./docs --interval 600
 ```
 
 ### CI/CD Integration
@@ -214,7 +214,7 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements-wp.txt
       - name: Publish content
-        run: python3 content_sync.py
+        run: python3 admin-node/scripts/content_sync.py
         env:
           WP_USERNAME: ${{ secrets.WP_USERNAME }}
           WP_APP_PASSWORD: ${{ secrets.WP_APP_PASSWORD }}
@@ -259,7 +259,7 @@ All publishing activities logged to `wp_publish_log.jsonl`:
 ### Health Monitoring
 ```bash
 # Check sync status
-python3 scripts/check_sync_status.py
+python3 admin-node/scripts/check_sync_status.py
 
 # View recent activity
 tail -f wp_publish_log.jsonl | jq '.'
@@ -271,14 +271,14 @@ tail -f wp_publish_log.jsonl | jq '.'
 
 1. **Authentication Failed**
    ```bash
-   python3 test_connection.py  # Diagnose connection issues
+  python3 admin-node/scripts/test_connection.py  # Diagnose connection issues
    # Check: Username, application password, user permissions
    ```
 
 2. **Page Creation Failed**
    ```bash
    # Check: Slug uniqueness, user role capabilities
-   python3 wp_publisher.py --content test-content.json --verbose
+  python3 admin-node/scripts/wp_publisher.py --content test-content.json --verbose
    ```
 
 3. **Media Upload Failed**
@@ -291,11 +291,11 @@ tail -f wp_publish_log.jsonl | jq '.'
 
 ```bash
 # Retry failed publications
-python3 batch_publish.py --directory ./failed-content
+python3 admin-node/scripts/batch_publish.py --directory ./failed-content
 
 # Reset checksums (force full resync)
 rm .content_checksums.json
-python3 content_sync.py
+python3 admin-node/scripts/content_sync.py
 ```
 
 ## Performance Optimization

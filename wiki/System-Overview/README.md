@@ -19,6 +19,8 @@ NeuroSwarm is a decentralized architecture comprised of multiple services and co
 2. Use `admin-node` to serve a local admin dashboard; seed the timeline using scripts/seed-e2e-timeline.js
 3. Use the observability endpoints to inspect the governance timeline and anchoring status
 
+> Note: Running the core node services (ns-node, gateway-node, vp-node, neuro-services) does NOT require Python to be installed. Python is only required for optional admin tooling (WordPress publisher, content sync, model export/training) which now lives under `neuroswarm/admin-node/scripts/` and `neuroswarm/NS-LLM/training` respectively. This keeps everyday node operation simple and Node.js-only for most contributors.
+
 **Technical References:**
 - `docs/general/neuro-infra-README.md`
 - `docs/admin/admin-node-design.md`
