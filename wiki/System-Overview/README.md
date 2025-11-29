@@ -4,6 +4,91 @@
 
 **Welcome to NeuroSwarm!** This page provides a comprehensive reference of all entities (services, components, data structures, and tools) in the NeuroSwarm ecosystem. Use this as your entry point to understand the system architecture.
 
+## High-Level Architecture
+
+NeuroSwarm is a decentralized architecture comprised of multiple services and coordination nodes. The Admin Node is the canonical governance node and is responsible for timeline logging, governance actions, and blockchain anchoring to provide tamper-evident proof of admin configuration.
+
+**Key Components:**
+- **Admin Node**: Express-based service that exposes admin routes, observability endpoints, and manages the governance timeline.
+- **Indexer / Gateway Nodes**: Responsible for decentralized content indexing and discovery.
+- **UI (Dashboard)**: Tools for founders, admins, and contributors to review and act on governance events.
+- **Anchoring (Blockchain)**: Periodic anchoring of the governance timeline to a blockchain (e.g., Solana) to provide cryptographic evidence and audit trails.
+
+**Quick Start:**
+1. Install and run local services following the repository README
+2. Use `admin-node` to serve a local admin dashboard; seed the timeline using scripts/seed-e2e-timeline.js
+3. Use the observability endpoints to inspect the governance timeline and anchoring status
+
+**Technical References:**
+- `docs/general/neuro-infra-README.md`
+- `docs/admin/admin-node-design.md`
+- `admin-node` service folder in the repository
+
+---
+
+## 🌐 Web Interfaces Overview
+
+NeuroSwarm provides **two distinct web interfaces** serving different audiences and purposes. Understanding the difference is critical for contributors.
+
+### `/ns/neuro-web/` — Ecosystem Portal
+**Purpose**: Public-facing web interface for the broader NeuroSwarm ecosystem  
+**Audience**: End-users, external contributors, and the general public  
+**Role**: External visibility and ecosystem integration
+
+**What it provides:**
+- Landing pages and marketing content
+- Contributor onboarding portals
+- Public documentation browser
+- Ecosystem-wide feature showcase
+- External integration dashboards
+- Community resources and links
+
+**Use this when:**
+- You're building public-facing content
+- Creating landing pages or marketing materials
+- Designing external contributor experiences
+- Showcasing ecosystem-level features
+
+---
+
+### `ns/neuroswarm/ns-web/` — Internal Dashboard
+**Purpose**: System-level operational dashboard for NeuroSwarm node infrastructure  
+**Audience**: Developers, node operators, and internal contributors  
+**Role**: Visualization and control surface for backend services
+
+**What it provides:**
+- **Consolidated System Dashboard** with navigation to:
+  - Performance & Scalability metrics
+  - Decentralized Governance controls
+  - Plugin Manager interface
+- Real-time node health monitoring
+- Backend service orchestration controls
+- Developer tools and debugging interfaces
+- Internal API explorers
+
+**Use this when:**
+- You're operating a NeuroSwarm node
+- Debugging backend services
+- Monitoring system performance
+- Managing plugins or governance
+- Developing internal tooling
+
+**Related**: See [System Visualization](../NS-LLM/Dashboard.md) for dashboard details
+
+---
+
+### Key Distinction
+
+| Feature | `/ns/neuro-web/` | `ns/neuroswarm/ns-web/` |
+|---------|------------------|-------------------------|
+| **Scope** | Ecosystem-wide | Node-specific |
+| **Audience** | External users | Internal operators |
+| **Purpose** | Public visibility | Operational control |
+| **Content** | Marketing, docs, community | Metrics, controls, debugging |
+| **Examples** | Landing page, contributor portal | Performance dashboard, plugin manager |
+
+**Both are complementary**: The ecosystem portal (`/ns/neuro-web/`) provides external visibility and onboarding, while the internal dashboard (`ns/neuroswarm/ns-web/`) provides operational control for those running nodes.
+
 ---
 
 ## 📦 Core Services (Nodes)
