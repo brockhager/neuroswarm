@@ -95,20 +95,20 @@ jobs:
             
             const comment = `## 📊 Performance Benchmark Results
             
-${summary.markdown}
-
-<details>
-<summary>View detailed metrics</summary>
-
-\`\`\`json
-${JSON.stringify(summary.metrics, null, 2)}
-\`\`\`
-
-</details>
-
----
-*Automated benchmark run on commit ${context.sha.substring(0, 7)}*
-`;
+            ${summary.markdown}
+            
+            <details>
+            <summary>View detailed metrics</summary>
+            
+            \`\`\`json
+            ${JSON.stringify(summary.metrics, null, 2)}
+            \`\`\`
+            
+            </details>
+            
+            ---
+            *Automated benchmark run on commit ${context.sha.substring(0, 7)}*
+            `;
             
             github.rest.issues.createComment({
               issue_number: context.issue.number,
