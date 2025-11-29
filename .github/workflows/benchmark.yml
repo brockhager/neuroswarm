@@ -2,9 +2,9 @@ name: Performance Benchmarks
 
 on:
   push:
-    branches: [main, develop]
+    branches: [master, main, develop]
   pull_request:
-    branches: [main]
+    branches: [master, main]
   workflow_dispatch: # Manual trigger
 
 jobs:
@@ -16,17 +16,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+        
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: ns-node/package-lock.json
+          
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: ns-node/node_modules
+          key: ${{ runner.os }}-ns-node-${{ hashFiles('ns-node/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-ns-node-
           
       - name: Install dependencies
         run: |
           cd ns-node
-          npm ci
+          pnpm install
           
       - name: Start NS-Node server
         run: |
@@ -107,7 +118,7 @@ ${JSON.stringify(summary.metrics, null, 2)}
             });
             
       - name: Update baseline (main branch only)
-        if: github.ref == 'refs/heads/main' && success()
+        if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') && success()
         run: |
           cp benchmark-summary.json benchmark-baseline.json
           
