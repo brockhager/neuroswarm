@@ -31,8 +31,7 @@ jobs:
           # Filter to .js and exclude .cjs, desktop/electron packages
           JS_FILES=$(echo "${{ steps.changed.outputs.files }}" | tr '\n' '\0' | xargs -0 -n1 | grep -E "\.js$" || true)
           if [ -z "$JS_FILES" ]; then
-            echo "No changed .js files in PR.
-";
+            echo "No changed .js files in PR."
             exit 0
           fi
           # Exclude known desktop/Electron paths from the check
