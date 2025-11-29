@@ -1,0 +1,8 @@
+{
+  "model_key": "gpt2",
+  "hf_id": "gpt2",
+  "params": "124M",
+  "context_length": 1024,
+  "quantized": true,
+  "description": "GPT-2 baseline model"
+}
