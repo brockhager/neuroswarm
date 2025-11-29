@@ -1,4 +1,15 @@
 {
+  "name": "ns-llm-prototype",
+  "version": "0.1.0",
+  "description": "Lightweight NS-LLM prototype used for CI and integration tests",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test-integration.js"
+  }
+}
+{
   "name": "ns-llm-server",
   "version": "0.2.0",
   "description": "HTTP wrapper for NS-LLM native binary",
