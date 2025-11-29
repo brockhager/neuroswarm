@@ -58,8 +58,14 @@ def main():
         tokenizer.save_pretrained(out_dir)
         print(f"Saved tokenizer files to {out_dir}")
 
+    except ImportError as ie:
+        print(f"Import error during export: {ie}")
+        print("This may be due to torch/optimum version compatibility issues.")
+        print("Consider using compatible versions: torch<2.0 with optimum<2.0")
+        sys.exit(1)
     except Exception as e:
         print(f"Export failed: {e}")
+        print(f"Error type: {type(e).__name__}")
         sys.exit(1)
 
     # Quantization
