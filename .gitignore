@@ -185,6 +185,25 @@ content/cache/
 # Playwright results (local)
 admin-node/playwright-results/
 
+# ---------------------------------------------------------
+# NS-LLM model artifacts (auto-generated, should not be committed)
+# These are produced by the model-pipeline and packaging CI; keep them out
+# of the repo (artifacts should be uploaded to Releases / storage instead)
+NS-LLM/models/
+NS-LLM/models/*
+# common model binary types
+NS-LLM/**/*.onnx
+NS-LLM/**/*.onnx.gz
+NS-LLM/**/*.safetensors
+NS-LLM/**/*.gguf
+NS-LLM/**/*.pt
+NS-LLM/**/*.bin
+# model packaging outputs & caches
+NS-LLM/native/
+NS-LLM/native-*
+NS-LLM/.venv/
+NS-LLM/.cache/
+
 # Secrets and private keys
 secrets/
 *.key
