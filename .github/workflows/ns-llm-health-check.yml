@@ -1,0 +1,26 @@
+name: NS-LLM health check
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  ns-llm-health:
+    name: Start ns-llm, check /health, stop
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies (NS-LLM)
+        run: npm ci --prefix neuroswarm/NS-LLM
+
+      - name: Run NS-LLM health test
+        run: npm --prefix neuroswarm/NS-LLM run test-health
