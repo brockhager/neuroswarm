@@ -1,0 +1,17 @@
+# Ignore auto-generated/packaged models and build outputs for NS-LLM
+models/
+models/*
+*.onnx
+*.onnx.gz
+*.safetensors
+*.gguf
+*.pt
+*.bin
+native/
+native-*
+.venv/
+.cache/
+.pytest_cache/
+
+# Prevent accidental commits from local test runs
+tests/output/
