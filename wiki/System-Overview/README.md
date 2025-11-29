@@ -1,5 +1,718 @@
 # System Overview
 
-High-level overview of the NeuroSwarm architecture.
+[← Wiki Home](../Index.md)
 
-*Content coming soon.*
+**Welcome to NeuroSwarm!** This page provides a comprehensive reference of all entities (services, components, data structures, and tools) in the NeuroSwarm ecosystem. Use this as your entry point to understand the system architecture.
+
+---
+
+## 📦 Core Services (Nodes)
+
+### NS Node (Brain)
+**Location**: `neuroswarm/ns-node/`  
+**Port**: 3009  
+**Purpose**: Consensus engine and canonical chain authority
+
+The NS Node is the **heart of NeuroSwarm**. It maintains the canonical blockchain, manages the mempool, validates transactions, and coordinates consensus across the network.
+
+**Key Responsibilities:**
+- Maintain canonical chain state
+- Mempool management (pending transactions)
+- Block validation and application
+- Proof-of-Stake consensus coordination
+- SPV proof generation
+- Peer discovery and synchronization
+
+**Used For:**
+- Running a validator node
+- Querying chain state
+- Submitting blocks for consensus
+- Generating cryptographic proofs
+
+**Related Docs**: [Node Design](../Nodes/NODE-DESIGN.md) | [Architecture](../Learning-Hub/Core-Concepts/Architecture.md)
+
+---
+
+### Gateway Node
+**Location**: `neuroswarm/gateway-node/`  
+**Port**: 8080  
+**Purpose**: API gateway and transaction admission control
+
+The Gateway Node is the **entry point** for external applications. It validates incoming transactions, manages its own mempool, and forwards approved transactions to the NS Node.
+
+**Key Responsibilities:**
+- REST API for transaction submission
+- Source validation (Allie-AI integration)
+- Rate limiting and DDoS protection
+- Transaction canonicalization
+- Mempool admission control
+- Health checks and monitoring
+
+**Used For:**
+- Building frontend applications
+- Submitting transactions to the network
+- Querying transaction status
+- Accessing public APIs
+
+**Related Docs**: [Gateway API](../API/Gateway-API.md) | [Data Flow](../Technical/data-flow-architecture.md)
+
+---
+
+### VP Node (Validator/Producer)
+**Location**: `neuroswarm/vp-node/`  
+**Port**: 3002  
+**Purpose**: Block production and IPFS publishing
+
+The VP Node is operated by **registered validators** who have staked tokens. It polls the NS Node mempool, produces blocks, signs them, and publishes payloads to IPFS.
+
+**Key Responsibilities:**
+- Poll mempool for pending transactions
+- Produce blocks with merkle roots
+- Sign block headers with validator key
+- Publish block payloads to IPFS
+- Submit blocks to NS Node for consensus
+- Earn validation rewards
+
+**Used For:**
+- Participating as a network validator
+- Earning staking rewards
+- Block production and signing
+- IPFS content publishing
+
+**Related Docs**: [Validator Guide](../Governance/Validator-Guide.md) | [Staking](../Governance/Staking.md)
+
+---
+
+### Admin Node
+**Location**: `neuroswarm/admin-node/`  
+**Port**: 3000  
+**Purpose**: Dashboard, governance, and monitoring
+
+The Admin Node provides a **visual interface** for monitoring network health, managing governance proposals, and observing real-time metrics.
+
+**Key Responsibilities:**
+- Real-time dashboard with metrics
+- Governance proposal submission and voting
+- Network monitoring and alerting
+- Validator management
+- Audit log visualization
+- Plugin management UI
+
+**Used For:**
+- Monitoring network health
+- Submitting governance proposals
+- Viewing validator performance
+- Managing plugins
+- Accessing real-time analytics
+
+**Related Docs**: [Dashboard](../Dashboard/README.md) | [Governance](../Learning-Hub/Core-Concepts/Governance.md)
+
+---
+
+### NS-LLM Service
+**Location**: `neuroswarm/NS-LLM/`  
+**Port**: 5555  
+**Purpose**: Local AI inference and semantic operations
+
+The NS-LLM service provides **local AI capabilities** using Ollama for semantic caching, content validation, and intelligent routing.
+
+**Key Responsibilities:**
+- Local LLM inference (via Ollama)
+- Semantic cache similarity matching
+- Content quality scoring
+- Toxicity detection
+- Coherence validation
+- Dynamic threshold adjustment
+
+**Used For:**
+- Semantic search across transactions
+- Content validation before admission
+- Cache hit determination (similarity > 0.9)
+- AI-powered governance scoring
+- Natural language processing
+
+**Related Docs**: [NS-LLM Integration](../NS-LLM/README.md) | [Semantic Cache](../Technical/Semantic-Cache.md)
+
+---
+
+### NS-Web Frontend
+**Location**: `neuroswarm/ns-web/`  
+**Port**: 3010  
+**Purpose**: User-facing web interface
+
+The NS-Web service is a **React-based frontend** that provides a user-friendly interface for interacting with the NeuroSwarm network.
+
+**Key Responsibilities:**
+- Transaction submission forms
+- Block explorer UI
+- Validator dashboard
+- Governance voting interface
+- Plugin marketplace
+- Real-time metrics visualization
+
+**Used For:**
+- Submitting transactions via web UI
+- Browsing blockchain history
+- Voting on governance proposals
+- Managing personal AI agents
+- Installing plugins
+
+**Related Docs**: [Web UI Guide](../Web/README.md)
+
+---
+
+## 🧩 Core Components
+
+### PluginManager
+**Location**: `ns-node/src/services/plugin-manager.js`  
+**Purpose**: Dynamic plugin loading and execution
+
+Manages the lifecycle of plugins (validators, scorers, visualizations). Loads plugins from the `plugins/` directory, validates manifests, and provides APIs for execution.
+
+**Key Features:**
+- Dynamic plugin discovery
+- Version management (semver)
+- Enable/disable plugin control
+- Plugin execution sandboxing
+- Manifest validation
+
+**Used For:**
+- Extending validation logic
+- Custom scoring algorithms
+- Dashboard widgets
+- Community-contributed features
+
+**Related Docs**: [Plugin Development](../Getting-Started/Home.md#-plugin-development) | [Starter Kits](../../plugins/)
+
+---
+
+### OrchestrationService
+**Location**: `ns-node/src/services/orchestration.js`  
+**Purpose**: Cross-node task coordination
+
+Dispatches tasks to specific node types (NS, Gateway, VP) with routing strategies (random, broadcast, round-robin).
+
+**Key Features:**
+- Task dispatch by node type
+- Routing strategy selection
+- Load balancing across peers
+- Failure handling and retries
+
+**Used For:**
+- Distributed computation
+- Cross-node coordination
+- Task distribution
+- Network orchestration
+
+**Related Docs**: [Architecture](../Learning-Hub/Core-Concepts/Architecture.md#6-cross-node-orchestration)
+
+---
+
+### ScoringConsensus
+**Location**: `ns-node/src/services/scoring-consensus.js`  
+**Purpose**: Distributed voting and consensus
+
+Manages distributed voting for content quality, proposals, and validator actions.
+
+**Key Features:**
+- Create voting sessions
+- Collect votes from validators
+- Calculate consensus results
+- Weighted voting by stake
+- Quorum requirements
+
+**Used For:**
+- Governance proposal voting
+- Content quality consensus
+- Validator attestations
+- Distributed decision-making
+
+**Related Docs**: [Governance](../Learning-Hub/Core-Concepts/Governance.md)
+
+---
+
+### FederatedCacheService
+**Location**: `ns-node/src/services/federated-cache.js`  
+**Purpose**: Cross-node cache synchronization
+
+Enables querying cached data across multiple nodes, with hit rate tracking and visualization.
+
+**Key Features:**
+- Federated query across nodes
+- Cache hit rate metrics
+- Visualization API
+- Cross-node synchronization
+
+**Used For:**
+- Distributed caching
+- Cache analytics
+- Performance optimization
+- Cross-node data sharing
+
+**Related Docs**: [Federated Cache](../Technical/Federated-Cache.md)
+
+---
+
+### GenerativeGovernanceService
+**Location**: `ns-node/src/services/generative-governance.js`  
+**Purpose**: AI-powered content validation
+
+Extensible validation system with toxicity detection, coherence scoring, and custom validators.
+
+**Key Features:**
+- Multi-layer validation pipeline
+- Custom validator registration
+- Governance parameter updates
+- Validation chain history
+- Event-driven architecture
+
+**Used For:**
+- Content quality enforcement
+- Spam detection
+- Governance rule validation
+- AI-powered moderation
+
+**Related Docs**: [Governance](../Learning-Hub/Core-Concepts/Governance.md)
+
+---
+
+### BlockchainAnchorService
+**Location**: `ns-node/src/services/blockchain-anchor.js`  
+**Purpose**: Solana blockchain integration
+
+Anchors governance events and critical state to Solana blockchain for immutable provenance.
+
+**Key Features:**
+- Transaction submission to Solana
+- State anchoring
+- Verification against on-chain data
+- Governance log immutability
+
+**Used For:**
+- Blockchain provenance
+- Governance transparency
+- Cryptographic verification
+- Immutable audit trails
+
+**Related Docs**: [Anchoring](../Anchoring/readme.md) | [Solana Program](../../neuro-program/)
+
+---
+
+### PerformanceProfiler
+**Location**: `ns-node/src/services/performance-profiler.js`  
+**Purpose**: Performance metrics and profiling
+
+Tracks latency, throughput, TTFT (Time to First Token), resource usage, and generates performance scores.
+
+**Key Features:**
+- P50/P95/P99 latency tracking
+- Throughput monitoring (req/s, tok/s)
+- Resource profiling (CPU, memory)
+- Bottleneck analysis
+- Performance scoring (0-100)
+
+**Used For:**
+- Performance optimization
+- Identifying bottlenecks
+- Capacity planning
+- SLA monitoring
+
+**Related Docs**: [Performance Benchmarks](../Performance/Benchmark-Results.md)
+
+---
+
+### PeerManager
+**Location**: `neuroswarm/shared/peer-discovery/index.js`  
+**Purpose**: P2P peer discovery and health checks
+
+Manages connections to other nodes, health checks, and maintains peer registries.
+
+**Key Features:**
+- Peer registration by type
+- Health check heartbeats
+- Peer metrics tracking
+- Connection management
+- Node type discovery
+
+**Used For:**
+- P2P networking
+- Node discovery
+- Health monitoring
+- Network topology
+
+**Related Docs**: [P2P Discovery](../Technical/P2P-Discovery.md)
+
+---
+
+### GovernanceLogger
+**Location**: `neuroswarm/admin-node/services/governance-logger.js`  
+**Purpose**: Immutable governance audit trail
+
+Appends all governance actions to `wp_publish_log.jsonl` with cryptographic signatures.
+
+**Key Features:**
+- JSONL append-only log
+- Cryptographic signing
+- Timestamp verification
+- Action provenance
+- Blockchain anchoring
+
+**Used For:**
+- Governance transparency
+- Audit trail verification
+- Action history tracking
+- Compliance logging
+
+**Related Docs**: [Governance Timeline](../Governance/Timeline.md)
+
+---
+
+## 📊 Data Structures
+
+### Transaction
+**Purpose**: Unit of data submitted to the network
+
+**Structure**:
+```javascript
+{
+  txId: "unique-id",
+  payload: {
+    content: "...",
+    timestamp: 1234567890,
+    sources: [{ url, metadata }]
+  },
+  signature: "hex-signature",
+  publicKey: "user-pubkey"
+}
+```
+
+**Used For:**
+- Submitting data to Global Brain
+- Block production
+- Validation and consensus
+- Blockchain anchoring
+
+---
+
+### Block
+**Purpose**: Container of validated transactions
+
+**Structure**:
+```javascript
+{
+  header: {
+    blockNumber: 123,
+    parentHash: "0x...",
+    merkleRoot: "0x...",
+    sourcesRoot: "0x...",
+    payloadCid: "Qm...",
+    validatorPubkey: "...",
+    signature: "..."
+  },
+  transactions: [txId1, txId2, ...]
+}
+```
+
+**Used For:**
+- Canonical chain state
+- Transaction immutability
+- Validator attestation
+- Consensus verification
+
+---
+
+### Manifest
+**Purpose**: IPFS content metadata with provenance
+
+**Structure**:
+```javascript
+{
+  cid: "Qm...",
+  creator: "pubkey",
+  dataHash: "0x...",
+  finalized: true,
+  attestationCount: 5,
+  timestamp: 1234567890
+}
+```
+
+**Used For:**
+- IPFS content addressing
+- Provenance tracking
+- Validator attestations
+- Blockchain anchoring
+
+---
+
+### Governance Proposal
+**Purpose**: Community decision-making
+
+**Structure**:
+```javascript
+{
+  id: "proposal-123",
+  title: "Increase block size",
+  type: "parameter-change",
+  description: "...",
+  creator: "pubkey",
+  votes: { yes: 100, no: 20 },
+  status: "active",
+  expiresAt: 1234567890
+}
+```
+
+**Used For:**
+- Network parameter changes
+- Validator actions
+- Community voting
+- Governance transparency
+
+---
+
+### Plugin Manifest
+**Purpose**: Plugin metadata and configuration
+
+**Structure**:
+```javascript
+{
+  id: "custom-validator",
+  name: "Custom Validator",
+  version: "1.0.0",
+  type: "validator",
+  author: "...",
+  enabled: true,
+  config: { ... }
+}
+```
+
+**Used For:**
+- Plugin discovery
+- Version management
+- Configuration storage
+- Dependency resolution
+
+---
+
+## 🛠️ Tools & Scripts
+
+### Onboarding Scripts
+**Location**: `neuroswarm/onboarding/`  
+**Purpose**: Automated setup in < 5 minutes
+
+**Scripts**:
+- `onboard.ps1` (Windows PowerShell)
+- `onboard.sh` (Linux/macOS Bash)
+
+**Used For:**
+- New contributor setup
+- Docker Compose automation
+- Health check validation
+- Zero-to-running in 5 minutes
+
+**Related Docs**: [Quick Setup](../onboarding/Quick-Setup.md)
+
+---
+
+### Connectivity Check
+**Location**: `neuroswarm/scripts/checkNodeConnectivityClean.mjs`  
+**Purpose**: Validate node connectivity
+
+**Used For:**
+- Verifying node health
+- Testing API endpoints
+- CI/CD validation
+- Troubleshooting
+
+---
+
+### Benchmark Suite
+**Location**: `neuroswarm/ns-node/benchmarks/`  
+**Purpose**: Performance validation
+
+**Scripts**:
+- `inference_latency.js` - AI inference benchmarks
+- `throughput_test.js` - Transaction throughput
+
+**Used For:**
+- Performance validation
+- Regression detection
+- Capacity planning
+- SLA verification
+
+**Related Docs**: [Benchmark Results](../Performance/Benchmark-Results.md)
+
+---
+
+### Anchoring Scripts
+**Location**: `neuroswarm/governance/scripts/`  
+**Purpose**: Blockchain anchoring automation
+
+**Scripts**:
+- `anchor-governance.ts` - Anchor governance logs
+- `verify-governance.ts` - Verify on-chain anchors
+
+**Used For:**
+- Governance transparency
+- Blockchain provenance
+- Verification
+- Audit compliance
+
+---
+
+### Package Scripts
+**Location**: `neuroswarm/scripts/`  
+**Purpose**: Build and packaging automation
+
+**Scripts**:
+- `package-bins.mjs` - Create standalone installers
+- `publishUpdate.mjs` - Post updates to wiki/Discord
+
+**Used For:**
+- Binary distribution
+- Update notifications
+- Release automation
+- Community communication
+
+---
+
+## 🗄️ Daemon (Rust)
+
+### neuroswarm-node (nsd)
+**Location**: `neuro-infra/`  
+**Language**: Rust  
+**Purpose**: High-performance P2P networking and storage
+
+The Rust daemon provides low-level infrastructure for networking, storage, and consensus.
+
+**Operating Modes**:
+- **validator** - Anchoring and consensus (storage + network + Solana sync)
+- **gateway** - API server for external requests (storage + network + HTTP)
+- **indexer** - Search and lineage queries (storage + network + index)
+- **full** - All components enabled (default for local development)
+
+**Key Features**:
+- P2P networking (libp2p)
+- SQLite storage engine
+- Manifest catalog management
+- Peer discovery
+- Content verification
+- Blockchain synchronization
+
+**Used For**:
+- High-performance networking
+- Local storage management
+- Peer coordination
+- Production deployments
+
+**Related Docs**: [neuro-infra README](../neuro-infra-README.md) | [CLI Commands](../../neuro-infra/docs/)
+
+---
+
+## 🔗 Smart Contracts
+
+### neuro-program (Solana)
+**Location**: `neuro-program/`  
+**Framework**: Anchor  
+**Program ID**: `Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS`
+
+**Purpose**: On-chain state anchoring and governance
+
+The Solana program manages governance manifests, validator attestations, and immutable state anchoring.
+
+**Instructions**:
+- `initialize` - Initialize program state
+- `initManifest` - Create governance manifest
+- `attest` - Validator attestation
+- `finalizeManifest` - Mark manifest as finalized
+
+**Accounts**:
+- `ProgramState` - Global program state
+- `Manifest` - Content manifest with attestations
+- `Validator` - Validator registration and stake
+- `Attestation` - Individual validator attestation
+
+**Used For**:
+- Governance transparency
+- Immutable provenance
+- Validator coordination
+- On-chain verification
+
+**Related Docs**: [neuro-program README](../neuro-program-README.md) | [Anchoring Guide](../Anchoring/readme.md)
+
+---
+
+## 📚 Configuration Files
+
+### Port Assignments
+**Location**: `neuroswarm/shared/ports.js`
+
+**Default Ports**:
+- NS Node: 3009
+- Gateway: 8080
+- VP Node: 3002
+- Admin Node: 3000
+- NS-LLM: 5555
+- NS-Web: 3010
+
+---
+
+### Docker Compose
+**Location**: `neuroswarm/onboarding/docker-compose.yml`
+
+Orchestrates all 6 services with health checks, dependency ordering, and volume management.
+
+---
+
+### Environment Variables
+
+**NS Node**:
+- `PORT` - Server port (default: 3009)
+- `LOG_LEVEL` - Logging verbosity
+- `NETWORK_ID` - Network identifier
+- `MAX_PEERS` - Maximum peer connections
+
+**Gateway Node**:
+- `PORT` - Server port (default: 8080)
+- `NS_NODE_URL` - NS Node endpoint
+- `NS_CHECK_RETRIES` - Health check retries
+- `NS_CHECK_EXIT_ON_FAIL` - Exit if NS unreachable
+
+**VP Node**:
+- `PORT` - Server port (default: 3002)
+- `NS_NODE_URL` - NS Node endpoint
+- `VALIDATOR_PRIVATE_KEY` - Path to validator key
+- `IPFS_API_URL` - IPFS endpoint
+
+---
+
+## 🎯 Quick Reference
+
+**For Developers**:
+- Start here: [Quick Setup](../onboarding/Quick-Setup.md)
+- Build plugins: [Plugin Development](../Getting-Started/Home.md#-plugin-development)
+- Run nodes: [Run Node Tutorial](../Learning-Hub/Tutorials/Run-Node.md)
+
+**For Validators**:
+- Register: [Validator Guide](../Governance/Validator-Guide.md)
+- Stake tokens: [Staking Guide](../Governance/Staking.md)
+- Monitor: [Admin Dashboard](http://localhost:3000)
+
+**For Users**:
+- Submit data: [Gateway API](../API/Gateway-API.md)
+- Browse chain: [NS-Web UI](http://localhost:3010)
+- Vote on proposals: [Governance Guide](../Learning-Hub/Core-Concepts/Governance.md)
+
+---
+
+## 📖 Related Documentation
+
+- [Architecture Overview](../Learning-Hub/Core-Concepts/Architecture.md) - Deep dive into system design
+- [Data Flow](../Technical/data-flow-architecture.md) - Transaction lifecycle
+- [Node Design](../Nodes/NODE-DESIGN.md) - Node responsibilities and communication
+- [API Reference](../API/) - Complete API documentation
+- [Contributor Guide](../Development/Contributor-Guide.md) - How to contribute
+
+---
+
+**Last Updated**: November 28, 2025  
+**Questions?** See [FAQ](../FAQ.md) or join our [Discord](https://discord.gg/neuroswarm)
