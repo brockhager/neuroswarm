@@ -1,72 +1,174 @@
 version: '3.8'
 
 services:
-  # NS-LLM Backend (C++ + ONNX Runtime)
-  ns-llm:
+  # Gateway Node (Port 8080)
+  gateway-node:
     build:
-      context: .
-      dockerfile: NS-LLM/Dockerfile
-    container_name: ns-llm
+      context: ./gateway-node
+      dockerfile: Dockerfile
+    container_name: ns-gateway
     ports:
       - "8080:8080"
-    volumes:
-      - ./NS-LLM/models:/app/models
     environment:
-      - MODEL_PATH=/app/models
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD", "echo", '{"cmd":"health"}', "|", "/usr/local/bin/ns-llm-native" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  # NS Node (Node.js API Server)
-  ns-node:
-    build:
-      context: .
-      dockerfile: ns-node/Dockerfile
-    container_name: ns-node
-    ports:
-      - "3009:3009"
-    environment:
-      - PORT=3009
-      - NS_LLM_URL=http://ns-llm:8080
+      - PORT=8080
+      - NS_NODE_URL=http://ns-node:3009
+      - NS_CHECK_EXIT_ON_FAIL=false
+      - NS_CHECK_RETRIES=5
       - NODE_ENV=production
-    depends_on:
-      ns-llm:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: [ "CMD", "node", "-e", "require('http').get('http://localhost:3009/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); })" ]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
-  # NS Web (React Frontend)
-  ns-web:
-    build:
-      context: .
-      dockerfile: ns-web/Dockerfile
-    container_name: ns-web
-    ports:
-      - "3010:3010"
+    volumes:
+      - ./gateway-node:/app
+      - /app/node_modules
     depends_on:
       ns-node:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3010/" ]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # NS Node (Brain/Consensus - Port 3009)
+  ns-node:
+    build:
+      context: ./ns-node
+      dockerfile: Dockerfile
+    container_name: ns-node
+    ports:
+      - "3009:3009"
+    environment:
+      - PORT=3009
+      - NODE_ENV=production
+      - NEUROSWARM_TMP=/app/tmp
+    volumes:
+      - ./ns-node:/app
+      - /app/node_modules
+      - ns-data:/app/data
+      - ns-tmp:/app/tmp
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3009/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # VP Node (Validator/Producer - Port 3002)
+  vp-node:
+    build:
+      context: ./vp-node
+      dockerfile: Dockerfile
+    container_name: ns-vp
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - NS_NODE_URL=http://ns-node:3009
+      - NODE_ENV=production
+    volumes:
+      - ./vp-node:/app
+      - /app/node_modules
+    depends_on:
+      ns-node:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3002/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # Admin Node (Governance Dashboard - Port 3000)
+  admin-node:
+    build:
+      context: ./admin-node
+      dockerfile: Dockerfile
+    container_name: ns-admin
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NS_NODE_URL=http://ns-node:3009
+      - NODE_ENV=production
+    volumes:
+      - ./admin-node:/app
+      - /app/node_modules
+    depends_on:
+      ns-node:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # NS-LLM Backend (AI/LLM Service - Optional)
+  ns-llm:
+    build:
+      context: ./NS-LLM
+      dockerfile: Dockerfile
+    container_name: ns-llm
+    ports:
+      - "5555:5555"
+    volumes:
+      - ./NS-LLM:/app
+      - /app/node_modules
+      - llm-models:/app/models
+    environment:
+      - PORT=5555
+      - MODEL_PATH=/app/models
+      - NODE_ENV=production
+    restart: unless-stopped
+    profiles:
+      - full  # Only start with --profile full
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:5555/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 10s
+      start_period: 40s
+
+  # NS Web Frontend (React UI - Port 3010)
+  ns-web:
+    build:
+      context: ./ns-web
+      dockerfile: Dockerfile
+    container_name: ns-web
+    ports:
+      - "3010:3010"
+    environment:
+      - PORT=3010
+      - VITE_API_URL=http://localhost:3009
+      - NODE_ENV=production
+    volumes:
+      - ./ns-web:/app
+      - /app/node_modules
+    depends_on:
+      ns-node:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - full  # Only start with --profile full
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3010/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
 volumes:
-  models:
+  ns-data:
+    driver: local
+  ns-tmp:
+    driver: local
+  llm-models:
     driver: local
 
 networks:
   default:
     name: ns-network
+    driver: bridge
