@@ -1,26 +1,26 @@
-{
-  "name": "ns-llm-prototype",
-  "version": "0.1.0",
-  "description": "Lightweight NS-LLM prototype used for CI and integration tests",
+﻿{
+  "name": "neuroswarm-llm-model-pipeline",
+  "version": "0.2.0",
+  "description": "NeuroSwarm LLM model packaging and computation utilities.",
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "test": "node test-integration.js"
-  }
-}
-{
-  "name": "ns-llm-server",
-  "version": "0.2.0",
-  "description": "HTTP wrapper for NS-LLM native binary",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "test-health": "node ./build/test-health.js"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "compute-checksums": "node compute-checksums.js"
   },
+  "keywords": [
+    "neuroswarm",
+    "llm",
+    "onnx",
+    "quantization"
+  ],
+  "author": "NeuroSwarm Team",
+  "license": "ISC",
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "body-parser": "^1.20.2"
+    "crypto": "^1.0.1",
+    "yargs": "^17.7.2"
+  },
+  "publishConfig": {
+    "access": "restricted"
   }
 }
