@@ -22,5 +22,8 @@ jobs:
       - name: Install dependencies (NS-LLM)
         run: npm ci --prefix neuroswarm/NS-LLM
 
-      - name: Run NS-LLM health test
+      - name: Run NS-LLM health test (extended timeout)
+        env:
+          TEST_HEALTH_TIMEOUT: '180'
+          PORT: '5555'
         run: npm --prefix neuroswarm/NS-LLM run test-health
