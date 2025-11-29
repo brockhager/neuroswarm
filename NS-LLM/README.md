@@ -56,3 +56,94 @@ node benchmark.js
 ```
 
 You can override the number of requests with the environment variable N, e.g. `$env:N=500; node benchmark.js` on PowerShell.
+
+## 🔍 Health Check
+
+To verify the NS‑LLM server locally or in CI, use the portable Node‑based test harness:
+
+```bash
+npm run test-health
+```
+
+This will:
+
+- Start the server (`index.js`) in the background
+- Poll GET /health until success or timeout
+- Print server logs to the console
+- Stop the server cleanly
+
+Notes
+- Works cross‑platform (Linux, macOS, Windows)
+- CI workflow `ns-llm-health-check.yml` runs this command on all OS runners
+- PowerShell helpers (`start-server.ps1`, `stop-server.ps1`, `test-health.ps1`) remain available for contributors who prefer them
+
+## 🚀 Contributor Quick Start
+
+A short, copy-pasteable set of commands to get a development environment up and running and to run the health check locally.
+
+1) Install (from the NS-LLM folder)
+
+PowerShell / Windows:
+```powershell
+cd neuroswarm\NS-LLM
+npm ci
+```
+
+macOS / Linux:
+```bash
+cd neuroswarm/NS-LLM
+npm ci
+```
+
+2) Start the server (foreground)
+
+PowerShell / Windows:
+```powershell
+node index.js
+```
+
+macOS / Linux:
+```bash
+node index.js
+```
+
+3) Run the cross-platform health test (same command CI uses)
+
+```bash
+npm run test-health
+```
+
+The test harness will:
+- Start the server in a child process
+- Poll GET /health until success or timeout
+- Print server logs to stdout/stderr
+- Stop the server cleanly
+
+4) Optional: Start/stop helpers (PowerShell)
+
+```powershell
+.\build\start-server.ps1  # background start
+.\build\stop-server.ps1   # stop
+.\build\test-health.ps1   # powershell-based check
+```
+
+5) Quick troubleshooting
+
+- If `npm run test-health` fails with `EADDRINUSE` it means a different process is listening on port 5555 — free the port or set a different PORT before starting:
+
+PowerShell:
+```powershell
+Stop-Process -Id <pid> -Force
+# or set PORT and restart
+$env:PORT=5566; node index.js
+```
+
+macOS / Linux:
+```bash
+sudo lsof -i :5555
+kill <pid>
+PORT=5566 node index.js
+```
+
+That's it — this will let new contributors run the same health check locally and gives CI a single, portable command to run across platforms.
+

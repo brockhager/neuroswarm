@@ -4,7 +4,8 @@
   "description": "HTTP wrapper for NS-LLM native binary",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test-health": "node ./build/test-health.js"
   },
   "dependencies": {
     "express": "^4.18.2",
