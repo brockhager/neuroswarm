@@ -50,6 +50,21 @@ static std::string json_error(const std::string &msg) {
 // --- ONNX Runtime Includes ---
 #ifdef ONNXRUNTIME_FOUND
 #include <onnxruntime_cxx_api.h>
+
+// Helper function to convert std::string to platform-specific path type
+#ifdef _WIN32
+#include <codecvt>
+#include <locale>
+inline std::wstring to_path_string(const std::string& path) {
+    std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
+    return converter.from_bytes(path);
+}
+#else
+inline const char* to_path_string(const std::string& path) {
+    return path.c_str();
+}
+#endif
+
 #endif
 
 // --- Session Manager ---
@@ -261,7 +276,7 @@ int main(int argc, char** argv) {
                         } catch (...) {}
                         // Note: CoreML and DML providers require specific ONNX Runtime builds
 
-                        session_ptr->session = std::make_unique<Ort::Session>(*session_ptr->env, modelPath.c_str(), sessionOptions);
+                        session_ptr->session = std::make_unique<Ort::Session>(*session_ptr->env, to_path_string(modelPath).c_str(), sessionOptions);
                         session_ptr->loaded = true;
                     } catch (const std::exception &e) {
                         std::cout << json_error(std::string("load-failed: ") + e.what()) << std::endl;
@@ -314,7 +329,7 @@ int main(int argc, char** argv) {
                         } catch (...) {}
                         // Note: CoreML and DML providers require specific ONNX Runtime builds
 
-                        session_ptr->session = std::make_unique<Ort::Session>(*session_ptr->env, modelPath.c_str(), sessionOptions);
+                        session_ptr->session = std::make_unique<Ort::Session>(*session_ptr->env, to_path_string(modelPath).c_str(), sessionOptions);
                         session_ptr->loaded = true;
                     } catch (const std::exception &e) {
                         std::cout << json_error(std::string("load-failed: ") + e.what()) << std::endl;
