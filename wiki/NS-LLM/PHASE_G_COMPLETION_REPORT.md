@@ -445,8 +445,9 @@ POST /api/plugins/reload              ✅
 - ✅ Plugin Development section in wiki
 
 **Dashboard & Monitoring:**
+- ✅ **Consolidated Dashboard**: Unified interface with System, Performance, Governance, and Plugin views.
 - ✅ Dashboard extensions (plugin + governance metrics)
-- ✅ Real-time visualization
+- ✅ Real-time visualization with Chart.js
 - ✅ Auto-refresh functionality
 
 **Learning Hub & Tutorials:**

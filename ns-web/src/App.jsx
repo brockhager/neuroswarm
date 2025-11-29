@@ -6,9 +6,10 @@ import GovernanceTab from './components/GovernanceTab'
 import PerformanceTab from './components/PerformanceTab'
 import PluginDashboard from './components/PluginDashboard'
 import ModelsTab from './components/ModelsTab'
+import NS_LLM_Dashboard from './Dashboard'
 
 function App() {
-    const [activeTab, setActiveTab] = useState('generate')
+    const [activeTab, setActiveTab] = useState('dashboard')
     const [health, setHealth] = useState(null)
 
     useEffect(() => {
@@ -20,11 +21,9 @@ function App() {
     }, [])
 
     const tabs = [
+        { id: 'dashboard', label: 'System', icon: '🖥️' },
         { id: 'generate', label: 'Generate', icon: '✨' },
         { id: 'rag', label: 'RAG Query', icon: '🔍' },
-        { id: 'governance', label: 'Governance', icon: '🛡️' },
-        { id: 'performance', label: 'Performance', icon: '📊' },
-        { id: 'extensions', label: 'Extensions', icon: '🧩' },
         { id: 'models', label: 'Models', icon: '🤖' }
     ]
 
@@ -70,11 +69,9 @@ function App() {
             {/* Main Content */}
             <main className="main">
                 <div className="container">
+                    {activeTab === 'dashboard' && <NS_LLM_Dashboard />}
                     {activeTab === 'generate' && <GenerateTab />}
                     {activeTab === 'rag' && <RAGTab />}
-                    {activeTab === 'governance' && <GovernanceTab />}
-                    {activeTab === 'performance' && <PerformanceTab />}
-                    {activeTab === 'extensions' && <PluginDashboard />}
                     {activeTab === 'models' && <ModelsTab />}
                 </div>
             </main>
