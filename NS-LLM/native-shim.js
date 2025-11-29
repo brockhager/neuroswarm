@@ -1,6 +1,7 @@
-const { spawn } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { spawn } from 'child_process';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 class NativeShim {
   constructor(options = {}) {
@@ -27,10 +28,13 @@ class NativeShim {
 
   static detectDefaultBinary() {
     // possible build locations
+    const _filename = fileURLToPath(import.meta.url);
+    const _dirname = path.dirname(_filename);
+
     const candidates = [
-      path.join(__dirname, 'native', 'build', 'ns-llm-native'),
-      path.join(__dirname, 'native', 'build', 'Release', 'ns-llm-native.exe'),
-      path.join(__dirname, 'native', 'ns-llm-native.exe'),
+      path.join(_dirname, 'native', 'build', 'ns-llm-native'),
+      path.join(_dirname, 'native', 'build', 'Release', 'ns-llm-native.exe'),
+      path.join(_dirname, 'native', 'ns-llm-native.exe'),
     ];
     for (const c of candidates) {
       console.log(`[NativeShim] Checking candidate: ${c}`);
@@ -44,9 +48,12 @@ class NativeShim {
   }
 
   spawnBinary(binPath) {
+    const _filename = fileURLToPath(import.meta.url);
+    const _dirname = path.dirname(_filename);
+
     const child = spawn(binPath, ['--stub'], {
       stdio: ['pipe', 'pipe', process.stderr],
-      cwd: __dirname
+      cwd: _dirname
     });
     child.on('spawn', () => {
       this.process = child;
@@ -187,4 +194,4 @@ class NativeShim {
   }
 }
 
-module.exports = NativeShim;
+export default NativeShim;

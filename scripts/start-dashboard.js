@@ -2,9 +2,9 @@
 // Small static file server for monitor-dashboard.html to avoid Python dependency
 // Usage: node scripts/start-dashboard.js [port] [dir]
 
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+import http from 'http';
+import fs from 'fs';
+import path from 'path';
 
 const port = parseInt(process.argv[2], 10) || process.env.PORT || 8000;
 const root = path.resolve(process.argv[3] || process.cwd());

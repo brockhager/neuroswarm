@@ -9,8 +9,8 @@
  * - Metrics collection
  */
 
-const http = require('http');
-const https = require('https');
+import http from 'http';
+import https from 'https';
 
 // Circuit breaker states
 const CIRCUIT_STATE = {
@@ -443,6 +443,5 @@ class NSLLMClient {
 // Export singleton instance and class
 const defaultClient = new NSLLMClient();
 
-module.exports = defaultClient;
-module.exports.NSLLMClient = NSLLMClient;
-module.exports.CIRCUIT_STATE = CIRCUIT_STATE;
+export default defaultClient;
+export { NSLLMClient, CIRCUIT_STATE };

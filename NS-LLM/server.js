@@ -1,7 +1,7 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-const cors = require('cors');
-const NativeShim = require('./native-shim');
+import express from 'express';
+import bodyParser from 'body-parser';
+import cors from 'cors';
+import NativeShim from './native-shim.js';
 
 const app = express();
 const PORT = 8080;
@@ -94,3 +94,8 @@ app.post('/api/generate', async (req, res) => {
 app.listen(PORT, () => {
     console.log(`[NS-LLM Server] Listening on port ${PORT}`);
 });
+
+// If run directly, keep process alive (app.listen does this) and print a startup line
+if (process.argv[1] && process.argv[1].endsWith('server.js')) {
+    console.log('[NS-LLM Server] started as main script');
+}

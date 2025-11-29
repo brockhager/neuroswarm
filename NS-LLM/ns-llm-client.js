@@ -85,4 +85,4 @@ class NsLlmClient {
   }
 }
 
-module.exports = NsLlmClient;
+export default NsLlmClient;

@@ -4,7 +4,7 @@
  * Demonstrates how to use the NS-LLM client library
  */
 
-const nsLlm = require('./ns-llm-client');
+import nsLlm from './ns-llm-client.js';
 
 async function main() {
     console.log('=== NS-LLM Client Example ===\n');
@@ -57,7 +57,7 @@ async function main() {
 
     // 5. Test retry logic (simulate failure)
     console.log('5. Testing retry logic with invalid endpoint...');
-    const { NSLLMClient } = require('./ns-llm-client');
+    const { NSLLMClient } = await import('./ns-llm-client.js');
     const testClient = new NSLLMClient({
         baseUrl: 'http://127.0.0.1:9999', // Invalid port
         maxRetries: 2,

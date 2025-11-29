@@ -175,4 +175,4 @@ class VectorIndex {
     }
 }
 
-module.exports = VectorIndex;
+export default VectorIndex;

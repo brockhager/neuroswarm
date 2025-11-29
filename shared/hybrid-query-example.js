@@ -4,7 +4,7 @@
  * Demonstrates Retrieval-Augmented Generation (RAG) using the hybrid query system.
  */
 
-const fetch = require('node-fetch');
+import fetch from 'node-fetch';
 
 const NS_NODE_URL = 'http://localhost:3009';
 
