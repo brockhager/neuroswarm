@@ -7,10 +7,26 @@
  * If --wiki-repo and --push are provided, the script will clone the wiki repo, copy files, commit, and push.
  */
 
-const fs = require('fs');
-const path = require('path');
-const { ensureDirInRepoSync, safeJoinRepo, safeRmInRepoSync, getTmpDir } = require('./repoScopedFs.cjs');
-const { execSync, spawnSync } = require('child_process');
+import fs from 'fs';
+import path from 'path';
+import child_process from 'child_process';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// repoScopedFs.cjs is kept as CommonJS; we'll import it dynamically when needed
+let repoFsModule = null;
+async function getRepoFs() {
+  if (!repoFsModule) {
+    repoFsModule = await import('./repoScopedFs.cjs');
+    // CommonJS import will be the module namespace; handle default wrapper
+    if (repoFsModule && repoFsModule.default && Object.keys(repoFsModule).length === 1) {
+      repoFsModule = repoFsModule.default;
+    }
+  }
+  return repoFsModule;
+}
 let blockedHomeAttempt = false;
 
 function parseArgs() {
@@ -55,16 +71,21 @@ function convertLinks(content) {
   return content;
 }
 
-function ensureCleanDir(dir) {
-  if (!ensureDirInRepoSync(dir)) {
+async function ensureCleanDir(dir) {
+  const repoFs = await getRepoFs();
+  if (!repoFs || !repoFs.ensureDirInRepoSync) {
+    console.error('ERROR: repo-scoped FS utilities not available');
+    process.exit(1);
+  }
+  if (!repoFs.ensureDirInRepoSync(dir)) {
     console.error('ERROR: ensureCleanDir: Directory is outside repo and will not be created:', dir);
     process.exit(1);
   }
-  if (fs.existsSync(dir)) safeRmInRepoSync(dir);
+  if (fs.existsSync(dir)) repoFs.safeRmInRepoSync(dir);
 }
 
-function copyAndConvert(sourceDir, outDir, opts = {}) {
-  ensureCleanDir(outDir);
+async function copyAndConvert(sourceDir, outDir, opts = {}) {
+  await ensureCleanDir(outDir);
   const files = fs.readdirSync(sourceDir).filter(f => f.endsWith('.md'));
   files.forEach(f => {
     const src = path.join(sourceDir, f);
@@ -88,14 +109,15 @@ function copyAndConvert(sourceDir, outDir, opts = {}) {
   });
 }
 
-function gitCloneAndPush(wikiRepo, exportDir, commitMessage = 'Migrate KB to wiki', push = false) {
+async function gitCloneAndPush(wikiRepo, exportDir, commitMessage = 'Migrate KB to wiki', push = false) {
   if (!wikiRepo) {
     console.error('No wiki repo provided for clone/push');
     process.exit(1);
   }
-  const tmpDir = getTmpDir('wiki-clone');
+  const repoFs = await getRepoFs();
+  const tmpDir = repoFs.getTmpDir('wiki-clone');
   if (fs.existsSync(tmpDir)) {
-    safeRmInRepoSync(tmpDir);
+    repoFs.safeRmInRepoSync(tmpDir);
   }
   console.log(`Cloning wiki repo ${wikiRepo} into ${tmpDir}`);
   const cloneCmd = `git clone ${wikiRepo} ${tmpDir}`;
@@ -123,7 +145,7 @@ function gitCloneAndPush(wikiRepo, exportDir, commitMessage = 'Migrate KB to wik
   }
 }
 
-function main() {
+async function main() {
   const opts = parseArgs();
   const source = opts.src || path.join('website', 'kb');
   let out = opts.out || path.join('tmp', 'neuroswarm-wiki-export');
@@ -153,9 +175,9 @@ function main() {
     console.error('KB source directory does not exist:', source);
     process.exit(1);
   }
-  copyAndConvert(source, out, opts);
+  await copyAndConvert(source, out, opts);
   if (wikiRepo) {
-    gitCloneAndPush(wikiRepo, out, 'Migrate KB pages to wiki', push);
+    await gitCloneAndPush(wikiRepo, out, 'Migrate KB pages to wiki', push);
   } else {
     console.log('Export complete. Files are in', path.resolve(out));
   }
@@ -166,4 +188,4 @@ function main() {
   }
 }
 
-main();
+main().catch(e => { console.error('migrate-kb-to-wiki failed:', e && e.message); process.exit(1); });

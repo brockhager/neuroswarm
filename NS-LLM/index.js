@@ -3,16 +3,18 @@
 // - /health: process and model status
 // - /metrics: simple counters
 
-const http = require('http');
-const os = require('os');
+import http from 'http';
+import os from 'os';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const PORT = process.env.PORT || 5555;
 
 // Try to read a repo-level version file if present (two levels up from this file)
 let VERSION = process.env.VERSION || 'dev';
 try {
-  const fs = require('fs');
-  const path = require('path');
+  // fs and path are already imported at the top of this module
   const rootVersion = path.resolve(__dirname, '..', '..', 'version-id.txt');
   if (fs.existsSync(rootVersion)) {
     VERSION = fs.readFileSync(rootVersion, 'utf8').trim();
@@ -231,10 +233,12 @@ process.on('unhandledRejection', (reason, promise) => {
   shutdown(1);
 });
 
-// Keep the process alive when run as main module
-if (require.main === module) {
+// If this file is executed directly, just run the server (HTTP server keeps the event loop alive)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
   console.log('Running as main module');
-  // No explicit keep-alive needed - HTTP server keeps event loop alive
 }
 
-module.exports = { server };
+export { server };

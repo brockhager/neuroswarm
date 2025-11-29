@@ -4,7 +4,7 @@
 // Requires: DISCORD_BOT_TOKEN and GUILD_ID environment variables.
 // Use with caution - bot must have 'Manage Channels' permission.
 
-const https = require('https');
+import https from 'https';
 
 function usageAndExit() { console.error('Usage: node createDiscordChannel.js --name channel-name --type text'); process.exit(1); }
 function parseArgs() {
@@ -43,7 +43,11 @@ async function createChannel(guildId, token, name, type = 'text') {
   });
 }
 
-(async () => {
+const __filename = new URL(import.meta.url).pathname;
+const __main = process.argv[1] && (process.argv[1] === __filename || process.argv[1].endsWith('createDiscordChannel.js'));
+
+if (__main) {
+  (async () => {
   const opts = parseArgs();
   const guild = process.env.GUILD_ID;
   const token = process.env.DISCORD_BOT_TOKEN;
@@ -53,4 +57,7 @@ async function createChannel(guildId, token, name, type = 'text') {
   }
   const r = await createChannel(guild, token, opts.name, opts.type);
   console.log('create channel result', r);
-})();
+  })();
+}
+
+export { createChannel };

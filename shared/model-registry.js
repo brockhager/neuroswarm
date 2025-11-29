@@ -4,8 +4,8 @@
  * Manages available models, metadata, and model switching
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 class ModelRegistry {
     constructor(modelsDir) {
@@ -127,4 +127,4 @@ class ModelRegistry {
     }
 }
 
-module.exports = ModelRegistry;
+export default ModelRegistry;

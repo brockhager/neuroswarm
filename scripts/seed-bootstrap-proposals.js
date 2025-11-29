@@ -7,9 +7,12 @@
  * the NeuroSwarm community voting process.
  */
 
-const fs = require('fs');
-const path = require('path');
-const { ensureDirInRepoSync } = require('../scripts/repoScopedFs.cjs');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 
 // Initial proposals data
 const initialProposals = [
@@ -402,13 +405,16 @@ Implement a comprehensive decentralized identity and reputation system that enha
 ];
 
 // Function to seed proposals (currently saves to JSON file for mock implementation)
-function seedProposals() {
+async function seedProposals() {
   const outputPath = path.join(__dirname, '..', 'data', 'bootstrap-proposals.json');
 
   // Ensure data directory exists
   const dataDir = path.dirname(outputPath);
   if (!fs.existsSync(dataDir)) {
-    ensureDirInRepoSync(dataDir);
+    // repoScopedFs.cjs remains CommonJS — load dynamically from ESM
+    const repoFsModule = await import('../scripts/repoScopedFs.cjs');
+    const ensureDirInRepoSync = repoFsModule.ensureDirInRepoSync || (repoFsModule.default && repoFsModule.default.ensureDirInRepoSync);
+    if (ensureDirInRepoSync) ensureDirInRepoSync(dataDir);
   }
 
   // Add metadata to proposals
@@ -442,7 +448,7 @@ function seedProposals() {
 }
 
 // Run the seeding script
-if (require.main === module) {
+if (process.argv[1] === __filename || process.argv[1].endsWith('seed-bootstrap-proposals.js')) {
   console.log('🚀 Starting NeuroSwarm Governance Bootstrap...');
   console.log('=' .repeat(50));
   seedProposals();
@@ -455,4 +461,4 @@ if (require.main === module) {
   console.log('4. Monitor results and implement approved proposals');
 }
 
-module.exports = { initialProposals, seedProposals };
+export { initialProposals, seedProposals };

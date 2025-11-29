@@ -1,8 +1,8 @@
 (async function(){
   // Test ns-llm-client.js against the prototype server
-  const NsLlmClient = require('./ns-llm-client');
-  // server auto-starts via require('./index.js') in this dir
-  require('./index.js');
+  const { default: NsLlmClient } = await import('./ns-llm-client.js');
+  // server auto-starts via importing index.js in this dir
+  await import('./index.js');
   const client = new NsLlmClient({ baseUrl: 'http://127.0.0.1:5555', retries: 2, timeoutMs: 2000 });
 
   const wait = ms => new Promise(r => setTimeout(r, ms));
