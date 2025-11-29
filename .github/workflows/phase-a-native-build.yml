@@ -519,40 +519,21 @@ jobs:
           path: NS-LLM/native/artifact
         continue-on-error: true
 
-      - name: Start NS-LLM backend (Linux/macOS - prefer native artifact)
+      - name: Start NS-LLM backend (Linux/macOS - use Node.js prototype for E2E)
         if: matrix.runner-os != 'windows-latest'
+        working-directory: NS-LLM
         run: |
-          # Find any candidate native binary inside the downloaded artifact
-          BIN=$(find NS-LLM/native/artifact -type f -iname 'ns-llm-native*' -print -quit || true)
-          if [ -n "$BIN" ]; then
-            echo "Found native binary: $BIN — starting with --stub"
-            chmod +x "$BIN" || true
-            nohup "$BIN" --stub > NS-LLM/ns-llm-native.log 2>&1 &
-            NATIVE_PID=$!
-            echo "Started native binary with PID: $NATIVE_PID"
-            sleep 2
-            if ps -p $NATIVE_PID > /dev/null; then
-              echo "Native process is running"
-            else
-              echo "Native process died immediately! Log contents:"
-              cat NS-LLM/ns-llm-native.log 2>/dev/null || echo "No log file"
-            fi
+          echo "Starting Node.js prototype for E2E tests"
+          nohup node index.js > ns-llm.log 2>&1 &
+          NS_LLM_PID=$!
+          echo "Started with PID: $NS_LLM_PID"
+          sleep 2
+          if ps -p $NS_LLM_PID > /dev/null; then
+            echo "Process is running"
           else
-            echo "Native artifact not found — starting Node.js prototype"
-            cd NS-LLM
-            echo "Current directory: $(pwd)"
-            echo "Starting node index.js..."
-            nohup node index.js > ns-llm.log 2>&1 &
-            NS_LLM_PID=$!
-            echo "Started Node.js prototype with PID: $NS_LLM_PID"
-            sleep 2
-            if ps -p $NS_LLM_PID > /dev/null; then
-              echo "Process is running"
-            else
-              echo "Process died immediately! Log contents:"
-              cat ns-llm.log 2>/dev/null || echo "No log file"
-            fi
-            cd ..
+            echo "Process died! Log:"
+            cat ns-llm.log 2>/dev/null || echo "No log"
+            exit 1
           fi
 
       - name: Start NS Node (Linux/macOS)
