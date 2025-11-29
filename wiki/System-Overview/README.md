@@ -8,78 +8,131 @@
 
 ## 📦 Core Services (Nodes)
 
-### NS Node (Brain)
-**Location**: `neuroswarm/ns-node/`  
-**Port**: 3009  
-**Purpose**: Consensus engine and canonical chain authority
+### NS-Node Client (User Interface)
+**Locations**: 
+- `neuroswarm/ns-node-desktop/` (Electron desktop app - NS-E)
+- `neuroswarm/ns-node/public/` (Browser-based UI - NS-B)
 
-The NS Node is the **heart of NeuroSwarm**. It maintains the canonical blockchain, manages the mempool, validates transactions, and coordinates consensus across the network.
+**Ports**: 3000 (Electron), 3009 (Browser)  
+**Purpose**: User-facing chat interface for interacting with NeuroSwarm
+
+The NS-Node Client is how **end users interact** with NeuroSwarm. It provides a chat interface for submitting queries, browsing history, and interacting with personal AI agents.
+
+**Two Deployment Options:**
+- **NS-E (Electron)**: Standalone desktop application with system tray integration
+- **NS-B (Browser)**: Web-based interface accessed through a browser
 
 **Key Responsibilities:**
-- Maintain canonical chain state
-- Mempool management (pending transactions)
-- Block validation and application
-- Proof-of-Stake consensus coordination
-- SPV proof generation
-- Peer discovery and synchronization
+- Chat interface for user queries
+- Transaction submission forms
+- Personal AI agent interaction
+- DuckDuckGo search integration
+- Learning service integration
+- Local history and preferences
 
 **Used For:**
-- Running a validator node
-- Querying chain state
-- Submitting blocks for consensus
-- Generating cryptographic proofs
+- Daily interaction with NeuroSwarm
+- Submitting data and queries
+- Chatting with AI
+- Personal AI assistant
 
-**Related Docs**: [Node Design](../Nodes/NODE-DESIGN.md) | [Architecture](../Learning-Hub/Core-Concepts/Architecture.md)
+**Related Docs**: [NS-Node Deployment Options](../Nodes/NS-Node/readme.md)
 
 ---
 
-### Gateway Node
+### Gateway Node (Anti-Spam Gateway)
 **Location**: `neuroswarm/gateway-node/`  
 **Port**: 8080  
-**Purpose**: API gateway and transaction admission control
+**Purpose**: Entry point with spam protection and source validation
 
-The Gateway Node is the **entry point** for external applications. It validates incoming transactions, manages its own mempool, and forwards approved transactions to the NS Node.
+The Gateway Node is the **first line of defense** for the network. It validates incoming transactions, performs spam filtering, rate limiting, and maintains the canonical mempool before forwarding validated transactions to the consensus layer.
 
 **Key Responsibilities:**
-- REST API for transaction submission
-- Source validation (Allie-AI integration)
+- Accept user transactions from clients
+- **Spam filtering** (fee threshold, rate limiting)
+- **Source validation** (Allie-AI adapter queries)
+- Maintain **canonical mempool** (authoritative transaction queue)
 - Rate limiting and DDoS protection
 - Transaction canonicalization
-- Mempool admission control
-- Health checks and monitoring
+- Forward validated transactions to VP nodes
 
 **Used For:**
-- Building frontend applications
-- Submitting transactions to the network
-- Querying transaction status
-- Accessing public APIs
+- Protecting the network from spam
+- Validating external data sources
+- Maintaining transaction queue
+- Providing REST API for applications
+
+**Data Flow:**
+```
+User → Gateway (validate, rate limit, spam filter) → Gateway Mempool → VP Node
+```
 
 **Related Docs**: [Gateway API](../API/Gateway-API.md) | [Data Flow](../Technical/data-flow-architecture.md)
 
 ---
 
-### VP Node (Validator/Producer)
+### VP Node (Block Producer/Brain)
 **Location**: `neuroswarm/vp-node/`  
 **Port**: 3002  
-**Purpose**: Block production and IPFS publishing
+**Purpose**: Block production, consensus, and IPFS publishing
 
-The VP Node is operated by **registered validators** who have staked tokens. It polls the NS Node mempool, produces blocks, signs them, and publishes payloads to IPFS.
+The VP Node is the **core consensus engine** (the "brain"). It polls the Gateway mempool, produces blocks, validates them, and publishes to IPFS. This is where blocks are actually created and consensus happens.
 
 **Key Responsibilities:**
-- Poll mempool for pending transactions
-- Produce blocks with merkle roots
-- Sign block headers with validator key
-- Publish block payloads to IPFS
-- Submit blocks to NS Node for consensus
+- **Poll Gateway mempool** for validated transactions
+- **Produce blocks** with merkle roots
+- **Sign block headers** with validator key
+- **Publish block payloads to IPFS** (content-addressed storage)
+- **Submit blocks to NS Node** for canonical chain recording
+- Validator coordination and consensus
 - Earn validation rewards
 
 **Used For:**
+- Block production and consensus
 - Participating as a network validator
 - Earning staking rewards
-- Block production and signing
 - IPFS content publishing
+- Network consensus coordination
+
+**Data Flow:**
+```
+Gateway Mempool → VP Node (produce block, sign, IPFS publish) → NS Node (record to canonical chain)
+```
 
 **Related Docs**: [Validator Guide](../Governance/Validator-Guide.md) | [Staking](../Governance/Staking.md)
+
+---
+
+### NS-Server (Canonical Chain Authority)
+**Location**: `neuroswarm/ns-node/server.js`  
+**Port**: 3009  
+**Purpose**: Canonical blockchain state and verification
+
+The NS-Server maintains the **authoritative blockchain state**. It receives blocks from VP nodes, validates signatures and merkle roots, applies blocks to the canonical chain, and provides SPV proofs.
+
+**Key Responsibilities:**
+- Maintain **canonical blockchain** (blockMap, chain state)
+- Validate block signatures and merkle roots
+- Apply blocks to canonical chain
+- **SPV proof generation** (cryptographic verification)
+- Coordinate validator consensus
+- Broadcast blocks to gateways and peers
+- Handle chain reorganizations (reorgs)
+- Provide blockchain query endpoints
+
+**Used For:**
+- Querying canonical chain state
+- SPV proof verification
+- Blockchain history
+- Validator coordination
+- Network state synchronization
+
+**Data Flow:**
+```
+VP Node (blocks) → NS-Server (validate, apply to canonical chain) → Gateways (notify, sync)
+```
+
+**Related Docs**: [Node Design](../Nodes/NODE-DESIGN.md) | [Architecture](../Learning-Hub/Core-Concepts/Architecture.md)
 
 ---
 
