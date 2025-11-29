@@ -134,7 +134,7 @@ Alternative quick links if you know what you need:
 - [Sources](Technical/Sources.md) - External data source integration
 - [Analytics & SDK](Technical/Analytics-and-SDK.md) - Analytics and SDK documentation
 - [SDK Documentation](Technical/sdk.md) - Software development kit
-- [Ports Configuration](Technical/Ports.md) - Network port assignments
+- [Ports Configuration](Ports.md) - Network port assignments
 - [Ready Queue Specs](Technical/ready-queue-specs.md) - Task queue specifications
 - [Performance Metrics](Technical/performance-metrics.md) - Performance benchmarks
 
