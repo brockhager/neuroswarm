@@ -55,6 +55,8 @@ cd neuroswarm/onboarding
 
 ## Understanding Node Types
 
+> 📌 **Port Reference**: See [Port Configuration](../../Ports.md) for complete port assignments and configuration.
+
 ### NS Node (Brain) — Port 3009
 **Purpose**: Consensus engine, canonical chain authority, mempool management
 

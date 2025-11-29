@@ -13,7 +13,7 @@
 - `neuroswarm/ns-node-desktop/` (Electron desktop app - NS-E)
 - `neuroswarm/ns-node/public/` (Browser-based UI - NS-B)
 
-**Ports**: 3000 (Electron), 3009 (Browser)  
+**Ports**: 3000 (Electron), 3009 (Browser) — See [Port Configuration](../Ports.md)  
 **Purpose**: User-facing chat interface for interacting with NeuroSwarm
 
 The NS-Node Client is how **end users interact** with NeuroSwarm. It provides a chat interface for submitting queries, browsing history, and interacting with personal AI agents.
@@ -42,7 +42,7 @@ The NS-Node Client is how **end users interact** with NeuroSwarm. It provides a 
 
 ### Gateway Node (Anti-Spam Gateway)
 **Location**: `neuroswarm/gateway-node/`  
-**Port**: 8080  
+**Port**: 8080 — See [Port Configuration](../Ports.md)  
 **Purpose**: Entry point with spam protection and source validation
 
 The Gateway Node is the **first line of defense** for the network. It validates incoming transactions, performs spam filtering, rate limiting, and maintains the canonical mempool before forwarding validated transactions to the consensus layer.
@@ -73,7 +73,7 @@ User → Gateway (validate, rate limit, spam filter) → Gateway Mempool → VP 
 
 ### VP Node (Block Producer/Brain)
 **Location**: `neuroswarm/vp-node/`  
-**Port**: 3002  
+**Port**: 3002 — See [Port Configuration](../Ports.md)  
 **Purpose**: Block production, consensus, and IPFS publishing
 
 The VP Node is the **core consensus engine** (the "brain"). It polls the Gateway mempool, produces blocks, validates them, and publishes to IPFS. This is where blocks are actually created and consensus happens.
@@ -105,7 +105,7 @@ Gateway Mempool → VP Node (produce block, sign, IPFS publish) → NS Node (rec
 
 ### NS-Server (Canonical Chain Authority)
 **Location**: `neuroswarm/ns-node/server.js`  
-**Port**: 3009  
+**Port**: 3009 — See [Port Configuration](../Ports.md)  
 **Purpose**: Canonical blockchain state and verification
 
 The NS-Server maintains the **authoritative blockchain state**. It receives blocks from VP nodes, validates signatures and merkle roots, applies blocks to the canonical chain, and provides SPV proofs.
@@ -138,7 +138,7 @@ VP Node (blocks) → NS-Server (validate, apply to canonical chain) → Gateways
 
 ### Admin Node
 **Location**: `neuroswarm/admin-node/`  
-**Port**: 3000  
+**Port**: 3000 — See [Port Configuration](../Ports.md)  
 **Purpose**: Dashboard, governance, and monitoring
 
 The Admin Node provides a **visual interface** for monitoring network health, managing governance proposals, and observing real-time metrics.
@@ -164,7 +164,7 @@ The Admin Node provides a **visual interface** for monitoring network health, ma
 
 ### NS-LLM Service
 **Location**: `neuroswarm/NS-LLM/`  
-**Port**: 5555  
+**Port**: 5555 — See [Port Configuration](../Ports.md)  
 **Purpose**: Local AI inference and semantic operations
 
 The NS-LLM service provides **local AI capabilities** using Ollama for semantic caching, content validation, and intelligent routing.
@@ -699,13 +699,7 @@ The Solana program manages governance manifests, validator attestations, and imm
 ### Port Assignments
 **Location**: `neuroswarm/shared/ports.js`
 
-**Default Ports**:
-- NS Node: 3009
-- Gateway: 8080
-- VP Node: 3002
-- Admin Node: 3000
-- NS-LLM: 5555
-- NS-Web: 3010
+**Complete port reference**: See [Port Configuration](../Ports.md) for all service ports, configuration notes, and troubleshooting.
 
 ---
 
@@ -718,21 +712,23 @@ Orchestrates all 6 services with health checks, dependency ordering, and volume 
 
 ### Environment Variables
 
-**NS Node**:
-- `PORT` - Server port (default: 3009)
+**Port Configuration**: See [Port Configuration](../Ports.md) for all default ports and overrides.
+
+**NS-Server**:
+- `PORT` - Server port
 - `LOG_LEVEL` - Logging verbosity
 - `NETWORK_ID` - Network identifier
 - `MAX_PEERS` - Maximum peer connections
 
 **Gateway Node**:
-- `PORT` - Server port (default: 8080)
-- `NS_NODE_URL` - NS Node endpoint
+- `PORT` - Server port
+- `NS_NODE_URL` - NS-Server endpoint
 - `NS_CHECK_RETRIES` - Health check retries
 - `NS_CHECK_EXIT_ON_FAIL` - Exit if NS unreachable
 
 **VP Node**:
-- `PORT` - Server port (default: 3002)
-- `NS_NODE_URL` - NS Node endpoint
+- `PORT` - Server port
+- `NS_NODE_URL` - NS-Server endpoint
 - `VALIDATOR_PRIVATE_KEY` - Path to validator key
 - `IPFS_API_URL` - IPFS endpoint
 
