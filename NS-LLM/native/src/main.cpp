@@ -255,7 +255,14 @@ int main(int argc, char** argv) {
 
                 if (stub) {
                     auto emb = deterministic_embedding(text);
-                    std::cout << "{\"embedding\":[0.1,0.2],\"model\":\"stub\"}" << std::endl;
+                    std::ostringstream o;
+                    o << "{\"embedding\":[";
+                    for (size_t i = 0; i < emb.size(); i++) {
+                        if (i > 0) o << ",";
+                        o << emb[i];
+                    }
+                    o << "],\"model\":\"stub\"}";
+                    std::cout << o.str() << std::endl;
                     continue;
                 }
 
