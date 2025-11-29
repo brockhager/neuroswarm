@@ -29,13 +29,17 @@ jobs:
       - name: Cache node_modules
         uses: actions/cache@v4
         with:
-          path: ns-node/node_modules
-          key: ${{ runner.os }}-ns-node-${{ hashFiles('ns-node/package.json') }}
+          path: |
+            node_modules
+            ns-node/node_modules
+            shared/node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/package.json') }}
           restore-keys: |
-            ${{ runner.os }}-ns-node-
+            ${{ runner.os }}-pnpm-
           
       - name: Install dependencies
         run: |
+          pnpm install -w
           cd ns-node
           pnpm install
           
