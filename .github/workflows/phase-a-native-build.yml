@@ -530,7 +530,9 @@ jobs:
             nohup "$BIN" --stub > NS-LLM/ns-llm-native.log 2>&1 &
           else
             echo "Native artifact not found — starting Node.js prototype"
-            cd NS-LLM && nohup node index.js > ns-llm.log 2>&1 &
+            cd NS-LLM
+            nohup node index.js > ns-llm.log 2>&1 &
+            cd ..
           fi
 
       - name: Start NS Node (Linux/macOS)
