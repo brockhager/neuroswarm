@@ -1,6 +1,6 @@
 {
   "name": "gateway-node",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Lightweight gateway node for NeuroSwarm - forwards /v1/chat and surfaces debug endpoints",
   "main": "server.js",
   "type": "module",

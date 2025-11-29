@@ -1,6 +1,6 @@
 {
   "name": "neuroswarm-visualization-plugin-starter",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "Starter template for NeuroSwarm dashboard visualization plugins",
   "main": "widget.js",
   "type": "module",
