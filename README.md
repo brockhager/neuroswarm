@@ -4,7 +4,61 @@
 
 # NeuroSwarm
 
-## 🚀 Phase 3 Status: Contributor Experience & Scaling
+## About
+
+**NeuroSwarm** is a decentralized AI platform where personal AI agents run locally on user devices and connect to a shared Global Brain. The system combines local personalization with collaborative, auditable knowledge sharing through blockchain-anchored provenance.
+
+### What is NeuroSwarm?
+
+NeuroSwarm creates a trustless ecosystem where:
+- **Personal AI agents** run locally and learn from your interactions
+- **Decentralized nodes** form a peer-to-peer network (NS-node, Gateway, Validator/Producer, Admin)
+- **Global Brain** aggregates verifiable knowledge across the network
+- **Blockchain anchoring** (Solana) provides immutable audit trails for AI model provenance
+- **IPFS storage** enables content-addressed, distributed data storage
+- **Token economics** reward validators and contributors for maintaining network integrity
+
+### Core Features
+
+- 🌐 **Decentralized Architecture** - No single point of failure or control
+- 🔐 **Verifiable Provenance** - Every AI interaction cryptographically attested on-chain
+- 🤖 **Local AI Agents** - Your data stays on your device, you control what's shared
+- 🧠 **Collective Intelligence** - Benefit from network knowledge while maintaining privacy
+- ⚡ **Real-time Consensus** - Proof-of-Stake consensus with sub-second block times
+- 📊 **Transparent Governance** - Community-driven decision making with on-chain voting
+
+### Architecture Overview
+
+**Node Types:**
+- **NS-Node** (port 3009) - Brain/consensus layer, maintains canonical chain
+- **Gateway-Node** (port 8080) - API gateway, mempool validation, source attestation
+- **VP-Node** (port 3002) - Validator/producer, block creation and IPFS publishing
+- **Admin-Node** (port 3000) - Governance and observability dashboard
+
+**Tech Stack:**
+- Rust (`neuro-infra`) - Core daemon for networking, storage, and consensus
+- TypeScript/Node.js (`neuro-services`) - API services and orchestration
+- Solana/Anchor (`neuro-program`) - Smart contracts for governance and provenance
+- Next.js (`neuro-web`) - Web frontend with wallet integration
+- IPFS/Helia - Distributed content-addressed storage
+
+## 📚 Documentation
+
+All official NeuroSwarm documentation is located in our comprehensive Wiki:
+
+👉 **[Go to Documentation Home](wiki/Getting-Started/Home.md)**
+
+**Quick Links:**
+- [Getting Started Guide](wiki/Getting-Started/Getting-Started.md) - New user onboarding
+- [Contributor Onboarding](wiki/Development/Contributor-Onboarding.md) - Start contributing
+- [System Architecture](wiki/Technical/Architecture.md) - Technical deep dive
+- [Data Flow Architecture](wiki/Technical/data-flow-architecture.md) - Complete dataflow diagrams
+- [Running Nodes](wiki/Nodes/Running-Nodes.md) - Node operation guide
+- [Complete Index](wiki/Index.md) - Browse all 207+ documents
+
+---
+
+## 🚀 Current Development Phase
 
 ### ✅ Phase 3b: Error Handling & Stability - COMPLETED
 - Server stability with conditional imports and graceful degradation
@@ -27,14 +81,6 @@
 **Test Results**: See [test-results.md](test-results.md) for detailed testing outcomes.
 
 ---
-
-## About
-
-NeuroSwarm is a decentralized AI platform where personal AI agents run locally on user devices and connect to a shared Global Brain. The system combines local personalization with collaborative, auditable knowledge sharing.
-
-## 📚 Documentation Center
-All official NeuroSwarm documentation is now located in our Wiki.
-👉 [Go to Documentation Home](wiki/Home.md)
 
 ## What it does
  - It includes a `sources/` adapter mechanism allowing Gateway to query external source adapters (like Allie-AI), attach metadata to txs, and include source attestation in blocks for additional verification.
