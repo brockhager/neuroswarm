@@ -528,10 +528,22 @@ jobs:
             echo "Found native binary: $BIN — starting with --stub"
             chmod +x "$BIN" || true
             nohup "$BIN" --stub > NS-LLM/ns-llm-native.log 2>&1 &
+            echo "Started native binary with PID: $!"
           else
             echo "Native artifact not found — starting Node.js prototype"
             cd NS-LLM
+            echo "Current directory: $(pwd)"
+            echo "Starting node index.js..."
             nohup node index.js > ns-llm.log 2>&1 &
+            NS_LLM_PID=$!
+            echo "Started Node.js prototype with PID: $NS_LLM_PID"
+            sleep 2
+            if ps -p $NS_LLM_PID > /dev/null; then
+              echo "Process is running"
+            else
+              echo "Process died immediately! Log contents:"
+              cat ns-llm.log 2>/dev/null || echo "No log file"
+            fi
             cd ..
           fi
 
