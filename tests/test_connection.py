@@ -130,71 +130,17 @@ def test_wordpress_info(publisher: WordPressPublisher) -> None:
 def generate_report(connection_ok: bool, auth_ok: bool, permissions: Dict[str, bool]) -> str:
     """Generate a test report"""
     report = []
-    report.append("=" * 50)
-    report.append("WORDPRESS CONNECTION TEST REPORT")
-    report.append("=" * 50)
+    #!/usr/bin/env python3
+    """
+    This test was moved to admin-node/scripts/test_connection.py
 
-    report.append(f"Connection: {'✅ PASS' if connection_ok else '❌ FAIL'}")
-    report.append(f"Authentication: {'✅ PASS' if auth_ok else '❌ FAIL'}")
+    Please run the admin-only tests from the admin node tooling:
 
-    report.append("\nPermissions:")
-    for perm, status in permissions.items():
-        report.append(f"  {perm.replace('_', ' ').title()}: {'✅' if status else '❌'}")
+      python3 admin-node/scripts/test_connection.py --username <user> --password <app_pass>
 
-    # Overall assessment
-    all_perms_ok = all(permissions.values())
-    overall_status = "✅ READY" if (connection_ok and auth_ok and all_perms_ok) else "❌ ISSUES FOUND"
+    This keeps ns-node startup paths Python-free for node operators.
+    """
 
-    report.append(f"\nOverall Status: {overall_status}")
-
-    if not all_perms_ok:
-        report.append("\n⚠️  Some permissions are missing. Check WordPress user role and capabilities.")
-
-    return "\n".join(report)
-
-def main():
-    parser = argparse.ArgumentParser(description='WordPress Connection Test')
-    parser.add_argument('--username', required=True, help='WordPress username')
-    parser.add_argument('--password', required=True, help='WordPress application password')
-    parser.add_argument('--url', default='https://getblockchain.tech/neuroswarm',
-                       help='WordPress site URL')
-
-    args = parser.parse_args()
-
-    print("🧪 Starting WordPress connection test...\n")
-
-    # Initialize publisher
-    publisher = WordPressPublisher(args.url, args.username, args.password)
-
-    # Run tests
-    connection_ok = test_basic_connection(publisher)
-    print()
-
-    auth_ok = False
-    permissions = {}
-
-    if connection_ok:
-        auth_ok = test_authentication(publisher)
-        print()
-
-        if auth_ok:
-            permissions = test_permissions(publisher)
-            print()
-
-        test_wordpress_info(publisher)
-        print()
-
-    # Generate report
-    report = generate_report(connection_ok, auth_ok, permissions)
-    print(report)
-
-    # Exit with appropriate code
-    if connection_ok and auth_ok and all(permissions.values()):
-        print("\n🎉 All tests passed! Ready to publish content.")
-        sys.exit(0)
-    else:
-        print("\n❌ Some tests failed. Please check the issues above.")
-        sys.exit(1)
-
-if __name__ == '__main__':
-    main()
+    import sys
+    print('This test was moved to admin-node/scripts/test_connection.py — use that path to run the WordPress connection tests.')
+    sys.exit(2)

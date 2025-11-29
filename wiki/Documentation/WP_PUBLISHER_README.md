@@ -43,7 +43,7 @@ WP_APP_PASSWORD=your_generated_app_password
 ### Basic Publishing
 
 ```bash
-python wp_publisher.py \
+python admin-node/scripts/wp_publisher.py \
   --username your_username \
   --password your_app_password \
   --content example-content.json
@@ -54,15 +54,15 @@ python wp_publisher.py \
 ```bash
 # Load from .env file
 export $(cat .wp_publisher.env | xargs)
-python wp_publisher.py --content governance-update.json
+python admin-node/scripts/wp_publisher.py --content governance-update.json
 ```
 
 ### Batch Publishing
 
 ```bash
-# Publish multiple files
+# Publish multiple files (admin-node)
 for file in content/*.json; do
-  python wp_publisher.py --content "$file"
+  python admin-node/scripts/wp_publisher.py --content "$file"
 done
 ```
 
@@ -128,15 +128,15 @@ In your content, use the placeholder:
 ### Publishing Governance Updates
 
 ```bash
-# When a new proposal is approved
-python wp_publisher.py --content governance/proposal-123-approved.json
+# When a new proposal is approved (admin-node)
+python admin-node/scripts/wp_publisher.py --content governance/proposal-123-approved.json
 ```
 
 ### Knowledge Base Sync
 
 ```bash
-# Sync updated documentation
-python wp_publisher.py --content kb/governance-system-update.json
+# Sync updated documentation (admin-node)
+python admin-node/scripts/wp_publisher.py --content kb/governance-system-update.json
 ```
 
 ### Automated Publishing Script
@@ -156,19 +156,19 @@ done
 
 # Update timestamp
 touch last_publish.txt
+```bash
+# Load environment
+export $(cat .wp_publisher.env | xargs)
+
+# Check for new content files
+find ./content -name "*.json" -newer last_publish.txt | while read file; do
+  echo "Publishing: $file"
+  python admin-node/scripts/wp_publisher.py --content "$file"
+done
+
+# Update timestamp
+touch last_publish.txt
 ```
-
-## API Reference
-
-### WordPress REST API Endpoints Used
-
-- `GET /wp-json/wp/v2/pages` - Check page existence
-- `POST /wp-json/wp/v2/pages` - Create new pages
-- `PUT /wp-json/wp/v2/pages/{id}` - Update existing pages
-- `POST /wp-json/wp/v2/media` - Upload media files
-
-### Authentication
-
 Uses HTTP Basic Authentication with WordPress Application Passwords:
 
 ```
@@ -250,8 +250,8 @@ if __name__ == '__main__':
 ### Recovery Procedures
 
 ```bash
-# Check connection
-python wp_publisher.py --test-connection
+# Check connection (admin-node)
+python admin-node/scripts/test_connection.py --username <username> --password <app_password>
 
 # Retry failed publishes
 python wp_publisher.py --content failed-content.json --retry

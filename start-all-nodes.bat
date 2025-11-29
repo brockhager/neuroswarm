@@ -51,8 +51,13 @@ echo [8/9] Starting neuro-web (port 3005)...
 start "neuro-web" cmd /k "cd /d c:\JS\ns\neuro-web && npm run dev -- -p 3005"
 timeout /t 3 /nobreak >nul
 
-echo [9/9] Starting Dashboard HTTP Server and opening Monitor Dashboard...
-start "Dashboard Server" cmd /k "cd /d c:\JS\ns\neuroswarm && python -m http.server 8000"
+echo [9/9] Starting Dashboard HTTP Server and opening Monitor Dashboard (Node-based)
+where node >nul 2>&1
+if %errorlevel% equ 0 (
+    start "Dashboard Server" cmd /k "cd /d c:\JS\ns\neuroswarm && node scripts\\start-dashboard.js 8000"
+) else (
+    echo WARNING: node not found — skipping dashboard server (no python dependency either)
+)
 timeout /t 2 /nobreak >nul
 start "" "http://localhost:8000/monitor-dashboard.html"
 

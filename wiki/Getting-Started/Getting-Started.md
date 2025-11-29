@@ -16,7 +16,7 @@ Before you begin, ensure you have the following installed:
 
 - **Git** (2.28+)
 - **Node.js** (18+ LTS) and npm
-- **Python** (3.8+) with pip
+- **Python** (3.8+) with pip — optional. Python is only required for admin/maintenance tasks (WordPress publisher, content sync) and certain NS-LLM model training/export workflows. Running the core nodes (ns-node, gateway, vp-node, neuro-services) doesn't require Python.
 - **PowerShell** (5.1+ for Windows, Core 7+ for cross-platform)
 - **GitHub CLI** (optional, for enhanced GitHub integration)
 
@@ -52,7 +52,10 @@ brew install node python git gh
 sudo apt update
 
 # Install prerequisites
-sudo apt install nodejs npm python3 python3-pip git gh
+sudo apt install nodejs npm git gh
+
+# Optional (admin / LLM tooling)
+sudo apt install python3 python3-pip
 ```
 
 ## Step 1: Clone the Repository
@@ -97,7 +100,7 @@ If you prefer manual setup:
 # Install Node.js dependencies
 npm install
 
-# Install Python dependencies
+# Optional: install Python dependencies (only required for admin/LLM tooling)
 pip install -r requirements-wp.txt
 
 # Install Pester for testing (PowerShell)
