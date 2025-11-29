@@ -568,12 +568,19 @@ jobs:
           if (Test-Path $nativeDir) {
             Write-Host "Found native artifacts in $nativeDir - attempting to locate an executable"
             $exe = Get-ChildItem -Path $nativeDir -Recurse -Filter '*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
-            if ($exe) {
-              Write-Host "Found native executable: $($exe.FullName) - starting"
-              Start-Process -FilePath $exe.FullName -NoNewWindow
-              Start-Sleep -Seconds 2
-              Write-Host 'Started native executable (Windows)'
-              exit 0
+              if ($exe) {
+                Write-Host "Found native executable: $($exe.FullName) - starting"
+                # start native and redirect output to a log file so we can inspect crashes
+                $nativeLog = Join-Path $PSScriptRoot '..\NS-LLM-native.log'
+                $proc = Start-Process -FilePath $exe.FullName -NoNewWindow -RedirectStandardOutput $nativeLog -RedirectStandardError $nativeLog -PassThru
+                Start-Sleep -Seconds 2
+                if (Get-Process -Id $proc.Id -ErrorAction SilentlyContinue) {
+                  Write-Host "Started native executable (pid=$($proc.Id)); logs -> $nativeLog"
+                  exit 0
+                } else {
+                  Write-Host "Native executable failed to start, dumping log:"; Get-Content $nativeLog -ErrorAction SilentlyContinue | Write-Host
+                  # continue to fallback below
+                }
             } else {
               Write-Host 'No native executable found in artifact path; falling back to node prototype'
             }
@@ -583,7 +590,14 @@ jobs:
 
           # Fallback: start the prototype Node server so downstream checks can run
           Write-Host 'Starting Node prototype (index.js) on Windows'
-          Start-Process -FilePath node -ArgumentList 'index.js' -NoNewWindow
+          $log = Join-Path $PSScriptRoot '..\ns-llm.log'
+          $proc = Start-Process -FilePath node -ArgumentList 'index.js' -WorkingDirectory $PSScriptRoot -RedirectStandardOutput $log -RedirectStandardError $log -PassThru
+          Start-Sleep -Seconds 2
+          if (Get-Process -Id $proc.Id -ErrorAction SilentlyContinue) {
+            Write-Host "Started node prototype (pid=$($proc.Id)); logs -> $log"
+          } else {
+            Write-Host "Failed to start node prototype; log follows:"; Get-Content $log -ErrorAction SilentlyContinue | Write-Host
+          }
 
       - name: Wait for services to be healthy (Linux/macOS)
         if: matrix.runner-os != 'windows-latest'
@@ -633,7 +647,14 @@ jobs:
             try {
               $r = Invoke-WebRequest -Uri 'http://127.0.0.1:5555/health' -UseBasicParsing -TimeoutSec 2
               if ($r.StatusCode -eq 200) { Write-Host 'ns-llm is up'; $ready = $true; break }
-            } catch { Start-Sleep -Seconds 1 }
+            } catch {
+              Start-Sleep -Seconds 1
+            }
+            # attempt to print the first few lines of logs mid-wait if present to help debugging
+            if ($i -eq 10 -or $i -eq 30) {
+              if (Test-Path -Path 'NS-LLM\ns-llm.log') { Write-Host "--- ns-llm.log (partial) ---"; Get-Content NS-LLM\ns-llm.log -TotalCount 40 | Write-Host }
+              if (Test-Path -Path 'NS-LLM\ns-llm-native.log') { Write-Host "--- ns-llm-native.log (partial) ---"; Get-Content NS-LLM\ns-llm-native.log -TotalCount 40 | Write-Host }
+            }
           }
           if (-not $ready) {
             Write-Error 'ns-llm did not become healthy'
