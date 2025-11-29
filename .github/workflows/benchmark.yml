@@ -39,8 +39,10 @@ jobs:
           
       - name: Install dependencies
         run: |
-          pnpm install -w
-          cd ns-node
+          pnpm install
+          cd shared
+          pnpm install
+          cd ../ns-node
           pnpm install
           
       - name: Start NS-Node server
