@@ -571,8 +571,9 @@ jobs:
               if ($exe) {
                 Write-Host "Found native executable: $($exe.FullName) - starting"
                 # start native and redirect output to a log file so we can inspect crashes
-                $nativeLog = Join-Path $PSScriptRoot '..\NS-LLM-native.log'
-                $proc = Start-Process -FilePath $exe.FullName -NoNewWindow -RedirectStandardOutput $nativeLog -RedirectStandardError $nativeLog -PassThru
+                $nativeOut = Join-Path $PSScriptRoot '..\NS-LLM-native.stdout.log'
+                $nativeErr = Join-Path $PSScriptRoot '..\NS-LLM-native.stderr.log'
+                $proc = Start-Process -FilePath $exe.FullName -NoNewWindow -RedirectStandardOutput $nativeOut -RedirectStandardError $nativeErr -PassThru
                 Start-Sleep -Seconds 2
                 if (Get-Process -Id $proc.Id -ErrorAction SilentlyContinue) {
                   Write-Host "Started native executable (pid=$($proc.Id)); logs -> $nativeLog"
@@ -590,8 +591,9 @@ jobs:
 
           # Fallback: start the prototype Node server so downstream checks can run
           Write-Host 'Starting Node prototype (index.js) on Windows'
-          $log = Join-Path $PSScriptRoot '..\ns-llm.log'
-          $proc = Start-Process -FilePath node -ArgumentList 'index.js' -WorkingDirectory $PSScriptRoot -RedirectStandardOutput $log -RedirectStandardError $log -PassThru
+          $out = Join-Path $PSScriptRoot '..\ns-llm.stdout.log'
+          $err = Join-Path $PSScriptRoot '..\ns-llm.stderr.log'
+          $proc = Start-Process -FilePath node -ArgumentList 'index.js' -WorkingDirectory $PSScriptRoot -RedirectStandardOutput $out -RedirectStandardError $err -PassThru
           Start-Sleep -Seconds 2
           if (Get-Process -Id $proc.Id -ErrorAction SilentlyContinue) {
             Write-Host "Started node prototype (pid=$($proc.Id)); logs -> $log"
