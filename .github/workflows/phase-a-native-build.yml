@@ -91,7 +91,7 @@ jobs:
 
           echo "Installing python deps for model export (may take time)"
           python -m pip install --upgrade pip
-          pip install optimum optimum-exporters onnxruntime transformers
+          pip install 'optimum<2.0' onnxruntime transformers
           pip install -r ${{ github.workspace }}/NS-LLM/model-pipeline/requirements.txt
 
           echo "Running model pipeline export (all-MiniLM-L6-v2) -> NS-LLM/models"
@@ -135,7 +135,7 @@ jobs:
           fi
 
           python -m pip install --upgrade pip
-          pip install optimum optimum-exporters onnxruntime transformers || true
+          pip install 'optimum<2.0' onnxruntime transformers || true
           pip install -r ${{ github.workspace }}/NS-LLM/model-pipeline/requirements.txt || true
 
           python ${{ github.workspace }}/NS-LLM/model-pipeline/download_and_export.py --model sentence-transformers/all-MiniLM-L6-v2 --out ${{ github.workspace }}/NS-LLM/models/all-MiniLM-L6-v2.onnx --quantize --force || true
@@ -386,7 +386,7 @@ jobs:
 
           # Install python deps for model export
           python -m pip install --upgrade pip
-          pip install optimum optimum-exporters onnxruntime transformers
+          pip install 'optimum<2.0' onnxruntime transformers
           pip install -r "${{ github.workspace }}\NS-LLM\model-pipeline\requirements.txt"
           
           # Export embedding model

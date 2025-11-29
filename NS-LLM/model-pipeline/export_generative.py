@@ -35,7 +35,7 @@ def main():
     except ImportError as e:
         print(f"Error: Required packages not available: {e}")
         print("Install with:")
-        print("pip install optimum optimum-exporters onnxruntime transformers")
+        print("pip install 'optimum<2.0' onnxruntime transformers")
         sys.exit(1)
 
     print(f"Exporting {args.model} to ONNX...")
