@@ -1,4 +1,9 @@
-Here’s a Phase G Contributor Checklist you can hand directly to your new agent. It’s broken into clear categories with actionable items so they can pick tasks immediately:
+# Phase G Contributor Checklist
+
+**Last Updated**: November 28, 2025  
+**Overall Completion**: 🟡 75% (12/16 tasks complete)
+
+Here's a Phase G Contributor Checklist you can hand directly to your new agent. It's broken into clear categories with actionable items so they can pick tasks immediately:
 
 🌐 Distributed Ecosystem Integration
 Cross‑node orchestration layer: unify Data, Governance, and Contributor nodes with NS‑LLM.
