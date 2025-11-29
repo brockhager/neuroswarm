@@ -30,4 +30,4 @@ Welcome to the NeuroSwarm Documentation Center. This is the main location for al
 - [Admin Node](Admin-Node/README.md)
 
 ---
-[View Complete Documentation Index](Index.md)
+[View Complete Documentation Index](../Index.md)

@@ -160,7 +160,7 @@ npm run update:all
 
 This quickstart got you running, but to become an expert:
 
-- **[Full Getting Started Guide](Getting-Started.md)** - Detailed explanations
+- **[Full Getting Started Guide](../Getting-Started/Getting-Started.md)** - Detailed explanations
 - **[Contributor Pathways](../Contributor-Onboarding.md)** - Growth roadmap
 - **[Governance Rituals](../Governance/rituals.md)** - Weekly ceremonies
 - **[Technical Deep Dives](../Architecture/program-architecture.md)** - System architecture

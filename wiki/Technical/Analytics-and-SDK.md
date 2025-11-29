@@ -1,5 +1,5 @@
 # Analytics & SDK
-[← Index](Index.md)
+[← Index](../Index.md)
 
 Overview
 

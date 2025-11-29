@@ -1,5 +1,5 @@
 # Architecture: NeuroSwarm Node Roles & Data Flow
-[← Home](Home.md)
+[← Home](../Getting-Started/Home.md)
 
 ## Goals
 This page explains the responsibilities and interactions of the core nodes in NeuroSwarm: `ns-node` (brain), `gateway-node` (mempool/validation), `vp-node` (producer and IPFS publisher), and the `sources/` adapters.
@@ -35,6 +35,6 @@ User -> Gateway (/v1/tx) ---(source validation: Allie-AI)--> Gateway mempool
 - Gateway supports admin endpoints for listing sources and adapter statuses: `GET /v1/sources` and `POST /v1/sources/query`.
 
 ## See also
-- [Home](Home.md)
+- [Home](../Getting-Started/Home.md)
 - [Data Flow Architecture](Data-Flow-Architecture.md)
 - [Sources](Sources.md)

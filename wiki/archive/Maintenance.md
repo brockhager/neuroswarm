@@ -1,5 +1,5 @@
 # Maintenance & Monitoring
-[← Home](Home.md)
+[← Home](../Getting-Started/Home.md)
 
 This page summarizes ongoing maintenance tasks and how to recover or restore the wiki (and pages) if deleted.
 

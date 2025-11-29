@@ -1,5 +1,5 @@
 # Contributor Onboarding
-[← Index](Index.md)
+[← Index](../Index.md)
 
 Overview
 

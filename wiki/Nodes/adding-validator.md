@@ -12,7 +12,7 @@ Validators are critical network participants that:
 
 ## Prerequisites
 
-- [x] Completed [Getting Started](../../getting-started.md)
+- [x] Completed [Getting Started](../../Getting-Started/Getting-Started.md)
 - [x] Familiar with [Development Workflow](../../development.md)
 - [x] Access to validator hardware meeting [requirements](../../docs/distribution.md#validator-node)
 - [x] Solana keypair for validator identity

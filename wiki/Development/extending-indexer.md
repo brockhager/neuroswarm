@@ -12,7 +12,7 @@ The Indexer provides:
 
 ## Prerequisites
 
-- [x] Completed [Getting Started](../../getting-started.md)
+- [x] Completed [Getting Started](../../Getting-Started/Getting-Started.md)
 - [x] Familiar with [Indexer API](../../../neuro-services/docs/indexer.md)
 - [x] Understanding of [Data Structures](../../../neuro-services/docs/services.md)
 - [x] Local development environment running

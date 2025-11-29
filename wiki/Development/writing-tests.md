@@ -12,7 +12,7 @@ Testing Strategy:
 
 ## Prerequisites
 
-- [x] Completed [Getting Started](../../getting-started.md)
+- [x] Completed [Getting Started](../../Getting-Started/Getting-Started.md)
 - [x] Familiar with [Development Workflow](../../development.md)
 - [x] Understanding of [Services Architecture](../../services.md)
 - [x] Local development environment running

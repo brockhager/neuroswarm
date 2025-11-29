@@ -1,5 +1,5 @@
 # How to Contribute to the NeuroSwarm Wiki
-[← Index](Index.md)
+[← Index](../Index.md)
 
 Overview
 

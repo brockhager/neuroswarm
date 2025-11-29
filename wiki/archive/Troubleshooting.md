@@ -1,5 +1,5 @@
 # Troubleshooting
-[← Home](Home.md)
+[← Home](../Getting-Started/Home.md)
 
 Common problems & solutions for running NeuroSwarm locally and in CI.
 

@@ -1,5 +1,5 @@
 # How to Contribute
-[← Home](Home.md)
+[← Home](../Getting-Started/Home.md)
 
 Welcome — thanks for contributing to NeuroSwarm! This page describes how to add adapters, tests, and docs.
 
