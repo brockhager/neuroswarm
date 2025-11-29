@@ -1,8 +1,14 @@
 # Packaging pipeline requirements
 # These packages are optional and required only for actual ONNX export and quantization
 transformers>=4.30.0
-optimum>=1.7.0
+# Optimum 2.x removed/changed the onnxruntime exports used by our exporter.
+# Pin to any 1.x release to ensure import path `optimum.onnxruntime` remains available
+# (quick unblocking fix; we'll upgrade to newer APIs in post-release cleanup).
+optimum>=1.7.0,<2.0.0
 onnx>=1.14.0
 onnxruntime>=1.15.0
 huggingface-hub>=0.18.0
-numpy
+torch>=2.2.0,<2.3.0
+# Pin NumPy to <2 to avoid ABI issues with prebuilt extensions compiled against NumPy 1.x
+# (common on CI runners / older wheels). We keep this conservative pin to avoid runtime import errors.
+numpy<2
