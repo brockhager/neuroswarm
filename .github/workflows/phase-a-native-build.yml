@@ -2,6 +2,10 @@ name: NS-LLM Native Build
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish (e.g. v0.2.0). When omitted on manual dispatch the publish_release job will be skipped.'
+        required: false
   push:
     paths:
       - 'NS-LLM/**'
@@ -714,16 +718,34 @@ jobs:
           name: ns-llm-native-windows-latest-v${{ env.VERSION }}
           path: release-artifacts/windows || true
 
+      - name: Determine release tag
+        id: determine_tag
+        shell: bash
+        run: |
+          # Determine a tag for the release. Priority order:
+          # 1) workflow_dispatch input 'tag' (if provided)
+          # 2) current git ref name if this is a tag push
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "RELEASE_TAG=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            # strip refs/tags/
+            REF_NAME=${GITHUB_REF#refs/tags/}
+            echo "RELEASE_TAG=${REF_NAME}" >> $GITHUB_OUTPUT
+          else
+            echo "RELEASE_TAG=" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create GitHub Release
+        if: ${{ steps.determine_tag.outputs.RELEASE_TAG != '' }}
         id: create_release
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ github.ref_name }}
-          name: "NS-LLM Phase A artifacts - ${{ github.ref_name }}"
+          tag: ${{ steps.determine_tag.outputs.RELEASE_TAG }}
+          name: "NS-LLM Phase A artifacts - ${{ steps.determine_tag.outputs.RELEASE_TAG }}"
           body: "Production-ready NS-LLM artifacts validated across Ubuntu/macOS/Windows. See attached artifacts."
 
       - name: Upload release assets (ubuntu)
-        if: always()
+        if: ${{ steps.determine_tag.outputs.RELEASE_TAG != '' }}
         uses: softprops/action-gh-release@v1
         with:
           files: |
@@ -732,7 +754,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload release assets (macos)
-        if: always()
+        if: ${{ steps.determine_tag.outputs.RELEASE_TAG != '' }}
         uses: softprops/action-gh-release@v1
         with:
           files: |
@@ -741,7 +763,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload release assets (windows)
-        if: always()
+        if: ${{ steps.determine_tag.outputs.RELEASE_TAG != '' }}
         uses: softprops/action-gh-release@v1
         with:
           files: |
