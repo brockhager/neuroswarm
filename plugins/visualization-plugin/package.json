@@ -1,0 +1,19 @@
+{
+  "name": "neuroswarm-visualization-plugin-starter",
+  "version": "1.0.0",
+  "description": "Starter template for NeuroSwarm dashboard visualization plugins",
+  "main": "widget.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Load in browser via dashboard\" && exit 0"
+  },
+  "keywords": [
+    "neuroswarm",
+    "plugin",
+    "visualization",
+    "dashboard",
+    "widget"
+  ],
+  "author": "NeuroSwarm Community",
+  "license": "MIT"
+}

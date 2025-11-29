@@ -1,0 +1,21 @@
+{
+  "name": "neuroswarm-validator-plugin-starter",
+  "version": "1.0.0",
+  "description": "Starter template for NeuroSwarm content validator plugins",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "keywords": [
+    "neuroswarm",
+    "plugin",
+    "validator",
+    "content-moderation"
+  ],
+  "author": "NeuroSwarm Community",
+  "license": "MIT",
+  "peerDependencies": {
+    "node": ">=18.0.0"
+  }
+}

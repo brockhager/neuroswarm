@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualization Plugin Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .widget-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        .instructions {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .instructions h2 {
+            margin-top: 0;
+        }
+
+        .instructions code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        .instructions pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎨 Visualization Plugin Test</h1>
+
+        <div class="instructions">
+            <h2>Testing Your Widget</h2>
+            <p>This page demonstrates how to load and test your visualization plugin.</p>
+            
+            <h3>Mock API Mode</h3>
+            <p>The widget below is running with mock data (no NS-node required).</p>
+            
+            <h3>Real API Mode</h3>
+            <p>To test with real data:</p>
+            <ol>
+                <li>Start NS-node: <code>node ns-node/server.js</code></li>
+                <li>Reload this page</li>
+                <li>Widget will connect to <code>http://localhost:3009</code></li>
+            </ol>
+
+            <h3>Integration</h3>
+            <p>To add to dashboard, copy <code>widget.js</code> to your plugin directory and register:</p>
+            <pre>// In brain-dashboard.html
+&lt;script src="path/to/widget.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const widget = new CustomVisualization({
+    name: 'my-widget',
+    apiEndpoint: 'http://localhost:3009'
+  });
+  
+  const container = document.getElementById('widget-container');
+  widget.render(container);
+&lt;/script&gt;</pre>
+        </div>
+
+        <div class="widget-grid">
+            <div id="widget-container"></div>
+        </div>
+    </div>
+
+    <script src="./widget.js"></script>
+    <script>
+        // Mock API for testing without NS-node
+        let mockData = {
+            requests: 0,
+            latencyP95: 50,
+            successRate: 0.95,
+            errors: 0
+        };
+
+        // Intercept fetch calls to provide mock data
+        const originalFetch = window.fetch;
+        window.fetch = async function(url, ...args) {
+            if (url.includes('/api/metrics')) {
+                // Try real API first
+                try {
+                    return await originalFetch(url, ...args);
+                } catch (error) {
+                    // Fall back to mock data
+                    console.log('Using mock data (NS-node not available)');
+                    
+                    // Simulate changing data
+                    mockData.requests += Math.floor(Math.random() * 10);
+                    mockData.latencyP95 = 40 + Math.random() * 30;
+                    mockData.successRate = 0.9 + Math.random() * 0.1;
+                    mockData.errors = Math.floor(Math.random() * 3);
+                    
+                    return {
+                        ok: true,
+                        json: async () => mockData
+                    };
+                }
+            }
+            return originalFetch(url, ...args);
+        };
+
+        // Initialize widget
+        const widget = new CustomVisualization({
+            name: 'test-widget',
+            refreshInterval: 3000, // 3 seconds for demo
+            apiEndpoint: 'http://localhost:3009'
+        });
+
+        const container = document.getElementById('widget-container');
+        widget.render(container);
+    </script>
+</body>
+</html>

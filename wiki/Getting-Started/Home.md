@@ -87,6 +87,44 @@ Your gateway to the decentralized AI revolution. This is the main hub for all gu
 
 ---
 
+## 🔌 Plugin Development
+
+**Build custom validators and visualizations for NeuroSwarm:**
+
+### Starter Kits
+
+- [**Validator Plugin**](../../plugins/validator-plugin/) - Content validation starter template
+  - Enforce quality standards and detect spam
+  - Implement custom business logic
+  - Verify signatures and sources
+  - [Full Documentation](../../plugins/validator-plugin/README.md)
+
+- [**Visualization Plugin**](../../plugins/visualization-plugin/) - Dashboard widget starter template
+  - Real-time metrics and KPI displays
+  - Interactive charts and graphs
+  - Custom data visualizations
+  - [Full Documentation](../../plugins/visualization-plugin/README.md) | [Live Demo](../../plugins/visualization-plugin/demo.html)
+
+### Tutorials
+
+- [**Build Your First Validator**](../Learning-Hub/Tutorials/Build-Validator.md) - Step-by-step validator guide
+- [**Plugin System Architecture**](../Learning-Hub/Core-Concepts/Plugins.md) - Deep dive into plugin architecture
+- [**PluginManager API Reference**](../Technical/Plugins.md) - Complete API documentation
+
+### Quick Start
+
+```bash
+# Test validator plugin
+cd neuroswarm/plugins/validator-plugin
+node test.js
+
+# Test visualization plugin (open in browser)
+cd neuroswarm/plugins/visualization-plugin
+open demo.html
+```
+
+---
+
 ## 📦 Latest Releases
 
 - **v0.1.7** - [Release Notes](../Releases/v0.1.7-Release-Notes.md) | [Announcement](../Releases/v0.1.7-Release-Announcement.md)
