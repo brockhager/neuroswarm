@@ -1,7 +1,11 @@
-const { spawnSync } = require('child_process');
-const path = require('path');
-const fs = require('fs');
-const NativeShim = require('./native-shim');
+import { spawnSync } from 'child_process';
+import path from 'path';
+import fs from 'fs';
+import NativeShim from './native-shim.js';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function run(cmd, args, options = {}) {
   console.log('>', cmd, args.join(' '));
@@ -45,7 +49,7 @@ function run(cmd, args, options = {}) {
     const shim = new NativeShim({ binaryPath: bin, prototypeUrl: 'http://127.0.0.1:5555' });
 
     console.log('Ensuring prototype server is running (starting local prototype)');
-    require('./index.js'); // start prototype server
+    await import('./index.js'); // start prototype server (ESM)
 
     await new Promise(r => setTimeout(r, 200));
 

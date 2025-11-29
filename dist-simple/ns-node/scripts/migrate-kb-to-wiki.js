@@ -7,10 +7,16 @@
  * If --wiki-repo and --push are provided, the script will clone the wiki repo, copy files, commit, and push.
  */
 
-const fs = require('fs');
-const path = require('path');
-const { ensureDirInRepoSync, safeJoinRepo, safeRmInRepoSync, getTmpDir } = require('./repoScopedFs.cjs');
-const { execSync, spawnSync } = require('child_process');
+import fs from 'fs';
+import path from 'path';
+import { execSync, spawnSync } from 'child_process';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const repoFs = await import('./repoScopedFs.cjs');
+const { ensureDirInRepoSync, safeJoinRepo, safeRmInRepoSync, getTmpDir } = repoFs.default || repoFs;
 let blockedHomeAttempt = false;
 
 function parseArgs() {

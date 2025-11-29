@@ -1,0 +1,63 @@
+name: Reject require() in .js files
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  reject-require:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine changed files
+        id: changed
+        run: |
+          BASE_SHA=${{ github.event.pull_request.base.sha }}
+          HEAD_SHA=${{ github.sha }}
+          echo "Base=$BASE_SHA Head=$HEAD_SHA"
+          git fetch origin $BASE_SHA --depth=1 || true
+          FILES=$(git diff --name-only $BASE_SHA...$HEAD_SHA)
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Check changed .js files for require()
+        run: |
+          echo "Changed files:\n${{ steps.changed.outputs.files }}"
+          # Filter to .js and exclude .cjs, desktop/electron packages
+          JS_FILES=$(echo "${{ steps.changed.outputs.files }}" | tr '\n' '\0' | xargs -0 -n1 | grep -E "\.js$" || true)
+          if [ -z "$JS_FILES" ]; then
+            echo "No changed .js files in PR.
+";
+            exit 0
+          fi
+          # Exclude known desktop/Electron paths from the check
+          FILTERED=$(echo "$JS_FILES" | grep -v "^ns-node-desktop/" | grep -v "^neuro-launcher/" | grep -v "^neuro-services/tests/" || true)
+          if [ -z "$FILTERED" ]; then
+            echo "All changed .js files are excluded by path rules.";
+            exit 0
+          fi
+
+          echo "Checking these .js files:\n$FILTERED"
+
+          ERR=0
+          echo "$FILTERED" | while IFS= read -r f; do
+            if [ -z "$f" ]; then continue; fi
+            # Only check files that still exist in the workspace
+            if [ ! -f "$f" ]; then continue; fi
+            if grep -n -E "require\(" "$f"; then
+              echo "\nERROR: Found require(...) in changed .js file: $f";
+              ERR=1
+            fi
+          done
+
+          if [ "$ERR" -ne 0 ]; then
+            echo "\nOne or more changed .js files contain require(). Please convert them to ESM or move to .cjs.";
+            exit 1
+          fi
+
+          echo "No require() found in changed .js files.";

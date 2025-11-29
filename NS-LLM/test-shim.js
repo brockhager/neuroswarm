@@ -1,11 +1,16 @@
+import NativeShim from './native-shim.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 (async function(){
   // Integration test: native-shim should fall back to HTTP prototype when binary is missing
-  const NativeShim = require('./native-shim');
   // Ensure prototype server available
-  require('./index.js');
+  await import('./index.js');
 
   // Point to a deliberately-missing binary path to force fallback
-  const notExists = require('path').join(__dirname, 'native', 'build', 'nonexistent-binary');
+  const notExists = path.join(__dirname, 'native', 'build', 'nonexistent-binary');
   const shim = new NativeShim({ binaryPath: notExists, prototypeUrl: 'http://127.0.0.1:5555' });
 
   try {

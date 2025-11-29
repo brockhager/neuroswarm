@@ -7,9 +7,15 @@
  * the NeuroSwarm community voting process.
  */
 
-const fs = require('fs');
-const path = require('path');
-const { ensureDirInRepoSync } = require('../scripts/repoScopedFs.cjs');
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const repoFs = await import('../scripts/repoScopedFs.cjs');
+const { ensureDirInRepoSync } = repoFs.default || repoFs;
 
 // Initial proposals data
 const initialProposals = [
@@ -442,7 +448,7 @@ function seedProposals() {
 }
 
 // Run the seeding script
-if (require.main === module) {
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
   console.log('🚀 Starting NeuroSwarm Governance Bootstrap...');
   console.log('=' .repeat(50));
   seedProposals();
@@ -455,4 +461,4 @@ if (require.main === module) {
   console.log('4. Monitor results and implement approved proposals');
 }
 
-module.exports = { initialProposals, seedProposals };
+export { initialProposals, seedProposals };

@@ -5,7 +5,7 @@
   const wait = ms => new Promise(r => setTimeout(r, ms));
 
   // Start server
-  require('./index.js');
+  await import('./index.js');
   await wait(100);
 
   async function post(text) {
