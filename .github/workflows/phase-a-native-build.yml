@@ -682,6 +682,7 @@ jobs:
 
       - name: Run smoke + e2e tests (prototype/native)
         working-directory: ns-node
+        shell: bash
         run: |
           set -e
           npm run test:smoke:ns-llm
@@ -689,6 +690,7 @@ jobs:
 
       - name: Run strict embed test (native path validation)
         working-directory: ns-node
+        shell: bash
         run: |
           set -e
           echo "Running strict embed check (STRICT_EMBED_DIM=1)"
