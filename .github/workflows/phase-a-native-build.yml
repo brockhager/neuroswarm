@@ -10,18 +10,12 @@ on:
       tag:
         description: 'Tag to publish (e.g. v0.2.0). When omitted on manual dispatch the publish_release job will be skipped.'
         required: false
-  push:
-    paths:
-      - 'NS-LLM/**'
-    tags:
-      - 'v*.*.*'
-
-jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    # Export the VERSION read in the step below so downstream jobs can consume it
-    outputs:
-      VERSION: ${{ steps.read_version.outputs.VERSION }}
+  on:
+    push:
+      branches:
+        - main
+    # CRITICAL: This was removed and must be restored
+    workflow_dispatch:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
