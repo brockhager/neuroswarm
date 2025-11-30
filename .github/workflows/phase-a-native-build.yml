@@ -537,40 +537,6 @@ jobs:
 
       - name: Try to download native binary artifact (for this runner)
         uses: actions/download-artifact@v4
-        with:
-          name: ns-llm-native-${{ matrix.runner-os }}-v${{ env.BUILD_VERSION }}
-          path: NS-LLM/native/artifact
-        continue-on-error: true
-
-      - name: Start NS-LLM backend (Linux/macOS - use Node.js prototype for E2E)
-        if: matrix.runner-os != 'windows-latest'
-        working-directory: NS-LLM
-        run: |
-          if [ -f package.json ]; then echo 'Installing NS-LLM dependencies'; npm ci; else echo 'No package.json found; skipping npm ci'; fi
-          echo "Starting Node.js prototype for E2E tests"
-          nohup node index.js > ns-llm.log 2>&1 &
-          NS_LLM_PID=$!
-          echo "Started with PID: $NS_LLM_PID"
-          sleep 2
-          if ps -p $NS_LLM_PID > /dev/null; then
-            echo "Process is running"
-          else
-            echo "Process died! Log:"
-            cat ns-llm.log 2>/dev/null || echo "No log"
-            exit 1
-          fi
-
-      - name: Start NS Node (Linux/macOS)
-        uses: actions/download-artifact@v4
-        with:
-          name: ns-llm-native-macos-latest-v${{ env.VERSION }}
-          path: release-artifacts/macos || true
-
-      - name: Download Windows artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: ns-llm-native-windows-latest-v${{ env.VERSION }}
-          path: release-artifacts/windows || true
 
       - name: Determine release tag
         id: determine_tag
