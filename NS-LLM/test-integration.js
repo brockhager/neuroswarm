@@ -1,9 +1,29 @@
 (async function(){
   // Integration smoke tests for the prototype embedding backend
   const port = process.env.PORT || 5555;
-  // Start server (index.js exports `server` and auto-starts on import)
-  const serverModule = await import('./index.js');
-  const server = serverModule.server;
+  // Start the server in a child process to isolate socket lifecycle and avoid
+  // libuv handle assertions when the test runner exits on Windows.
+  const { spawn } = await import('child_process');
+  const serverProc = spawn(process.execPath, [new URL('./index.js', import.meta.url).pathname], {
+    cwd: new URL('.', import.meta.url).pathname,
+    env: process.env,
+    stdio: ['ignore', 'pipe', 'pipe']
+  });
+
+  // Wait for the child to announce it's listening
+  await new Promise((resolve, reject) => {
+    const onData = (d) => {
+      const s = String(d);
+      if (s.includes('ns-llm-prototype listening')) {
+        serverProc.stdout.off('data', onData);
+        resolve();
+      }
+    };
+    serverProc.stdout.on('data', onData);
+    serverProc.on('error', reject);
+    // safety timeout
+    setTimeout(() => reject(new Error('server start timeout')), 2000);
+  });
   const base = `http://127.0.0.1:${port}`;
   
   const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -33,11 +53,12 @@
     console.log('embedding length', json.embedding.length, 'tokens', json.tokens);
 
     console.log('\nIntegration checks passed (prototype OK)');
-    // Close the server cleanly before exiting to avoid libuv async handle assertions on Windows
+    // Tell the server child process to shut down (SIGINT), then wait for exit
     try {
-      await new Promise((resolve) => server.close(() => resolve()));
+      serverProc.kill('SIGINT');
+      await new Promise((res) => serverProc.on('exit', () => res()));
     } catch (e) {
-      // ignore errors during close — we still want a successful exit
+      // best-effort; ignore
     }
 
     // Diagnostic: list active handles/requests to detect any lingering handles on Windows
@@ -52,7 +73,7 @@
     process.exit(0);
   } catch (err) {
     console.error('integration test failed', err);
-    try { await new Promise((resolve) => server && server.close(() => resolve())); } catch (e) {}
+    try { serverProc.kill('SIGINT'); await new Promise((res) => serverProc.on('exit', () => res())); } catch (e) {}
     try {
       const handles = process._getActiveHandles ? process._getActiveHandles() : [];
       console.log('diagnostic (on error): activeHandles=', handles.map(h => h && h.constructor && h.constructor.name));
