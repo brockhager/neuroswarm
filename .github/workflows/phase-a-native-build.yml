@@ -657,49 +657,6 @@ jobs:
           done
           
           NS_NODE_UP=false
-          for i in {1..30}; do
-            echo "Checking ns-node at http://127.0.0.1:3009/health... ($i)"
-            if curl --silent --fail http://127.0.0.1:3009/health >/dev/null 2>&1; then
-              echo "ns-node is up"
-              NS_NODE_UP=true
-              break
-            fi
-            sleep 1
-          done
-          
-          # Check if services started successfully
-          if [ "$NS_LLM_UP" = false ]; then
-            echo "ERROR: ns-llm failed to start. Logs:"
-            cat NS-LLM/ns-llm.log 2>/dev/null || cat NS-LLM/ns-llm-native.log 2>/dev/null || echo "No logs found"
-            exit 1
-          fi
-          
-          if [ "$NS_NODE_UP" = false ]; then
-            echo "ERROR: ns-node failed to start. Logs:"
-            cat ns-node/ns-node.log 2>/dev/null || echo "No logs found"
-            exit 1
-          fi
-
-      - name: Wait for services to be healthy (Windows)
-        if: matrix.runner-os == 'windows-latest'
-        shell: pwsh
-        run: |
-          # Add startup delay to ensure server has time to crash and write full error to log
-          Start-Sleep -Seconds 5
-          
-          $ready = $false
-          for ($i=1; $i -le 60; $i++) {
-            try {
-              $r = Invoke-WebRequest -Uri 'http://127.0.0.1:5555/health' -UseBasicParsing -TimeoutSec 2
-              if ($r.StatusCode -eq 200) { Write-Host 'ns-llm is up'; $ready = $true; break }
-            } catch {
-              Start-Sleep -Seconds 1
-            }
-            # attempt to print the first few lines of logs mid-wait if present to help debugging
-            if ($i -eq 10 -or $i -eq 30) {
-              $r = Invoke-WebRequest -Uri 'http://127.0.0.1:3009/health' -UseBasicParsing -TimeoutSec 2
-              if ($r.StatusCode -eq 200) { Write-Host 'ns-node is up'; $ready = $true; break }
-            } catch { Start-Sleep -Seconds 1 }
           }
           if (-not $ready) { Write-Error 'ns-node did not become healthy' ; exit 1 }
 
