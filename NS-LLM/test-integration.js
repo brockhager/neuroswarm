@@ -12,22 +12,22 @@
 
   try {
     console.log('POST /embed -> short text');
-    let res = await fetch(base + '/embed', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({text: 'hello world'}) });
+    let res = await fetch(base + '/embed', { method: 'POST', headers: {'Content-Type':'application/json', 'Connection': 'close'}, body: JSON.stringify({text: 'hello world'}) });
     console.log('status', res.status);
     let json = await res.json();
     console.log('embedding length', json.embedding.length, 'tokens', json.tokens, 'model', json.model);
 
     console.log('GET /health');
-    res = await fetch(base + '/health');
+    res = await fetch(base + '/health', { headers: { 'Connection': 'close' } });
     console.log('status', res.status, 'body', await res.json());
 
     console.log('GET /metrics');
-    res = await fetch(base + '/metrics');
+    res = await fetch(base + '/metrics', { headers: { 'Connection': 'close' } });
     console.log('status', res.status, 'body', await res.json());
 
     console.log('POST /embed -> long text');
     const longText = 'word '.repeat(200); // larger input
-    res = await fetch(base + '/embed', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({text: longText}) });
+    res = await fetch(base + '/embed', { method: 'POST', headers: {'Content-Type':'application/json', 'Connection': 'close'}, body: JSON.stringify({text: longText}) });
     console.log('status', res.status);
     json = await res.json();
     console.log('embedding length', json.embedding.length, 'tokens', json.tokens);
