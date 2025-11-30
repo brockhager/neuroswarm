@@ -581,9 +581,9 @@ jobs:
             $exe = Get-ChildItem -Path $nativeDir -Recurse -Filter '*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
               if ($exe) {
                 Write-Host "Found native executable: $($exe.FullName) - starting"
-                # start native and redirect output to a log file so we can inspect crashes
-                $nativeOut = Join-Path $PSScriptRoot '..\NS-LLM-native.stdout.log'
-                $nativeErr = Join-Path $PSScriptRoot '..\NS-LLM-native.stderr.log'
+                # start native and redirect output to log files inside the repository so CI can access them
+                $nativeOut = Join-Path $env:GITHUB_WORKSPACE 'NS-LLM\ns-llm-native.log'
+                $nativeErr = Join-Path $env:GITHUB_WORKSPACE 'NS-LLM\ns-llm-native.err.log'
                 $proc = Start-Process -FilePath $exe.FullName -NoNewWindow -RedirectStandardOutput $nativeOut -RedirectStandardError $nativeErr -PassThru
                 Start-Sleep -Seconds 2
                 if (Get-Process -Id $proc.Id -ErrorAction SilentlyContinue) {
@@ -604,8 +604,8 @@ jobs:
 
           # Fallback: start the prototype Node server so downstream checks can run
           Write-Host 'Starting Node prototype (index.js) on Windows'
-          $out = Join-Path $PSScriptRoot '..\ns-llm.stdout.log'
-          $err = Join-Path $PSScriptRoot '..\ns-llm.stderr.log'
+          $out = Join-Path $env:GITHUB_WORKSPACE 'NS-LLM\ns-llm.log'
+          $err = Join-Path $env:GITHUB_WORKSPACE 'NS-LLM\ns-llm.err.log'
           # Use an explicit absolute path to the repository copy of index.js
           # $PSScriptRoot can sometimes be ephemeral in runner temp dirs; use the
           # workspace path to avoid NODE trying to run D:\a\_temp\index.js.
