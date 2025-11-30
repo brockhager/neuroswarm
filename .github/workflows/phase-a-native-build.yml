@@ -571,7 +571,11 @@ jobs:
         working-directory: ns-node
         shell: pwsh
         run: |
-          Start-Process -FilePath node -ArgumentList 'server.js' -NoNewWindow
+          $serverPath = Join-Path $env:GITHUB_WORKSPACE 'ns-node\server.js'
+          $out = Join-Path $env:GITHUB_WORKSPACE 'ns-node\ns-node.log'
+          $err = Join-Path $env:GITHUB_WORKSPACE 'ns-node\ns-node.err.log'
+          Write-Host "Starting ns-node on Windows... Logs at $out and $err"
+          Start-Process -FilePath node -ArgumentList $serverPath -WorkingDirectory (Split-Path $serverPath -Parent) -RedirectStandardOutput $out -RedirectStandardError $err -NoNewWindow
 
       - name: Start NS-LLM backend (Windows - fallback to Node prototype)
         if: matrix.runner-os == 'windows-latest'
@@ -695,6 +699,15 @@ jobs:
           set -e
           echo "Running strict embed check (STRICT_EMBED_DIM=1)"
           STRICT_EMBED_DIM=1 npm run test:e2e:embed
+
+      - name: Dump ns-node logs on failure (Windows)
+        if: failure() && matrix.runner-os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Write-Host "--- ns-node.log ---"
+          if (Test-Path 'ns-node\ns-node.log') { Get-Content 'ns-node\ns-node.log' -ErrorAction SilentlyContinue | Write-Host }
+          Write-Host "--- ns-node.err.log ---"
+          if (Test-Path 'ns-node\ns-node.err.log') { Get-Content 'ns-node\ns-node.err.log' -ErrorAction SilentlyContinue | Write-Host }
 
   publish_release:
     name: Publish release artifacts (optional)
