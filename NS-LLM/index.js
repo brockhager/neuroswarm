@@ -143,6 +143,15 @@ const server = http.createServer((req, res) => {
   }
 });
 
+// Track active sockets so we can destroy them during shutdown. This prevents
+// lingering sockets/handles on Windows which can cause libuv assertion failures
+// when a process exits while handles are in closing state.
+const _connections = new Set();
+server.on('connection', (socket) => {
+  _connections.add(socket);
+  socket.on('close', () => _connections.delete(socket));
+});
+
 server.on('error', (err) => console.error('Server error:', err));
 
 server.on('listening', () => {
@@ -157,6 +166,26 @@ server.listen(PORT, '0.0.0.0', () => {
 
 function shutdown(code) {
   try {
+    // Attempt graceful socket shutdown, then forcibly destroy any that remain.
+    try {
+      for (const s of Array.from(_connections)) {
+        try { s.end(); } catch (e) {}
+      }
+    } catch (e) {}
+
+    // Wait briefly so sockets that will naturally close get a chance to do so.
+    const WAIT_MS = 120;
+    const start = Date.now();
+    while (Date.now() - start < WAIT_MS) {
+      // no-op busy-wait; avoids async complication in shutdown path
+    }
+
+    try {
+      for (const s of Array.from(_connections)) {
+        try { s.destroy(); } catch (e) {}
+      }
+    } catch (e) {}
+
     server.close(() => process.exit(code || 0));
     setTimeout(() => process.exit(code || 1), 5000);
   } catch (e) { process.exit(1); }
