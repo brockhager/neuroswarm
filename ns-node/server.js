@@ -369,3 +369,7 @@ process.on('uncaughtException', (err) => {
 process.on('unhandledRejection', (reason, promise) => {
   logNs('CRITICAL', 'Unhandled Rejection at:', promise, 'reason:', reason);
 });
+
+process.on('exit', (code) => {
+  logNs(`Process exiting with code: ${code}`);
+});
