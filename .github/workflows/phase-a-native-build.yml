@@ -575,7 +575,8 @@ jobs:
           $out = Join-Path $env:GITHUB_WORKSPACE 'ns-node\ns-node.log'
           $err = Join-Path $env:GITHUB_WORKSPACE 'ns-node\ns-node.err.log'
           Write-Host "Starting ns-node on Windows... Logs at $out and $err"
-          Start-Process -FilePath node -ArgumentList $serverPath -WorkingDirectory (Split-Path $serverPath -Parent) -RedirectStandardOutput $out -RedirectStandardError $err -NoNewWindow
+          $proc = Start-Process -FilePath node -ArgumentList $serverPath -WorkingDirectory (Split-Path $serverPath -Parent) -RedirectStandardOutput $out -RedirectStandardError $err -NoNewWindow -PassThru
+          Write-Host "Started ns-node with PID: $($proc.Id)"
 
       - name: Start NS-LLM backend (Windows - fallback to Node prototype)
         if: matrix.runner-os == 'windows-latest'
@@ -683,6 +684,14 @@ jobs:
             cat ns-node/ns-node.log 2>/dev/null || echo "No logs found"
             exit 1
           fi
+
+      - name: Check running processes (Windows)
+        if: matrix.runner-os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Write-Host "--- Running Node Processes ---"
+          Get-Process node -ErrorAction SilentlyContinue | Format-Table Id, ProcessName, MainWindowTitle, StartTime
+          Write-Host "------------------------------"
 
       - name: Run smoke + e2e tests (prototype/native)
         working-directory: ns-node
