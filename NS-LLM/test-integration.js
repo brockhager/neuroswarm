@@ -39,10 +39,24 @@
     } catch (e) {
       // ignore errors during close — we still want a successful exit
     }
+
+    // Diagnostic: list active handles/requests to detect any lingering handles on Windows
+    try {
+      const handles = process._getActiveHandles ? process._getActiveHandles() : [];
+      const reqs = process._getActiveRequests ? process._getActiveRequests() : [];
+      console.log('diagnostic: activeHandles=', handles.map(h => h && h.constructor && h.constructor.name));
+      console.log('diagnostic: activeRequests=', reqs.map(r => r && r.constructor && r.constructor.name));
+    } catch (e) {
+      console.log('diagnostic inspect failed', e && e.message);
+    }
     process.exit(0);
   } catch (err) {
     console.error('integration test failed', err);
     try { await new Promise((resolve) => server && server.close(() => resolve())); } catch (e) {}
+    try {
+      const handles = process._getActiveHandles ? process._getActiveHandles() : [];
+      console.log('diagnostic (on error): activeHandles=', handles.map(h => h && h.constructor && h.constructor.name));
+    } catch (e) {}
     process.exit(2);
   }
 })();
