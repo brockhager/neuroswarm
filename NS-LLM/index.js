@@ -170,13 +170,9 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename
   console.log('Running NS-LLM prototype index.js as main module');
 }
 
-// Ensure the file contains one single, consistent ESM implementation.
-// The earlier duplication caused a SyntaxError during CI: "Identifier '__filename' has already been declared".
-// This file intentionally keeps one implementation only.
-
+// Clean single implementation for ESM (no duplicates)
 // NS-LLM prototype HTTP backend (ESM)
-// - Provides minimal /embed, /health and /metrics endpoints used by CI smoke tests
-// - Emulates __filename / __dirname correctly for ESM using fileURLToPath(import.meta.url)
+// - /embed, /health, /metrics endpoints for CI smoke tests
 
 import http from 'http';
 import os from 'os';
@@ -184,7 +180,6 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-// Derive __filename / __dirname exactly once from import.meta.url
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -194,9 +189,7 @@ let VERSION = process.env.VERSION || 'dev';
 try {
   const rootVersion = path.resolve(__dirname, '..', '..', 'version-id.txt');
   if (fs.existsSync(rootVersion)) VERSION = fs.readFileSync(rootVersion, 'utf8').trim();
-} catch (e) {
-  // intentionally ignored — prototype should not crash on version lookup
-}
+} catch (e) {}
 
 const metrics = {
   requests_total: 0,
@@ -209,7 +202,6 @@ const metrics = {
 };
 
 function pseudoHash(text) {
-  // FNV-1a 32-bit
   let h = 2166136261 >>> 0;
   for (let i = 0; i < text.length; i++) {
     h ^= text.charCodeAt(i);
@@ -225,7 +217,7 @@ function deterministicPRNG(seed) {
     x ^= x << 13; x = x >>> 0;
     x ^= x >>> 17; x = x >>> 0;
     x ^= x << 5; x = x >>> 0;
-    return (x / 0xFFFFFFFF) * 2 - 1; // -1 .. 1
+    return (x / 0xFFFFFFFF) * 2 - 1;
   };
 }
 
@@ -326,21 +318,15 @@ server.on('listening', () => {
   console.log('Server address:', JSON.stringify(addr));
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  // no-op; listening event above handles logs
-});
+server.listen(PORT, '0.0.0.0', () => {});
 
 function shutdown(code) {
-  try {
-    server.close(() => process.exit(code || 0));
-    setTimeout(() => process.exit(code || 1), 5000);
-  } catch (e) { process.exit(1); }
+  try { server.close(() => process.exit(code || 0)); setTimeout(() => process.exit(code || 1), 5000); } catch (e) { process.exit(1); }
 }
 
 process.on('SIGINT', () => shutdown(0));
 process.on('SIGTERM', () => shutdown(0));
 
-// If executed directly ensure we log so tests/CI know this ran as main
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
   console.log('Running NS-LLM prototype index.js as main module');
 }
