@@ -6,7 +6,9 @@
   const { spawn } = await import('child_process');
   const { fileURLToPath } = await import('url');
   const serverPath = fileURLToPath(new URL('./index.js', import.meta.url));
-  const serverProc = spawn(process.execPath, [serverPath], {
+  // Use `node` from PATH which works in CI / dev boxes (process.execPath sometimes
+  // isn't directly spawnable in some Windows sandboxes).
+  const serverProc = spawn('node', [serverPath], {
     cwd: new URL('.', import.meta.url).pathname,
     env: process.env,
     stdio: ['ignore', 'pipe', 'pipe']
