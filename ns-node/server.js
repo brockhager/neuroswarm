@@ -354,8 +354,17 @@ if (STATUS_ENABLED) {
 }
 
 // Graceful Shutdown
+// Graceful Shutdown
 process.on('SIGTERM', () => {
   logNs('SIGTERM received. Shutting down...');
+  server.close(() => {
+    logNs('HTTP server closed');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  logNs('SIGINT received. Shutting down...');
   server.close(() => {
     logNs('HTTP server closed');
     process.exit(0);
