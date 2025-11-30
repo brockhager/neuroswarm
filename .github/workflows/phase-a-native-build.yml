@@ -796,18 +796,30 @@ jobs:
           status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/releases/tags/$TAG" || true)
           if [ "$status" = "200" ]; then
             echo "Release for $TAG already exists (status $status)"
+            # fetch release JSON and extract id so uploads can target a specific release
+            id_json=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/releases/tags/$TAG")
+            REL_ID=$(echo "$id_json" | python -c 'import sys, json; o=json.load(sys.stdin); print(o.get("id",""))')
             echo "release_exists=true" >> $GITHUB_OUTPUT
+            echo "release_id=${REL_ID}" >> $GITHUB_OUTPUT
           else
             echo "No existing release found for $TAG (status $status) — creating"
             body='{ "tag_name": "'$TAG'", "name": "NS-LLM Phase A artifacts - '$TAG'", "body": "Production-ready NS-LLM artifacts validated across Ubuntu/macOS/Windows. See attached artifacts." }'
             create_status=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" -d "$body" "https://api.github.com/repos/$REPO/releases" || true)
             if [ "$create_status" = "201" ]; then
               echo "Release created successfully (status $create_status)"
+              # fetch created release JSON to obtain id
+              id_json=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/releases/tags/$TAG")
+              REL_ID=$(echo "$id_json" | python -c 'import sys, json; o=json.load(sys.stdin); print(o.get("id",""))')
               echo "release_created=true" >> $GITHUB_OUTPUT
+              echo "release_id=${REL_ID}" >> $GITHUB_OUTPUT
             elif [ "$create_status" = "422" ]; then
               # Another runner created the release concurrently — treat as success and continue
               echo "Create returned 422 (already_exists) — proceeding to reuse existing release"
+              # fetch the release id for the existing release
+              id_json=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/releases/tags/$TAG")
+              REL_ID=$(echo "$id_json" | python -c 'import sys, json; o=json.load(sys.stdin); print(o.get("id",""))')
               echo "release_exists=true" >> $GITHUB_OUTPUT
+              echo "release_id=${REL_ID}" >> $GITHUB_OUTPUT
             else
               echo "Release creation returned unexpected status: $create_status" >&2
               # fail the step so CI surfaces a clear error — but we could choose to continue
@@ -817,27 +829,69 @@ jobs:
 
       - name: Upload release assets (ubuntu)
         if: ${{ steps.determine_tag.outputs.RELEASE_TAG != '' }}
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            release-artifacts/ubuntu/**
+        shell: bash
         env:
+          REPO: ${{ github.repository }}
+          RELEASE_ID: ${{ steps.ensure_release.outputs.release_id }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$RELEASE_ID" ]; then echo "No release id found" >&2; exit 1; fi
+          shopt -s globstar || true
+          for f in release-artifacts/ubuntu/**; do
+            if [ -f "$f" ]; then
+              name=$(basename "$f")
+              echo "Uploading $name"
+              curl -s -X POST \
+                -H "Authorization: token $GITHUB_TOKEN" \
+                -H "Content-Type: application/octet-stream" \
+                --data-binary @"$f" \
+                "https://uploads.github.com/repos/$REPO/releases/$RELEASE_ID/assets?name=$name"
+            fi
+          done
 
       - name: Upload release assets (macos)
         if: ${{ steps.determine_tag.outputs.RELEASE_TAG != '' }}
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            release-artifacts/macos/**
+        shell: bash
         env:
+          REPO: ${{ github.repository }}
+          RELEASE_ID: ${{ steps.ensure_release.outputs.release_id }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$RELEASE_ID" ]; then echo "No release id found" >&2; exit 1; fi
+          shopt -s globstar || true
+          for f in release-artifacts/macos/**; do
+            if [ -f "$f" ]; then
+              name=$(basename "$f")
+              echo "Uploading $name"
+              curl -s -X POST \
+                -H "Authorization: token $GITHUB_TOKEN" \
+                -H "Content-Type: application/octet-stream" \
+                --data-binary @"$f" \
+                "https://uploads.github.com/repos/$REPO/releases/$RELEASE_ID/assets?name=$name"
+            fi
+          done
 
       - name: Upload release assets (windows)
         if: ${{ steps.determine_tag.outputs.RELEASE_TAG != '' }}
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            release-artifacts/windows/**
+        shell: bash
         env:
+          REPO: ${{ github.repository }}
+          RELEASE_ID: ${{ steps.ensure_release.outputs.release_id }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "$RELEASE_ID" ]; then echo "No release id found" >&2; exit 1; fi
+          shopt -s globstar || true
+          for f in release-artifacts/windows/**; do
+            if [ -f "$f" ]; then
+              name=$(basename "$f")
+              echo "Uploading $name"
+              curl -s -X POST \
+                -H "Authorization: token $GITHUB_TOKEN" \
+                -H "Content-Type: application/octet-stream" \
+                --data-binary @"$f" \
+                "https://uploads.github.com/repos/$REPO/releases/$RELEASE_ID/assets?name=$name"
+            fi
+          done
