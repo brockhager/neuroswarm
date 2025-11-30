@@ -782,14 +782,38 @@ jobs:
             echo "RELEASE_TAG=" >> $GITHUB_OUTPUT
           fi
 
-      - name: Create GitHub Release
+      - name: Ensure GitHub Release exists (idempotent)
         if: ${{ steps.determine_tag.outputs.RELEASE_TAG != '' }}
-        id: create_release
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{ steps.determine_tag.outputs.RELEASE_TAG }}
-          name: "NS-LLM Phase A artifacts - ${{ steps.determine_tag.outputs.RELEASE_TAG }}"
-          body: "Production-ready NS-LLM artifacts validated across Ubuntu/macOS/Windows. See attached artifacts."
+        id: ensure_release
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ steps.determine_tag.outputs.RELEASE_TAG }}
+        run: |
+          set -euo pipefail
+          echo "Checking for existing release for tag: $TAG"
+          status=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/releases/tags/$TAG" || true)
+          if [ "$status" = "200" ]; then
+            echo "Release for $TAG already exists (status $status)"
+            echo "release_exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "No existing release found for $TAG (status $status) — creating"
+            body='{ "tag_name": "'$TAG'", "name": "NS-LLM Phase A artifacts - '$TAG'", "body": "Production-ready NS-LLM artifacts validated across Ubuntu/macOS/Windows. See attached artifacts." }'
+            create_status=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" -d "$body" "https://api.github.com/repos/$REPO/releases" || true)
+            if [ "$create_status" = "201" ]; then
+              echo "Release created successfully (status $create_status)"
+              echo "release_created=true" >> $GITHUB_OUTPUT
+            elif [ "$create_status" = "422" ]; then
+              # Another runner created the release concurrently — treat as success and continue
+              echo "Create returned 422 (already_exists) — proceeding to reuse existing release"
+              echo "release_exists=true" >> $GITHUB_OUTPUT
+            else
+              echo "Release creation returned unexpected status: $create_status" >&2
+              # fail the step so CI surfaces a clear error — but we could choose to continue
+              exit 1
+            fi
+          fi
 
       - name: Upload release assets (ubuntu)
         if: ${{ steps.determine_tag.outputs.RELEASE_TAG != '' }}
