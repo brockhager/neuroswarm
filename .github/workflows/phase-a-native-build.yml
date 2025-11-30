@@ -569,15 +569,20 @@ jobs:
       - name: Start NS Node (Windows)
         if: matrix.runner-os == 'windows-latest'
         working-directory: ns-node
-        shell: pwsh
+        shell: bash
         run: |
-          $serverPath = Join-Path $env:GITHUB_WORKSPACE 'ns-node\server.js'
-          $out = Join-Path $env:GITHUB_WORKSPACE 'ns-node\ns-node.log'
-          $err = Join-Path $env:GITHUB_WORKSPACE 'ns-node\ns-node.err.log'
-          Write-Host "Starting ns-node on Windows... Logs at $out and $err"
-          $proc = Start-Process -FilePath node -ArgumentList $serverPath -WorkingDirectory (Split-Path $serverPath -Parent) -RedirectStandardOutput $out -RedirectStandardError $err -PassThru
-          Start-Sleep -Seconds 2
-          Write-Host "Started ns-node with PID: $($proc.Id)"
+          echo "Starting ns-node using nohup (bash)..."
+          nohup node server.js > ns-node.log 2>&1 &
+          PID=$!
+          echo "Started ns-node with PID $PID"
+          sleep 5
+          if ps -p $PID > /dev/null; then
+            echo "Process $PID is running"
+          else
+            echo "Process $PID died immediately"
+            cat ns-node.log
+            exit 1
+          fi
 
       - name: Start NS-LLM backend (Windows - fallback to Node prototype)
         if: matrix.runner-os == 'windows-latest'
