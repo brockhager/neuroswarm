@@ -4,7 +4,9 @@
   // Start the server in a child process to isolate socket lifecycle and avoid
   // libuv handle assertions when the test runner exits on Windows.
   const { spawn } = await import('child_process');
-  const serverProc = spawn(process.execPath, [new URL('./index.js', import.meta.url).pathname], {
+  const { fileURLToPath } = await import('url');
+  const serverPath = fileURLToPath(new URL('./index.js', import.meta.url));
+  const serverProc = spawn(process.execPath, [serverPath], {
     cwd: new URL('.', import.meta.url).pathname,
     env: process.env,
     stdio: ['ignore', 'pipe', 'pipe']
