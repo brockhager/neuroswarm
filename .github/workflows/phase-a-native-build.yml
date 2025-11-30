@@ -615,10 +615,10 @@ jobs:
             Get-ChildItem -Path (Join-Path $env:GITHUB_WORKSPACE 'NS-LLM') -Recurse -Depth 2 | Select-Object -First 50 | Write-Host
             exit 1
           }
-          $proc = Start-Process -FilePath node -ArgumentList $indexPath -WorkingDirectory (Split-Path $indexPath -Parent) -RedirectStandardOutput $out -RedirectStandardError $err -PassThru
+          $proc = Start-Process -FilePath node -ArgumentList $indexPath -WorkingDirectory (Split-Path $indexPath -Parent) -RedirectStandardOutput $out -RedirectStandardError $out -PassThru
           Start-Sleep -Seconds 2
           if (Get-Process -Id $proc.Id -ErrorAction SilentlyContinue) {
-            Write-Host "Started node prototype (pid=$($proc.Id)); stdout -> $out stderr -> $err"
+            Write-Host "Started node prototype (pid=$($proc.Id)); stdout -> $out stderr -> $out"
           } else {
             Write-Host "Failed to start node prototype; dumping logs (if present):"
             if (Test-Path $out) { Write-Host "--- prototype stdout ---"; Get-Content $out -ErrorAction SilentlyContinue | Write-Host }
