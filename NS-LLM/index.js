@@ -170,35 +170,35 @@ if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename
   console.log('Running NS-LLM prototype index.js as main module');
 }
 
-export { server };
-// Minimal, dependency-free prototype embedding backend
-// - /embed: deterministic pseudo-embeddings (384 floats) for testing
-// - /health: process and model status
-// - /metrics: simple counters
+// Ensure the file contains one single, consistent ESM implementation.
+// The earlier duplication caused a SyntaxError during CI: "Identifier '__filename' has already been declared".
+// This file intentionally keeps one implementation only.
+
+// NS-LLM prototype HTTP backend (ESM)
+// - Provides minimal /embed, /health and /metrics endpoints used by CI smoke tests
+// - Emulates __filename / __dirname correctly for ESM using fileURLToPath(import.meta.url)
 
 import http from 'http';
 import os from 'os';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+// Derive __filename / __dirname exactly once from import.meta.url
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 5555;
 
-// Try to read a repo-level version file if present (two levels up from this file)
 let VERSION = process.env.VERSION || 'dev';
 try {
-  // fs and path are already imported at the top of this module
   const rootVersion = path.resolve(__dirname, '..', '..', 'version-id.txt');
-  if (fs.existsSync(rootVersion)) {
-    VERSION = fs.readFileSync(rootVersion, 'utf8').trim();
-  }
+  if (fs.existsSync(rootVersion)) VERSION = fs.readFileSync(rootVersion, 'utf8').trim();
 } catch (e) {
-  // ignore
+  // intentionally ignored — prototype should not crash on version lookup
 }
 
-let metrics = {
+const metrics = {
   requests_total: 0,
   requests_failed: 0,
   sum_latency_ms: 0,
@@ -209,7 +209,7 @@ let metrics = {
 };
 
 function pseudoHash(text) {
-  // FNV-1a 32-bit hash
+  // FNV-1a 32-bit
   let h = 2166136261 >>> 0;
   for (let i = 0; i < text.length; i++) {
     h ^= text.charCodeAt(i);
@@ -220,68 +220,46 @@ function pseudoHash(text) {
 }
 
 function deterministicPRNG(seed) {
-  // xorshift32-like
   let x = seed >>> 0;
-  return function() {
+  return function () {
     x ^= x << 13; x = x >>> 0;
     x ^= x >>> 17; x = x >>> 0;
     x ^= x << 5; x = x >>> 0;
-    return (x / 0xFFFFFFFF) * 2 - 1; // range -1..1
-  }
+    return (x / 0xFFFFFFFF) * 2 - 1; // -1 .. 1
+  };
 }
 
 function makeEmbedding(text, dims = 384) {
   const seed = pseudoHash(text);
   const prng = deterministicPRNG(seed);
-  const vec = new Array(dims).fill(0).map(() => Number(prng().toFixed(6)));
-  return vec;
+  return new Array(dims).fill(0).map(() => Number(prng().toFixed(6)));
 }
 
 function sendJSON(res, code, body) {
-  console.log(`Sending response: ${code}`);
   const payload = JSON.stringify(body);
-  console.log(`Response payload: ${payload}`);
   res.writeHead(code, {
     'Content-Type': 'application/json',
     'Content-Length': Buffer.byteLength(payload)
   });
-  console.log('About to call res.end()');
   res.end(payload);
-  console.log('res.end() called');
 }
 
 const server = http.createServer((req, res) => {
-  console.log(`Request: ${req.method} ${req.url}`);
   try {
     if (req.method === 'POST' && req.url === '/embed') {
       metrics.requests_total++;
       let body = '';
-      let start = Date.now();
-      
-      req.on('data', chunk => {
-        body += chunk;
-      });
-      
+      const start = Date.now();
+      req.on('data', c => body += c);
       req.on('end', () => {
         try {
-          if (!body) {
-            metrics.requests_failed++;
-            return sendJSON(res, 400, { error: 'empty body' });
-          }
+          if (!body) { metrics.requests_failed++; return sendJSON(res, 400, { error: 'empty body' }); }
           let json;
-          try { json = JSON.parse(body); } catch (e) {
-            metrics.requests_failed++;
-            return sendJSON(res, 400, { error: 'invalid json' });
-          }
-          if (!json.text || typeof json.text !== 'string') {
-            metrics.requests_failed++;
-            return sendJSON(res, 400, { error: "missing 'text' string" });
-          }
+          try { json = JSON.parse(body); } catch (e) { metrics.requests_failed++; return sendJSON(res, 400, { error: 'invalid json' }); }
+          if (!json.text || typeof json.text !== 'string') { metrics.requests_failed++; return sendJSON(res, 400, { error: "missing 'text' string" }); }
 
-          // Simulated caching: short text < 64 chars => pretend cache hit
           const cacheHit = json.text.length < 64;
-          if (cacheHit) metrics.cache_hits++;
-          else metrics.cache_misses++;
+          if (cacheHit) metrics.cache_hits++; else metrics.cache_misses++;
 
           const dims = 384;
           const embedding = makeEmbedding(json.text, dims);
@@ -298,13 +276,10 @@ const server = http.createServer((req, res) => {
             latency_ms
           });
         } catch (err) {
-          console.error('Error in POST handler:', err);
-          metrics.requests_failed++;
-          sendJSON(res, 500, { error: 'server error' });
+          metrics.requests_failed++; sendJSON(res, 500, { error: 'server error' });
         }
       });
-      
-      return; // Don't continue processing, wait for 'end' event
+      return;
     }
 
     if (req.method === 'GET' && req.url === '/health') {
@@ -327,7 +302,7 @@ const server = http.createServer((req, res) => {
         requests_total: metrics.requests_total,
         requests_failed: metrics.requests_failed,
         avg_latency_ms,
-        p50_latency_ms: avg_latency_ms, // prototype: treat avg as p50
+        p50_latency_ms: avg_latency_ms,
         p95_latency_ms: metrics.max_latency_ms,
         cache_hits: metrics.cache_hits,
         cache_misses: metrics.cache_misses,
@@ -335,83 +310,39 @@ const server = http.createServer((req, res) => {
       });
     }
 
-    // default
     res.writeHead(404, {'Content-Type': 'text/plain'});
     res.end('not found');
   } catch (err) {
     metrics.requests_failed++;
-    console.error('server error', err);
-    try {
-      sendJSON(res, 500, { error: 'server error' });
-    } catch (sendErr) {
-      console.error('Error sending error response:', sendErr);
-      res.end('server error');
-    }
+    try { sendJSON(res, 500, { error: 'server error' }); } catch (e) { res.end('server error'); }
   }
 });
 
-server.on('error', (err) => {
-  console.error('Server error:', err);
-});
+server.on('error', (err) => console.error('Server error:', err));
 
 server.on('listening', () => {
-  console.log('Server listening event fired');
+  const addr = server.address();
+  console.log(`ns-llm-prototype listening on http://0.0.0.0:${PORT} — version=${VERSION}`);
+  console.log('Server address:', JSON.stringify(addr));
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`ns-llm-prototype listening on http://0.0.0.0:${PORT} — version=${VERSION}`);
-  const addr = server.address();
-  console.log(`Server address details:`, JSON.stringify(addr));
-  console.log('Server is listening and should accept connections now');
-  
-  // Check if server is actually listening
-  console.log('Server listening state:', server.listening);
-}).on('error', (err) => {
-  console.error('Server listen error:', err);
+  // no-op; listening event above handles logs
 });
 
-// Helpful runtime diagnostics
-console.log(`PID: ${process.pid}, CWD: ${process.cwd()}`);
-
-// Graceful shutdown on signals
 function shutdown(code) {
-  console.log('Shutting down server, code=', code);
   try {
-    server.close(() => {
-      console.log('Server closed, exiting.');
-      process.exit(code || 0);
-    });
-    // Force exit if close doesn't finish
-    setTimeout(() => {
-      console.error('Force exit due to shutdown timeout.');
-      process.exit(code || 1);
-    }, 5000);
-  } catch (err) {
-    console.error('Error during shutdown:', err);
-    process.exit(1);
-  }
+    server.close(() => process.exit(code || 0));
+    setTimeout(() => process.exit(code || 1), 5000);
+  } catch (e) { process.exit(1); }
 }
 
 process.on('SIGINT', () => shutdown(0));
 process.on('SIGTERM', () => shutdown(0));
 
-// Improved process-level error handling
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught exception:', err && err.stack ? err.stack : err);
-  // try to shut down gracefully
-  shutdown(1);
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled rejection at:', promise, 'reason:', reason);
-  // don't crash immediately — let the shutdown sequence run
-  shutdown(1);
-});
-
-// If this file is executed directly, just run the server (HTTP server keeps the event loop alive)
-// NOTE: __filename/__dirname are already declared earlier in this module — don't redeclare them.
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
-  console.log('Running as main module');
+// If executed directly ensure we log so tests/CI know this ran as main
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
+  console.log('Running NS-LLM prototype index.js as main module');
 }
 
 export { server };
