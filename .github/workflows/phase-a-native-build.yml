@@ -657,8 +657,28 @@ jobs:
           done
           
           NS_NODE_UP=false
-          }
-          if (-not $ready) { Write-Error 'ns-node did not become healthy' ; exit 1 }
+          for i in {1..30}; do
+            echo "Checking ns-node at http://127.0.0.1:3009/health... ($i)"
+            if curl --silent --fail http://127.0.0.1:3009/health >/dev/null 2>&1; then
+              echo "ns-node is up"
+              NS_NODE_UP=true
+              break
+            fi
+            sleep 1
+          done
+          
+          # Check if services started successfully
+          if [ "$NS_LLM_UP" = false ]; then
+            echo "ERROR: ns-llm failed to start. Logs:"
+            cat NS-LLM/ns-llm.log 2>/dev/null || cat NS-LLM/ns-llm-native.log 2>/dev/null || echo "No logs found"
+            exit 1
+          fi
+          
+          if [ "$NS_NODE_UP" = false ]; then
+            echo "ERROR: ns-node failed to start. Logs:"
+            cat ns-node/ns-node.log 2>/dev/null || echo "No logs found"
+            exit 1
+          fi
 
       - name: Run smoke + e2e tests (prototype/native)
         working-directory: ns-node
