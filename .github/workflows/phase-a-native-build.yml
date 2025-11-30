@@ -519,6 +519,14 @@ jobs:
         working-directory: NS-LLM
         run: npm install
 
+      - name: Debug NS-LLM Directory (Windows)
+        if: matrix.runner-os == 'windows-latest'
+        shell: pwsh
+        run: |
+          Write-Host '--- Debug: NS-LLM Directory After NPM CI ---'
+          Get-ChildItem -Path (Join-Path $env:GITHUB_WORKSPACE 'NS-LLM') -Recurse -Depth 2 | Select-Object -First 100 | Format-Table | Write-Host
+          Write-Host '------------------------------------------'
+
       - name: Install Shared deps
         working-directory: shared
         run: npm install
