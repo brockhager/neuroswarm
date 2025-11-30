@@ -236,10 +236,8 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // If this file is executed directly, just run the server (HTTP server keeps the event loop alive)
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
+// NOTE: __filename/__dirname are already declared earlier in this module — don't redeclare them.
+if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(fileURLToPath(import.meta.url))) {
   console.log('Running as main module');
 }
 
