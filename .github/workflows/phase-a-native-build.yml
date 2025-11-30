@@ -668,6 +668,9 @@ jobs:
         if: matrix.runner-os == 'windows-latest'
         shell: pwsh
         run: |
+          # Add startup delay to ensure server has time to crash and write full error to log
+          Start-Sleep -Seconds 5
+          
           $ready = $false
           for ($i=1; $i -le 60; $i++) {
             try {
@@ -684,9 +687,9 @@ jobs:
           }
           if (-not $ready) {
             Write-Error 'ns-llm did not become healthy'
-            # Try to dump potential logs to help CI debugging
-            if (Test-Path -Path 'NS-LLM\ns-llm.log') { Get-Content NS-LLM\ns-llm.log -Raw | Write-Host }
-            if (Test-Path -Path 'NS-LLM\ns-llm-native.log') { Get-Content NS-LLM\ns-llm-native.log -Raw | Write-Host }
+            # Dump last 50 lines of logs to capture crash stack trace
+            if (Test-Path -Path 'NS-LLM\ns-llm.log') { Write-Host "--- ns-llm.log (last 50 lines) ---"; Get-Content NS-LLM\ns-llm.log -Last 50 | Write-Host }
+            if (Test-Path -Path 'NS-LLM\ns-llm-native.log') { Write-Host "--- ns-llm-native.log (last 50 lines) ---"; Get-Content NS-LLM\ns-llm-native.log -Last 50 | Write-Host }
             Write-Host 'Listing NS-LLM dir:'; Get-ChildItem -Path NS-LLM -Recurse -Depth 2 | Select-Object -First 50 | Format-Table
             exit 1
           }
