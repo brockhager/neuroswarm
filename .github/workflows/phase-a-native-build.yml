@@ -697,22 +697,6 @@ jobs:
             }
             # attempt to print the first few lines of logs mid-wait if present to help debugging
             if ($i -eq 10 -or $i -eq 30) {
-              if (Test-Path -Path 'NS-LLM\ns-llm.log') { Write-Host "--- ns-llm.log (partial) ---"; Get-Content NS-LLM\ns-llm.log -TotalCount 40 | Write-Host }
-              if (Test-Path -Path 'NS-LLM\ns-llm-native.log') { Write-Host "--- ns-llm-native.log (partial) ---"; Get-Content NS-LLM\ns-llm-native.log -TotalCount 40 | Write-Host }
-            }
-          }
-          if (-not $ready) {
-            Write-Error 'ns-llm did not become healthy'
-            # Dump last 50 lines of logs to capture crash stack trace
-            if (Test-Path -Path 'NS-LLM\ns-llm.log') { Write-Host "--- ns-llm.log (last 50 lines) ---"; Get-Content NS-LLM\ns-llm.log -Last 50 | Write-Host }
-            if (Test-Path -Path 'NS-LLM\ns-llm-native.log') { Write-Host "--- ns-llm-native.log (last 50 lines) ---"; Get-Content NS-LLM\ns-llm-native.log -Last 50 | Write-Host }
-            Write-Host 'Listing NS-LLM dir:'; Get-ChildItem -Path NS-LLM -Recurse -Depth 2 | Select-Object -First 50 | Format-Table
-            exit 1
-          }
-
-          $ready = $false
-          for ($i=1; $i -le 60; $i++) {
-            try {
               $r = Invoke-WebRequest -Uri 'http://127.0.0.1:3009/health' -UseBasicParsing -TimeoutSec 2
               if ($r.StatusCode -eq 200) { Write-Host 'ns-node is up'; $ready = $true; break }
             } catch { Start-Sleep -Seconds 1 }

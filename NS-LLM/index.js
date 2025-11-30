@@ -201,9 +201,19 @@ process.on('SIGTERM', () => shutdown(0));
 // If executed directly ensure we log so tests/CI know this ran as main
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
   console.log('Running NS-LLM prototype index.js as main module');
-  // Keep the process alive when run directly (for CI/server usage)
-  // The server is already listening, so we just need to prevent exit
-  process.stdin.resume();
+  
+  // Add global error handlers to capture crash reasons
+  process.on('uncaughtException', (err) => {
+    console.error('FATAL: Uncaught Exception:', err);
+    process.exit(1);
+  });
+  
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('FATAL: Unhandled Rejection:', reason);
+    process.exit(1);
+  });
+
+  // Note: process.stdin.resume() removed as it can cause issues with detached processes on Windows
 }
 
 // Export server for tests that import this module. Keep only ONE implementation to
