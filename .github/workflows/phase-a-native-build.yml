@@ -603,10 +603,10 @@ jobs:
           }
 
           # Fallback: start the prototype Node server so downstream checks can run
-          Write-Host 'Starting Node prototype (index.js) on Windows via cmd /c redirection'
-          $logPath = Join-Path $env:GITHUB_WORKSPACE 'NS-LLM\ns-llm.log'
+          Write-Host 'Starting Node prototype (index.js) on Windows via detached Start-Process'
+          $out = Join-Path $env:GITHUB_WORKSPACE 'NS-LLM\ns-llm.log'
+          $err = Join-Path $env:GITHUB_WORKSPACE 'NS-LLM\ns-llm.err.log'
           $indexPath = Join-Path $env:GITHUB_WORKSPACE 'NS-LLM\index.js'
-          $repoDir = Join-Path $env:GITHUB_WORKSPACE 'NS-LLM'
 
           # Use an explicit absolute path to the repository copy of index.js
           # $PSScriptRoot can sometimes be ephemeral in runner temp dirs; use the
@@ -617,12 +617,21 @@ jobs:
             exit 1
           }
 
-          # This command uses cmd /c start /b to run the process detached and uses
-          # the reliable '2>&1' syntax to merge stdout/stderr to the log file.
-          cmd /c "cd $repoDir && node $indexPath > $logPath 2>&1 &"
+          # 1. Start the process detached, redirecting streams to *different* files (to satisfy Start-Process rules)
+          $proc = Start-Process -FilePath node -ArgumentList $indexPath -WorkingDirectory (Split-Path $indexPath -Parent) -RedirectStandardOutput $out -RedirectStandardError $err -PassThru
+          Start-Sleep -Seconds 2  # Give time for Node to start/crash
 
-          Start-Sleep -Seconds 5  # Give time for the process to start/crash
-          Write-Host "Node prototype dispatched. Output redirected to $logPath."
+          # 2. Append the error log into the main log file to merge the crash trace
+          if (Test-Path $err) {
+            Write-Host "Merging stderr into main log."
+            Get-Content $err | Add-Content $out
+          }
+
+          if (Get-Process -Id $proc.Id -ErrorAction SilentlyContinue) {
+            Write-Host "Started node prototype (pid=$($proc.Id)); stdout -> $out stderr -> $err (Merged)"
+          } else {
+            Write-Host "Failed to start node prototype; crash trace should be in $out"
+          }
 
       - name: Wait for services to be healthy (Linux/macOS)
         if: matrix.runner-os != 'windows-latest'
