@@ -793,12 +793,7 @@ on:
             echo "Release for $TAG already exists (status $status)"
             # get release id
             id_json=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/releases/tags/$TAG")
-            REL_ID=$(python - <<'PY'
-import sys, json
-o=json.load(sys.stdin)
-print(o.get('id',''))
-PY
-<<<"$id_json")
+            REL_ID=$(echo "$id_json" | python -c 'import sys, json; o=json.load(sys.stdin); print(o.get("id",""))')
             echo "release_exists=true" >> $GITHUB_OUTPUT
             echo "release_id=${REL_ID}" >> $GITHUB_OUTPUT
           else
@@ -809,12 +804,7 @@ PY
               echo "Release created successfully (status $create_status)"
               # fetch created release id
               id_json=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/releases/tags/$TAG")
-              REL_ID=$(python - <<'PY'
-import sys, json
-o=json.load(sys.stdin)
-print(o.get('id',''))
-PY
-<<<"$id_json")
+              REL_ID=$(echo "$id_json" | python -c 'import sys, json; o=json.load(sys.stdin); print(o.get("id",""))')
               echo "release_created=true" >> $GITHUB_OUTPUT
               echo "release_id=${REL_ID}" >> $GITHUB_OUTPUT
             elif [ "$create_status" = "422" ]; then
@@ -822,12 +812,7 @@ PY
               echo "Create returned 422 (already_exists) — proceeding to reuse existing release"
               # fetch the release id for the existing release
               id_json=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/$REPO/releases/tags/$TAG")
-              REL_ID=$(python - <<'PY'
-import sys, json
-o=json.load(sys.stdin)
-print(o.get('id',''))
-PY
-<<<"$id_json")
+              REL_ID=$(echo "$id_json" | python -c 'import sys, json; o=json.load(sys.stdin); print(o.get("id",""))')
               echo "release_exists=true" >> $GITHUB_OUTPUT
               echo "release_id=${REL_ID}" >> $GITHUB_OUTPUT
             else
