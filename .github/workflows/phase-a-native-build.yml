@@ -603,27 +603,26 @@ jobs:
           }
 
           # Fallback: start the prototype Node server so downstream checks can run
-          Write-Host 'Starting Node prototype (index.js) on Windows'
-          $out = Join-Path $env:GITHUB_WORKSPACE 'NS-LLM\ns-llm.log'
-          $err = Join-Path $env:GITHUB_WORKSPACE 'NS-LLM\ns-llm.err.log'
+          Write-Host 'Starting Node prototype (index.js) on Windows via cmd /c redirection'
+          $logPath = Join-Path $env:GITHUB_WORKSPACE 'NS-LLM\ns-llm.log'
+          $indexPath = Join-Path $env:GITHUB_WORKSPACE 'NS-LLM\index.js'
+          $repoDir = Join-Path $env:GITHUB_WORKSPACE 'NS-LLM'
+
           # Use an explicit absolute path to the repository copy of index.js
           # $PSScriptRoot can sometimes be ephemeral in runner temp dirs; use the
           # workspace path to avoid NODE trying to run D:\a\_temp\index.js.
-          $indexPath = Join-Path $env:GITHUB_WORKSPACE 'NS-LLM\index.js'
           if (-not (Test-Path $indexPath)) {
             Write-Host "index.js not found at $indexPath — listing NS-LLM folder for debugging"
             Get-ChildItem -Path (Join-Path $env:GITHUB_WORKSPACE 'NS-LLM') -Recurse -Depth 2 | Select-Object -First 50 | Write-Host
             exit 1
           }
-          $proc = Start-Process -FilePath node -ArgumentList $indexPath -WorkingDirectory (Split-Path $indexPath -Parent) -RedirectStandardOutput $out -RedirectStandardError $out -PassThru
-          Start-Sleep -Seconds 2
-          if (Get-Process -Id $proc.Id -ErrorAction SilentlyContinue) {
-            Write-Host "Started node prototype (pid=$($proc.Id)); stdout -> $out stderr -> $out"
-          } else {
-            Write-Host "Failed to start node prototype; dumping logs (if present):"
-            if (Test-Path $out) { Write-Host "--- prototype stdout ---"; Get-Content $out -ErrorAction SilentlyContinue | Write-Host }
-            if (Test-Path $err) { Write-Host "--- prototype stderr ---"; Get-Content $err -ErrorAction SilentlyContinue | Write-Host }
-          }
+
+          # This command uses cmd /c start /b to run the process detached and uses
+          # the reliable '2>&1' syntax to merge stdout/stderr to the log file.
+          cmd /c "cd $repoDir && node $indexPath > $logPath 2>&1 &"
+
+          Start-Sleep -Seconds 5  # Give time for the process to start/crash
+          Write-Host "Node prototype dispatched. Output redirected to $logPath."
 
       - name: Wait for services to be healthy (Linux/macOS)
         if: matrix.runner-os != 'windows-latest'
