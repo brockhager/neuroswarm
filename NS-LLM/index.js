@@ -156,11 +156,15 @@ server.on('error', (err) => console.error('Server error:', err));
 
 server.on('listening', () => {
   const addr = server.address();
-  console.log(`ns-llm-prototype listening on http://0.0.0.0:${PORT} — version=${VERSION}`);
+  // Prefer to advertise localhost in CI logs to match the health-check target (127.0.0.1)
+  console.log(`ns-llm-prototype listening on http://127.0.0.1:${PORT} — version=${VERSION}`);
   console.log('Server address:', JSON.stringify(addr));
 });
 
-server.listen(PORT, '0.0.0.0', () => {
+// Force prototype to bind to loopback on CI environments (Windows runners may not route 0.0.0.0 -> 127.0.0.1)
+// This avoids a binding mismatch where the server is reachable on all interfaces but the local health
+// probe cannot reach it via 127.0.0.1.
+server.listen(PORT, '127.0.0.1', () => {
   // no-op; listening event above handles logs
 });
 
