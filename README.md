@@ -47,49 +47,6 @@ NeuroSwarm creates a trustless ecosystem where:
 All official NeuroSwarm documentation is located in our comprehensive Wiki:
 
 👉 **[Go to Documentation Home](wiki/Getting-Started/Home.md)**
-
-**Quick Links:**
-- [Getting Started Guide](wiki/Getting-Started/Getting-Started.md) - New user onboarding
-- [Contributor Onboarding](wiki/Development/Contributor-Onboarding.md) - Start contributing
-- [System Architecture](wiki/Technical/Architecture.md) - Technical deep dive
-- [Data Flow Architecture](wiki/Technical/data-flow-architecture.md) - Complete dataflow diagrams
-- [Running Nodes](wiki/Nodes/Running-Nodes.md) - Node operation guide
-- [Complete Index](wiki/Index.md) - Browse all 207+ documents
-
----
-
-## 🚀 Current Development Phase
-
-### ✅ Phase 3b: Error Handling & Stability - COMPLETED
-- Server stability with conditional imports and graceful degradation
-- Ollama health checks with retry logic (3 attempts, 1s delay, 30s timeout)
-- Semantic cache with dynamic thresholds (0.9 deterministic, 0.7 fuzzy)
-- IPFS/Helia knowledge storage with automatic embedding generation
-
-### ⚠️ Phase 3c: Scaling Knowledge - PARTIALLY IMPLEMENTED
-- Batch embedding script for existing knowledge entries
-- Distributed storage via IPFS with semantic indexing
-- Keyword and category-based fallback search
-- Needs IPFS integration for full batch processing
-
-### ✅ Phase 3a: Contributor Dashboard - COMPLETED
-- **Real-time monitoring**: System health, knowledge metrics, semantic status
-- **Dashboard URL**: `http://localhost:3009/dashboard`
-- **Metrics exposed**: Cache hits, confidence scores, embedding coverage, system performance
-- **Auto-refresh**: Updates every 30 seconds
-
-**Test Results**: See [test-results.md](test-results.md) for detailed testing outcomes.
-
----
-
-## What it does
- - It includes a `sources/` adapter mechanism allowing Gateway to query external source adapters (like Allie-AI), attach metadata to txs, and include source attestation in blocks for additional verification.
-
-
-# NeuroSwarm coordination and documentation
-
-## Updates Page & Discord integration
-
 We maintain an `Updates.md` page in the `neuroswarm/wiki/` folder for project updates.
 To post updates to both the wiki and a Discord channel at the same time, use the `publish-update` GitHub Action in `.github/workflows/publish-update.yml`.
 
