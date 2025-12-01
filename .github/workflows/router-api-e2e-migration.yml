@@ -1,0 +1,84 @@
+name: Router API E2E & Migration Validation
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'router-api/**'
+  push:
+    branches: [ main ]
+    paths:
+      - 'router-api/**'
+
+jobs:
+  e2e_migration_validation:
+    runs-on: ubuntu-latest
+    name: Full E2E Test Run (Migration Included)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies (pnpm)
+        uses: pnpm/action-setup@v3
+        with:
+          version: 8
+          run_install: true
+        working-directory: ./router-api
+
+      - name: Set up Docker BuildX (for docker-compose)
+        uses: docker/setup-buildx-action@v3
+
+      - name: Execute E2E Test Harness (DB Migration + Service Test)
+        id: e2e_run
+        working-directory: ./router-api
+        run: |
+          # The e2e-test.sh script handles the full flow:
+          # 1) Start the Postgres container
+          # 2) Wait for DB health
+          # 3) Run ./migrations/run-migrations.sh against the container
+          # 4) Start the Router API container
+          # 5) Run the Jest tests
+          # 6) Tear down the stack
+          chmod +x ./e2e-test.sh
+          ./e2e-test.sh
+
+      - name: Send Discord Workflow Status Notification
+        if: always() # Run even if the E2E test failed
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WORKFLOW_WEBHOOK }}
+          BUILD_STATUS: ${{ steps.e2e_run.outcome }}
+          COMMIT_SHA: ${{ github.sha }}
+          JOB_NAME: E2E Migration Validation
+
+        run: |
+          if [ "$BUILD_STATUS" == "success" ]; then
+            EMBED_COLOR="3066993"
+            TITLE="✅ Router API E2E Validation Passed"
+            DESCRIPTION="All checks passed successfully on branch \`${{ github.ref_name }}\`."
+          elif [ "$BUILD_STATUS" == "failure" ]; then
+            EMBED_COLOR="15158332"
+            TITLE="❌ Router API E2E Validation FAILED"
+            DESCRIPTION="Tests failed on branch \`${{ github.ref_name }}\`. Migration or service logic failure."
+          else
+            EMBED_COLOR="16776960"
+            TITLE="⚠️ Router API E2E Validation Status: ${BUILD_STATUS}"
+            DESCRIPTION="Tests finished with status: \`${BUILD_STATUS}\`."
+          fi
+
+          PAYLOAD='{'
+          PAYLOAD+="\"username\": \"NeuroSwarm CI Bot\","'
+          PAYLOAD+="\"embeds\": [{"
+          PAYLOAD+="\"title\": \"'""${TITLE}""'\","'
+          PAYLOAD+="\"description\": \"'""${DESCRIPTION}""'\","'
+          PAYLOAD+="\"color\": '"${EMBED_COLOR}'\","'
+          PAYLOAD+="\"fields\": [{ \"name\": \"Commit\", \"value\": \"[${COMMIT_SHA:0:7}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})\", \"inline\": true }, { \"name\": \"Triggered By\", \"value\": \"${{ github.actor }}\", \"inline\": true }],"
+          PAYLOAD+="\"footer\": { \"text\": \"Workflow: ${{ github.workflow }} | Job: $JOB_NAME\" },"
+          PAYLOAD+="\"timestamp\": \"'"`date -u +%Y-%m-%dT%H:%M:%S.000Z`"'\" } ] }'
+
+          curl -H "Content-Type: application/json" -d "$PAYLOAD" "$DISCORD_WEBHOOK" || true

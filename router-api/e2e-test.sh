@@ -20,10 +20,24 @@ for i in {1..60}; do
   sleep 1
 done
 
-echo "[E2E] Applying DB migrations (if needed)"
-# Execute migration file from inside the container. File is mounted at /docker-entrypoint-initdb.d
-MIGRATION_FILE_REL="/docker-entrypoint-initdb.d/001_add_refund_persistence.sql"
-docker compose -f "$COMPOSE_FILE" exec -T db sh -c "psql -U neuroswarm_user -d neuroswarm_router_db_test -f ${MIGRATION_FILE_REL} || true"
+echo "[E2E] Applying DB migrations (if needed) using standardized migration runner"
+# The migrations directory is mounted into the DB container as /docker-entrypoint-initdb.d,
+# but we call the standardized runner from the host so it behaves the same as local dev.
+export PGHOST=127.0.0.1
+export PGPORT=5433
+export PGUSER=neuroswarm_user
+export PGPASSWORD=neuroswarm_password
+export PGDATABASE=neuroswarm_router_db_test
+
+MIGRATION_RUNNER="$ROOT_DIR/migrations/run-migrations.sh"
+if [ -x "$MIGRATION_RUNNER" ]; then
+  echo "[E2E] Executing $MIGRATION_RUNNER against $PGHOST:$PGPORT"
+  "$MIGRATION_RUNNER"
+else
+  echo "[E2E] Migration runner ($MIGRATION_RUNNER) not executable; falling back to single-file psql apply"
+  MIGRATION_FILE_REL="/docker-entrypoint-initdb.d/001_add_refund_persistence.sql"
+  docker compose -f "$COMPOSE_FILE" exec -T db sh -c "psql -U neuroswarm_user -d neuroswarm_router_db_test -f ${MIGRATION_FILE_REL} || true"
+fi
 
 # Step B: Start the router-api service after migrations applied
 docker compose -f "$COMPOSE_FILE" up -d --build router-api

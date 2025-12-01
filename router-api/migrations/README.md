@@ -14,5 +14,21 @@ How to run migrations in CI or locally
 2) Manual application (safe and idempotent):
    psql "postgres://neuroswarm_user:neuroswarm_password@<host>:5432/neuroswarm_router_db_test" -f migrations/001_add_refund_persistence.sql
 
+PowerShell runner (Windows)
+----------------------------
+If you're on Windows and prefer PowerShell, there's a convenience runner in this folder: `run-migrations.ps1`.
+
+Before running it, set the following environment variables in PowerShell:
+
+   $env:PGHOST = '127.0.0.1'; $env:PGPORT = '5432'; $env:PGUSER = 'neuroswarm_user'; $env:PGPASSWORD = 'neuroswarm_password'; $env:PGDATABASE = 'neuroswarm_router_db_test'
+
+Then from PowerShell run:
+
+   .\run-migrations.ps1
+
+The script will iterate all `*.sql` files in this folder (sorted by name) and apply them with `psql`.
+
+Notes: Ensure `psql` is on your PATH. The runner uses `ON_ERROR_STOP=1` so it will abort on any failing SQL statement.
+
 Notes
 - The migration file performs checks against `information_schema` and will only add columns or indices if they do not already exist — safe to re-run in CI or production.
