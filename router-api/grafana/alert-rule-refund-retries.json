@@ -1,0 +1,37 @@
+{
+  "name": "Router API - Refund Reconciliation Alerts",
+  "rules": [
+    {
+      "title": "CRITICAL: Router API - High Volume of Unresolved Refund Retries",
+      "condition": "A",
+      "data": [
+        {
+          "refId": "A",
+          "queryType": "timeSeriesQuery",
+          "relativeTimeRange": { "from": 300, "to": 0 },
+          "datasourceUid": "__P_Prometheus__",
+          "model": {
+            "expr": "sum(increase(router_refund_retries_total[5m]))",
+            "intervalMs": 1000,
+            "legendFormat": "High Retry Volume",
+            "refId": "A",
+            "hide": false
+          }
+        }
+      ],
+      "noDataState": "NoData",
+      "execErrState": "Alerting",
+      "for": "1m",
+      "labels": { "severity": "critical", "team": "ops" },
+      "annotations": {
+        "__alertId__": "ROUTER_REFUND_HIGH_RETRY_VOLUME",
+        "description": "More than 5 refund transaction submission retries occurred across all jobs in the last 5 minutes. This indicates a potential sustained failure of the Solana RPC connection or an internal reconciliation issue. Refer to the runbook for 'Persistent Refund Failures'."
+      },
+      "isPaused": false,
+      "version": 1,
+      "evalDuration": "60s",
+      "threshold": 5,
+      "expression": "sum(increase(router_refund_retries_total[5m])) > 5"
+    }
+  ]
+}
