@@ -1,0 +1,23 @@
+{
+    "name": "neuroswarm-router-api",
+    "version": "1.0.0",
+    "description": "The orchestration layer for NeuroSwarm, handling Validator Selection, Job Queue, and Solana Transaction Orchestration.",
+    "main": "dist/index.js",
+    "scripts": {
+        "start": "ts-node src/index.ts",
+        "build": "tsc",
+        "serve": "node dist/index.js"
+    },
+    "keywords": [
+        "solana",
+        "llm",
+        "router",
+        "typescript"
+    ],
+    "author": "NeuroSwarm Team",
+    "license": "ISC",
+    "@types/uuid": "^9.0.8",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+}
+}
