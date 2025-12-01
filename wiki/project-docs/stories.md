@@ -204,7 +204,7 @@ Maria joined NeuroSwarm's community forums to learn about decentralized AI. Her 
 
 NeuroSwarm's economy is designed around three core tokens:
 
-**NSM (Governance Token):**
+**NST (Governance Token):**
 - Voting rights in governance decisions
 - Staking for validator selection
 - Access to premium platform features
