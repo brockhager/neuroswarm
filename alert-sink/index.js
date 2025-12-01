@@ -24,12 +24,42 @@ const getAlertColor = (status) => {
     }
 }
 
+// --- Deduplication State ---
+const alertCooldowns = new Map();
+const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+
+const shouldSendAlert = (alert) => {
+    const { status, labels = {} } = alert;
+    
+    // Always let RESOLVED alerts through to clear incidents
+    if (status === 'resolved') return true;
+
+    const alertKey = `${labels.alertname}:${labels.severity}:${labels.instance}`;
+    const now = Date.now();
+    const lastSent = alertCooldowns.get(alertKey);
+
+    if (lastSent && (now - lastSent) < COOLDOWN_MS) {
+        console.log(`[Dedup] Skipping duplicate alert: ${alertKey} (cooldown active)`);
+        return false;
+    }
+
+    alertCooldowns.set(alertKey, now);
+    return true;
+}
+
 const formatAlertEmbed = (alertPayload) => {
     const { status, alerts = [] } = alertPayload;
     const timestamp = new Date().toISOString();
     const color = getAlertColor(status);
 
-    const embeds = alerts.map(alert => {
+    // Filter alerts based on deduplication logic
+    const actionableAlerts = alerts.filter(shouldSendAlert);
+
+    if (actionableAlerts.length === 0) {
+        return null; // Nothing to send
+    }
+
+    const embeds = actionableAlerts.map(alert => {
         const labels = alert.labels || {};
         const annotations = alert.annotations || {};
 
@@ -51,7 +81,7 @@ const formatAlertEmbed = (alertPayload) => {
     return {
         username: `${APP_NAME} Alert System`,
         avatar_url: 'https://placehold.co/128x128/3f51b5/ffffff?text=NS',
-        content: `**[${status ? status.toUpperCase() : 'ALERT'}]** ${alerts.length} alert(s) from **${APP_NAME}**`,
+        content: `**[${status ? status.toUpperCase() : 'ALERT'}]** ${actionableAlerts.length} alert(s) from **${APP_NAME}**`,
         embeds
     };
 }
@@ -63,9 +93,16 @@ const sendAlertToDiscord = async (payload) => {
     }
 
     const message = formatAlertEmbed(payload);
+    
+    // If deduplication filtered everything out, message will be null
+    if (!message) {
+        console.log('All alerts in payload were deduplicated. Skipping Discord send.');
+        return true; // Treated as success (handled)
+    }
+
     try {
         await axios.post(DISCORD_WEBHOOK_URL, message, { headers: { 'Content-Type': 'application/json' } });
-        console.log(`Routed ${payload.alerts?.length || 0} alert(s) (status=${payload.status}) to Discord.`);
+        console.log(`Routed ${message.embeds.length} alert(s) (status=${payload.status}) to Discord.`);
         return true;
     } catch (err) {
         console.error('Failed to send alert to Discord:', err.message || err);

@@ -116,7 +116,7 @@ All project files listed in the Completed Tasks section have been saved to the r
 | **T17** | Final cross-platform CI validation | CI workflow is added but requires repo secrets (DISCORD_WORKFLOW_WEBHOOK, DB credentials) or manual trigger | CI added; secrets required | ⚠️ PENDING (needs secrets)
 | **T18** | End-to-end integration tests | Full integration tests that run Router + NS-LLM + validator-node across OS matrix and devnet/localnet | Needed for final validation across matrix | 🔲 TODO
 | **T19** | Production alerting sink setup | Wire SLACK_ALERT_WEBHOOK, PagerDuty, or Discord for incident delivery; test with staging webhook | Integrate and test routing | ✅ COMPLETE
-| **T20** | Escalation & deduplication | Add alert throttles / deduping / runbook links to prevent alert storms and improve on-call response time | Implement throttles & runbooks | 🔲 TODO
+| **T20** | Escalation & deduplication | Add alert throttles / deduping / runbook links to prevent alert storms and improve on-call response time | Implement throttles & runbooks | ✅ COMPLETE
 | **T21** | Long-term reconciler improvements | Retry logic for pending refunds, automated re-sends for failed refund_tx signatures, and historical reconciliation reporting | Ongoing work for robustness | ⚙️ IN PROGRESS
 | **T22** | Monitoring / dashboards | Add observability panels (Prometheus/Grafana) for refund rate, unsigned refunds, reconcile success, retry counts, job queue health; configure Grafana routing & webhooks | Needs alert routing validation | ⚙️ IN PROGRESS
 | **T23** | Governance notification / audit anchoring | Anchor critical events (mass refunds, unresolved unsigned refunds) to governance timeline and export audits | Consider on-chain + off-chain export | 🔲 TODO
