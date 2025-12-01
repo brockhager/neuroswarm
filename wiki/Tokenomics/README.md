@@ -36,10 +36,38 @@ Details how the total NST supply is allocated across validators, ecosystem treas
 Provides the complete issuance schedule with mathematical calculations, consensus parameters for Byzantine Fault Tolerance (BFT), and the halving cycle timeline spanning 28+ years.
 
 **Key Topics:**
-- BFT consensus parameters (6-second finality, 150 validator cap)
-- Initial block reward: 0.349313 NST per block
-- Complete halving schedule table
+- BFT consensus parameters (8.5-second finality, 150 validator cap)
+- Initial block reward: **0.5 NST per block** (clean specification)
+- Complete halving schedule table (~3.96-year cycles)
 - Economic security model and attack cost analysis
+
+---
+
+### [Validator Economics](./VALIDATOR_ECONOMICS.md)
+**APY modeling and profitability analysis for validators**
+
+Comprehensive economic modeling for validators including reward calculations, APY projections across halving cycles, delegation economics, and break-even analysis.
+
+**Key Topics:**
+- Cycle 1 APY: 247.5% (solo validator with 5,000 NST stake)
+- Long-term APY projections across all halving cycles
+- Delegation models and commission structures
+- Revenue source transition (block rewards → transaction fees)
+- Profitability and ROI calculations
+
+---
+
+### [Launch Milestones](./LAUNCH_MILESTONES.md)
+**Official governance record for Genesis and halving schedule**
+
+Documents the fixed Genesis date (Q2 2026 target) and complete halving schedule through 2058+. This is the authoritative source for launch timing and immutable consensus parameters.
+
+**Key Topics:**
+- Genesis parameters (Q2 2026, 0.5 NST IBR, 8.5s finality)
+- Four major halving events (2030, 2034, 2038, 2042)
+- Economic transition timeline (block rewards → fees)
+- Launch readiness checklist
+- Governance commitments
 
 ---
 
