@@ -274,4 +274,26 @@ export class SolanaService {
             return `mock_refund_error_${Date.now()}`;
         }
     }
+
+    /**
+     * Check whether a transaction signature is confirmed on-chain.
+     * Returns true if the signature is confirmed/finalized, false otherwise.
+     */
+    async checkTransactionConfirmation(signature: string): Promise<boolean> {
+        try {
+            const statuses = await this.connection.getSignatureStatuses([signature]);
+            const info = statuses && statuses.value && statuses.value[0];
+            if (!info) return false;
+
+            // If there is no error and status is confirmed or finalized we consider it confirmed
+            if (info.err) return false;
+            if (info.confirmationStatus === 'finalized' || info.confirmationStatus === 'confirmed') return true;
+
+            // Fallback: treat as unconfirmed
+            return false;
+        } catch (err) {
+            console.error('[Solana] Error checking tx confirmation for', signature, err);
+            return false;
+        }
+    }
 }

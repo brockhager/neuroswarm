@@ -7,6 +7,8 @@ import registry from './services/validator-registry';
 import ValidatorStateSync from './services/validator-state-sync';
 import { SolanaService } from './services/solana';
 import TimeoutMonitor from './services/router-timeout-monitor';
+import RefundReconciliationService from './services/refund-reconciliation';
+import AlertingService from './services/alerting';
 
 dotenv.config();
 
@@ -24,6 +26,11 @@ const solanaService = new SolanaService();
 // Start the router timeout monitor (background worker)
 const timeoutMonitor = new TimeoutMonitor(jobQueue);
 timeoutMonitor.start();
+
+// Initialize alerting (mock by default) and start refund reconciliation worker
+const alerting = new AlertingService();
+const refundReconciler = new RefundReconciliationService(jobQueue, solanaService, alerting);
+refundReconciler.start();
 
 // Initial API-local set of validators (seed). ValidatorStateSync will keep this registry up-to-date.
 const initialValidators: Validator[] = [
@@ -144,7 +151,8 @@ app.post('/api/v1/request/complete', async (req: Request, res: Response) => {
 
         // 2. Trigger Fee Distribution on Solana
         // We find the validator's wallet address from our registry (mocked here)
-        const validator = activeValidators.find(v => v.id === validatorId);
+        // Look up validator from the live registry maintained by ValidatorStateSync
+        const validator = registry.getById(validatorId);
         const validatorWallet = validator ? validator.wallet_address : 'VALIDATOR_WALLET_PLACEHOLDER';
 
         const txSignature = await solanaService.triggerFeeDistribution(

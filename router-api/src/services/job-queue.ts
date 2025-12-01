@@ -195,4 +195,32 @@ export class JobQueueService {
             throw err;
         }
     }
+
+    /**
+     * Return jobs with status='refunded' but missing a refund_tx_signature (unsigned refunds)
+     */
+    async getUnsignedRefundJobs(): Promise<Job[]> {
+        try {
+            const q = `SELECT * FROM jobs WHERE status='refunded' AND (refund_tx_signature IS NULL OR refund_tx_signature = '')`;
+            const res = await this.pool.query(q);
+            return res.rows;
+        } catch (err) {
+            console.error('Error fetching unsigned refunded jobs:', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Return jobs by status
+     */
+    async getJobsByStatus(status: 'queued' | 'processing' | 'completed' | 'failed' | 'refunded'): Promise<Job[]> {
+        try {
+            const q = `SELECT * FROM jobs WHERE status = $1`;
+            const res = await this.pool.query(q, [status]);
+            return res.rows;
+        } catch (err) {
+            console.error(`Error fetching jobs by status ${status}:`, err);
+            throw err;
+        }
+    }
 }
