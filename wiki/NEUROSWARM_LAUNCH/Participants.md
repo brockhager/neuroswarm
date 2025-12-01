@@ -13,6 +13,7 @@
 | 2 | **Brock** | Project Lead | Genesis Validator | Laptop (Node 2) | Active | Founder |
 | 3 | **Sofia** | Project Coordinator | Genesis Validator | Laptop (Node 3) | Registered | - |
 | 4 | **Moe** | DarkBlue Discord | Validator (Planned) | TBD (Node 4) | Registered | - |
+| 5 | **Rev Haze** | DarkBlue Discord | Validator (Planned) | TBD (Node 5) | Registered | - |
 
 ---
 
