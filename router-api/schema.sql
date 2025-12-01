@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS jobs (
   -- Results
   result TEXT,                      -- Final LLM response text or a pointer to storage
   error_message TEXT
+  ,refund_tx_signature VARCHAR(128)
 );
 
 -- Indices for rapid lookup and management
