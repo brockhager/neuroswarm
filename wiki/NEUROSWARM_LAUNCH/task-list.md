@@ -41,11 +41,11 @@ The Execution Sprint successfully delivered the core economic and orchestration 
 
 Several critical CI and runtime issues were resolved to make NS-LLM and native builds reliable across OS matrixes including Windows:
 
-| Fix | Files / Areas | Status |
-| :--- | :--- | :--- |
-| NS-LLM server process hardening (prevent early exit) | `ns-llm/index.js` | ✅ COMPLETE
-| Windows Start-Process & logging rework to capture crash traces | `.github/workflows/phase-a-native-build.yml` | ✅ COMPLETE
-| Robust two-file log merge + immediate stamp for detached processes | `.github/workflows/*` | ✅ COMPLETE
+| ID | Fix | Files / Areas | Status |
+| :--- | :--- | :--- | :--- |
+| **H1** | NS-LLM server process hardening (prevent early exit) | `ns-llm/index.js` | ✅ COMPLETE
+| **H2** | Windows Start-Process & logging rework to capture crash traces | `.github/workflows/phase-a-native-build.yml` | ✅ COMPLETE
+| **H3** | Robust two-file log merge + immediate stamp for detached processes | `.github/workflows/*` | ✅ COMPLETE
 
 
 ---
@@ -66,15 +66,15 @@ The NeuroSwarm infrastructure is fully implemented across three functional layer
 
 ## 5. Additional Work Completed (Summary)
 
-Beyond the original plan, recent implementation details now include:
+Beyond the original plan, recent implementation details now include (IDs for traceability):
 
-- The `SolanaService` now implements fee distribution, reputation updates, refund submission, and a `checkTransactionConfirmation` helper. These are implemented with graceful fallbacks to mock transactions for test/dev environments. (`router-api/src/services/solana.ts`) — ✅ COMPLETE
-- TimeoutMonitor executes refunds and writes durable audit JSONL entries; refund transaction signatures are persisted to DB rows (`router-api/src/services/router-timeout-monitor.ts`, `router-api/logs/refunds.jsonl`, `router-api/schema.sql`). — ✅ COMPLETE
-- RefundReconciliationService periodically checks refunded jobs for missing signatures and verifies on-chain confirmations; it escalates unsigned refunds. (`router-api/src/services/refund-reconciliation.ts`) — ✅ COMPLETE
-- An extensible AlertingService (mock) was added and integrated to dispatch critical alerts when reconciliation detects unsigned refunds. (`router-api/src/services/alerting.ts`) — ✅ COMPLETE
+- **A1** — The `SolanaService` now implements fee distribution, reputation updates, refund submission, and a `checkTransactionConfirmation` helper. Implemented with graceful fallbacks to mock transactions for test/dev environments. (`router-api/src/services/solana.ts`) — ✅ COMPLETE
+- **A2** — TimeoutMonitor executes refunds and writes durable audit JSONL entries; refund transaction signatures are persisted to DB rows (`router-api/src/services/router-timeout-monitor.ts`, `router-api/logs/refunds.jsonl`, `router-api/schema.sql`). — ✅ COMPLETE
+- **A3** — RefundReconciliationService periodically checks refunded jobs for missing signatures and verifies on-chain confirmations; it escalates unsigned refunds. (`router-api/src/services/refund-reconciliation.ts`) — ✅ COMPLETE
+- **A4** — An extensible AlertingService (mock) was added and integrated to dispatch critical alerts when reconciliation detects unsigned refunds. (`router-api/src/services/alerting.ts`) — ✅ COMPLETE
 
-- The E2E harness and CI now use standardized cross-platform migration runners to validate schema upgrades in CI-like conditions. The CI workflow posts status to the configured DISCORD_WORKFLOW_WEBHOOK when present. (`.github/workflows/router-api-e2e-migration.yml`) — ✅ ADDED (needs secrets to run automatically)
-- The web dashboard `ops-hub` now includes live metric fetching from `/api/metrics` (a secured proxy) and a demo RBAC toggle; server-side protection uses `ADMIN_METRICS_SECRET` with a required header `x-admin-metrics-token` to fetch metrics. — ✅ COMPLETE (demo RBAC + secured proxy implemented)
+- **A5** — The E2E harness and CI now use standardized cross-platform migration runners to validate schema upgrades in CI-like conditions. The CI workflow posts status to the configured DISCORD_WORKFLOW_WEBHOOK when present. (`.github/workflows/router-api-e2e-migration.yml`) — ✅ ADDED (needs secrets to run automatically)
+- **A6** — The web dashboard `ops-hub` now includes live metric fetching from `/api/metrics` (a secured proxy) and a demo RBAC toggle; server-side protection uses `ADMIN_METRICS_SECRET` with a required header `x-admin-metrics-token` to fetch metrics. — ✅ COMPLETE (demo RBAC + secured proxy implemented)
 
 
 ---
@@ -111,15 +111,15 @@ All project files listed in the Completed Tasks section have been saved to the r
 
 ## 6. Remaining / Operational Tasks (What still needs doing)
 
-| Item | Description | Notes | Status |
-| :--- | :--- | :--- | :--- |
-| 1 | Final cross-platform CI validation | CI workflow is added but requires repo secrets (DISCORD_WORKFLOW_WEBHOOK, DB credentials) or manual trigger | ⚠️ PENDING (needs secrets)
-| 2 | End-to-end integration tests | Full integration tests that run Router + NS-LLM + validator-node across OS matrix and devnet/localnet | 🔲 TODO
-| 3 | Production alerting sink setup | Wire SLACK_ALERT_WEBHOOK, PagerDuty, or Discord for incident delivery; test with staging webhook | 🔲 TODO
-| 4 | Escalation & deduplication | Add alert throttles / deduping / runbook links to prevent alert storms and improve on-call response time | 🔲 TODO
-| 5 | Long-term reconciler improvements | Retry logic for pending refunds, automated re-sends for failed refund_tx signatures, and historical reconciliation reporting | ⚙️ IN PROGRESS
-| 6 | Monitoring / dashboards | Add observability panels (Prometheus/Grafana) for refund rate, unsigned refunds, reconcile success, retry counts, job queue health; configure Grafana routing & webhooks | ⚙️ IN PROGRESS
-| 7 | Governance notification / audit anchoring | Anchor critical events (mass refunds, unresolved unsigned refunds) to governance timeline and export audits | 🔲 TODO
+| Task ID | Item | Description | Notes | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **T17** | Final cross-platform CI validation | CI workflow is added but requires repo secrets (DISCORD_WORKFLOW_WEBHOOK, DB credentials) or manual trigger | CI added; secrets required | ⚠️ PENDING (needs secrets)
+| **T18** | End-to-end integration tests | Full integration tests that run Router + NS-LLM + validator-node across OS matrix and devnet/localnet | Needed for final validation across matrix | 🔲 TODO
+| **T19** | Production alerting sink setup | Wire SLACK_ALERT_WEBHOOK, PagerDuty, or Discord for incident delivery; test with staging webhook | Integrate and test routing | 🔲 TODO
+| **T20** | Escalation & deduplication | Add alert throttles / deduping / runbook links to prevent alert storms and improve on-call response time | Implement throttles & runbooks | 🔲 TODO
+| **T21** | Long-term reconciler improvements | Retry logic for pending refunds, automated re-sends for failed refund_tx signatures, and historical reconciliation reporting | Ongoing work for robustness | ⚙️ IN PROGRESS
+| **T22** | Monitoring / dashboards | Add observability panels (Prometheus/Grafana) for refund rate, unsigned refunds, reconcile success, retry counts, job queue health; configure Grafana routing & webhooks | Needs alert routing validation | ⚙️ IN PROGRESS
+| **T23** | Governance notification / audit anchoring | Anchor critical events (mass refunds, unresolved unsigned refunds) to governance timeline and export audits | Consider on-chain + off-chain export | 🔲 TODO
 
 ---
 
@@ -129,10 +129,10 @@ All changes required to make the Router API resilient and observable have been i
 
 ---
 
-If you want, I can now also:
+If you want, I can now also (task IDs for follow-up):
 
-- Add Slack webhook support to `alerting.ts` and a small CLI test harness to post to a test incoming webhook.  
-- Create a short integration test harness (docker-compose / localnet) that runs Router + NS node + Validator + mock Solana devnet to exercise the full refund lifecycle.
+- **S1** — Add Slack webhook support to `alerting.ts` and a small CLI test harness to post to a test incoming webhook.  
+- **S2** — Create a short integration test harness (docker-compose / localnet) that runs Router + NS node + Validator + mock Solana devnet to exercise the full refund lifecycle.
 
 ---
 
