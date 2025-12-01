@@ -12,7 +12,7 @@ services:
     volumes:
       - pgdata_test:/var/lib/postgresql/data
       # Mount schema into init directory so Postgres runs it at container start
-      - ./schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./migrations:/docker-entrypoint-initdb.d:ro
     ports:
       - "5433:5432" # map to host 5433 to avoid colliding with local Postgres
     healthcheck:
