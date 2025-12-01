@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14
+    container_name: router_postgres_test
+    restart: always
+    environment:
+      POSTGRES_USER: neuroswarm_user
+      POSTGRES_PASSWORD: neuroswarm_password
+      POSTGRES_DB: neuroswarm_router_db_test
+    volumes:
+      - pgdata_test:/var/lib/postgresql/data
+      # Mount schema into init directory so Postgres runs it at container start
+      - ./schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+    ports:
+      - "5433:5432" # map to host 5433 to avoid colliding with local Postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U neuroswarm_user -d neuroswarm_router_db_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  router-api:
+    image: node:20
+    container_name: neuroswarm_router_api_test
+    build: false
+    working_dir: /usr/src/app
+    volumes:
+      - ./:/usr/src/app:cached
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      DATABASE_URL: "postgres://neuroswarm_user:neuroswarm_password@db:5432/neuroswarm_router_db_test"
+      ROUTER_MONITOR_INTERVAL: 5
+      REFUND_RECONCILE_INTERVAL: 5
+      NODE_ENV: test
+    ports:
+      - "3000:3000"
+    command: sh -c "pnpm install --frozen-lockfile || pnpm install; pnpm build; node dist/index.js"
+
+volumes:
+  pgdata_test:
