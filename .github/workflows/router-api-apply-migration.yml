@@ -1,0 +1,40 @@
+name: Router API - Apply Schema Migration
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'router-api/**'
+      - 'router-api/migrations/**'
+  workflow_dispatch:
+
+jobs:
+  apply_migration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install psql client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+
+      - name: Execute Migration 001 (apply refund persistence)
+        env:
+          PGHOST: ${{ secrets.STAGING_PG_HOST }}
+          PGPORT: ${{ secrets.STAGING_PG_PORT }}
+          PGUSER: ${{ secrets.STAGING_PG_USER }}
+          PGPASSWORD: ${{ secrets.STAGING_PG_PASSWORD }}
+          PGDATABASE: ${{ secrets.STAGING_PG_DATABASE }}
+        run: |
+          set -e
+          echo "Attempting to apply migration: 001_add_refund_persistence.sql"
+          psql -v ON_ERROR_STOP=1 --host="$PGHOST" --port="$PGPORT" --username="$PGUSER" --dbname="$PGDATABASE" -f ./router-api/migrations/001_add_refund_persistence.sql
+          echo "✅ Database Migration 001 completed successfully."
+
+      # Deployment steps may follow here in your deploy job
+      # - name: Build and Deploy Router API Service
+      #   uses: some-deploy-action
+      #   with: ...
