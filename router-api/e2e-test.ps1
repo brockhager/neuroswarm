@@ -6,8 +6,27 @@ param()
 
 $ErrorActionPreference = 'Stop'
 
-Write-Host "[E2E-PS] Bringing up the E2E environment..."
-docker compose -f .\docker-compose.test.yml up -d --build
+Write-Host "[E2E-PS] Bringing up the E2E environment (DB only)..."
+# Start DB only first
+docker compose -f .\docker-compose.test.yml up -d --build db
+
+Write-Host "[E2E-PS] Waiting for postgres to be ready"
+for ($i=0; $i -lt 60; $i++) {
+    try {
+        docker compose -f .\docker-compose.test.yml exec -T db pg_isready -U neuroswarm_user -d neuroswarm_router_db_test | Out-Null
+        Write-Host "[E2E-PS] postgres is healthy"
+        break
+    } catch {
+        Write-Host "[E2E-PS] waiting for postgres... ($i)"
+        Start-Sleep -Seconds 1
+    }
+}
+
+Write-Host "[E2E-PS] Running DB migration inside postgres container"
+docker compose -f .\docker-compose.test.yml exec -T db sh -c 'psql -U neuroswarm_user -d neuroswarm_router_db_test -f /docker-entrypoint-initdb.d/001_add_refund_persistence.sql || true'
+
+Write-Host "[E2E-PS] Starting Router API service"
+docker compose -f .\docker-compose.test.yml up -d --build router-api
 
 Write-Host "[E2E-PS] Waiting for router-api health endpoint"
 for ($i=0; $i -lt 60; $i++) {
