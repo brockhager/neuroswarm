@@ -53,7 +53,7 @@ export class ValidatorStateSync {
                     }
                 } catch (err) {
                     // If probe fails, we mark the node as less healthy (increase latency)
-                    console.warn(`[StateSync] Failed probe for ${id} @ ${endpoint}:`, err?.message || err);
+                    console.warn(`[StateSync] Failed probe for ${id} @ ${endpoint}:`, (err as any)?.message || err);
                     latency_ms = 2000;
                 }
 
