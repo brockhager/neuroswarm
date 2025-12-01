@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { register } from 'prom-client';
 import { JobQueueService } from './services/job-queue';
 import { ValidatorSelectionService, Validator } from './services/validator-selection';
 import registry from './services/validator-registry';
@@ -79,6 +80,16 @@ stateSync.start();
 // Health Check
 app.get('/health', (req, res) => {
     res.json({ status: 'healthy', version: '1.0.0' });
+});
+
+// Prometheus metrics endpoint
+app.get('/metrics', async (req, res) => {
+    try {
+        res.set('Content-Type', register.contentType);
+        res.end(await register.metrics());
+    } catch (err) {
+        res.status(500).send('Could not collect metrics');
+    }
 });
 
 // Submit Request

@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import { Counter } from 'prom-client';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface Job {
@@ -42,6 +43,19 @@ export class JobQueueService {
             process.exit(-1);
         });
     }
+
+    // Metrics
+    static refundRetriesTotal = new Counter({
+        name: 'router_refund_retries_total',
+        help: 'Total number of refund retry attempts',
+        labelNames: ['jobId']
+    });
+
+    static refundAlertsTotal = new Counter({
+        name: 'router_refund_alerts_total',
+        help: 'Total number of refund alerts sent',
+        labelNames: ['jobId']
+    });
 
     /**
      * Creates a new job in the queue.
@@ -209,7 +223,10 @@ export class JobQueueService {
         try {
             const q = `UPDATE jobs SET refund_retry_count = COALESCE(refund_retry_count, 0) + 1, refund_last_attempt_at = NOW() WHERE id = $1 RETURNING *`;
             const res = await this.pool.query(q, [jobId]);
-            if (res.rows.length) return res.rows[0];
+            if (res.rows.length) {
+                try { JobQueueService.refundRetriesTotal.inc({ jobId }, 1); } catch (e) { /* noop */ }
+                return res.rows[0];
+            }
             return null;
         } catch (err) {
             console.error(`Error incrementing refund retry for ${jobId}:`, err);
@@ -239,6 +256,15 @@ export class JobQueueService {
         try {
             const q = `UPDATE jobs SET refund_alert_count = COALESCE(refund_alert_count, 0) + 1, refund_last_alert_at = NOW() WHERE id = ANY($1::uuid[])`;
             await this.pool.query(q, [jobIds]);
+            // update metrics
+            try {
+                for (const id of jobIds) {
+                    JobQueueService.refundAlertsTotal.inc({ jobId: id.toString() }, 1);
+                }
+            } catch (err) {
+                // metrics should not break the flow
+                console.warn('Failed to increment refund alert metric', err);
+            }
         } catch (err) {
             console.error('Error marking jobs as alerted:', err);
             throw err;
