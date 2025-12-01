@@ -8,7 +8,8 @@
         "build": "tsc",
         "serve": "node dist/index.js",
         "test": "jest --passWithNoTests --runInBand",
-        "test:e2e": "jest --runInBand e2e --passWithNoTests"
+        "test:e2e": "jest --runInBand e2e --passWithNoTests",
+        "test:e2e:ps": "powershell -NoProfile -ExecutionPolicy Bypass -File ./e2e-test.ps1"
     },
     "keywords": [
         "solana",
