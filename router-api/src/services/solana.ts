@@ -192,6 +192,31 @@ export class SolanaService {
     }
 
     /**
+     * Fetch a list of validators and their on-chain metadata.
+     * In a real implementation this would query the on-chain registry and map PDA state.
+     * For now we provide a mock friendly helper to surface stake/reputation values for testing.
+     */
+    async getOnChainValidators(): Promise<Array<{ id: string; wallet: string; stake: number; reputation: number }>> {
+        // Mock: return a few validators derived from environment or static list
+        const configured = process.env.ROUTER_INITIAL_VALIDATORS;
+        if (configured) {
+            try {
+                const parsed = JSON.parse(configured);
+                return parsed.map((p: any, idx: number) => ({ id: p.id || `validator_${idx}`, wallet: p.wallet || p.wallet_address || p.address, stake: p.stake || 0, reputation: p.reputation || 50 }));
+            } catch (e) {
+                // ignore and fall back
+            }
+        }
+
+        // Default mock set
+        return [
+            { id: 'validator_001', wallet: 'Hn7c...', stake: 8500, reputation: 98 },
+            { id: 'validator_002', wallet: '7m9n...', stake: 7200, reputation: 95 },
+            { id: 'validator_003', wallet: '3k2j...', stake: 6800, reputation: 92 }
+        ];
+    }
+
+    /**
      * Verifies a burn transaction signature.
      */
     async verifyBurnTransaction(signature: string, expectedAmount: number): Promise<boolean> {
