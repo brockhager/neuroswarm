@@ -1,12 +1,14 @@
 {
     "compilerOptions": {
-        "target": "es2020",
+        "target": "es2022",
         "module": "commonjs",
         "outDir": "./dist",
         "rootDir": "./src",
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
+        "lib": ["es2022", "DOM"],
+        "types": ["node", "jest"],
         "forceConsistentCasingInFileNames": true,
         "resolveJsonModule": true
     },

@@ -135,7 +135,7 @@ export class SolanaService {
                     // Given the constraints, let's assume the Router is executing a distribution from a Vault.
 
                     // Let's use the Router's wallet as the signer for simplicity in this backend service.
-                    payer: this.routerKeypair.publicKey,
+                    // NOTE: payer already defined above; do not duplicate
                     userNsdAta: userWallet, // Placeholder: should be ATA
                     validatorNsdAta: validatorWallet, // Placeholder: should be ATA
                     treasuryNsdAta: this.treasuryWallet, // Placeholder: should be ATA
