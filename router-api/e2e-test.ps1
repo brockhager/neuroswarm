@@ -22,8 +22,22 @@ for ($i=0; $i -lt 60; $i++) {
     }
 }
 
-Write-Host "[E2E-PS] Running DB migration inside postgres container"
-docker compose -f .\docker-compose.test.yml exec -T db sh -c 'psql -U neuroswarm_user -d neuroswarm_router_db_test -f /docker-entrypoint-initdb.d/001_add_refund_persistence.sql || true'
+Write-Host "[E2E-PS] Applying DB migrations (using standardized runner)"
+# We use the standardized PowerShell runner on the host and target the DB port mapped to host (5433)
+$env:PGHOST = '127.0.0.1'
+$env:PGPORT = '5433'
+$env:PGUSER = 'neuroswarm_user'
+$env:PGPASSWORD = 'neuroswarm_password'
+$env:PGDATABASE = 'neuroswarm_router_db_test'
+
+$runner = Join-Path $PSScriptRoot 'migrations\run-migrations.ps1'
+if (Test-Path $runner) {
+    Write-Host "[E2E-PS] Running $runner against $($env:PGHOST):$($env:PGPORT)"
+    & $runner
+} else {
+    Write-Host "[E2E-PS] Migration runner not found; falling back to single-file psql apply inside container"
+    docker compose -f .\docker-compose.test.yml exec -T db sh -c 'psql -U neuroswarm_user -d neuroswarm_router_db_test -f /docker-entrypoint-initdb.d/001_add_refund_persistence.sql || true'
+}
 
 Write-Host "[E2E-PS] Starting Router API service"
 docker compose -f .\docker-compose.test.yml up -d --build router-api
