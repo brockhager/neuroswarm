@@ -6,7 +6,7 @@ This document serves as the official governance record for NeuroSwarm's network 
 
 | Parameter | Value | Status |
 |:----------|:------|:-------|
-| **Genesis Date** | Q2 2026 (Target) | Planning |
+| **Genesis Date** | **January 3, 2026** | **LOCKED** |
 | **Network Type** | Mainnet | Launch Ready |
 | **Initial Block Reward** | 0.5 NST | Locked |
 | **Block Finality Time** | 8.5 seconds | Locked |
@@ -14,7 +14,7 @@ This document serves as the official governance record for NeuroSwarm's network 
 
 ## Halving Schedule
 
-The following schedule is calculated from a **Genesis Date of Q2 2026** and uses the locked ~3.96-year halving cycle.
+The following schedule is calculated from **Genesis Date: January 3, 2026** and uses the locked ~3.96-year halving cycle.
 
 ### Cycle 1: Bootstrap Phase (Q2 2026 - Q2 2030)
 

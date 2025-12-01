@@ -4,15 +4,25 @@ Your gateway to the decentralized AI revolution. This is the main hub for all gu
 
 ---
 
+> [!IMPORTANT]
+> **🚀 MAINNET LAUNCH - JANUARY 3, 2026**
+> 
+> **→ [MASTER INDEX: Complete Launch Documentation](../NEUROSWARM_LAUNCH/MASTER_INDEX.md) ←**
+>
+> Access all technical specs, security audits, testing plans, and genesis procedures for the upcoming mainnet launch.
+
+---
+
 ## 🚀 Quick Start
 
 **New to NeuroSwarm?** Start here:
 
-- [**Getting Started Guide**](Getting-Started.md) - Complete onboarding for new users
+
 - [**Quickstart**](Quickstart.md) - Fast track setup and first steps
 - [**Project Overview**](overview.md) - What is NeuroSwarm and why it matters
 - [**FAQ**](FAQ.md) - Frequently asked questions
 - [**Download**](Download.md) - Installation and downloads
+- [**Getting Started Guide**](Getting-Started.md) - Complete onboarding for new users
 
 ---
 
