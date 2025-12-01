@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { JobQueueService } from './services/job-queue';
 import { ValidatorSelectionService, Validator } from './services/validator-selection';
 import { SolanaService } from './services/solana';
+import TimeoutMonitor from './services/router-timeout-monitor';
 
 dotenv.config();
 
@@ -18,6 +19,9 @@ app.use(express.json());
 const jobQueue = new JobQueueService();
 const validatorSelection = new ValidatorSelectionService();
 const solanaService = new SolanaService();
+// Start the router timeout monitor (background worker)
+const timeoutMonitor = new TimeoutMonitor(jobQueue);
+timeoutMonitor.start();
 
 // Mock Active Validators (In production, this would come from a database/Redis)
 const activeValidators: Validator[] = [

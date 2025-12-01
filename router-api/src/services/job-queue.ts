@@ -14,6 +14,8 @@ export interface Job {
     validator_endpoint?: string;
     result?: string;
     error_message?: string;
+    retry_count?: number;
+    timeout_at?: Date;
     created_at: Date;
 }
 
@@ -143,6 +145,40 @@ export class JobQueueService {
             return res.rows;
         } catch (err) {
             console.error('Error fetching timed out jobs:', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Handle a job failure produced by a validator timeout or explicit failure.
+     * This will increment retry_count and either re-queue the job or mark it as refunded
+     * depending on the configured retry policy.
+     */
+    async handleFailure(jobId: string, maxRetries = 3): Promise<Job | null> {
+        try {
+            // Fetch current job state
+            const cur = await this.pool.query(`SELECT * FROM jobs WHERE id=$1 FOR UPDATE`, [jobId]);
+            if (cur.rows.length === 0) return null;
+            const job = cur.rows[0];
+
+            const currentRetries = job.retry_count || 0;
+
+            if (currentRetries < maxRetries) {
+                const nextRetries = currentRetries + 1;
+                // Exponential backoff in seconds (60, 120, 240...)
+                const delaySeconds = 60 * Math.pow(2, currentRetries);
+                const q = `UPDATE jobs SET retry_count = $2, status = 'queued', assigned_validator = NULL, validator_endpoint = NULL, started_at = NULL, timeout_at = NOW() + ($3 || '60 seconds')::interval WHERE id = $1 RETURNING *`;
+                const vals = [jobId, nextRetries, `${delaySeconds} seconds`];
+                const res = await this.pool.query(q, vals);
+                return res.rows[0];
+            } else {
+                // Exceeded retries -> mark refunded and keep metadata
+                const q = `UPDATE jobs SET status = 'refunded', completed_at = NOW() WHERE id = $1 RETURNING *`;
+                const res = await this.pool.query(q, [jobId]);
+                return res.rows[0];
+            }
+        } catch (err) {
+            console.error(`Error handling failure for job ${jobId}:`, err);
             throw err;
         }
     }
