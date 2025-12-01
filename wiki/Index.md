@@ -109,6 +109,29 @@ Alternative quick links if you know what you need:
 - [Download](Getting-Started/Download.md) - Installation and downloads
 - [Home](Getting-Started/Home.md) - Wiki home page
 
+
+---
+
+## 💰 Tokenomics & Economy
+
+NeuroSwarm uses a dual-token economic model designed for stability, security, and sustainable growth.
+
+**Core Documents:**
+- [Tokenomics Overview](Tokenomics/TOKENOMICS_OVERVIEW.md) - High-level dual-token architecture (NST & NSD)
+- [NST Allocation & Vesting](Tokenomics/NST_ALLOCATION_AND_VESTING.md) - 21M supply breakdown and vesting schedules
+- [PoS Issuance Schedule](Tokenomics/POS_ISSUANCE_SCHEDULE.md) - Block rewards and halving schedule
+- [Complete Tokenomics](Tokenomics/TOKENOMICS.md) - Comprehensive economic specification
+- [📁 All Tokenomics Documentation](Tokenomics/README.md) - Complete tokenomics index
+
+**Quick Reference:**
+- **NST (NeuroSwarm Token)**: Governance, staking, 21M hard cap, 4-year halving
+- **NSD (NeuroSwarm Data)**: Utility, metering, elastic supply, fiat-pegged
+
+**Economics:**
+- [Tokenomics](Technical/TOKENOMICS.md) - Token economics and distribution
+- [Economics Overview](Technical/ECONOMICS.md) - Economic model design
+- [Personal AI Economy](Technical/personal-ai-economy.md) - AI-driven economic systems
+
 ---
 
 ## 📚 Core Documentation
