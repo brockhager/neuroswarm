@@ -31,6 +31,10 @@ CREATE TABLE IF NOT EXISTS jobs (
   result TEXT,                      -- Final LLM response text or a pointer to storage
   error_message TEXT
   ,refund_tx_signature VARCHAR(128)
+  ,refund_retry_count INT DEFAULT 0
+  ,refund_last_attempt_at TIMESTAMP WITH TIME ZONE
+  ,refund_alert_count INT DEFAULT 0
+  ,refund_last_alert_at TIMESTAMP WITH TIME ZONE
 );
 
 -- Indices for rapid lookup and management
@@ -38,3 +42,6 @@ CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_validator ON jobs(assigned_validator);
 -- Index for efficiently querying jobs that are past their timeout
 CREATE INDEX IF NOT EXISTS idx_jobs_timeout ON jobs(timeout_at) WHERE status='processing';
+-- Index to quickly find jobs with pending refunds and track alerts
+CREATE INDEX IF NOT EXISTS idx_jobs_refund_last_alert ON jobs(refund_last_alert_at);
+CREATE INDEX IF NOT EXISTS idx_jobs_refund_retry ON jobs(refund_retry_count);

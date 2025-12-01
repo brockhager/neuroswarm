@@ -9,6 +9,11 @@ export interface Job {
     max_tokens: number;
     nsd_burned: string; // BigInt as string
     burn_tx_signature?: string;
+    refund_tx_signature?: string;
+    refund_retry_count?: number;
+    refund_last_attempt_at?: Date | null;
+    refund_alert_count?: number;
+    refund_last_alert_at?: Date | null;
     status: 'queued' | 'processing' | 'completed' | 'failed' | 'refunded';
     assigned_validator?: string;
     validator_endpoint?: string;
@@ -192,6 +197,50 @@ export class JobQueueService {
             await this.pool.query(q, [signature, jobId]);
         } catch (err) {
             console.error(`Error persisting refund signature for job ${jobId}:`, err);
+            throw err;
+        }
+    }
+
+    /**
+     * Increment the refund retry counter for a job and set last attempt timestamp.
+     * Returns the updated job row.
+     */
+    async incrementRefundRetry(jobId: string): Promise<Job | null> {
+        try {
+            const q = `UPDATE jobs SET refund_retry_count = COALESCE(refund_retry_count, 0) + 1, refund_last_attempt_at = NOW() WHERE id = $1 RETURNING *`;
+            const res = await this.pool.query(q, [jobId]);
+            if (res.rows.length) return res.rows[0];
+            return null;
+        } catch (err) {
+            console.error(`Error incrementing refund retry for ${jobId}:`, err);
+            throw err;
+        }
+    }
+
+    /**
+     * Return the most recent refund alert timestamp across jobs (used for aggregated throttling)
+     */
+    async getMostRecentRefundAlertTimestamp(): Promise<Date | null> {
+        try {
+            const q = `SELECT MAX(refund_last_alert_at) AS ts FROM jobs WHERE refund_last_alert_at IS NOT NULL`;
+            const res = await this.pool.query(q);
+            if (res.rows.length && res.rows[0].ts) return res.rows[0].ts;
+            return null;
+        } catch (err) {
+            console.error('Error fetching most recent refund alert timestamp:', err);
+            throw err;
+        }
+    }
+
+    /**
+     * Mark the given jobs as having been alerted about refunds (increments per-job alert count and sets timestamp)
+     */
+    async markJobsAlerted(jobIds: string[]): Promise<void> {
+        try {
+            const q = `UPDATE jobs SET refund_alert_count = COALESCE(refund_alert_count, 0) + 1, refund_last_alert_at = NOW() WHERE id = ANY($1::uuid[])`;
+            await this.pool.query(q, [jobIds]);
+        } catch (err) {
+            console.error('Error marking jobs as alerted:', err);
             throw err;
         }
     }
