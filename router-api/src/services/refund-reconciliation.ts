@@ -6,10 +6,7 @@ const RECONCILE_INTERVAL = Number(process.env.REFUND_RECONCILE_INTERVAL || 120);
 
 export class RefundReconciliationService {
     private timer: NodeJS.Timeout | null = null;
-    // Throttle map for alerts: key -> lastSentTimestamp (ms)
-    private lastAlertTs: Map<string, number> = new Map();
-    // Retry tracking for refund attempts: jobId -> { count, lastTriedTs }
-    private refundRetries: Map<string, { count: number; lastTried: number }> = new Map();
+    // no in-memory retry/alert state — persisted in DB columns
     private jobQueue: JobQueueService;
     private solana: SolanaService;
     private alerts: AlertingService | null;
@@ -36,7 +33,7 @@ export class RefundReconciliationService {
             console.log(`[Reconciler] Reconciling refunds at ${new Date().toISOString()}`);
 
             // 1) Jobs marked refunded with no refund_tx_signature -> critical alert (throttled)
-            const unsigned = await this.jobQueue.getUnsignedRefundJobs();
+                const unsigned = await this.jobQueue.getUnsignedRefundJobs();
             if (unsigned && unsigned.length) {
                 await this.alertCriticalFailure(unsigned);
             }
@@ -72,17 +69,29 @@ export class RefundReconciliationService {
         const title = `Unsigned refunded jobs (${jobs.length})`;
         const details = `Jobs marked 'refunded' but missing refund_tx_signature: ${ids}`;
 
-        const now = Date.now();
-        const globalKey = 'unsigned_refunds';
         const throttleSeconds = Number(process.env.REFUND_ALERT_THROTTLE_SECONDS || 3600);
 
-        const last = this.lastAlertTs.get(globalKey) || 0;
-        if (now - last < throttleSeconds * 1000) {
-            console.log(`[Reconciler] Skipping alert (throttled) for unsigned refunds: next allowed in ${Math.ceil((throttleSeconds*1000 - (now-last))/1000)}s`);
-            return;
+        // Determine last alert time globally from jobs table
+        try {
+            const lastTimestamp = await this.jobQueue.getMostRecentRefundAlertTimestamp();
+            if (lastTimestamp) {
+                const last = lastTimestamp.getTime();
+                const now = Date.now();
+                if (now - last < throttleSeconds * 1000) {
+                    console.log(`[Reconciler] Skipping alert (throttled) for unsigned refunds (global throttle)`);
+                    return;
+                }
+            }
+        } catch (err) {
+            console.warn('[Reconciler] Failed to read last alert timestamp from DB - proceeding with alert', err);
         }
 
-        this.lastAlertTs.set(globalKey, now);
+        // persist per-job alert metadata (increment counters / set timestamp)
+        try {
+            await this.jobQueue.markJobsAlerted(jobs.map(j => j.id));
+        } catch (err) {
+            console.warn('[Reconciler] Failed to persist job alert metadata', err);
+        }
 
         if (this.alerts) {
             try {
@@ -102,19 +111,33 @@ export class RefundReconciliationService {
     private async handlePendingRefund(job: any) {
         const maxRetries = Number(process.env.REFUND_RETRY_MAX || 3);
         const retryInterval = Number(process.env.REFUND_RETRY_INTERVAL_SECONDS || 300);
-        const now = Date.now();
 
-        const state = this.refundRetries.get(job.id) || { count: 0, lastTried: 0 };
+        // Load the latest job state from the DB to determine retry counters
+        let jobState: any;
+        try {
+            jobState = await this.jobQueue.getJob(job.id);
+        } catch (err) {
+            console.error('[Reconciler] Failed to fetch job state for retry handling', err);
+            return;
+        }
 
-        // If we've already exhausted retries, throttle per-job critical alerts
-        if (state.count >= maxRetries) {
-            const jobKey = `job_alert_${job.id}`;
+        const currentRetries = jobState?.refund_retry_count || 0;
+        const lastTriedMs = jobState?.refund_last_attempt_at ? new Date(jobState.refund_last_attempt_at).getTime() : 0;
+        const nowMs = Date.now();
+
+        // If we've already exhausted retries -> per-job alert (throttled by refund_last_alert_at)
+        if (currentRetries >= maxRetries) {
+            const lastAlert = jobState?.refund_last_alert_at ? new Date(jobState.refund_last_alert_at).getTime() : 0;
             const throttleSeconds = Number(process.env.REFUND_ALERT_THROTTLE_SECONDS || 3600);
-            const last = this.lastAlertTs.get(jobKey) || 0;
-            if (now - last >= throttleSeconds * 1000) {
-                this.lastAlertTs.set(jobKey, now);
+            if (nowMs - lastAlert >= throttleSeconds * 1000) {
+                try {
+                    await this.jobQueue.markJobsAlerted([job.id]);
+                } catch (err) {
+                    console.warn('[Reconciler] Failed to persist per-job alert metadata', err);
+                }
+
                 const title = `Refund not confirmed for job ${job.id}`;
-                const details = `Refund tx ${job.refund_tx_signature} still unconfirmed after ${state.count} retries`;
+                const details = `Refund tx ${job.refund_tx_signature} still unconfirmed after ${currentRetries} retries`;
                 if (this.alerts) await this.alerts.dispatchCritical(title, details, ['refund', 'reconciliation']);
                 else console.error('[Reconciler] ' + details);
             } else {
@@ -124,12 +147,15 @@ export class RefundReconciliationService {
         }
 
         // Only retry if the retry interval has passed
-        if (now - state.lastTried < retryInterval * 1000) return;
+        if (nowMs - lastTriedMs < retryInterval * 1000) return;
 
-        // Attempt to re-submit a refund (best-effort). If job contains nsd_burned and user_wallet use them.
+        // Increment DB-backed retry counter and attempt refund
         try {
-            console.log(`[Reconciler] Attempting refund retry #${state.count + 1} for job ${job.id}`);
-            const amount = job.nsd_burned ? Number(job.nsd_burned) : undefined;
+            const updated = await this.jobQueue.incrementRefundRetry(job.id);
+            const nextAttemptNumber = updated && updated.refund_retry_count ? updated.refund_retry_count : currentRetries + 1;
+            console.log(`[Reconciler] Attempting refund retry #${nextAttemptNumber} for job ${job.id}`);
+
+            const amount = job.nsd_burned ? Number(job.nsd_burned) : 0;
             const tx = await this.solana.triggerRefund(job.user_wallet, amount || 0);
 
             // Persist new signature if available
@@ -139,11 +165,8 @@ export class RefundReconciliationService {
                 console.warn(`[Reconciler] Failed to persist refund signature in retry for job ${job.id}:`, err);
             }
 
-            // update state
-            this.refundRetries.set(job.id, { count: state.count + 1, lastTried: now });
         } catch (err) {
             console.error(`[Reconciler] Refund retry failed for ${job.id}:`, err);
-            this.refundRetries.set(job.id, { count: state.count + 1, lastTried: now });
         }
     }
 }

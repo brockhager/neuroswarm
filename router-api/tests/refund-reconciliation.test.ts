@@ -5,6 +5,8 @@ describe('RefundReconciliationService', () => {
     const mockJobQueue: any = {
       getUnsignedRefundJobs: jest.fn().mockResolvedValue([{ id: 'job-1' }]),
       getJobsByStatus: jest.fn().mockResolvedValue([]),
+      getMostRecentRefundAlertTimestamp: jest.fn().mockResolvedValue(null),
+      markJobsAlerted: jest.fn().mockResolvedValue(undefined),
       updateJobStatus: jest.fn(),
     };
 
@@ -20,6 +22,7 @@ describe('RefundReconciliationService', () => {
 
     expect(mockJobQueue.getUnsignedRefundJobs).toHaveBeenCalled();
     expect(mockAlert.dispatchCritical).toHaveBeenCalled();
+    expect(mockJobQueue.markJobsAlerted).toHaveBeenCalledWith(['job-1']);
   });
 
   test('confirms refunded jobs and updates status when tx is confirmed', async () => {
