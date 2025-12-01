@@ -1,5 +1,7 @@
 import { JobQueueService } from './job-queue';
 import { SolanaService } from './solana';
+import fs from 'fs';
+import path from 'path';
 
 const MONITOR_INTERVAL_SECONDS = Number(process.env.ROUTER_MONITOR_INTERVAL || 30);
 const MAX_RETRIES = Number(process.env.ROUTER_MAX_RETRIES || 3);
@@ -61,10 +63,30 @@ export class TimeoutMonitor {
 
     private async executeRefund(job: any) {
         try {
-            console.log(`[Monitor] Executing mock refund for job ${job.id} to ${job.user_wallet} for ${job.nsd_burned} nsd`);
-            // Keep the refund logic mock for now; in future call a proper Solana refund instruction
-            // const tx = await solanaService.triggerRefund(job.user_wallet, job.nsd_burned);
-            console.log(`[Monitor] Refund simulated for job ${job.id}`);
+            console.log(`[Monitor] Executing refund for job ${job.id} to ${job.user_wallet} for ${job.nsd_burned} nsd`);
+
+            // Ensure logs directory exists
+            const logsDir = path.join(process.cwd(), 'logs');
+            if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
+
+            // Attempt actual refund via SolanaService
+            const txSig = await solanaService.triggerRefund(job.user_wallet, Number(job.nsd_burned));
+
+            // Write an audit entry for the refund (durable JSONL)
+            const auditEntry = {
+                timestamp: new Date().toISOString(),
+                action: 'refund_executed',
+                jobId: job.id,
+                userWallet: job.user_wallet,
+                amount: job.nsd_burned,
+                txSignature: txSig,
+                status: txSig && String(txSig).startsWith('mock_refund_error') ? 'failed' : 'success'
+            };
+
+            const outPath = path.join(logsDir, 'refunds.jsonl');
+            fs.appendFileSync(outPath, JSON.stringify(auditEntry) + '\n', { encoding: 'utf8' });
+
+            console.log(`[Monitor] Refund recorded for job ${job.id} tx=${txSig}`);
         } catch (err) {
             console.error(`[Monitor] Failed to execute refund for ${job.id}:`, err);
             // TODO: escalate (alerting / durable audit)
