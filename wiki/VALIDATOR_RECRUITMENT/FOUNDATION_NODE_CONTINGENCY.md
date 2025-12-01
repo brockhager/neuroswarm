@@ -168,19 +168,36 @@
 
 ---
 
-### 3.2 Early Validator Bonus Calculation
+
+### 3.2 Early Validator Bonus Calculation (VOS - Validator On-Ramp Subsidy)
+
+> **Critical**: The 2x block reward bonus is specifically designed to offset the performance penalty inherent to consumer hardware (laptops, home internet). This ensures high profitability despite slower service times.
 
 **2x Reward Boost (First 20 External Validators):**
 
 ```
 Standard validator earnings (Cycle 1): ~12,375 NST/year
-With 2x boost: ~24,750 NST/year
+With 2x VOS boost: ~24,750 NST/year
 APY (5,000 NST stake): 495%
 
 Duration: First 30 days after validator joins
 Total bonus per validator: ~2,062 NST (24,750 / 12 months)
 Total bonus pool (20 validators): ~41,240 NST
 ```
+
+**VOS Rationale - Consumer Hardware Economics:**
+
+| Validator Type | Hardware | Avg Response Time | Capacity | Annual Revenue | APY |
+|:---------------|:---------|:------------------|:---------|:---------------|:----|
+| **Consumer (with VOS)** | Laptop, RTX 3060 | 30s | 1-2 concurrent | **24,750 NST** | **495%** |
+| **Enterprise (no VOS)** | A100 GPU, server | 10s | 5-10 concurrent | 12,375 NST | 247.5% |
+
+**Key Insight:** Despite having 3x slower response times and 50% lower capacity, consumer hardware validators earn **2x more** due to VOS. This explicitly compensates for the performance penalty, making home-based validation economically viable.
+
+**Messaging:**
+> "The VOS is designed to offset this performance penalty, ensuring high profitability despite slower service times. Run your validator on a laptop—you'll be slower, but you'll earn more during the VOS period."
+
+---
 
 **1.5x Reward Boost (Validators 21-50):**
 
@@ -194,6 +211,8 @@ Total bonus pool (30 validators): ~46,410 NST
 ```
 
 **Total Bonus Commitment:** ~87,650 NST over first 3 months
+
+---
 
 ---
 
