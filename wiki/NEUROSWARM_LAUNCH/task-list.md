@@ -54,13 +54,13 @@ Several critical CI and runtime issues were resolved to make NS-LLM and native b
 
 The NeuroSwarm infrastructure is fully implemented across three functional layers:
 
-| Layer | Component | Purpose | Key Metric Provided |
-| :--- | :--- | :--- | :--- |
-| **Solana Programs (On-Chain)** | **NST Staking Contract** | Manages Validator registration, NST stake, and stores the immutable Reputation Score (30% weight in selection). | Reputation Score |
-| | **NSD Utility Contract** | Executes the trustless 70/20/10 fee split (Validator/Treasury/Burn). | Reward Execution |
-| **Router API (Off-Chain Brain)** | **Validator Selection Service** | Implements the 40/30/20/10 Priority Score (Stake/Reputation/Capacity/Speed). | Validator Assignment |
-| | **Job Queue Service** | Provides job persistence, status tracking, and failure/retry logic. | Job State |
-| **Validator Client (Consumer Hardware)** | **Client V0.2.0** | Polls the Router, runs the simulated workload, and reports completion to trigger reward/reputation updates. | Completion Report |
+| Layer | Component | Purpose | Key Metric Provided | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Solana Programs (On-Chain)** | **NST Staking Contract** | Manages Validator registration, NST stake, and stores the immutable Reputation Score (30% weight in selection). | Reputation Score | ✅ COMPLETE |
+| | **NSD Utility Contract** | Executes the trustless 70/20/10 fee split (Validator/Treasury/Burn). | Reward Execution | ✅ COMPLETE |
+| **Router API (Off-Chain Brain)** | **Validator Selection Service** | Implements the 40/30/20/10 Priority Score (Stake/Reputation/Capacity/Speed). | Validator Assignment | ✅ COMPLETE |
+| | **Job Queue Service** | Provides job persistence, status tracking, and failure/retry logic. | Job State | ✅ COMPLETE |
+| **Validator Client (Consumer Hardware)** | **Client V0.2.0** | Polls the Router, runs the simulated workload, and reports completion to trigger reward/reputation updates. | Completion Report | ✅ COMPLETE |
 
 ---
 
@@ -68,13 +68,13 @@ The NeuroSwarm infrastructure is fully implemented across three functional layer
 
 Beyond the original plan, recent implementation details now include:
 
-- The `SolanaService` now implements fee distribution, reputation updates, refund submission, and a `checkTransactionConfirmation` helper. These are implemented with graceful fallbacks to mock transactions for test/dev environments. (`router-api/src/services/solana.ts`)
-- TimeoutMonitor executes refunds and writes durable audit JSONL entries; refund transaction signatures are persisted to DB rows (`router-api/src/services/router-timeout-monitor.ts`, `router-api/logs/refunds.jsonl`, `router-api/schema.sql`).
-- RefundReconciliationService periodically checks refunded jobs for missing signatures and verifies on-chain confirmations; it escalates unsigned refunds. (`router-api/src/services/refund-reconciliation.ts`)
-- An extensible AlertingService (mock) was added and integrated to dispatch critical alerts when reconciliation detects unsigned refunds. (`router-api/src/services/alerting.ts`)
+- The `SolanaService` now implements fee distribution, reputation updates, refund submission, and a `checkTransactionConfirmation` helper. These are implemented with graceful fallbacks to mock transactions for test/dev environments. (`router-api/src/services/solana.ts`) — ✅ COMPLETE
+- TimeoutMonitor executes refunds and writes durable audit JSONL entries; refund transaction signatures are persisted to DB rows (`router-api/src/services/router-timeout-monitor.ts`, `router-api/logs/refunds.jsonl`, `router-api/schema.sql`). — ✅ COMPLETE
+- RefundReconciliationService periodically checks refunded jobs for missing signatures and verifies on-chain confirmations; it escalates unsigned refunds. (`router-api/src/services/refund-reconciliation.ts`) — ✅ COMPLETE
+- An extensible AlertingService (mock) was added and integrated to dispatch critical alerts when reconciliation detects unsigned refunds. (`router-api/src/services/alerting.ts`) — ✅ COMPLETE
 
-- The E2E harness and CI now use standardized cross-platform migration runners to validate schema upgrades in CI-like conditions. The CI workflow posts status to the configured DISCORD_WORKFLOW_WEBHOOK when present. (`.github/workflows/router-api-e2e-migration.yml`)
-- The web dashboard `ops-hub` now includes live metric fetching from `/api/metrics` (a secured proxy) and a demo RBAC toggle; server-side protection uses `ADMIN_METRICS_SECRET` with a required header `x-admin-metrics-token` to fetch metrics.
+- The E2E harness and CI now use standardized cross-platform migration runners to validate schema upgrades in CI-like conditions. The CI workflow posts status to the configured DISCORD_WORKFLOW_WEBHOOK when present. (`.github/workflows/router-api-e2e-migration.yml`) — ✅ ADDED (needs secrets to run automatically)
+- The web dashboard `ops-hub` now includes live metric fetching from `/api/metrics` (a secured proxy) and a demo RBAC toggle; server-side protection uses `ADMIN_METRICS_SECRET` with a required header `x-admin-metrics-token` to fetch metrics. — ✅ COMPLETE (demo RBAC + secured proxy implemented)
 
 
 ---
@@ -96,6 +96,8 @@ Beyond the original plan, recent implementation details now include:
     - Unit tests and an integration test simulate stalled job conditions and validate retry/refund flows.
         - Note: Router timeout monitor and related unit tests are part of the completed work.
 
+    **Status:** ✅ COMPLETE
+
 
 ---
 
@@ -103,25 +105,21 @@ Beyond the original plan, recent implementation details now include:
 
 All project files listed in the Completed Tasks section have been saved to the repository. The next steps are to finalize CI results, deploy, and perform operational hardening. Use the TODOs below for final work and observability.
 
+**Status:** ✅ COMPLETE
+
 ---
 
 ## 6. Remaining / Operational Tasks (What still needs doing)
 
-1. Final cross-platform CI validation (manual trigger required)
-    - CI workflow has been added to run the E2E/migration validation automatically. The workflow needs repository secrets configured (DISCORD_WORKFLOW_WEBHOOK for notifications, and proper DB credentials for in-PR tests) before a fully automated run is possible. In some environments a manual trigger or secret provisioning is still required.
-2. End-to-end integration tests
-    - Full integration tests that run the Router + NS-LLM + validator-node locally across OS matrix to validate real refund flow end-to-end (including on-chain confirmations on devnet/localnet)
-3. Production alerting sink setup
-    - Wire `SLACK_ALERT_WEBHOOK`, PagerDuty, or Discord operational webhooks into `router-api/src/services/alerting.ts` for real incident delivery and test it with a staging webhook
-4. Escalation & deduplication
-    - Add alert throttles / deduping / runbook links to prevent alert storms and improve on-call response time
-5. Long-term reconciler improvements
-    - Retry logic for pending refunds, automated re-sends for failed refund_tx signatures, and historical reconciliation reporting
-6. Monitoring / dashboards
-    - Add observability panels (Prometheus/Grafana) for refund rate, unsigned refund counts, reconcile success, retry counts, and job queue health
-    - Ensure Grafana alert routing and webhook delivery is configured in staging so Ops can validate end-to-end alert delivery.
-7. Governance notification / audit anchoring
-    - Anchor critical events (mass refunds, unresolved unsigned refunds) to governance timeline and consider on-chain & off-chain audit export
+| Item | Description | Notes | Status |
+| :--- | :--- | :--- | :--- |
+| 1 | Final cross-platform CI validation | CI workflow is added but requires repo secrets (DISCORD_WORKFLOW_WEBHOOK, DB credentials) or manual trigger | ⚠️ PENDING (needs secrets)
+| 2 | End-to-end integration tests | Full integration tests that run Router + NS-LLM + validator-node across OS matrix and devnet/localnet | 🔲 TODO
+| 3 | Production alerting sink setup | Wire SLACK_ALERT_WEBHOOK, PagerDuty, or Discord for incident delivery; test with staging webhook | 🔲 TODO
+| 4 | Escalation & deduplication | Add alert throttles / deduping / runbook links to prevent alert storms and improve on-call response time | 🔲 TODO
+| 5 | Long-term reconciler improvements | Retry logic for pending refunds, automated re-sends for failed refund_tx signatures, and historical reconciliation reporting | ⚙️ IN PROGRESS
+| 6 | Monitoring / dashboards | Add observability panels (Prometheus/Grafana) for refund rate, unsigned refunds, reconcile success, retry counts, job queue health; configure Grafana routing & webhooks | ⚙️ IN PROGRESS
+| 7 | Governance notification / audit anchoring | Anchor critical events (mass refunds, unresolved unsigned refunds) to governance timeline and export audits | 🔲 TODO
 
 ---
 
