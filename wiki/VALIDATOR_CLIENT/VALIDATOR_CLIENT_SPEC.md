@@ -684,7 +684,330 @@ services:
 
 ---
 
-## 6. Monitoring & Observability
+## 6. Consumer Hardware Adaptation and Performance Guardrails
+
+> **Critical for Public Validators (PVs)**: This section defines mandatory protections for validators running on consumer hardware (laptops, home internet) to prevent reputation slashing due to thermal throttling and network jitter.
+
+### 6.1 Dynamic Model Manager Scaling
+
+**Purpose:** Automatically detect and adapt to hardware performance degradation
+
+**Problem:**
+- Consumer GPUs (e.g., RTX 3060, M1 MacBook) experience thermal throttling under sustained load
+- CPU performance degrades over time due to inadequate cooling
+- Running multiple concurrent requests can trigger crashes or extreme latency spikes
+
+**Solution:** Dynamic capacity adjustment based on real-time performance monitoring
+
+**Implementation:**
+```typescript
+class ConsumerHardwareAdapter {
+  private performanceMonitor: PerformanceMonitor;
+  private maxCapacity: number = 5; // Default
+  private currentCapacity: number = 5;
+  
+  async monitorAndAdapt() {
+    setInterval(async () => {
+      const metrics = await this.performanceMonitor.getMetrics();
+      
+      // Detect thermal throttling
+      if (this.isThermalThrottling(metrics)) {
+        console.warn('Thermal throttling detected - reducing capacity to 1');
+        this.currentCapacity = 1; // Force sequential processing
+        await this.reportCapacityChange(1);
+      }
+      
+      // Detect CPU performance degradation
+      else if (this.isCPUDegraded(metrics)) {
+        console.warn('CPU performance degraded - reducing capacity');
+        this.currentCapacity = Math.max(1, Math.floor(this.maxCapacity / 2));
+        await this.reportCapacityChange(this.currentCapacity);
+      }
+      
+      // Recovery: gradually increase capacity when metrics improve
+      else if (this.canIncreaseCapacity(metrics)) {
+        this.currentCapacity = Math.min(this.maxCapacity, this.currentCapacity + 1);
+        await this.reportCapacityChange(this.currentCapacity);
+      }
+      
+    }, 10000); // Check every 10 seconds
+  }
+  
+  isThermalThrottling(metrics: SystemMetrics): boolean {
+    // Check GPU temperature and utilization
+    if (metrics.gpuTempCelsius > 85 && metrics.gpuUtilization > 95) {
+      return true;
+    }
+    
+    // Check CPU temperature
+    if (metrics.cpuTempCelsius > 90) {
+      return true;
+    }
+    
+    // Check for sudden performance drops
+    if (metrics.tokensPerSecond < (this.baselinePerformance * 0.5)) {
+      return true;
+    }
+    
+    return false;
+  }
+  
+  isCPUDegraded(metrics: SystemMetrics): boolean {
+    // Sustained high CPU usage with low throughput indicates degradation
+    return metrics.cpuUtilization > 90 && 
+           metrics.tokensPerSecond < (this.baselinePerformance * 0.7);
+  }
+  
+  canIncreaseCapacity(metrics: SystemMetrics): boolean {
+    // Safe to increase capacity if:
+    // - Temperature is low
+    // - Performance is good
+    // - Current load is manageable
+    return metrics.gpuTempCelsius < 75 &&
+           metrics.cpuTempCelsius < 75 &&
+           metrics.tokensPerSecond > (this.baselinePerformance * 0.9) &&
+           metrics.currentLoad < this.currentCapacity;
+  }
+  
+  async reportCapacityChange(newCapacity: number) {
+    // Report to Router API immediately
+    await fetch(`${ROUTER_URL}/api/validator/health`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        validator_id: VALIDATOR_ID,
+        max_capacity: newCapacity,
+        reason: 'thermal_adaptation'
+      })
+    });
+  }
+}
+```
+
+**Capacity Reduction Triggers:**
+- GPU temperature > 85°C with >95% utilization
+- CPU temperature > 90°C
+- Token generation rate < 50% of baseline
+- Sustained CPU >90% with low throughput
+
+**Benefits:**
+- **Prevents crashes**: Sequential processing (capacity=1) is stable even under thermal stress
+- **Maintains reputation**: Slower but reliable is better than timeouts
+- **Auto-recovery**: Capacity increases when hardware cools down
+
+---
+
+### 6.2 Graceful Inference Timeout Handling
+
+**Purpose:** Proactively report failures before network timeout to minimize reputation penalties
+
+**Problem:**
+- Network timeout is 60 seconds
+- Consumer hardware may take 45-55 seconds for complex prompts
+- Hitting the 60s timeout triggers full reputation slash (-10 points)
+- No opportunity to retry on a faster validator
+
+**Solution:** Client-side 45-second timeout with graceful failure reporting
+
+**Implementation:**
+```typescript
+class GracefulTimeoutHandler {
+  private readonly CLIENT_TIMEOUT = 45000; // 45 seconds
+  private readonly NETWORK_TIMEOUT = 60000; // 60 seconds
+  
+  async executeWithGracefulTimeout(request: Request): Promise<Result> {
+    const startTime = Date.now();
+    
+    try {
+      // Execute inference with client-side timeout
+      const result = await Promise.race([
+        this.executeInference(request),
+        this.clientTimeout(this.CLIENT_TIMEOUT)
+      ]);
+      
+      return result;
+      
+    } catch (error) {
+      const elapsed = Date.now() - startTime;
+      
+      // If client timeout (45s), report failure immediately
+      if (elapsed >= this.CLIENT_TIMEOUT) {
+        await this.reportGracefulFailure(request.id, {
+          error_code: 'CLIENT_TIMEOUT',
+          error_message: 'Inference exceeded 45s - gracefully failing to allow retry',
+          elapsed_ms: elapsed
+        });
+        
+        // Return error (Router will retry with another validator)
+        throw new Error('Client timeout - reported for retry');
+      }
+      
+      // Other errors
+      throw error;
+    }
+  }
+  
+  async reportGracefulFailure(requestId: string, details: FailureDetails) {
+    // Report to Router API immediately
+    await fetch(`${ROUTER_URL}/api/validator/fail`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        request_id: requestId,
+        validator_id: VALIDATOR_ID,
+        error_code: details.error_code,
+        error_message: details.error_message,
+        graceful: true, // Flag for reduced penalty
+        elapsed_ms: details.elapsed_ms
+      })
+    });
+    
+    console.log(`Gracefully failed request ${requestId} at ${details.elapsed_ms}ms to trigger retry`);
+  }
+  
+  clientTimeout(ms: number): Promise<never> {
+    return new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Client timeout')), ms)
+    );
+  }
+}
+```
+
+**Timeline Comparison:**
+
+| Scenario | Consumer Hardware | High-End Server |
+|:---------|:-----------------|:----------------|
+| **Complex prompt** | 50s (timeout) | 10s (success) |
+| **Without graceful timeout** | Fails at 60s, -10 reputation, no retry | Success |
+| **With graceful timeout** | Fails at 45s, -3 reputation, auto-retry succeeds | Success |
+
+**Reputation Impact:**
+- **Graceful failure (45s)**: -3 reputation (reduced penalty for proactive reporting)
+- **Network timeout (60s)**: -10 reputation (full penalty for letting network timeout)
+- **Savings**: 70% less reputation damage per timeout
+
+**Router API Changes:**
+The Router API must recognize the `graceful: true` flag and apply reduced penalties:
+
+```typescript
+// Router-side handling
+if (failure.graceful === true && failure.elapsed_ms < 50000) {
+  // Reduced penalty for graceful failures
+  validator.reputation -= 3; // Instead of -10
+} else {
+  // Full penalty for network timeouts
+  validator.reputation -= 10;
+}
+```
+
+---
+
+### 6.3 VOS (Validator On-Ramp Subsidy) Integration
+
+**Purpose:** Economic offset for consumer hardware performance limitations
+
+**Rationale:**
+Consumer hardware validators will have:
+- **Higher latency**: 20-50s vs 5-15s for enterprise hardware
+- **Lower throughput**: 1-2 concurrent requests vs 5-10 for high-end GPUs
+- **Higher failure rate**: 5-10% timeout rate vs <1% for optimized servers
+
+**VOS Compensation:**
+The 2x NST block reward bonus for first 20 validators is specifically designed to offset this performance penalty:
+
+```
+Consumer hardware validator (with VOS):
+- Average response time: 30s (higher latency)
+- Concurrent capacity: 1-2 (thermal limited)
+- Revenue: 24,750 NST/year (2x bonus)
+- APY: 495%
+
+Enterprise validator (no VOS):
+- Average response time: 10s (low latency)
+- Concurrent capacity: 5-10 (dedicated GPU)
+- Revenue: 12,375 NST/year (standard)
+- APY: 247.5%
+```
+
+**Despite slower service times, consumer validators achieve higher profitability through VOS.**
+
+**Key Messaging:**
+> "The VOS is designed to offset the performance penalty inherent to consumer hardware, ensuring high profitability despite slower service times. Run your validator on a laptop—you'll be slower, but you'll earn more."
+
+---
+
+### 6.4 Consumer Hardware Best Practices
+
+**Recommended Setup for Laptops/Home PCs:**
+
+| Component | Minimum | Recommended | Notes |
+|:----------|:--------|:------------|:------|
+| **CPU** | 4 cores | 8 cores | Modern Intel/AMD or Apple Silicon |
+| **RAM** | 8GB | 16GB | For llama-2-7b-q4 |
+| **GPU** | Integrated | RTX 3060 / M1 Pro | Optional but helps |
+| **Storage** | 100GB SSD | 200GB NVMe | Fast model loading |
+| **Internet** | 10 Mbps | 50 Mbps | Home fiber preferred |
+| **Capacity** | 1 concurrent | 2 concurrent | Conservative for stability |
+
+**Thermal Management:**
+- Use laptop cooling pads
+- Ensure adequate ventilation
+- Consider undervolting CPU/GPU for lower temps
+- Monitor temperatures with tools (HWMonitor, iStat Menus)
+
+**Network Optimization:**
+- Wired ethernet preferred over WiFi
+- Port forwarding for direct connectivity
+- Consider dynamic DNS for home IP changes
+
+**Model Selection:**
+- Start with `gpt2-q4` (85MB, CPU-friendly)
+- Add `llama-2-7b-q4` once stable (3.8GB)
+- Avoid `llama-2-13b-q4` unless you have dedicated GPU
+
+---
+
+### 6.5 Testing & Validation
+
+**Pre-Launch Checklist:**
+```bash
+# 1. Hardware stress test (30 minutes)
+pnpm run stress-test --duration=30m --model=llama-2-7b-q4
+
+# Expected: No thermal throttling, stable token generation rate
+
+# 2. Timeout simulation test
+pnpm run test-graceful-timeout
+
+# Expected: Client timeout triggers at 45s, failure reported
+
+# 3. Capacity adaptation test
+pnpm run test-dynamic-capacity
+
+# Expected: Capacity reduces to 1 when throttling simulated, recovers when cool
+
+# 4. 24-hour stability test
+pnpm run start --test-mode --duration=24h
+
+# Expected: >95% uptime, <5% timeout rate
+```
+
+**Success Criteria:**
+- ✅ Client timeout triggers before 50s (well before 60s network timeout)
+- ✅ Capacity auto-reduces to 1 when thermal throttling detected
+- ✅ No crashes during 24-hour stress test
+- ✅ Graceful failures result in successful retries (Router assigns to another validator)
+
+---
+
+**Consumer Hardware Validator Statement:**
+
+> **"NeuroSwarm welcomes validators on all hardware."**  
+> Whether you're running an enterprise-grade server or a MacBook Pro, our adaptive client software and VOS economic model ensure you can participate profitably. The network benefits from geographic diversity and decentralization—your laptop in Singapore is just as valuable as a data center in Virginia.
+
+---
+
+## 7. Monitoring & Observability
 
 ### 6.1 Prometheus Metrics
 
