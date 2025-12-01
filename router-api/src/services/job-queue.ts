@@ -182,4 +182,17 @@ export class JobQueueService {
             throw err;
         }
     }
+
+    /**
+     * Persist the refund transaction signature for a job that has been refunded.
+     */
+    async setRefundSignature(jobId: string, signature: string): Promise<void> {
+        try {
+            const q = `UPDATE jobs SET refund_tx_signature = $1 WHERE id = $2 AND status = 'refunded'`;
+            await this.pool.query(q, [signature, jobId]);
+        } catch (err) {
+            console.error(`Error persisting refund signature for job ${jobId}:`, err);
+            throw err;
+        }
+    }
 }

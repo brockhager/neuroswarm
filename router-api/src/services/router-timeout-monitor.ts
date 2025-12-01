@@ -72,6 +72,13 @@ export class TimeoutMonitor {
             // Attempt actual refund via SolanaService
             const txSig = await solanaService.triggerRefund(job.user_wallet, Number(job.nsd_burned));
 
+            // Persist refund signature in DB (durable single source of truth)
+            try {
+                await this.jobQueueService.setRefundSignature(job.id, txSig);
+            } catch (err) {
+                console.warn(`[Monitor] Failed to persist refund signature for job ${job.id}:`, err);
+            }
+
             // Write an audit entry for the refund (durable JSONL)
             const auditEntry = {
                 timestamp: new Date().toISOString(),
