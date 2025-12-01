@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { JobQueueService } from './services/job-queue';
 import { ValidatorSelectionService, Validator } from './services/validator-selection';
+import registry from './services/validator-registry';
+import ValidatorStateSync from './services/validator-state-sync';
 import { SolanaService } from './services/solana';
 import TimeoutMonitor from './services/router-timeout-monitor';
 
@@ -23,8 +25,8 @@ const solanaService = new SolanaService();
 const timeoutMonitor = new TimeoutMonitor(jobQueue);
 timeoutMonitor.start();
 
-// Mock Active Validators (In production, this would come from a database/Redis)
-const activeValidators: Validator[] = [
+// Initial API-local set of validators (seed). ValidatorStateSync will keep this registry up-to-date.
+const initialValidators: Validator[] = [
     {
         id: 'validator_001',
         endpoint: 'https://validator-1.neuroswarm.io',
@@ -60,6 +62,11 @@ const activeValidators: Validator[] = [
     }
 ];
 
+// Seed the registry and start the validator state sync service which keeps registry current
+registry.setAll(initialValidators);
+const stateSync = new ValidatorStateSync();
+stateSync.start();
+
 // --- Endpoints ---
 
 // Health Check
@@ -93,8 +100,8 @@ app.post('/api/v1/request/submit', async (req: Request, res: Response) => {
             burn_tx_signature
         );
 
-        // 4. Select Best Validator
-        const selectedValidator = validatorSelection.selectBestValidator(activeValidators);
+        // 4. Select Best Validator (from registry)
+        const selectedValidator = validatorSelection.selectBestValidator(registry.getAll());
 
         if (selectedValidator) {
             // 5. Assign Job
