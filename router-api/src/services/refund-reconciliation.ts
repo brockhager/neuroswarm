@@ -1,6 +1,7 @@
 import { JobQueueService } from './job-queue';
 import { SolanaService } from './solana';
 import { AlertingService } from './alerting';
+import { anchorAudit } from './audit-anchoring';
 
 const RECONCILE_INTERVAL = Number(process.env.REFUND_RECONCILE_INTERVAL || 120);
 
@@ -35,6 +36,25 @@ export class RefundReconciliationService {
             // 1) Jobs marked refunded with no refund_tx_signature -> critical alert (throttled)
                 const unsigned = await this.jobQueue.getUnsignedRefundJobs();
             if (unsigned && unsigned.length) {
+                // Create an audit event for governance anchoring: unsigned refunds are high-risk
+                try {
+                    const event = {
+                        event_type: 'unsigned_refunds',
+                        timestamp: new Date().toISOString(),
+                        triggering_job_ids: unsigned.map((j: any) => j.id),
+                        details: `Detected ${unsigned.length} refunded job(s) without refund_tx_signature`,
+                        metadata: { host: process.env.HOSTNAME || null }
+                    };
+
+                    const anchorRes = await anchorAudit(event);
+                    // Attach anchor info into the details so alerts and logs can reference the anchored hash
+                    if (anchorRes && anchorRes.audit_hash) {
+                        console.log('[Reconciler] Governance audit anchored with hash:', anchorRes.audit_hash);
+                    }
+                } catch (err) {
+                    console.warn('[Reconciler] Failed to anchor governance audit:', err);
+                }
+
                 await this.alertCriticalFailure(unsigned);
             }
 

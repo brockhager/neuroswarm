@@ -15,6 +15,9 @@ describe('RefundReconciliationService', () => {
     };
 
     const mockAlert: any = { dispatchCritical: jest.fn().mockResolvedValue(undefined) };
+    const audit = require('../src/services/audit-anchoring');
+    jest.spyOn(audit, 'anchorAudit').mockResolvedValue({ audit_hash: 'mockedhash', ipfs_cid: 'Qmmock', governance_notified: false, transaction_signature: 'mock_tx_123' });
+
     const svc = new RefundReconciliationService(mockJobQueue, mockSolana, mockAlert);
 
     // Call private tick via casting to any for testing
@@ -23,6 +26,8 @@ describe('RefundReconciliationService', () => {
     expect(mockJobQueue.getUnsignedRefundJobs).toHaveBeenCalled();
     expect(mockAlert.dispatchCritical).toHaveBeenCalled();
     expect(mockJobQueue.markJobsAlerted).toHaveBeenCalledWith(['job-1']);
+    // Verify we attempted to anchor the critical event
+    expect(audit.anchorAudit).toHaveBeenCalled();
   });
 
   test('confirms refunded jobs and updates status when tx is confirmed', async () => {

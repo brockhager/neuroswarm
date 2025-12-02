@@ -9,6 +9,7 @@ import ValidatorStateSync from './services/validator-state-sync';
 import { SolanaService } from './services/solana';
 import TimeoutMonitor from './services/router-timeout-monitor';
 import RefundReconciliationService from './services/refund-reconciliation';
+import { anchorAudit } from './services/audit-anchoring';
 import AlertingService from './services/alerting';
 
 dotenv.config();
@@ -189,6 +190,20 @@ app.post('/api/v1/request/complete', async (req: Request, res: Response) => {
     } catch (error) {
         console.error('Error completing request:', error);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Governance anchoring endpoint (test-only stub) — accepts an audit payload and returns computed SHA-256 anchor hash
+app.post('/api/v1/governance/anchor', async (req: Request, res: Response) => {
+    try {
+        const payload = req.body;
+        if (!payload || !payload.event_type) return res.status(400).json({ error: 'Invalid audit payload: event_type required' });
+
+        const result = await anchorAudit(payload as any);
+        return res.status(200).json({ status: 'anchored', audit_hash: result.audit_hash, ipfs_cid: result.ipfs_cid, transaction_signature: result.transaction_signature, governance_notified: result.governance_notified });
+    } catch (err) {
+        console.error('Governance anchor failed:', err);
+        return res.status(500).json({ error: 'Failed to anchor audit event' });
     }
 });
 
