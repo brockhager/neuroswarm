@@ -106,7 +106,7 @@ Added comprehensive data flow architecture documentation outlining ingress, cons
 Updates are tracked automatically using `scripts/publishUpdate.mjs`. To propose changes:
 1. Open a PR modifying `wiki/Changelogs/`
 2. Use the `publishUpdate.mjs` script to append new entries
-3. Follow the [Contributor Onboarding Guide](../../docs/onboarding/contributor-onboarding.md)
+3. Follow the [Contributor Onboarding Guide](../Development/Contributor-Onboarding.md)
 
 ---
 
