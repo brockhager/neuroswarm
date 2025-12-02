@@ -4,7 +4,7 @@ Simple Express service that accepts alert payloads (Prometheus/Grafana style) an
 
 Config (env)
 - DISCORD_WORKFLOW_WEBHOOK — Discord incoming webhook URL for the alert channel (required for delivery)
-- PORT — Optional port (default 8080)
+- PORT — Optional port (default 3010)
 - APP_NAME — Optional display name used in messages
 - GRAFANA_LINK — Optional link used as runbook fallback
 
@@ -15,7 +15,7 @@ cd neuroswarm/alert-sink
 pnpm install
 $env:DISCORD_WORKFLOW_WEBHOOK='https://discord.com/api/webhooks/...'
 pnpm dev
-# POST alerts to http://localhost:8080/webhook/alerts
+# POST alerts to http://localhost:3010/webhook/alerts
 ```
 
 Test
