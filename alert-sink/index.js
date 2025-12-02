@@ -1,7 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3010;
 
 // --- Configuration ---
 // NOTE: Use environment variables for production secrets.
