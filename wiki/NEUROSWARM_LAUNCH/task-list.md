@@ -23,6 +23,27 @@ P1.4 | Document T23 Failure Modes & Recovery | Runbook / Docs | T23 Implementati
 
 ---
 
+MANDATORY PRIORITY — T27 Documentation Consolidation & Audit (BLOCKING T24/T25)
+CTO mandated task to reduce documentation risk and establish single source of truth.
+
+T27 — Documentation Consolidation & Audit (Target: Dec 3)
+ID | Task | Component | Dependency | Status
+---|------|-----------|-----------|------
+T27.1 | Generate full markdown inventory | Documentation | None | ✅ COMPLETE
+T27.2 | Move all docs to /wiki/ directory | Documentation | T27.1 | ✅ COMPLETE
+T27.3 | Update all internal references | Documentation | T27.2 | ✅ COMPLETE
+T27.4 | Run link validation checks | CI / Tools | T27.3 | IN PROGRESS
+T27.5 | Final verification & sign-off | Documentation | T27.4 | PENDING
+
+**Commits:**
+- Phase 1: `8fa7abc` — moved 54 documentation files into centralized wiki/
+- Phase 2: `05cdde5` — updated 15+ internal references (admin-node, vp-node, plugins, governance, etc.)
+- Phase 2b: `5323eae` — fixed additional references (Contributor-Onboarding, Security/Overview, etc.)
+
+**Next:** Complete link validation (T27.4), verify no broken references remain, then unblock T24/T25.
+
+---
+
 PHASE 2 — Core Feature Completion (T24 & T25)
 Target completion date for Phase 2: Dec 9
 
