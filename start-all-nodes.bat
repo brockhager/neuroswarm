@@ -14,18 +14,9 @@ if %errorlevel% equ 0 (
     timeout /t 2 /nobreak >nul
 )
 
-echo [2/9] Checking for Ollama AI Engine...
-where ollama >nul 2>&1
-if %errorlevel% equ 0 (
-    echo Ollama found! Starting Ollama server...
-    start "Ollama Server" cmd /k "ollama serve"
-    timeout /t 3 /nobreak >nul
-) else (
-    echo WARNING: Ollama not found. AI features will not work.
-    echo Download Ollama from: https://ollama.com/download
-    echo You can still test the chat interface and nodes without AI.
-    timeout /t 2 /nobreak >nul
-)
+echo [2/9] Starting Router API (port 4001)...
+start "Router API" cmd /k "cd /d c:\JS\ns\neuroswarm\router-api && npm start"
+timeout /t 3 /nobreak >nul
 
 echo [3/9] Starting NS Node (port 3009)...
 start "NS Node" cmd /k "cd /d c:\JS\ns\neuroswarm\ns-node && set PORT=3009 && node server.js"
@@ -60,26 +51,30 @@ if %errorlevel% equ 0 (
 )
 timeout /t 2 /nobreak >nul
 start "" "http://localhost:8000/monitor-dashboard.html"
+timeout /t 1 /nobreak >nul
+start "" "http://localhost:3009/"
 
 echo.
 echo ========================================
 echo All services started!
 echo ========================================
 echo.
-echo IPFS Daemon:    http://localhost:5001
-echo Ollama AI:      http://localhost:11434
-echo NS Node:        http://localhost:3009
-echo Gateway Node:   http://localhost:8080
-echo VP Node:        http://localhost:4000
-echo neuro-services: http://localhost:3007
-echo neuro-runner:   http://localhost:3008
-echo neuro-web:      http://localhost:3005
+echo IPFS Daemon:       http://localhost:5001
+echo Router API:        http://localhost:4001
+echo NS Node:           http://localhost:3009
+echo Gateway Node:      http://localhost:8080
+echo VP Node:           http://localhost:4000
+echo neuro-services:    http://localhost:3007
+echo neuro-runner:      http://localhost:3008
+echo neuro-web:         http://localhost:3005
 echo.
 echo Monitor Dashboard: http://localhost:8000/monitor-dashboard.html
-echo Brain Dashboard:  http://localhost:8000/brain-dashboard.html
+echo Brain Dashboard:   http://localhost:8000/brain-dashboard.html
+echo Control Center:    http://localhost:3005/control-center
 echo NS-E Chat (Simple): http://localhost:3009/
 echo NS-B Chat (Browser): http://localhost:3005/chat
 echo.
 echo TIP: Login with "Login as Demo User" button in chat settings
+echo NOTE: To start Ollama AI separately, run: ollama serve
 echo.
 pause
