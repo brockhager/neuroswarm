@@ -24,12 +24,14 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install dependencies (pnpm)
+      - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
           version: 8
-          run_install: true
+
+      - name: Install dependencies
         working-directory: ./router-api
+        run: pnpm install
 
       - name: Set up Docker BuildX (for docker-compose)
         uses: docker/setup-buildx-action@v3
