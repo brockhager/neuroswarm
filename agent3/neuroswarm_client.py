@@ -6,7 +6,9 @@ import time
 print("--- STARTING AGENT3 (NEUROSWARM) CLIENT FOR GOOGLE ANTIGRAVITY DEV ENV ---")
 
 # --- 1. CONFIGURATION (Stable configuration confirmed to work) ---
-MISTRAL_API_KEY = "0DYl8dK4ulDe4XtjKjNdqyAIF1VUZLmC" # Your hardcoded key
+MISTRAL_API_KEY = os.environ.get("MISTRAL_API_KEY")
+if not MISTRAL_API_KEY:
+    raise SystemExit("ERROR: MISTRAL_API_KEY is not set. Remove hard-coded keys from source and provide credentials via environment variables.")
 MISTRAL_ENDPOINT = "https://api.mistral.ai/v1/chat/completions"
 MISTRAL_MODEL = "mistral-large-latest"
 MISTRAL_TEMPERATURE = 0.2

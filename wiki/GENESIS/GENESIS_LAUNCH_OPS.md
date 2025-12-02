@@ -505,7 +505,7 @@ solana validators --url mainnet-beta
 ```bash
 # Submit first test LLM request (internal only)
 curl -X POST https://router.neuroswarm.io/api/v1/request/submit \
-  -H "Authorization: Bearer internal_test_token" \
+   -H "Authorization: Bearer [REDACTED_TEST_TOKEN]" \
   -d @test_request_1.json
 
 # Expected: {"job_id":"...","status":"queued"}

@@ -185,7 +185,7 @@ ab -n 3600000 \  # 1M requests/hour at 1000 RPS
    -t 3600 \     # 1 hour duration
    -p request.json \
    -T 'application/json' \
-   -H 'Authorization: Bearer test_token' \
+  -H 'Authorization: Bearer [REDACTED_TEST_TOKEN]' \
    https://router.neuroswarm.io/api/v1/request/submit
 
 # Monitor error rate

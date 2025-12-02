@@ -7,7 +7,7 @@ from datetime import datetime
 import base64
 
 # --- 1. CONFIGURATION ---
-MISTRAL_API_KEY = os.environ.get("MISTRAL_API_KEY", "0DYl8dK4ulDe4XtjKjNdqyAIF1VUZLmC")
+MISTRAL_API_KEY = os.environ.get("MISTRAL_API_KEY")
 MISTRAL_ENDPOINT = "https://api.mistral.ai/v1/chat/completions"
 MISTRAL_MODEL = "mistral-large-latest"
 MISTRAL_TEMPERATURE = 0.2
