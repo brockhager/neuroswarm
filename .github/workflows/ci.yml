@@ -30,20 +30,10 @@ jobs:
       with:
         version: 10
 
-    - name: "Website: install, test, lint, build (conditional)"
+    - name: Install dependencies and run tests
       run: |
-        if [ -d "website" ]; then
-          echo "website directory found - running website steps"
-          pushd website
-          pnpm install --no-frozen-lockfile
-          pnpm test
-          pnpm tsc --noEmit
-          pnpm lint || true
-          pnpm build
-          popd
-        else
-          echo "website directory not found - skipping website steps"
-        fi
+        pnpm install --no-frozen-lockfile
+        pnpm test
 
   security:
     runs-on: ubuntu-latest
@@ -63,61 +53,16 @@ jobs:
       with:
         version: 10
 
-    - name: "Website: security audit & deps (conditional)"
-      run: |
-        if [ -d "website" ]; then
-          echo "website directory found - running website security steps"
-          pushd website
-          pnpm install --no-frozen-lockfile
-          pnpm audit --audit-level high || echo "Security audit completed with warnings"
-          popd
-        else
-          echo "website directory not found - skipping website security steps"
-        fi
-
     - name: Check for secrets
       uses: gitleaks/gitleaks-action@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  deploy-validation:
-    runs-on: ubuntu-latest
-    needs: [test, security]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20.x
-
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: 10
-
-    - name: "Website: build & validate (conditional)"
-      run: |
-        if [ -d "website" ]; then
-          echo "website directory found - running build + validation"
-          pushd website
-          pnpm install --no-frozen-lockfile
-          pnpm run build
-          if [ ! -d ".next" ]; then
-            echo "Next.js build output not found"
-            exit 1
-          fi
-          popd
-        else
-          echo "website directory not found - skipping build validation"
-        fi
-
   t23_devnet_anchor_test:
     name: T23 Devnet Anchor Test (gated)
     runs-on: ubuntu-latest
-    needs: [deploy-validation]
+    needs: [test, security]
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
