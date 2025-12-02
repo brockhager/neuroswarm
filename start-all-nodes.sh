@@ -45,9 +45,24 @@ fi
 echo "[3/10] Starting NS-LLM (port 3006)"
 cd "$ROOT_DIR/NS-LLM" && npm start >/tmp/ns-ns-llm.log 2>&1 &
 sleep 2
+echo "[3.25/10] Starting Postgres (router-api test DB) via docker-compose (host:5433)"
+if command -v docker >/dev/null 2>&1; then
+  docker compose -f "$ROOT_DIR/router-api/docker-compose.test.yml" up -d --build db >/tmp/ns-postgres.log 2>&1 || echo "docker compose up failed (see /tmp/ns-postgres.log)"
+  echo "Waiting for Postgres to become healthy (pg_isready inside container)"
+  for i in {1..60}; do
+    if docker compose -f "$ROOT_DIR/router-api/docker-compose.test.yml" exec -T db pg_isready -U neuroswarm_user -d neuroswarm_router_db_test >/dev/null 2>&1; then
+      echo "Postgres is healthy"
+      break
+    fi
+    echo "waiting for Postgres... ($i)"
+    sleep 1
+  done
+else
+  echo "Docker not found — skipping Postgres startup. Ensure you have a Postgres instance running and DATABASE_URL set."
+fi
 
 echo "[4/10] Starting Router API (port 4001)"
-cd "$ROOT_DIR/router-api" && npm start >/tmp/ns-router-api.log 2>&1 &
+cd "$ROOT_DIR/router-api" && DATABASE_URL=postgres://neuroswarm_user:neuroswarm_password@localhost:5433/neuroswarm_router_db_test npm start >/tmp/ns-router-api.log 2>&1 &
 sleep 2
 
 echo "[5/10] Starting NS Node (port 3009)"

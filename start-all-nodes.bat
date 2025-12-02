@@ -35,9 +35,23 @@ if %errorlevel% equ 0 (
 echo [3/10] Starting NS-LLM Server (port 3006)...
 start "NS-LLM" cmd /k "cd /d c:\JS\ns\neuroswarm\NS-LLM && npm start"
 timeout /t 3 /nobreak >nul
+echo [3.25/10] Starting Postgres (router-api test DB) via docker-compose (host:5433)...
+where docker >nul 2>&1
+if %errorlevel% equ 0 (
+        echo Starting Postgres container for router-api...
+        docker compose -f "%~dp0router-api\docker-compose.test.yml" up -d --build db >nul 2>&1 || echo "docker compose up failed (see output)"
+        REM Wait for Postgres health (pg_isready inside container)
+        for /L %%i in (1,1,60) do (
+            docker compose -f "%~dp0router-api\docker-compose.test.yml" exec -T db pg_isready -U neuroswarm_user -d neuroswarm_router_db_test >nul 2>&1 && (echo Postgres is healthy & goto :postgres_up) || (timeout /t 1 >nul)
+        )
+        echo WARNING: Postgres did not report healthy in time and may be unavailable.
+:postgres_up
+) else (
+        echo WARNING: Docker not found - skipping Postgres startup. Ensure a Postgres instance is listening on port 5432 or 5433.
+)
 
 echo [4/10] Starting Router API (port 4001)...
-start "Router API" cmd /k "cd /d c:\JS\ns\neuroswarm\router-api && npm start"
+start "Router API" cmd /k "cd /d c:\JS\ns\neuroswarm\router-api && set DATABASE_URL=postgres://neuroswarm_user:neuroswarm_password@localhost:5433/neuroswarm_router_db_test && npm start"
 timeout /t 3 /nobreak >nul
 
 echo [5/10] Starting NS Node (port 3009)...

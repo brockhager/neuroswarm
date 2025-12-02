@@ -6,10 +6,12 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node index.js",
-    "test": "node test/test-run.js"
+    "test": "node test/test-run.js",
+    "test:e2e-firestore": "node scripts/verify-e2e-firestore.js"
   },
   "dependencies": {
     "axios": "^1.6.0",
-    "express": "^4.18.2"
+    "express": "^4.18.2",
+    "firebase-admin": "^11.11.0"
   }
 }

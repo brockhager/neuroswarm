@@ -3,6 +3,37 @@ const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 3010;
 
+// Optional Firestore integration (admin SDK). Initialized only when credentials available.
+let firestoreClient = null;
+const initFirestore = () => {
+    try {
+        // Lazy-load so test environments without firebase don't fail on require
+        const admin = require('firebase-admin');
+
+        // If GOOGLE_APPLICATION_CREDENTIALS is set or the default credentials are available
+        // admin.initializeApp will use them automatically. For explicit use provide
+        // a SERVICE_ACCOUNT_JSON env that contains the JSON payload for test scenarios.
+        if (!admin.apps || admin.apps.length === 0) {
+            if (process.env.SERVICE_ACCOUNT_JSON) {
+                const sa = JSON.parse(process.env.SERVICE_ACCOUNT_JSON);
+                admin.initializeApp({ credential: admin.credential.cert(sa) });
+            } else {
+                admin.initializeApp();
+            }
+        }
+
+        firestoreClient = admin.firestore();
+        console.log('[AlertSink] Firestore initialized');
+    } catch (err) {
+        // If firebase-admin isn't installed or credentials missing, leave firestoreClient null
+        console.log('[AlertSink] Firestore not configured / unavailable:', err?.message || err);
+        firestoreClient = null;
+    }
+};
+
+// Initialize lazily at startup if possible (no hard failure)
+initFirestore();
+
 // --- Configuration ---
 // NOTE: Use environment variables for production secrets.
 const DISCORD_WEBHOOK_URL = process.env.DISCORD_WORKFLOW_WEBHOOK;
@@ -46,6 +77,48 @@ const shouldSendAlert = (alert) => {
     alertCooldowns.set(alertKey, now);
     return true;
 }
+
+const buildDedupKey = (labels = {}) => `${labels.alertname || 'alert'}:${labels.instance || 'instance'}:${labels.severity || 'info'}`;
+
+const writeIncidentToFirestore = async (payload) => {
+    if (!firestoreClient) return false;
+
+    try {
+        const { status, alerts = [] } = payload;
+        const batch = firestoreClient.batch();
+
+        for (const alert of alerts) {
+            const labels = alert.labels || {};
+            const annotations = alert.annotations || {};
+            const dedupKey = buildDedupKey(labels);
+
+            const docRef = firestoreClient.collection('alert_incidents').doc(dedupKey);
+
+            // Merge semantics: write fields and append raw payload to a history array
+            const update = {
+                alertname: labels.alertname || 'Unnamed Alert',
+                severity: labels.severity || 'info',
+                instance: labels.instance || 'unknown',
+                summary: annotations.summary || annotations.description || null,
+                status: status || 'firing',
+                startsAt: alert.startsAt ? new Date(alert.startsAt) : new Date(),
+                endsAt: alert.endsAt ? (alert.endsAt === 'null' ? null : new Date(alert.endsAt)) : null,
+                lastSeenAt: new Date(),
+                dedupKey,
+                rawPayload: payload,
+            };
+
+            // Upsert: keep a small history of events
+            batch.set(docRef, { ...update, updatedAt: new Date() }, { merge: true });
+        }
+
+        await batch.commit();
+        return true;
+    } catch (err) {
+        console.error('Failed to write incident(s) to Firestore:', err?.message || err);
+        return false;
+    }
+};
 
 const formatAlertEmbed = (alertPayload) => {
     const { status, alerts = [] } = alertPayload;
@@ -114,11 +187,20 @@ app.post('/webhook/alerts', async (req, res) => {
     const payload = req.body;
     if (!payload || !payload.alerts) return res.status(400).send('Invalid alert payload');
 
-    // fire-and-forget send, still await to catch errors for logging
+    // Persist incoming alerts to Firestore if configured (best-effort). We still continue
+    // to route to Discord and return processing status to caller.
+    try {
+        const wrote = await writeIncidentToFirestore(payload);
+        if (wrote) console.log('[AlertSink] Persisted alert(s) to Firestore');
+    } catch (err) {
+        console.warn('[AlertSink] Firestore write failed (continuing):', err?.message || err);
+    }
+
+    // fire-and-forget send to Discord, respond based on outcome
     sendAlertToDiscord(payload)
         .then(ok => {
             if (ok) res.status(202).send('Alert accepted for processing.');
-            else res.status(502).send('Alert failed to deliver to sink.');
+            else res.status(202).send('Alert processed (discord failed)');
         })
         .catch(err => {
             console.error('Unexpected sink error:', err);
@@ -141,4 +223,7 @@ if (require.main === module) {
 }
 
 // export helpers for testing
-module.exports = { getAlertColor, formatAlertEmbed, sendAlertToDiscord };
+// Helper to set firestore client in tests (mocking)
+const setFirestoreClientForTest = (client) => { firestoreClient = client; };
+
+module.exports = { getAlertColor, formatAlertEmbed, sendAlertToDiscord, writeIncidentToFirestore, buildDedupKey, initFirestore, setFirestoreClientForTest };

@@ -277,6 +277,7 @@ NeuroSwarm uses a dual-token economic model designed for stability, security, an
 - [Brain Data Submission](Data/Brain-Data-Submission.md) - Submitting data to the Global Brain
 - [Data Submission Guide](Data/data-submission.md) - Contributor data submission
 - [Transparency Record Schema](Data/transparency-record-schema.md) - Data transparency standards
+ - [Database](Database/readme.md) - Operational vs verifiable data architecture and runbook links
 
 ---
 
