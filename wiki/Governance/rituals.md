@@ -192,7 +192,7 @@ After each ritual, update:
 - [Meeting Notes](../misc/meeting-notes/)
 - [Project Board](https://github.com/brockhager/neuro-infra/projects)
 - [Progress Reports](../misc/progress-reports/)
-- [Decision Log](../governance/decision-log.md)
+- [Decision Log](../Governance/decision-log.md)
 
 ## Getting Involved
 

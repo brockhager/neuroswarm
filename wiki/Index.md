@@ -67,11 +67,11 @@
 👉 **Choose your path:**
 
 **Option A - Validator Plugin:**
-- [Validator Plugin Starter Kit](../plugins/validator-plugin/) - Complete template with tests
+- [Validator Plugin Starter Kit](../plugins/validator-plugin/README.md) - Complete template with tests
 - Use case: Content validation, spam detection, custom rules
 
 **Option B - Visualization Plugin:**
-- [Visualization Plugin Starter Kit](../plugins/visualization-plugin/) - Dashboard widget template
+- [Visualization Plugin Starter Kit](../plugins/visualization-plugin/README.md) - Dashboard widget template
 - [Create Visualization Tutorial](Learning-Hub/Tutorials/Create-Visualization.md) - Step-by-step guide
 - Use case: Real-time metrics, custom dashboards, charts
 
