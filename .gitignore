@@ -211,3 +211,9 @@ secrets/
 
 # PNPM workspace lockfile alternative: ignore package-lock.json to prevent accidental npm commits in pnpm workspace
 **/package-lock.json
+
+# Local rewrite helper folders (temporary, should not be committed)
+rewrite-mirror/
+rewrite-check/
+rewrite-temp/
+Mirror/

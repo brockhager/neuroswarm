@@ -356,10 +356,12 @@ function runQuorumTest() {
   console.log('✅ Quorum validation test complete!');
 }
 
-// Export for use in other scripts
-module.exports = { runQuorumTest };
+// Use ESM-friendly exports and invocation
+import { pathToFileURL } from 'node:url';
+
+export { runQuorumTest };
 
 // Run the test if this script is executed directly
-if (require.main === module) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   runQuorumTest();
 }
