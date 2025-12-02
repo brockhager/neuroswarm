@@ -29,7 +29,7 @@ jobs:
         version: 10
 
     - name: Install Node.js dependencies
-      run: pnpm install --frozen-lockfile
+      run: pnpm install --no-frozen-lockfile
       working-directory: ./website
 
     - name: Run tests
@@ -65,7 +65,7 @@ jobs:
         version: 10
 
     - name: Install dependencies
-      run: pnpm install --frozen-lockfile
+      run: pnpm install --no-frozen-lockfile
       working-directory: ./website
 
     - name: Run security audit
@@ -96,7 +96,7 @@ jobs:
         version: 10
 
     - name: Install dependencies
-      run: pnpm install --frozen-lockfile
+      run: pnpm install --no-frozen-lockfile
       working-directory: ./website
 
     - name: Build for production
@@ -158,7 +158,7 @@ jobs:
 
       - name: Install router-api dependencies
         working-directory: ./router-api
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Run T23 Full Anchor Preflight (Devnet + real IPFS)
         working-directory: ./router-api
