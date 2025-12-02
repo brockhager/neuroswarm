@@ -1,0 +1,52 @@
+# Prometheus Configuration for NeuroSwarm Router API Monitoring
+# This configuration scrapes metrics from the Router API and loads alert rules
+
+global:
+  scrape_interval: 15s      # How frequently to scrape targets
+  evaluation_interval: 15s  # How frequently to evaluate rules
+  external_labels:
+    cluster: 'neuroswarm-main'
+    environment: 'production'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - 'localhost:9093'  # Alertmanager endpoint
+
+# Load alert rules
+rule_files:
+  - 'alert-rules.yml'
+
+# Scrape configurations
+scrape_configs:
+  # Router API Metrics
+  - job_name: 'router-api'
+    static_configs:
+      - targets: ['localhost:4001']
+    metrics_path: '/api/metrics'
+    scrape_interval: 10s
+    # Add authentication if metrics endpoint is secured
+    # basic_auth:
+    #   username: 'admin'
+    #   password: 'your-admin-token'
+
+  # NS-LLM Metrics (if available)
+  - job_name: 'ns-llm'
+    static_configs:
+      - targets: ['localhost:3006']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  # VP Node Metrics (if health endpoint exposes metrics)
+  - job_name: 'vp-node'
+    static_configs:
+      - targets: ['localhost:4000']
+    metrics_path: '/health'
+    scrape_interval: 15s
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
