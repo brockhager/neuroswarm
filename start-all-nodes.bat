@@ -72,9 +72,9 @@ if %errorlevel% equ 0 (
     echo WARNING: node not found — skipping dashboard server (no python dependency either)
 )
 timeout /t 2 /nobreak >nul
-start "" "http://localhost:8000/monitor-dashboard.html"
-timeout /t 1 /nobreak >nul
 start "" "http://localhost:3009/"
+timeout /t 1 /nobreak >nul
+start "" "http://localhost:3005/control-center"
 
 echo.
 echo ========================================
