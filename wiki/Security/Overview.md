@@ -23,5 +23,5 @@ Security and trust mechanisms ensure the Global Brain and its supporting network
 ## See also
 
 - [Global Brain](../Architecture/program-architecture.md)
-- [Validator Node Design](../../neuroswarm/docs/VALIDATOR-NODES.md)
+- [Validator Node Design](../Nodes/NODE-DESIGN.md)
 - [Terms & Definitions](../Terminology.md)

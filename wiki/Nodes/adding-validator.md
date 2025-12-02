@@ -14,7 +14,7 @@ Validators are critical network participants that:
 
 - [x] Completed [Getting Started](../../Getting-Started/Getting-Started.md)
 - [x] Familiar with [Development Workflow](../../development.md)
-- [x] Access to validator hardware meeting [requirements](../../docs/distribution.md#validator-node)
+- [x] Access to validator hardware meeting requirements (see NODE-DESIGN.md)
 - [x] Solana keypair for validator identity
 
 ## Step 1: Plan Your Validator

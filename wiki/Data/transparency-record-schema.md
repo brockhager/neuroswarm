@@ -317,6 +317,6 @@ Available for bulk analysis:
 ---
 
 *For implementation details, see: [Transparency Logger](../neuro-web/lib/transparency-logger.ts)*
-*For API documentation, see: [Services API](../../neuro-services/docs/api.md)*
+*For API documentation, see the API section in this wiki*
 *For live transparency data, visit: [getblockchain.tech/neuroswarm/governance/transparency](https://getblockchain.tech/neuroswarm/governance/transparency)*</content>
 <parameter name="filePath">c:\JS\ns\neuroswarm\docs\transparency-record-schema.md
