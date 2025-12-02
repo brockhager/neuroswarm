@@ -22,3 +22,11 @@ const { getAlertColor, formatAlertEmbed } = require('..');
 
   console.log('All alert-sink helper tests passed.');
 })();
+
+// Run Firestore integration test if requested (real creds)
+if (process.env.RUN_FIRESTORE_TESTS === '1' || process.env.GOOGLE_APPLICATION_CREDENTIALS || process.env.SERVICE_ACCOUNT_JSON) {
+  require('./test-firestore');
+}
+
+// Always run the mocked Firestore smoke test in CI/dev for verification without creds
+require('./test-firestore-mock');

@@ -5,7 +5,8 @@
 **Current Agent:** Agent 6 (finalizing reconciliation & alerting)  
 **Overall Status:** Core infra + Router resiliency & refund automation are implemented; final CI + ops hardening remain.  
 **Next Critical Actions:** Manual CI verification + production alert sink configuration
-**Latest (Agent 6):** Migration runners, E2E migration validation workflow, Control Center (formerly Ops Hub) with live metrics and RBAC, and secured metrics proxy have been implemented and validated locally. Some CI/secret wiring remains for final automated execution.
+> Note: mock Firestore smoke-tests and Playwright token-swap mocks have been added to make CI-friendly verification possible without requiring production credentials. The remaining action is to wire these mock smoke tests into the CI matrix (T17).
+**Latest (Agent 6):** Migration runners, E2E migration validation workflow, Control Center (formerly Ops Hub) with live metrics and RBAC, and secured metrics proxy have been implemented and validated locally. Alert-sink now supports optional Firestore persistence (best-effort writes + dedup keys) and includes a mock Firestore smoke-test which runs in CI/dev without secrets. Some CI/secret wiring remains for final automated execution.
 
 ---
 
@@ -76,6 +77,8 @@ Beyond the original plan, recent implementation details now include (IDs for tra
 - **A5** — The E2E harness and CI now use standardized cross-platform migration runners to validate schema upgrades in CI-like conditions. The CI workflow posts status to the configured DISCORD_WORKFLOW_WEBHOOK when present. (`.github/workflows/router-api-e2e-migration.yml`) — ✅ ADDED (needs secrets to run automatically)
 - **A6** — The web dashboard `control-center` (formerly `ops-hub`) now includes live metric fetching from `/api/metrics` (a secured proxy) and a demo RBAC toggle; server-side protection uses `ADMIN_METRICS_SECRET` with a required header `x-admin-metrics-token` to fetch metrics. — ✅ COMPLETE (demo RBAC + secured proxy implemented)
 
+- **A7** — Alert-sink persistence, short-token swap, and CI-friendly smoke tests: The Alert Sink now optionally writes best-effort incidents into Firestore with dedup/merge semantics and exposes a setter for unit tests. The Control Center and server-side endpoints were updated to use a short-lived HS256 session token (token-swap) with server-side verification for sensitive reads (incidents, pending jobs) and job submissions. Playwright tests were updated to mock token-swap and incidents/pending-job endpoints. A mocked Firestore smoke-test was added and the alert-sink test-run now runs this mock test by default so CI can verify the write-path without production credentials. — ✅ COMPLETE
+
 
 ---
 
@@ -113,7 +116,7 @@ All project files listed in the Completed Tasks section have been saved to the r
 
 | Task ID | Item | Description | Notes | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **T17** | Final cross-platform CI validation | CI workflow is added but requires repo secrets (DISCORD_WORKFLOW_WEBHOOK, DB credentials) or manual trigger | CI added; secrets required | ⚠️ PENDING (needs secrets)
+| **T17** | Final cross-platform CI validation | CI workflow is added but requires repo secrets (DISCORD_WORKFLOW_WEBHOOK, DB credentials) or manual trigger. Mock smoke-tests have been added so CI-friendly verification is possible without secrets. | CI added; mock smoke-tests available; CI wiring (jobs) still pending | ⚠️ PARTIALLY COMPLETE (mock tests added; CI job wiring pending)
 | **T18** | End-to-end integration tests | Full integration tests that run Router + NS-LLM + validator-node across OS matrix and devnet/localnet | Needed for final validation across matrix | ✅ COMPLETE
 | **T19** | Production alerting sink setup | Wire SLACK_ALERT_WEBHOOK, PagerDuty, or Discord for incident delivery; test with staging webhook | Integrate and test routing | ✅ COMPLETE
 | **T20** | Escalation & deduplication | Add alert throttles / deduping / runbook links to prevent alert storms and improve on-call response time | Implement throttles & runbooks | ✅ COMPLETE
