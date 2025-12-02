@@ -32,15 +32,20 @@ ID | Task | Component | Dependency | Status
 T27.1 | Generate full markdown inventory | Documentation | None | ✅ COMPLETE
 T27.2 | Move all docs to /wiki/ directory | Documentation | T27.1 | ✅ COMPLETE
 T27.3 | Update all internal references | Documentation | T27.2 | ✅ COMPLETE
-T27.4 | Run link validation checks | CI / Tools | T27.3 | IN PROGRESS
-T27.5 | Final verification & sign-off | Documentation | T27.4 | PENDING
+T27.4 | Run link validation checks | CI / Tools | T27.3 | ✅ COMPLETE
+T27.5 | Final verification & sign-off | Documentation | T27.4 | 🔍 READY FOR REVIEW
 
 **Commits:**
+- Phase 1: `6559f66` — inventory generation
 - Phase 1: `8fa7abc` — moved 54 documentation files into centralized wiki/
 - Phase 2: `05cdde5` — updated 15+ internal references (admin-node, vp-node, plugins, governance, etc.)
 - Phase 2b: `5323eae` — fixed additional references (Contributor-Onboarding, Security/Overview, etc.)
+- Phase 3: `d33c51e` — updated task list with T27 progress
+- Phase 3: `39062de` — fixed case-sensitivity issues (governance/, onboarding/)
 
-**Next:** Complete link validation (T27.4), verify no broken references remain, then unblock T24/T25.
+**Completion Report:** See `wiki/NEUROSWARM_LAUNCH/T27_COMPLETION_REPORT.md` for full details.
+
+**Status:** T27.1-T27.4 complete. Ready for CTO sign-off (T27.5). T24/T25 can proceed once approved.
 
 ---
 
@@ -50,17 +55,17 @@ Target completion date for Phase 2: Dec 9
 T24 — Decentralized State Management (Target: Dec 9)
 ID | Task | Component | Dependency | Status
 ---|------|-----------|-----------|------
-T24.1 | Implement State Sync Endpoints | VP-Node | T21 (RBAC/Auth) | BLOCKED (T27 in progress)
-T24.2 | Refactor Router State Access | Router | T24.1 | BLOCKED (T27 in progress)
-T24.3 | Integrate State Validation Stub | VP-Node | T24.1 | BLOCKED (T27 in progress)
+T24.1 | Implement State Sync Endpoints | VP-Node | T21 (RBAC/Auth), T27 Complete | READY TO START
+T24.2 | Refactor Router State Access | Router | T24.1 | PENDING
+T24.3 | Integrate State Validation Stub | VP-Node | T24.1 | PENDING
 
 T25 — VP-Node Consensus & Mesh (Target: Dec 16)
 ID | Task | Component | Dependency | Status
 ---|------|-----------|-----------|------
-T25.1 | Implement Peer-to-Peer Mesh | VP-Node | T24 Complete | BLOCKED (T27 in progress)
-T25.2 | Leader Election / Round Robin | VP-Node | T25.1 | BLOCKED (T27 in progress)
-T25.3 | Consensus Logic (basic Raft/Paxos) | VP-Node | T25.2 | BLOCKED (T27 in progress)
-T25.4 | State Synchronization E2E Test | CI / E2E | T25.3 | BLOCKED (T27 in progress)
+T25.1 | Implement Peer-to-Peer Mesh | VP-Node | T24 Complete | READY TO START (after T24)
+T25.2 | Leader Election / Round Robin | VP-Node | T25.1 | PENDING
+T25.3 | Consensus Logic (basic Raft/Paxos) | VP-Node | T25.2 | PENDING
+T25.4 | State Synchronization E2E Test | CI / E2E | T25.3 | PENDING
 
 ---
 
