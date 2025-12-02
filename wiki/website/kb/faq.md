@@ -50,7 +50,7 @@ The hygiene checker will automatically enforce these rules.
 ## Governance
 
 ### Q: How do I participate in governance?
-**A:** Join our weekly rituals documented in [governance/rituals.md](../governance/rituals.md). All decisions are logged in our transparency record.
+**A:** Join our weekly rituals documented in [Governance/rituals.md](../Governance/rituals.md). All decisions are logged in our transparency record.
 
 ### Q: What's the difference between off-chain and on-chain governance?
 **A:** Off-chain governance handles community decisions and development direction. On-chain governance manages protocol parameters and smart contract updates.

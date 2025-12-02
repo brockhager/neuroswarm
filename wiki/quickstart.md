@@ -112,11 +112,11 @@ Join specialized teams based on your interests:
 ### Immediate Support
 - **Discord #help**: Real-time community support
 - **GitHub Issues**: Report bugs or request features
-- **Documentation**: Search our [knowledge base](../governance/contributor-portal.md)
+- **Documentation**: Search our [knowledge base](../Governance/contributor-portal.md)
 
 ### Learning Resources
 - **[Contributor Playbooks](../misc/playbooks/)**: Step-by-step guides for specific tasks
-- **[Governance Documentation](../governance/)**: Understanding decision-making
+- **[Governance Documentation](../Governance/)**: Understanding decision-making
 - **[Technical Documentation](../general/)**: Deep dives into system architecture
 
 ### Office Hours

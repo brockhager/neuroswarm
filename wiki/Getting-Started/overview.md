@@ -62,8 +62,8 @@ NeuroSwarm aims to create a future where AI serves humanity's best interests, no
 
 Ready to join the NeuroSwarm revolution? Here are your first steps:
 
-1. **Learn More**: Read our [Getting Started Guide](../onboarding/getting-started.md) to understand the technical details
-2. **Set Up a Node**: Follow our [Installation Guide](../onboarding/getting-started.md) to run your first NeuroSwarm node
+1. **Learn More**: Read our [Getting Started Guide](../Onboarding/getting-started.md) to understand the technical details
+2. **Set Up a Node**: Follow our [Installation Guide](../Onboarding/getting-started.md) to run your first NeuroSwarm node
 3. **Join the Community**: Connect with other contributors in our [Discord](https://discord.gg/neuroswarm) or [GitHub Discussions](https://github.com/neuroswarm/neuroswarm/discussions)
 4. **Start Contributing**: Check out our [Contributor Playbooks](../misc/playbooks/) to see how you can get involved
 

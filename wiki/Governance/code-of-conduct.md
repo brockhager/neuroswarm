@@ -35,7 +35,7 @@ We pledge to act and interact in ways that contribute to an open, welcoming, div
 
 ## Recognition System Alignment
 
-This Code of Conduct supports our [Contributor Recognition Framework](../governance/contributor-recognition.md):
+This Code of Conduct supports our [Contributor Recognition Framework](../Governance/contributor-recognition.md):
 
 - **Positive contributions** that align with our standards may qualify for recognition badges
 - **Community Builders** are expected to exemplify these standards

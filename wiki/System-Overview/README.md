@@ -649,7 +649,7 @@ Appends all governance actions to `wp_publish_log.jsonl` with cryptographic sign
 - Health check validation
 - Zero-to-running in 5 minutes
 
-**Related Docs**: [Quick Setup](../onboarding/Quick-Setup.md)
+**Related Docs**: [Quick Setup](../Onboarding/Quick-Setup.md)
 
 ---
 

@@ -96,9 +96,9 @@ cargo test
 
 ## Development Workflow
 
-1. **Pick an issue** from the [Kanban board](../governance/kanban.md)
+1. **Pick an issue** from the [Kanban board](../Governance/kanban.md)
 2. **Create a feature branch:** `git checkout -b feature/your-feature`
-3. **Make changes** following the [development guide](../misc/development.md)
+3. **Make changes** following the [development guide](../Development/development.md)
 4. **Run tests** to ensure everything works
 5. **Commit with clear messages** and create a PR
 
@@ -130,9 +130,9 @@ Before contributing, ensure you follow our quality standards:
 
 ### Development Workflow
 
-1. **Pick an issue** from the [Kanban board](../governance/kanban.md)
+1. **Pick an issue** from the [Kanban board](../Governance/kanban.md)
 2. **Create a feature branch:** `git checkout -b feature/your-feature`
-3. **Make changes** following the [development guide](../misc/development.md)
+3. **Make changes** following the [development guide](../Development/development.md)
 4. **Run the pre-commit checklist** to ensure quality
 5. **Commit with clear messages** and create a PR
 
