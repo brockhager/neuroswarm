@@ -147,5 +147,5 @@ Remember: Every expert was once a beginner. Your first contribution is the harde
 *Need help? Reach out on [Discord](https://discord.gg/neuroswarm) or open an issue on [GitHub](https://github.com/brockhager/neuroswarm).*
 
 *For detailed technical setup, see: [Getting Started](./getting-started.md)*
-*For governance participation, see: [How to Vote](../governance/voting.md)*</content>
+*For governance participation, see: [How to Vote](./Governance/voting.md)*</content>
 <parameter name="filePath">c:\JS\ns\neuroswarm\docs\quickstart.md

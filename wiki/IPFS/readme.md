@@ -317,7 +317,7 @@ async function getIPFSStats() {
 
 - [IPFS Docs](https://docs.ipfs.tech/)
 - [js-ipfs](https://github.com/ipfs/js-ipfs)
-- [VP Node Integration](../../vp-node/README.md)
+- [VP Node Integration](../vp-node/README.md)
 
 ---
 

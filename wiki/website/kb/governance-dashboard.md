@@ -7,10 +7,9 @@ Welcome to the NeuroSwarm Governance Transparency Dashboard! This page provides 
 
 ## 📖 Related Resources
 
-- **[Governance Overview](../../docs/stories.md#governance--transparency)** - Learn about NeuroSwarm's governance framework and decision-making processes
-- **[Transparency Mechanisms](../../docs/stories.md#transparency-mechanisms)** - Understand how all activities are publicly auditable
-- **[Governance Logs](../../wp_publish_log.jsonl)** - Raw governance event data for transparency
- - **[Governance Logs](../../governance/logs/wp_publish_log.jsonl)** - Raw governance event data for transparency
+- **[Governance Overview](../../Project-Management/stories.md#governance--transparency)** - Learn about NeuroSwarm's governance framework and decision-making processes
+- **[Transparency Mechanisms](../../Project-Management/stories.md#transparency-mechanisms)** - Understand how all activities are publicly auditable
+- **[Governance Logs](../../Governance/logs/wp_publish_log.jsonl)** - Raw governance event data for transparency
 
 ## 📊 Live Metrics Overview
 

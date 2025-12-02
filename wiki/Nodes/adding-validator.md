@@ -270,7 +270,7 @@ docker logs neuroswarm-validator | grep ERROR
 
 ### Getting Help
 
-- **Documentation:** [Validator Operations](../../docs/VALIDATOR-NODES.md)
+- **Documentation:** [Validator Operations](../../Nodes/NODE-DESIGN.md)
 - **Issues:** [GitHub Issues](https://github.com/brockhager/neuroswarm/issues)
 - **Community:** Discord/Telegram channels
 - **Security:** Report issues to security@neuroswarm.io

@@ -643,7 +643,7 @@ ipfs config --json Experimental.Libp2pStreamMounting true
 - [Architecture Overview](../Core-Concepts/Architecture.md) — Understand how nodes interact
 - [API Reference](../../API/Gateway-API.md) — Complete endpoint documentation
 - [Governance Guide](../Core-Concepts/Governance.md) — Participate in decision-making
-- [Onboarding Quick Setup](../../onboarding/Quick-Setup.md) — Automated setup details
+- [Onboarding Quick Setup](../../Onboarding/Quick-Setup.md) — Automated setup details
 - [Performance Benchmarks](../../Performance/Benchmark-Results.md) — Expected performance metrics
 
 ---
