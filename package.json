@@ -30,7 +30,7 @@
     "datastore-fs": "^2.0.0"
   },
   "devDependencies": {
-  "ts-node": "^10.9.1",
+    "ts-node": "^10.9.1",
     "adm-zip": "^0.5.9",
     "open": "^9.0.0",
     "node-fetch": "^3.3.1",
