@@ -5,7 +5,7 @@
 **Current Agent:** Agent 6 (finalizing reconciliation & alerting)  
 **Overall Status:** Core infra + Router resiliency & refund automation are implemented; final CI + ops hardening remain.  
 **Next Critical Actions:** Manual CI verification + production alert sink configuration
-> Note: mock Firestore smoke-tests and Playwright token-swap mocks have been added to make CI-friendly verification possible without requiring production credentials. The remaining action is to wire these mock smoke tests into the CI matrix (T17).
+> Note: mock Firestore smoke-tests and Playwright token-swap mocks have been added to make CI-friendly verification possible without requiring production credentials. A CI workflow file was added to run these mock suites on push/PR; full credentialed/integration runs still require repo secrets.
 **Latest (Agent 6):** Migration runners, E2E migration validation workflow, Control Center (formerly Ops Hub) with live metrics and RBAC, and secured metrics proxy have been implemented and validated locally. Alert-sink now supports optional Firestore persistence (best-effort writes + dedup keys) and includes a mock Firestore smoke-test which runs in CI/dev without secrets. Some CI/secret wiring remains for final automated execution.
 
 ---
@@ -116,13 +116,15 @@ All project files listed in the Completed Tasks section have been saved to the r
 
 | Task ID | Item | Description | Notes | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **T17** | Final cross-platform CI validation | CI workflow is added but requires repo secrets (DISCORD_WORKFLOW_WEBHOOK, DB credentials) or manual trigger. Mock smoke-tests have been added so CI-friendly verification is possible without secrets. | CI added; mock smoke-tests available; CI wiring (jobs) still pending | ⚠️ PARTIALLY COMPLETE (mock tests added; CI job wiring pending)
+| **T17** | Final cross-platform CI validation | CI workflow added to run self-contained unit & mock E2E tests (Playwright) on push/PR; a gated full_integration_test job has been added which will run when the required secrets (SERVICE_ACCOUNT_JSON & SHORT_TOKEN_SECRET) are configured in the repository. A further gated job `core_neuroswarm_loop_test` has been added to exercise the full Router → VP → NS-LLM → DB loop for high-confidence verification on main. | ✅ ADDED (mock smoke-tests wired into CI; gated full integration job added; core loop job added) | ✅ ADDED (gated full integration + core loop) 
 | **T18** | End-to-end integration tests | Full integration tests that run Router + NS-LLM + validator-node across OS matrix and devnet/localnet | Needed for final validation across matrix | ✅ COMPLETE
 | **T19** | Production alerting sink setup | Wire SLACK_ALERT_WEBHOOK, PagerDuty, or Discord for incident delivery; test with staging webhook | Integrate and test routing | ✅ COMPLETE
 | **T20** | Escalation & deduplication | Add alert throttles / deduping / runbook links to prevent alert storms and improve on-call response time | Implement throttles & runbooks | ✅ COMPLETE
 | **T21** | Long-term reconciler improvements | Retry logic for pending refunds, automated re-sends for failed refund_tx signatures, and historical reconciliation reporting. VP node persistence configuration implemented. | Router API retry complete; VP persistence added | ⚙️ IN PROGRESS
 | **T22** | Monitoring / dashboards | Add observability panels (Prometheus/Grafana) for refund rate, unsigned refunds, reconcile success, retry counts, job queue health; configure Grafana routing & webhooks. Control Center UI + Prometheus/Alertmanager configs implemented. | Prometheus/Alertmanager configs created; alert routing to T20 sink configured | ✅ COMPLETE
-| **T23** | Governance notification / audit anchoring | Anchor critical events (mass refunds, unresolved unsigned refunds) to governance timeline and export audits | Consider on-chain + off-chain export | 🔲 TODO
+| **T23** | Governance notification / audit anchoring | Anchor critical events (mass refunds, unresolved unsigned refunds) to governance timeline and export audits | Prototype complete (IPFS mocked + governance sink + on-chain simulation) | ✅ PROTOTYPE COMPLETE
+
+**T23 work (on-chain integration available, mock fallback):** A governance anchoring implementation has been added to the Router API: `router-api/src/services/audit-anchoring.ts` (deterministic canonical JSON + SHA-256 audit hash), IPFS upload (mock + optional IPFS API gateway), governance sink notification (via `GOVERNANCE_WEBHOOK_URL`), and an on-chain anchoring function that will submit a Solana Memo instruction to the configured `SOLANA_RPC_URL` when credentials (router private key / signer key) are provided. When no RPC or signer is configured the service falls back to a deterministic mock transaction signature so tests are reproducible. The `/api/v1/governance/anchor` endpoint is available as a test stub and the Refund Reconciliation flow anchors unsigned refund failures and logs the audit information prior to dispatching critical alerts and notifications. Next steps: provision production IPFS and Solana credentials and persist a signed governance timeline for full verification.
 
 ---
 
