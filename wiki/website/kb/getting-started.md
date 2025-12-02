@@ -30,9 +30,9 @@ cat docs/index.md
 
 Before diving into technical setup, take a moment to understand your path in NeuroSwarm:
 
-- **[Contributor Journey Overview](../../docs/stories.md#contributor-journey)** - Learn about different contributor pathways and growth opportunities
-- **[Working Groups](../../docs/stories.md#working-groups)** - Discover specialized teams and their responsibilities
-- **[Success Stories](../../docs/stories.md#success-stories)** - Read about real contributor experiences and progression
+- **[Contributor Journey Overview](../../Project-Management/stories.md#contributor-journey)** - Learn about different contributor pathways and growth opportunities
+- **[Working Groups](../../Project-Management/stories.md#working-groups)** - Discover specialized teams and their responsibilities
+- **[Success Stories](../../Project-Management/stories.md#success-stories)** - Read about real contributor experiences and progression
 
 ## Prerequisites
 

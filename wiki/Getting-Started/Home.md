@@ -103,17 +103,17 @@ Your gateway to the decentralized AI revolution. This is the main hub for all gu
 
 ### Starter Kits
 
-- [**Validator Plugin**](../../plugins/validator-plugin/) - Content validation starter template
+- [**Validator Plugin**](../plugins/validator-plugin/README.md) - Content validation starter template
   - Enforce quality standards and detect spam
   - Implement custom business logic
   - Verify signatures and sources
-  - [Full Documentation](../../plugins/validator-plugin/README.md)
+  - [Full Documentation](../plugins/validator-plugin/README.md)
 
-- [**Visualization Plugin**](../../plugins/visualization-plugin/) - Dashboard widget starter template
+- [**Visualization Plugin**](../plugins/visualization-plugin/README.md) - Dashboard widget starter template
   - Real-time metrics and KPI displays
   - Interactive charts and graphs
   - Custom data visualizations
-  - [Full Documentation](../../plugins/visualization-plugin/README.md) | [Live Demo](../../plugins/visualization-plugin/demo.html)
+  - [Full Documentation](../plugins/visualization-plugin/README.md)
 
 ### Tutorials
 

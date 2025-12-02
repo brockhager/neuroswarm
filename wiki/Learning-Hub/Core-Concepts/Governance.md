@@ -342,7 +342,7 @@ node governance/scripts/verify-governance.ts <tx-signature> <action-type>
 
 ## 📚 Related Documentation
 
-- **[Governance Scripts](../../governance/README.md)** — Anchoring and verification tools
+- **[Governance Scripts](../../Governance/README.md)** — Anchoring and verification tools
 - **[Validator Setup](../../Nodes/adding-validator.md)** — Become a validator
 - **[Blockchain Anchoring](../../wiki/Anchoring/readme.md)** — Technical details
 - **[Security Model](./Architecture.md#security-model)** — Cryptographic guarantees

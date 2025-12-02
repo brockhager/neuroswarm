@@ -499,4 +499,4 @@ console.log(result.txSignature); // MOCK_5J7x...
 - [SecurityLogger Source](file:///c:/JS/ns/neuroswarm/shared/peer-discovery/security-logger.js)
 - [Solana Documentation](https://docs.solana.com/)
 - [Consensus System](../Consensus/readme.md)
-- [Admin Dashboard](../../admin-node/README.md)
+- [Admin Dashboard](../admin-node/README.md)

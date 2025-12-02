@@ -322,7 +322,7 @@ Manages the lifecycle of plugins (validators, scorers, visualizations). Loads pl
 - Dashboard widgets
 - Community-contributed features
 
-**Related Docs**: [Plugin Development](../Getting-Started/Home.md#-plugin-development) | [Starter Kits](../../plugins/)
+**Related Docs**: [Plugin Development](../Getting-Started/Home.md#-plugin-development)
 
 ---
 
@@ -434,7 +434,7 @@ Anchors governance events and critical state to Solana blockchain for immutable 
 - Cryptographic verification
 - Immutable audit trails
 
-**Related Docs**: [Anchoring](../Anchoring/readme.md) | [Solana Program](../../neuro-program/)
+**Related Docs**: [Anchoring](../Anchoring/readme.md)
 
 ---
 
@@ -744,7 +744,7 @@ The Rust daemon provides low-level infrastructure for networking, storage, and c
 - Peer coordination
 - Production deployments
 
-**Related Docs**: [neuro-infra README](../neuro-infra-README.md) | [CLI Commands](../../neuro-infra/docs/)
+**Related Docs**: [neuro-infra README](../neuro-infra-README.md)
 
 ---
 

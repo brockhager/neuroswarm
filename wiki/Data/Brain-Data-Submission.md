@@ -29,4 +29,4 @@ CLI:
 - Use the `submit` CLI wrapper to compute hashes and submit payloads:
   - `neuroswarm submit --file dataset.csv --contributorId contributor-1 --token <JWT>`
 
-For more details on submission CLI and examples, see `docs/onboarding/data-submission.md`.
+For more details on submission CLI and examples, see `Data/data-submission.md`.
