@@ -1,0 +1,51 @@
+# Validator/Processing (VP) Node Persistence Configuration
+# This configuration defines how the VP Node manages its state to ensure fault tolerance
+# and quick recovery from restarts or temporary network failures (addressing the T21 goal).
+# This prevents recurring 'VP node connection errors' by stabilizing its internal state.
+
+persistence:
+  # --- Core Persistence Settings ---
+  enabled: true
+  storage_backend: "firestore"  # Recommended for distributed ledger metadata persistence
+  
+  # Base path in the Firestore database for this node's private data
+  # This corresponds to the security rule path: /artifacts/{appId}/users/{userId}/vp_state
+  base_collection_name: "vp_state"
+
+  # --- Checkpointing and Synchronization ---
+  checkpoint:
+    # How frequently the node writes its critical operational state (e.g., current job index, last processed block)
+    frequency_seconds: 60
+    
+    # Path within the base_collection_name to store the main operational state checkpoint
+    document_path: "operational_checkpoint"
+
+  # --- Job Queue Management ---
+  job_queue:
+    enabled: true
+    # Ensures jobs awaiting validation survive node restarts.
+    collection_name: "pending_jobs_queue"
+    
+    # Time (in minutes) after which an unprocessed job is marked as stale and requeued by the reconciliation service.
+    stale_timeout_minutes: 15
+
+  # --- Peer/Connectivity Metadata ---
+  network_state:
+    enabled: true
+    # This collection stores the last known good state of peer connections, speeding up discovery
+    # and preventing the node from getting stuck on bad peer attempts.
+    collection_name: "peer_connectivity_cache"
+    
+    # TTL (Time-To-Live) for cached peer entries to ensure fresh discovery
+    cache_ttl_hours: 24
+
+  # --- Error Handling and Backoff ---
+  reconciliation:
+    # Max number of times to retry connecting to the blockchain layer before alerting (T19/T20)
+    max_connection_retries: 10
+    
+    # Initial delay for connection backoff (ms)
+    initial_backoff_ms: 5000
+    
+    # Backoff multiplier (e.g., 5s, 10s, 20s, 40s...)
+    backoff_multiplier: 2.0

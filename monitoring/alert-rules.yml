@@ -1,0 +1,113 @@
+# Prometheus Alert Rules for NeuroSwarm Router API
+# These rules define when alerts should fire based on metric thresholds
+
+groups:
+  - name: router_api_critical_alerts
+    interval: 30s
+    rules:
+      # T22: High Refund Retry Rate Alert
+      - alert: HighRefundRetryRate
+        expr: rate(router_refund_retries_total[5m]) > 5
+        for: 2m
+        labels:
+          severity: critical
+          component: router-api
+          alert_type: refund_failure
+        annotations:
+          summary: "High refund retry rate detected"
+          description: "Router API is experiencing {{ $value }} refund retries per second over the last 5 minutes. This may indicate Solana RPC issues or transaction failures."
+          runbook_url: "https://wiki.neuroswarm.io/runbooks/high-refund-retries"
+
+      # T22: Unsigned Refunds Accumulating
+      - alert: UnsignedRefundsPending
+        expr: unsigned_refunds_pending > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: router-api
+          alert_type: reconciliation_issue
+        annotations:
+          summary: "{{ $value }} unsigned refunds pending"
+          description: "There are {{ $value }} refunds that have been triggered but lack transaction signatures. Manual intervention may be required."
+          runbook_url: "https://wiki.neuroswarm.io/runbooks/unsigned-refunds"
+
+      # T22: Reconciliation Success Rate Drop
+      - alert: LowReconciliationSuccessRate
+        expr: reconciliation_success_rate < 0.85
+        for: 10m
+        labels:
+          severity: critical
+          component: router-api
+          alert_type: reconciliation_failure
+        annotations:
+          summary: "Reconciliation success rate dropped to {{ $value | humanizePercentage }}"
+          description: "The reconciliation service success rate has fallen below 85%. This indicates persistent failures in verifying refund transactions on-chain."
+          runbook_url: "https://wiki.neuroswarm.io/runbooks/low-reconciliation-rate"
+
+      # T22: Job Queue Depth Excessive
+      - alert: JobQueueOverload
+        expr: job_queue_depth > 1000
+        for: 5m
+        labels:
+          severity: warning
+          component: router-api
+          alert_type: capacity_issue
+        annotations:
+          summary: "Job queue depth at {{ $value }}"
+          description: "The Router API job queue has {{ $value }} pending jobs. This may indicate validator capacity issues or processing bottlenecks."
+          runbook_url: "https://wiki.neuroswarm.io/runbooks/queue-overload"
+
+      # T22: Critical Alert Total Spike
+      - alert: AlertStorm
+        expr: rate(router_refund_alerts_total[1m]) > 10
+        for: 1m
+        labels:
+          severity: critical
+          component: router-api
+          alert_type: alert_storm
+        annotations:
+          summary: "Alert storm detected: {{ $value }} alerts/sec"
+          description: "The Router API is generating {{ $value }} alerts per second. This may indicate cascading failures or a critical system-wide issue."
+          runbook_url: "https://wiki.neuroswarm.io/runbooks/alert-storm"
+
+  - name: router_api_health_alerts
+    interval: 60s
+    rules:
+      # Router API Down
+      - alert: RouterAPIDown
+        expr: up{job="router-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          component: router-api
+          alert_type: service_down
+        annotations:
+          summary: "Router API is down"
+          description: "Prometheus cannot scrape metrics from the Router API. The service may be crashed or unreachable."
+          runbook_url: "https://wiki.neuroswarm.io/runbooks/service-down"
+
+      # NS-LLM Down
+      - alert: NSLLMDown
+        expr: up{job="ns-llm"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: ns-llm
+          alert_type: service_down
+        annotations:
+          summary: "NS-LLM service is down"
+          description: "The NS-LLM service is not responding to health checks. AI features may be unavailable."
+          runbook_url: "https://wiki.neuroswarm.io/runbooks/ns-llm-down"
+
+      # VP Node Down
+      - alert: VPNodeDown
+        expr: up{job="vp-node"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          component: vp-node
+          alert_type: service_down
+        annotations:
+          summary: "VP Node is down"
+          description: "The Validator/Processing Node is not responding. Block production may be affected."
+          runbook_url: "https://wiki.neuroswarm.io/runbooks/vp-node-down"

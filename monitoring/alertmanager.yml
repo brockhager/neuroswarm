@@ -1,0 +1,75 @@
+# Alertmanager Configuration for NeuroSwarm
+# Routes all alerts to the custom Alert Sink Handler (T19/T20)
+
+global:
+  # Time to wait before sending a notification again if it has already been sent successfully
+  resolve_timeout: 5m
+
+# Inhibition rules (suppress certain alerts when others are firing)
+inhibit_rules:
+  # Suppress all other alerts if RouterAPIDown is firing
+  - source_match:
+      alertname: 'RouterAPIDown'
+    target_match_re:
+      alertname: '.*'
+    equal: ['component']
+
+  # Suppress warnings if critical alert is already firing for the same component
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['component', 'alert_type']
+
+# Route configuration
+route:
+  # Default receiver for all alerts
+  receiver: 'neuroswarm-alert-sink'
+  
+  # Group alerts by component and alert_type to avoid spam
+  group_by: ['component', 'alert_type']
+  
+  # Wait time before sending the first notification for a group
+  group_wait: 30s
+  
+  # Wait time before sending notification about new alerts added to a group
+  group_interval: 5m
+  
+  # Minimum time between two notifications for the same group
+  repeat_interval: 4h
+
+  # Routes for specific alert types
+  routes:
+    # Critical alerts - send immediately with shorter repeat interval
+    - match:
+        severity: critical
+      receiver: 'neuroswarm-alert-sink'
+      group_wait: 10s
+      group_interval: 2m
+      repeat_interval: 2h
+      continue: true  # Also send to default receiver
+
+    # Warning alerts - longer wait and repeat times
+    - match:
+        severity: warning
+      receiver: 'neuroswarm-alert-sink'
+      group_wait: 1m
+      group_interval: 10m
+      repeat_interval: 12h
+
+# Receivers configuration
+receivers:
+  # Main receiver: NeuroSwarm Alert Sink Handler
+  - name: 'neuroswarm-alert-sink'
+    webhook_configs:
+      - url: 'http://localhost:3010/webhook'
+        send_resolved: true
+        http_config:
+          follow_redirects: true
+        # Format alert payload for Discord-compatible webhook
+        # The alert-sink handler expects this format (T20 deduplication logic)
+        max_alerts: 10  # Batch up to 10 alerts per webhook call
+
+# Templates for custom alert formatting (optional)
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
