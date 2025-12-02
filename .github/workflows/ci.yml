@@ -105,3 +105,64 @@ jobs:
           echo "Next.js build output not found"
           exit 1
         fi
+
+  t23_devnet_anchor_test:
+    name: T23 Devnet Anchor Test (gated)
+    runs-on: ubuntu-latest
+    needs: [deploy-validation]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Ensure required T23 secrets are provided (gated)
+        env:
+          SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
+          ROUTER_PRIVATE_KEY: ${{ secrets.ROUTER_PRIVATE_KEY }}
+          SOLANA_SIGNER_KEY: ${{ secrets.SOLANA_SIGNER_KEY }}
+          IPFS_API_URL: ${{ secrets.IPFS_API_URL }}
+          DISCORD_CRITICAL_ALERT_WEBHOOK: ${{ secrets.DISCORD_CRITICAL_ALERT_WEBHOOK }}
+          GOVERNANCE_SERVICE_TOKEN: ${{ secrets.GOVERNANCE_SERVICE_TOKEN }}
+        run: |
+          # This job is gated: exit with special code 78 if any required secret is missing so CI runner can skip the job.
+          missing=false
+          for v in SOLANA_RPC_URL IPFS_API_URL GOVERNANCE_SERVICE_TOKEN; do
+            if [ -z "${!v}" ]; then
+              echo "❌ Required secret $v is not set — this gated job requires credentials to run."
+              missing=true
+            fi
+          done
+
+          # At least one signing key should be present
+          if [ -z "$ROUTER_PRIVATE_KEY" -a -z "$SOLANA_SIGNER_KEY" ]; then
+            echo "❌ Neither ROUTER_PRIVATE_KEY nor SOLANA_SIGNER_KEY is set. One is required for on-chain anchoring."
+            missing=true
+          fi
+
+          if [ "$missing" = true ]; then
+            exit 78
+          fi
+
+      - name: Install router-api dependencies
+        working-directory: ./router-api
+        run: pnpm install --frozen-lockfile
+
+      - name: Run T23 Full Anchor Preflight (Devnet + real IPFS)
+        working-directory: ./router-api
+        env:
+          SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
+          ROUTER_PRIVATE_KEY: ${{ secrets.ROUTER_PRIVATE_KEY }}
+          SOLANA_SIGNER_KEY: ${{ secrets.SOLANA_SIGNER_KEY }}
+          IPFS_API_URL: ${{ secrets.IPFS_API_URL }}
+          DISCORD_CRITICAL_ALERT_WEBHOOK: ${{ secrets.DISCORD_CRITICAL_ALERT_WEBHOOK }}
+          GOVERNANCE_SERVICE_TOKEN: ${{ secrets.GOVERNANCE_SERVICE_TOKEN }}
+        run: npx ts-node scripts/run-t23-full-anchor.ts

@@ -70,6 +70,19 @@ groups:
           description: "The Router API is generating {{ $value }} alerts per second. This may indicate cascading failures or a critical system-wide issue."
           runbook_url: "https://wiki.neuroswarm.io/runbooks/alert-storm"
 
+      # T23: On-chain anchor failures (exhausted retries)
+      - alert: T23OnChainAnchorFailures
+        expr: t23_anchor_onchain_failures_total > 0
+        for: 1m
+        labels:
+          severity: critical
+          component: router-api
+          alert_type: t23_anchor_failure
+        annotations:
+          summary: "T23 On-chain anchor failures detected"
+          description: "The T23 anchoring pipeline has recorded one or more failed on-chain anchor attempts after exhausting retries. Immediate operator attention required: check IPFS pinning, Solana RPC, and admin-node timeline ingestion."
+          runbook_url: "https://wiki.neuroswarm.io/runbooks/t23-anchor-failure"
+
   - name: router_api_health_alerts
     interval: 60s
     rules:

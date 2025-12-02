@@ -140,6 +140,38 @@ describe('Anchor lifecycle integration', () => {
     expect(publicLatest.body.anchor.txSignature).toBe('INTEG_SIG');
   });
 
+  test('ingest timeline entry via governance logger endpoint (internal token)', async () => {
+    // Set a governance service token for endpoint validation
+    process.env.GOVERNANCE_SERVICE_TOKEN = 'test-internal-token';
+
+    const payload = {
+      timestamp: new Date().toISOString(),
+      action: 'genesis',
+      actor: 'router-api',
+      details: {
+        audit_hash: 'abcdef123456',
+        ipfs_cid: 'QmTestCid',
+        transaction_signature: 'mock_tx_testsig',
+      }
+    };
+
+    const res = await request(app)
+      .post('/v1/admin/timeline')
+      .set('x-governance-token', 'test-internal-token')
+      .send(payload);
+
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.timelineId).toBeDefined();
+
+    // Verify timeline contains the new entry
+    const entries = timelineService.getTimelineEntries({ action: 'genesis', limit: 10 });
+    const found = entries.find((e: any) => e.actor === 'router-api' && e.fingerprints?.audit_hash === 'abcdef123456');
+    expect(found).toBeDefined();
+
+    delete process.env.GOVERNANCE_SERVICE_TOKEN;
+  });
+
   test('endpoint auth test: non-founder cannot set tx signature', async () => {
     const adminToken = createAdminJwt();
     const res = await request(app)

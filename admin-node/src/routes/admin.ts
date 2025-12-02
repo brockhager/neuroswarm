@@ -822,3 +822,44 @@ router.post('/shutdown', requireFounder, async (req: Request, res: Response) => 
     res.status(500).json({ error: 'Failed to update shutdown mode', timestamp: new Date().toISOString() });
   }
 });
+
+// POST /v1/admin/timeline - Internal ingestion of external timeline entries (router-api etc.)
+// This endpoint is intended for internal services and requires a governance service token
+router.post('/timeline', async (req: Request, res: Response) => {
+  try {
+    const svcTokenHeader = (req.headers['x-governance-token'] as string) || (req.headers['authorization'] as string || '').replace('Bearer ', '');
+    const expected = process.env.GOVERNANCE_SERVICE_TOKEN || '';
+
+    if (expected && svcTokenHeader !== expected) {
+      governanceLogger.log('timeline_ingest_unauthorized', { endpoint: '/v1/admin/timeline' });
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const payload = req.body || {};
+    const action = payload.action || 'timeline_entry_added';
+    const actor = payload.actor || 'unknown';
+    const details = payload.details || {};
+
+    // Map to timeline entry structure
+    const entry = {
+      timestamp: payload.timestamp || new Date().toISOString(),
+      action,
+      actor,
+      txSignature: details.transaction_signature || undefined,
+      memoContent: details.memoContent || undefined,
+      fingerprints: details.fingerprints || { audit_hash: details.audit_hash },
+      verificationStatus: 'pending',
+      details,
+    };
+
+    const timelineId = timelineService.addAnchorEntry(entry as any);
+
+    governanceLogger.logAdminAction('timeline_entry_received', actor, { entryId: timelineId, source: req.ip || 'internal' });
+
+    res.status(201).json({ success: true, timelineId });
+  } catch (error) {
+    logger.error('Timeline ingest error:', error);
+    governanceLogger.log('error', { endpoint: '/v1/admin/timeline', error: (error as Error).message });
+    res.status(500).json({ error: 'Failed to ingest timeline entry' });
+  }
+});

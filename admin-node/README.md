@@ -121,6 +121,31 @@ Before starting the Admin Node, run the health check to verify configuration:
 npm run health-check
 ```
 
+## Governance CLI tools (rotation & verification)
+
+The admin-node includes two helper CLI scripts to manage governance signing keys and verify timeline signatures.
+
+1) Rotate governance signing key (generate new RSA keypair)
+
+```bash
+# Create a new keypair and write private key to a secure path
+npx ts-node scripts/rotate-governance-key.ts --out ./secrets/governance.private.key
+
+# The script backs up any existing key file before writing.
+
+# After rotating the key, set GOV_PRIVATE_KEY_PATH or GOVERNANCE_PRIVATE_KEY_PATH to the new private key
+export GOVERNANCE_PRIVATE_KEY_PATH=./secrets/governance.private.key
+``` 
+
+2) Verify signatures in governance timeline (JSONL)
+
+```bash
+# Ensure you have the public key available (e.g. ./secrets/governance.public.key)
+npx ts-node scripts/verify-timeline-signatures.ts --timeline ../governance/timeline/governance-timeline.jsonl --pub ./secrets/governance.public.key
+
+# The script will output counts of verified, failed, and unsigned entries and exit non-zero when failures are found.
+```
+
 This validates:
 - ✅ dotenv configuration loads correctly
 - ✅ Required environment variables are defined

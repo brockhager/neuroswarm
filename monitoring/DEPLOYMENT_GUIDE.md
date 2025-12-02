@@ -187,6 +187,28 @@ cd c:/JS/ns/neuroswarm/alert-sink
 
 ## Grafana Dashboard Setup
 
+## T23 On-Chain Anchor Alert (Production enablement)
+
+We added a Prometheus alert that fires when the T23 anchoring pipeline records a failed on-chain anchor after exhausting retries.
+
+- Alert rule: `T23OnChainAnchorFailures` — fires when `t23_anchor_onchain_failures_total > 0` for 1 minute
+- Severity: critical
+- Routing: Alertmanager -> `neuroswarm-alert-sink` -> configured notification channel (Discord/Slack/PagerDuty)
+
+Action items to enable end-to-end gated CI and monitoring for T23:
+
+1. Add required GitHub repository secrets (Repository Settings → Secrets) for the gated CI job `t23_devnet_anchor_test`: 
+  - SOLANA_RPC_URL (Devnet RPC endpoint)
+  - ROUTER_PRIVATE_KEY (Router signer private key as a JSON secret-key array) or SOLANA_SIGNER_KEY (alternate env name)
+  - IPFS_API_URL (IPFS pinning endpoint)
+  - DISCORD_CRITICAL_ALERT_WEBHOOK (Discord webhook used by alert-sink / workflow notifications for critical alerts)
+  - GOVERNANCE_SERVICE_TOKEN (internal token used between router-api and admin-node)
+
+2. Merge the branch containing these changes to `main`. The CI workflow will run the new `t23_devnet_anchor_test` job and perform the full preflight.
+
+3. Confirm Prometheus scrapes the router-api and admin-node metrics and Alertmanager is reachable. If `T23OnChainAnchorFailures` fires, the neurostack alert-sink will receive the webhook and forward notifications to your configured channel.
+
+
 1. **Access Grafana**
    - URL: http://localhost:3000
    - Default login: admin / admin
