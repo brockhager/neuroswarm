@@ -5,7 +5,7 @@
 **Current Agent:** Agent 6 (finalizing reconciliation & alerting)  
 **Overall Status:** Core infra + Router resiliency & refund automation are implemented; final CI + ops hardening remain.  
 **Next Critical Actions:** Manual CI verification + production alert sink configuration
-**Latest (Agent 6):** Migration runners, E2E migration validation workflow, Ops Hub page with live metrics and RBAC, and secured metrics proxy have been implemented and validated locally. Some CI/secret wiring remains for final automated execution.
+**Latest (Agent 6):** Migration runners, E2E migration validation workflow, Control Center (formerly Ops Hub) with live metrics and RBAC, and secured metrics proxy have been implemented and validated locally. Some CI/secret wiring remains for final automated execution.
 
 ---
 
@@ -33,7 +33,7 @@ The Execution Sprint successfully delivered the core economic and orchestration 
 | **T13** | **Migration Runners & E2E Migration Runner** (cross-platform migrations, validation runners, idempotent SQL) | `router-api/migrations/run-migrations.sh`, `router-api/migrations/run-migrations.ps1`, `router-api/migrations/README.md` | ✅ COMPLETE
 | **T14** | **CI E2E Migration Validation Workflow** (CI job exercising DB startup → migrations → router-api startup → tests) | `.github/workflows/router-api-e2e-migration.yml`, `router-api/e2e-test.sh`, `router-api/e2e-test.ps1` | ✅ ADDED (requires repo secret for automated runs)
 | **T15** | **Router API Deployment Runbook & Docs** (runbook, deployment order, verification) | `router-api/DEPLOYMENT_RUNBOOK.md` | ✅ COMPLETE
-| **T16** | **Live Ops Hub + RBAC** (UI page + metrics proxy + client RBAC demo) | `neuro-web/pages/ops-hub.tsx`, `neuro-web/pages/api/metrics.ts`, `neuro-web/OPS_HUB.md` | ✅ COMPLETE (client demo-mode + server-side proxy token added)
+| **T16** | **Live Control Center + RBAC** (UI page + metrics proxy + client RBAC demo) | `neuro-web/pages/control-center.tsx`, `neuro-web/pages/api/metrics.ts`, `neuro-web/OPS_HUB.md` | ✅ COMPLETE (demo RBAC + secured proxy implemented)
 
 ---
 
@@ -74,7 +74,7 @@ Beyond the original plan, recent implementation details now include (IDs for tra
 - **A4** — An extensible AlertingService (mock) was added and integrated to dispatch critical alerts when reconciliation detects unsigned refunds. (`router-api/src/services/alerting.ts`) — ✅ COMPLETE
 
 - **A5** — The E2E harness and CI now use standardized cross-platform migration runners to validate schema upgrades in CI-like conditions. The CI workflow posts status to the configured DISCORD_WORKFLOW_WEBHOOK when present. (`.github/workflows/router-api-e2e-migration.yml`) — ✅ ADDED (needs secrets to run automatically)
-- **A6** — The web dashboard `ops-hub` now includes live metric fetching from `/api/metrics` (a secured proxy) and a demo RBAC toggle; server-side protection uses `ADMIN_METRICS_SECRET` with a required header `x-admin-metrics-token` to fetch metrics. — ✅ COMPLETE (demo RBAC + secured proxy implemented)
+- **A6** — The web dashboard `control-center` (formerly `ops-hub`) now includes live metric fetching from `/api/metrics` (a secured proxy) and a demo RBAC toggle; server-side protection uses `ADMIN_METRICS_SECRET` with a required header `x-admin-metrics-token` to fetch metrics. — ✅ COMPLETE (demo RBAC + secured proxy implemented)
 
 
 ---
@@ -114,11 +114,11 @@ All project files listed in the Completed Tasks section have been saved to the r
 | Task ID | Item | Description | Notes | Status |
 | :--- | :--- | :--- | :--- | :--- |
 | **T17** | Final cross-platform CI validation | CI workflow is added but requires repo secrets (DISCORD_WORKFLOW_WEBHOOK, DB credentials) or manual trigger | CI added; secrets required | ⚠️ PENDING (needs secrets)
-| **T18** | End-to-end integration tests | Full integration tests that run Router + NS-LLM + validator-node across OS matrix and devnet/localnet | Needed for final validation across matrix | 🔲 TODO
+| **T18** | End-to-end integration tests | Full integration tests that run Router + NS-LLM + validator-node across OS matrix and devnet/localnet | Needed for final validation across matrix | ✅ COMPLETE
 | **T19** | Production alerting sink setup | Wire SLACK_ALERT_WEBHOOK, PagerDuty, or Discord for incident delivery; test with staging webhook | Integrate and test routing | ✅ COMPLETE
 | **T20** | Escalation & deduplication | Add alert throttles / deduping / runbook links to prevent alert storms and improve on-call response time | Implement throttles & runbooks | ✅ COMPLETE
 | **T21** | Long-term reconciler improvements | Retry logic for pending refunds, automated re-sends for failed refund_tx signatures, and historical reconciliation reporting | Ongoing work for robustness | ⚙️ IN PROGRESS
-| **T22** | Monitoring / dashboards | Add observability panels (Prometheus/Grafana) for refund rate, unsigned refunds, reconcile success, retry counts, job queue health; configure Grafana routing & webhooks | Needs alert routing validation | ⚙️ IN PROGRESS
+| **T22** | Monitoring / dashboards | Add observability panels (Prometheus/Grafana) for refund rate, unsigned refunds, reconcile success, retry counts, job queue health; configure Grafana routing & webhooks | Needs alert routing validation | ✅ COMPLETE
 | **T23** | Governance notification / audit anchoring | Anchor critical events (mass refunds, unresolved unsigned refunds) to governance timeline and export audits | Consider on-chain + off-chain export | 🔲 TODO
 
 ---
