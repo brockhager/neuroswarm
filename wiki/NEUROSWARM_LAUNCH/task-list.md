@@ -29,17 +29,17 @@ Target completion date for Phase 2: Dec 9
 T24 — Decentralized State Management (Target: Dec 9)
 ID | Task | Component | Dependency | Status
 ---|------|-----------|-----------|------
-T24.1 | Implement State Sync Endpoints | VP-Node | T21 (RBAC/Auth) | PENDING
-T24.2 | Refactor Router State Access | Router | T24.1 | PENDING
-T24.3 | Integrate State Validation Stub | VP-Node | T24.1 | PENDING
+T24.1 | Implement State Sync Endpoints | VP-Node | T21 (RBAC/Auth) | BLOCKED (T27 in progress)
+T24.2 | Refactor Router State Access | Router | T24.1 | BLOCKED (T27 in progress)
+T24.3 | Integrate State Validation Stub | VP-Node | T24.1 | BLOCKED (T27 in progress)
 
 T25 — VP-Node Consensus & Mesh (Target: Dec 16)
 ID | Task | Component | Dependency | Status
 ---|------|-----------|-----------|------
-T25.1 | Implement Peer-to-Peer Mesh | VP-Node | T24 Complete | PENDING
-T25.2 | Leader Election / Round Robin | VP-Node | T25.1 | PENDING
-T25.3 | Consensus Logic (basic Raft/Paxos) | VP-Node | T25.2 | PENDING
-T25.4 | State Synchronization E2E Test | CI / E2E | T25.3 | PENDING
+T25.1 | Implement Peer-to-Peer Mesh | VP-Node | T24 Complete | BLOCKED (T27 in progress)
+T25.2 | Leader Election / Round Robin | VP-Node | T25.1 | BLOCKED (T27 in progress)
+T25.3 | Consensus Logic (basic Raft/Paxos) | VP-Node | T25.2 | BLOCKED (T27 in progress)
+T25.4 | State Synchronization E2E Test | CI / E2E | T25.3 | BLOCKED (T27 in progress)
 
 ---
 
