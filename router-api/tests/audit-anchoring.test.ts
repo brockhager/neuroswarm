@@ -1,9 +1,29 @@
 import { anchorAudit } from '../src/services/audit-anchoring';
+import fs from 'fs';
+import path from 'path';
 import axios from 'axios';
 
 jest.mock('axios');
 
 describe('Audit Anchoring Service', () => {
+  beforeEach(() => {
+    // Ensure router-api POSTs to an admin-node governance logger rather than writing file
+    process.env.GOVERNANCE_LOGGER_URL = 'http://localhost:9999/admin/timeline';
+    process.env.GOVERNANCE_SERVICE_TOKEN = 'test-gov-token';
+    (axios.post as jest.Mock).mockReset();
+    // Default behavior: accept governance logger ingestion
+    (axios.post as jest.Mock).mockImplementation((url: string, data: any) => {
+      if (url === process.env.GOVERNANCE_LOGGER_URL) return Promise.resolve({ status: 201 });
+      // Default successful response
+      return Promise.resolve({ status: 200, data: {} });
+    });
+  });
+
+  afterEach(() => {
+    delete process.env.GOVERNANCE_LOGGER_URL;
+    delete process.env.GOVERNANCE_SERVICE_TOKEN;
+    delete process.env.GOVERNANCE_TIMELINE_PATH;
+  });
   test('computes deterministic SHA-256 hash for a canonical payload', async () => {
     const payload = {
       event_type: 'mass_refund_failure',
@@ -19,6 +39,14 @@ describe('Audit Anchoring Service', () => {
     // Transaction signature should be present and look like the mock_tx_ prefix
     expect(res.transaction_signature).toMatch(/^mock_tx_[0-9a-f]{64}$/);
     expect(res.ipfs_cid).toBeTruthy();
+
+    // verify router-api called the governance logger endpoint
+    expect(axios.post).toHaveBeenCalled();
+    const lastCall = (axios.post as jest.Mock).mock.calls.slice(-1)[0];
+    const [url, body, opts] = lastCall;
+    expect(url).toBe(process.env.GOVERNANCE_LOGGER_URL);
+    expect(body).toHaveProperty('action', 'timeline_entry_added');
+    expect(body.details?.audit_hash).toBe(res.audit_hash);
   });
 
   test('uploads to IPFS (mock) and notifies governance sink when configured', async () => {
@@ -64,9 +92,29 @@ describe('Audit Anchoring Service', () => {
       details: 'IPFS retry test'
     } as any;
 
+    // Mock behavior for axios.post based on URL
+    let ipfsCalls = 0;
+    (axios.post as jest.Mock).mockImplementation((url: string, data: any) => {
+      if (url === process.env.IPFS_API_URL) {
+        ipfsCalls++;
+        if (ipfsCalls <= 2) return Promise.reject(new Error(ipfsCalls === 1 ? 'timeout' : '502 Bad Gateway'));
+        return Promise.resolve({ data: { cid: 'QmTestCid' } });
+      }
+      // governance webhook
+      if (url === process.env.GOVERNANCE_WEBHOOK_URL) return Promise.resolve({ status: 200, data: { ok: true } });
+      // governance logger endpoint
+      if (url === process.env.GOVERNANCE_LOGGER_URL) return Promise.resolve({ status: 201 });
+      return Promise.resolve({ status: 200, data: {} });
+    });
+
     const res = await anchorAudit(payload);
     expect(res.ipfs_cid).toBe('QmTestCid');
     expect(res.transaction_signature).toBeTruthy();
+
+    // verify the governance logger received the timeline entry pointing to the IPFS CID
+    const lastCall = (axios.post as jest.Mock).mock.calls.slice(-1)[0];
+    expect(lastCall[0]).toBe(process.env.GOVERNANCE_LOGGER_URL);
+    expect(lastCall[1].details?.ipfs_cid).toBe('QmTestCid');
 
     delete process.env.IPFS_API_URL;
     delete process.env.GOVERNANCE_WEBHOOK_URL;
@@ -83,6 +131,7 @@ describe('Audit Anchoring Service', () => {
       details: 'IPFS failure test'
     } as any;
 
+    // In this failure case the IPFS uploads fail and anchorAudit should reject
     await expect(anchorAudit(payload)).rejects.toThrow(/IPFS pinning failed/);
     delete process.env.IPFS_API_URL;
   });

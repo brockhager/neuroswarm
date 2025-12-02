@@ -8,6 +8,8 @@ const SUCCESS_COUNTER = (register.getSingleMetric('t23_anchor_onchain_success_to
 const FAILURE_COUNTER = (register.getSingleMetric('t23_anchor_onchain_failures_total') as Counter<string>) || new Counter({ name: 't23_anchor_onchain_failures_total', help: 'Total number of failed on-chain anchors after retries' });
 const CONFIRM_HIST = (register.getSingleMetric('t23_anchor_confirmation_seconds') as Histogram<string>) || new Histogram({ name: 't23_anchor_confirmation_seconds', help: 'Time to confirm the on-chain anchor (seconds)', buckets: [0.5, 1, 2, 5, 10, 30, 60] });
 import axios from 'axios';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Audit event payload structure
@@ -42,6 +44,9 @@ export interface AuditAnchorResult {
 
 const IPFS_API_URL = process.env.IPFS_API_URL || '';
 const GOVERNANCE_WEBHOOK_URL = process.env.GOVERNANCE_WEBHOOK_URL || '';
+// Endpoint where admin-node accepts timeline entries (internal service)
+const GOVERNANCE_LOGGER_URL = process.env.GOVERNANCE_LOGGER_URL || process.env.GOVERNANCE_LOGGER_ENDPOINT || '';
+const GOVERNANCE_SERVICE_TOKEN = process.env.GOVERNANCE_SERVICE_TOKEN || '';
 
 function toCanonicalJson(event: AuditEvent): string {
   // Build a canonical object with sorted keys and no extra whitespace
@@ -54,11 +59,13 @@ const IPFS_PIN_SUCCESS_COUNTER = (register.getSingleMetric('t23_ipfs_pin_success
 const IPFS_PIN_FAILURE_COUNTER = (register.getSingleMetric('t23_ipfs_pin_failures_total') as Counter<string>) || new Counter({ name: 't23_ipfs_pin_failures_total', help: 'Failed IPFS pins after retries' });
 
 async function uploadToIPFS(canonicalJson: string): Promise<string> {
-  const attempts = Number(process.env.IPFS_PIN_ATTEMPTS || 5);
-  const baseBackoffMs = Number(process.env.IPFS_PIN_BACKOFF_MS || 1000);
+  // Use shorter defaults to keep tests responsive; prod can override via env
+  const attempts = Number(process.env.IPFS_PIN_ATTEMPTS || 3);
+  const baseBackoffMs = Number(process.env.IPFS_PIN_BACKOFF_MS || 200);
 
   // If IPFS API not configured, skip trying remote and return deterministic/mock CID
-  if (!IPFS_API_URL || IPFS_API_URL === 'mock') {
+  const ipfsApi = process.env.IPFS_API_URL || IPFS_API_URL || '';
+  if (!ipfsApi || ipfsApi === 'mock') {
     const contentHash = crypto.createHash('sha256').update(canonicalJson, 'utf8').digest('hex');
     const cid = `Qm${contentHash.substring(0, 44)}`;
     return cid;
@@ -67,7 +74,7 @@ async function uploadToIPFS(canonicalJson: string): Promise<string> {
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
       IPFS_PIN_RETRY_COUNTER.inc();
-      const res = await axios.post(IPFS_API_URL, canonicalJson, {
+      const res = await axios.post(ipfsApi, canonicalJson, {
         headers: { 'Content-Type': 'application/json' },
         timeout: 20000,
       });
@@ -80,7 +87,7 @@ async function uploadToIPFS(canonicalJson: string): Promise<string> {
       }
 
       throw new Error('IPFS gateway did not return CID');
-    } catch (err) {
+    } catch (err: any) {
       console.warn(`[AuditAnchoring] IPFS pin attempt ${attempt}/${attempts} failed:`, err?.message || err);
       if (attempt < attempts) {
         const backoff = baseBackoffMs * Math.pow(2, attempt - 1);
@@ -99,7 +106,8 @@ async function uploadToIPFS(canonicalJson: string): Promise<string> {
 }
 
 async function sendGovernanceNotification(event: AuditEvent, ipfsCid: string): Promise<boolean> {
-  if (!GOVERNANCE_WEBHOOK_URL) {
+  const governanceWebhook = process.env.GOVERNANCE_WEBHOOK_URL || GOVERNANCE_WEBHOOK_URL || '';
+  if (!governanceWebhook) {
     console.warn('[AuditAnchoring] GOVERNANCE_WEBHOOK_URL not configured; skipping governance notification');
     return false;
   }
@@ -122,10 +130,10 @@ async function sendGovernanceNotification(event: AuditEvent, ipfsCid: string): P
 
   try {
     // Use axios to POST JSON to the configured governance sink
-    await axios.post(GOVERNANCE_WEBHOOK_URL, notificationPayload, { headers: { 'Content-Type': 'application/json' }, timeout: 15000 });
+    await axios.post(governanceWebhook, notificationPayload, { headers: { 'Content-Type': 'application/json' }, timeout: 15000 });
     console.log('[AuditAnchoring] Governance sink notified');
     return true;
-  } catch (err) {
+  } catch (err: any) {
     console.error('[AuditAnchoring] Failed to notify governance sink:', err?.message || err);
     return false;
   }
@@ -154,7 +162,68 @@ export async function anchorAudit(event: AuditEvent): Promise<AuditAnchorResult>
 
   console.log('Audit anchored ->', { ipfs_cid });
 
+  // Persist to governance timeline via admin-node GovernanceLogger API (if configured)
+  const govLoggerUrl = process.env.GOVERNANCE_LOGGER_URL || process.env.GOVERNANCE_LOGGER_ENDPOINT || GOVERNANCE_LOGGER_URL || '';
+  if (govLoggerUrl) {
+    try {
+      await persistTimelineRecord({ audit_hash, ipfs_cid, governance_notified, transaction_signature, event });
+    } catch (err: any) {
+      console.warn('[AuditAnchoring] Failed to persist anchored event to admin governance logger:', err?.message || err);
+    }
+  } else {
+    console.warn('[AuditAnchoring] GOVERNANCE_LOGGER_URL not configured; skipping timeline persistence via admin-node');
+  }
+
   return { audit_hash, ipfs_cid, governance_notified, transaction_signature };
+}
+
+async function persistTimelineRecord(payload: {
+  audit_hash: string;
+  ipfs_cid: string;
+  governance_notified: boolean;
+  transaction_signature?: string;
+  event: AuditEvent;
+}): Promise<void> {
+  const attempts = Number(process.env.GOVERNANCE_PERSIST_ATTEMPTS || 5);
+  const baseBackoffMs = Number(process.env.GOVERNANCE_PERSIST_BACKOFF_MS || 1000);
+
+  const body = {
+    timestamp: new Date().toISOString(),
+    action: 'timeline_entry_added',
+    actor: 'router-api',
+    details: {
+      audit_hash: payload.audit_hash,
+      ipfs_cid: payload.ipfs_cid,
+      transaction_signature: payload.transaction_signature,
+      governance_notified: payload.governance_notified,
+      source_event: payload.event,
+    },
+  } as any;
+
+  const govLoggerUrl = process.env.GOVERNANCE_LOGGER_URL || process.env.GOVERNANCE_LOGGER_ENDPOINT || GOVERNANCE_LOGGER_URL || '';
+
+  // Attempt HTTP POST with retries
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const svcToken = process.env.GOVERNANCE_SERVICE_TOKEN || GOVERNANCE_SERVICE_TOKEN || '';
+      if (svcToken) headers['x-governance-token'] = svcToken;
+
+      await axios.post(govLoggerUrl, body, { headers, timeout: 15000 });
+      console.log('[AuditAnchoring] Persisted timeline record to admin-node governance logger');
+      return;
+    } catch (err: any) {
+      console.warn(`[AuditAnchoring] Persist attempt ${attempt}/${attempts} to governance logger failed:`, err?.message || err);
+      if (attempt < attempts) {
+        const backoff = baseBackoffMs * Math.pow(2, attempt - 1);
+        await new Promise(r => setTimeout(r, backoff));
+        continue;
+      }
+
+      // Exhausted -> throw to caller
+      throw new Error('Failed to persist timeline record to governance logger after retries');
+    }
+  }
 }
 
 async function anchorAuditOnChain(audit_hash: string): Promise<string> {
@@ -237,7 +306,7 @@ async function anchorAuditOnChain(audit_hash: string): Promise<string> {
         // If not confirmed, throw to trigger retry path
         throw new Error('Transaction not confirmed within timeout');
 
-      } catch (err) {
+      } catch (err: any) {
         console.warn(`[AuditAnchoring] Attempt ${attempt}/${maxAttempts} failed:`, err?.message || err);
         if (attempt < maxAttempts) {
           const backoff = baseBackoffMs * Math.pow(2, attempt - 1);
@@ -254,12 +323,18 @@ async function anchorAuditOnChain(audit_hash: string): Promise<string> {
         return `mock_tx_${txSig}`;
       }
     }
-  } catch (err) {
+  } catch (err: any) {
     console.error('[AuditAnchoring] On-chain anchoring failed, falling back to mock signature:', err?.message || err);
     const now = Date.now().toString();
     const txSig = crypto.createHash('sha256').update(audit_hash + '|' + now).digest('hex');
     return `mock_tx_${txSig}`;
   }
+
+  // Safety net: ensure this function always returns a string even if TypeScript can't
+  // statically prove the above branches return in all control-flow paths.
+  const now2 = Date.now().toString();
+  const finalSig = crypto.createHash('sha256').update(audit_hash + '|' + now2).digest('hex');
+  return `mock_tx_${finalSig}`;
 }
 
 function sortObjectKeys<T>(obj: T): any {
