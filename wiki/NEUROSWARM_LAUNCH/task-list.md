@@ -4,7 +4,7 @@ TARGET COMPLETION DATE: December 22, 2025
 
 STATUS SUMMARY
 - **T21 (RBAC/Auth):** COMPLETE and deployed — secure cross-service JWT short-token framework, RBAC enforced on router-api and admin-node (GovernanceLogger restricted to Admin role).
-- **T23 (Audit Anchoring):** Functionally complete — resilient IPFS pinning, on-chain anchoring (Solana), centralized persistence via admin-node. Final sign-off pending a green CI run and secrets provisioning.
+- **T23 (Audit Anchoring):** ✅ IPFS INTEGRATION COMPLETE — Pinata JWT authentication working, CID extraction verified in CI. ⚠️ Solana on-chain anchoring requires private key configuration (separate task).
 
 This document consolidates the remaining work toward finalizing T23 and delivering the Phase 2 and Phase 3 roadmap through Dec 22.
 
@@ -15,10 +15,14 @@ This phase addresses the final integration, monitoring, and administrative tasks
 
 ID | Task | Component | Dependency | Status
 ---|------|-----------|-----------|------
-P1.1 | Resolve Current CI Failures | GitHub Actions | None | 🔴 URGENT (fix pipeline failures / test runtime issues)
-P1.2 | Set All Repository Secrets | GitHub Secrets | P1.1 (Stable CI) | 🔴 URGENT
- | Required secrets: SOLANA_RPC_URL, IPFS_API_URL, ROUTER_PRIVATE_KEY (or SOLANA_SIGNER_KEY), GOVERNANCE_SERVICE_TOKEN, DISCORD_CRITICAL_ALERT_WEBHOOK |
-P1.3 | T23 Final Green CI run | t23_devnet_anchor_test | P1.2 (Secrets set) | PENDING
+P1.1 | Resolve Current CI Failures | GitHub Actions | None | ✅ COMPLETE (Commits: 1e58848, f7e02a6, efc06d2)
+ | **IPFS Integration:** Fixed Pinata JWT auth, added PINATA_JWT to CI workflow, fixed CID extraction (IpfsHash) |
+P1.2 | Set All Repository Secrets | GitHub Secrets | P1.1 (Stable CI) | ✅ IPFS COMPLETE / ⚠️ SOLANA PENDING
+ | IPFS secrets working (PINATA_JWT verified in CI). Solana ROUTER_PRIVATE_KEY needs format correction (JSON array) |
+P1.3 | T23 IPFS Pinning Verification | t23_devnet_anchor_test | P1.2 (Secrets set) | ✅ COMPLETE (CI Run #19885881284)
+ | **Success:** IPFS pinned to QmRTSErzZuiaWva1sQsnbstm6bCADbuY8auM6SpP5oP3im with JWT auth |
+P1.3b | T23 Solana On-Chain Anchoring | t23_devnet_anchor_test | P1.2 (Solana key format) | ⚠️ CONFIG ISSUE
+ | ROUTER_PRIVATE_KEY format invalid - needs JSON array of bytes, not base58 |
 P1.4 | Document T23 Failure Modes & Recovery | Runbook / Docs | T23 Implementation Complete | PENDING
 
 ---
@@ -172,9 +176,23 @@ All project files listed in the Completed Tasks section have been saved to the r
 | **T20** | Escalation & deduplication | Add alert throttles / deduping / runbook links to prevent alert storms and improve on-call response time | Implement throttles & runbooks | ✅ COMPLETE
 | **T21** | Long-term reconciler improvements | Retry logic for pending refunds, automated re-sends for failed refund_tx signatures, and historical reconciliation reporting. VP node persistence configuration implemented. | Router API retry complete; VP persistence added | ✅ COMPLETE (deployed)
 | **T22** | Monitoring / dashboards | Add observability panels (Prometheus/Grafana) for refund rate, unsigned refunds, reconcile success, retry counts, job queue health; configure Grafana routing & webhooks. Control Center UI + Prometheus/Alertmanager configs implemented. | Prometheus/Alertmanager configs created; alert routing to T20 sink configured | ✅ COMPLETE
-| **T23** | Governance notification / audit anchoring | Anchor critical events (mass refunds, unresolved unsigned refunds) to governance timeline and export audits | Prototype complete (IPFS mocked + governance sink + on-chain simulation) | ✅ PROTOTYPE COMPLETE
+| **T23** | Governance notification / audit anchoring | Anchor critical events (mass refunds, unresolved unsigned refunds) to governance timeline and export audits | ✅ IPFS Integration Complete (Pinata JWT auth working in CI) / ⚠️ Solana config pending | ✅ IPFS COMPLETE / ⚠️ SOLANA CONFIG
 
-**T23 work (on-chain integration available, mock fallback):** A governance anchoring implementation has been added to the Router API: `router-api/src/services/audit-anchoring.ts` (deterministic canonical JSON + SHA-256 audit hash), IPFS upload (mock + optional IPFS API gateway), governance sink notification (via `GOVERNANCE_WEBHOOK_URL`), and an on-chain anchoring function that will submit a Solana Memo instruction to the configured `SOLANA_RPC_URL` when credentials (router private key / signer key) are provided. When no RPC or signer is configured the service falls back to a deterministic mock transaction signature so tests are reproducible. The `/api/v1/governance/anchor` endpoint is available as a test stub and the Refund Reconciliation flow anchors unsigned refund failures and logs the audit information prior to dispatching critical alerts and notifications. Next steps: provision production IPFS and Solana credentials and persist a signed governance timeline for full verification.
+**T23 work - IPFS Integration Complete (Dec 3, 2025):**
+
+✅ **IPFS Pinning via Pinata** - Successfully integrated and verified in CI:
+- **Commits:** `1e58848` (JWT auth fix), `f7e02a6` (CI env vars), `efc06d2` (IpfsHash extraction)
+- **CI Verification:** Run #19885881284 - IPFS pinned successfully to `QmRTSErzZuiaWva1sQsnbstm6bCADbuY8auM6SpP5oP3im`
+- **Authentication:** JWT Bearer token working correctly (auth mode: JWT)
+- **Status:** Production-ready IPFS integration complete
+
+⚠️ **Solana On-Chain Anchoring** - Configuration issue:
+- The `ROUTER_PRIVATE_KEY` GitHub Secret is in an invalid format
+- Code expects JSON array of bytes (e.g., `[1,2,3,...]`), currently appears to be base58 or other format
+- Falls back to mock signature until key format is corrected
+- **Next step:** Update `ROUTER_PRIVATE_KEY` secret to proper format
+
+The governance anchoring implementation in `router-api/src/services/audit-anchoring.ts` includes: deterministic canonical JSON + SHA-256 audit hash, IPFS upload (now working with live Pinata), governance sink notification (via `GOVERNANCE_WEBHOOK_URL`), and on-chain anchoring function that will submit a Solana Memo instruction when credentials are properly formatted. The `/api/v1/governance/anchor` endpoint is available and the Refund Reconciliation flow anchors unsigned refund failures.
 
 ---
 
