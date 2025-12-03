@@ -22,8 +22,6 @@ jobs:
           sudo apt-get install -y postgresql-client
 
       - name: Execute migration runner (with pre-flight check)
-        # Only run if staging DB secrets are present
-        if: ${{ secrets.STAGING_PG_HOST != '' }}
         env:
           PGHOST: ${{ secrets.STAGING_PG_HOST }}
           PGPORT: ${{ secrets.STAGING_PG_PORT }}
@@ -35,10 +33,11 @@ jobs:
           echo "Checking migration environment variables (secrets must be configured)"
           # Print availability, not values
           if [ -z "${PGHOST:-}" ] || [ -z "${PGUSER:-}" ] || [ -z "${PGPASSWORD:-}" ] || [ -z "${PGDATABASE:-}" ]; then
-            echo "ERROR: Missing required DB secrets. The migration job requires STAGING_PG_HOST, STAGING_PG_USER, STAGING_PG_PASSWORD and STAGING_PG_DATABASE to be configured as repository secrets."
+            echo "⚠️  NOTICE: Staging DB secrets not configured. Skipping migrations."
             echo "If you intend to run migrations in CI you must add the appropriate secrets to this repository or use the run-migrations.sh runner with a self-hosted/test database."
             echo "PGHOST present: ${PGHOST:+YES}${PGHOST:-NO}"
-            exit 2
+            echo "This is not an error — the job will succeed and skip the migration step."
+            exit 0
           fi
 
           echo "All required DB env vars present (masked). Running migrations using router-api/migrations/run-migrations.sh"
