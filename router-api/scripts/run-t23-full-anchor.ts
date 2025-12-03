@@ -96,7 +96,26 @@ async function runT23FullAnchorTest() {
 
   } catch (error: any) {
     console.error(`\n======================================================`);
-    console.error(`❌ T23 FULL ANCHOR PRE-FLIGHT FAILURE:`, error.message);
+    // Print a compact, informative primary message
+    console.error(`❌ T23 FULL ANCHOR PRE-FLIGHT FAILURE:`, error?.message || String(error));
+
+    // Emit structured diagnostics so CI logs include request/response details
+    try {
+      if (error?.response) {
+        console.error('--- Error Response Status ---', error.response.status);
+        if (error.response.data) {
+          // Truncate large response bodies to keep logs readable
+          const txt = typeof error.response.data === 'string' ? error.response.data : JSON.stringify(error.response.data);
+          console.error('--- Error Response Body (truncated) ---', txt.substring(0, 200));
+        }
+      }
+    } catch (outerErr) {
+      // fallthrough — diagnostics best-effort
+    }
+
+    // Print stack for deeper debugging
+    if (error?.stack) console.error('Stack:', error.stack);
+
     console.error(`======================================================`);
     process.exit(1);
   }

@@ -71,6 +71,9 @@ async function uploadToIPFS(canonicalJson: string): Promise<string> {
     return cid;
   }
 
+  // Track last error for improved diagnostics on failure
+  let lastErr: any = null;
+
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
       IPFS_PIN_RETRY_COUNTER.inc();
@@ -88,7 +91,19 @@ async function uploadToIPFS(canonicalJson: string): Promise<string> {
 
       throw new Error('IPFS gateway did not return CID');
     } catch (err: any) {
-      console.warn(`[AuditAnchoring] IPFS pin attempt ${attempt}/${attempts} failed:`, err?.message || err);
+      // Provide richer, safer diagnostics for CI logs so failures are actionable.
+      // Preserve the original error for the final thrown message.
+      const status = err?.response?.status;
+      const responseData = err?.response?.data;
+      const message = err?.message || String(err);
+
+      console.warn(`[AuditAnchoring] IPFS pin attempt ${attempt}/${attempts} failed:`,
+        message,
+        status ? `status=${status}` : '',
+        responseData ? `response=${JSON.stringify(responseData).slice(0, 200)}` : '',
+        err?.stack ? `stack=${(err.stack || '').split('\n')[0]}` : ''
+      );
+      lastErr = err;
       if (attempt < attempts) {
         const backoff = baseBackoffMs * Math.pow(2, attempt - 1);
         await new Promise(r => setTimeout(r, backoff));
@@ -97,7 +112,9 @@ async function uploadToIPFS(canonicalJson: string): Promise<string> {
 
       IPFS_PIN_FAILURE_COUNTER.inc();
       console.error('[AuditAnchoring] IPFS pinning failed after all retries. Aborting anchor to preserve integrity.');
-      throw new Error('IPFS pinning failed after retries');
+      // Attach last error message so CI logs contain the actual root cause.
+      const lastMessage = lastErr?.message || (lastErr ? String(lastErr) : 'unknown');
+      throw new Error(`IPFS pinning failed after retries: ${lastMessage}`);
     }
   }
 
