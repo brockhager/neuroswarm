@@ -135,3 +135,11 @@ jobs:
           DISCORD_CRITICAL_ALERT_WEBHOOK: ${{ secrets.DISCORD_CRITICAL_ALERT_WEBHOOK }}
           GOVERNANCE_SERVICE_TOKEN: ${{ secrets.GOVERNANCE_SERVICE_TOKEN }}
         run: npx ts-node scripts/run-t23-full-anchor.ts
+
+      - name: Run T23 Anchor Integrity Check
+        working-directory: ./router-api
+        env:
+          SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
+          T23_TX_SIGNATURE: ${{ env.T23_TX_SIGNATURE }}
+          T23_AUDIT_HASH: ${{ env.T23_AUDIT_HASH }}
+        run: npx ts-node scripts/verify-anchor-integrity.ts

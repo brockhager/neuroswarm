@@ -329,9 +329,8 @@ export async function anchorAudit(event: AuditEvent): Promise<AuditAnchorResult>
   const ipfs_cid = await uploadToIPFS(canonicalJson);
   const governance_notified = await sendGovernanceNotification(event, ipfs_cid);
 
-  // 3) Simulate On-Chain anchoring (e.g., submitting a Memo or minimal tx with audit_hash)
+  // 3) Anchor on-chain (submitting a Memo or minimal tx with audit_hash)
   const transaction_signature = await anchorAuditOnChain(audit_hash);
-  console.log('[AuditAnchoring] Simulated on-chain tx signature:', transaction_signature);
 
   console.log('Audit anchored ->', { ipfs_cid });
 

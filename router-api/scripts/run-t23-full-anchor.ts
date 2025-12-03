@@ -89,6 +89,18 @@ async function runT23FullAnchorTest() {
 
     if (success) {
       console.log(`\n🎉 T23 FULL ANCHOR PRE-FLIGHT PASSED. The system is ready for gated CI.`);
+      
+      // Export signature and audit_hash for CI integrity check (next step)
+      if (process.env.GITHUB_ACTIONS) {
+        const fs = require('fs');
+        const githubEnv = process.env.GITHUB_ENV || '';
+        if (githubEnv) {
+          fs.appendFileSync(githubEnv, `T23_TX_SIGNATURE=${result.transaction_signature}\n`);
+          fs.appendFileSync(githubEnv, `T23_AUDIT_HASH=${result.audit_hash}\n`);
+          console.log('\n[CI] Exported T23_TX_SIGNATURE and T23_AUDIT_HASH for integrity check.');
+        }
+      }
+      
       process.exit(0);
     } else {
       throw new Error("T23 Full Anchor Pre-flight failed one or more assertions.");
