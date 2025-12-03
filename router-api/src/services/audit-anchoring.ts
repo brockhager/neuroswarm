@@ -123,7 +123,7 @@ async function uploadToIPFS(canonicalJson: string): Promise<string> {
 
       const res = await axios.post(ipfsApi, payload, { headers, timeout: 20000 });
 
-      const cid = (res.data && (res.data.cid || res.data.Hash || res.data.hash)) || '';
+      const cid = (res.data && (res.data.IpfsHash || res.data.cid || res.data.Hash || res.data.hash)) || '';
       if (cid) {
         IPFS_PIN_SUCCESS_COUNTER.inc();
         console.log('[AuditAnchoring] IPFS pinned successfully:', cid);
