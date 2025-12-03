@@ -111,6 +111,10 @@ async function uploadToIPFS(canonicalJson: string): Promise<string> {
         payload = canonicalJson;
       }
 
+      // Emit a short masked diagnostic for CI: which auth strategy will be used.
+      const authMode = ipfsAuthToken ? 'JWT' : (process.env.IPFS_API_KEY ? 'API_KEY_BODY' : 'NONE');
+      console.log('[AuditAnchoring] IPFS auth mode:', authMode);
+
       const res = await axios.post(ipfsApi, payload, { headers, timeout: 20000 });
 
       const cid = (res.data && (res.data.cid || res.data.Hash || res.data.hash)) || '';
