@@ -35,12 +35,8 @@ curl -fsSL https://ollama.ai/install.sh | sh
 ollama pull llama3.2
 ```
 
-**mistral** (Alternative)
-- Size: ~4GB
-- Strong reasoning capabilities
-```powershell
-ollama pull mistral
-```
+**mistral** (REMOVED_BY_POLICY)
+- Removed from repository per project policy.
 
 **gemma:2b** (Lightweight)
 - Size: ~1.4GB
@@ -128,9 +124,7 @@ graph TD
 ## Performance Tuning
 
 ### Model Selection
-- **Speed Priority**: Use `gemma:2b` or `llama3.2`
-- **Quality Priority**: Use `mistral` or `llama3.1:8b`
-- **Balance**: Use `llama3.2` (recommended)
+**Quality Priority**: Use `llama3.1:8b` or other supported high-quality models
 
 ### Hardware Optimization
 - **GPU Acceleration**: Ollama automatically uses GPU if available (NVIDIA/AMD)

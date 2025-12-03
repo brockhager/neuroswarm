@@ -278,7 +278,7 @@ curl -X PUT http://localhost:3009/api/config \
 | GPT-2 | 124M | 1024 | Yes | Baseline, testing |
 | TinyLlama | 1.1B | 2048 | Yes | Production, low-resource |
 | Llama-2-7B | 7B | 4096 | Yes | High-quality responses |
-| Mistral-7B | 7B | 8192 | Yes | Long context |
+| Mistral-7B | REMOVED_BY_POLICY | n/a | n/a | Removed from repo
 
 ### Export Models
 
@@ -476,7 +476,7 @@ def switch_model(model_key):
 1. **GPT-2**: Development, testing, low-latency needs
 2. **TinyLlama**: Production with resource constraints
 3. **Llama-2-7B**: High-quality responses, sufficient resources
-4. **Mistral-7B**: Long context requirements
+4. **Mistral-7B**: *Removed from the repository* (no longer supported)
 
 ## 7. Troubleshooting
 

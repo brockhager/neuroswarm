@@ -28,7 +28,7 @@ Complete guide for deploying NS-LLM in production using Docker.
 ### Optional
 
 - **NVIDIA GPU** with CUDA support (for GPU acceleration)
-- **HuggingFace Account** (for Llama-2, Mistral models)
+- **HuggingFace Account** (for Llama-2 and other supported models)
 
 ---
 
@@ -183,7 +183,7 @@ LOG_LEVEL=info
 # CORS
 CORS_ORIGINS=http://localhost:3010,http://localhost:3000
 
-# HuggingFace Token (for Llama-2, Mistral)
+# HuggingFace Token (for Llama-2 and other supported models)
 # HF_TOKEN=your_token_here
 ```
 
@@ -218,7 +218,7 @@ CORS_ORIGINS=http://localhost:3010,http://localhost:3000
 | GPT-2 | 124M | 1024 | ~500MB | Testing, development |
 | TinyLlama | 1.1B | 2048 | ~1.5GB | Production, low-resource |
 | Llama-2-7B | 7B | 4096 | ~4GB | High quality |
-| Mistral-7B | 7B | 8192 | ~4GB | Long context |
+| Mistral-7B | REMOVED_BY_POLICY | n/a | n/a | Removed from repo
 
 ### Export Additional Models
 

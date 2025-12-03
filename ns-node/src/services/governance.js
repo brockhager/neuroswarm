@@ -90,12 +90,7 @@ const AVAILABLE_MODELS = {
         performance: { speed: 'slow', accuracy: 'high', size: 'large' },
         current: false
     },
-    'mistral:7b': {
-        name: 'Mistral 7B',
-        description: 'Efficient alternative with good performance',
-        performance: { speed: 'medium', accuracy: 'good', size: 'medium' },
-        current: false
-    }
+    // 'mistral:7b' removed from the codebase per project policy
 };
 
 // Cache policies for voting (Phase 4b.1)

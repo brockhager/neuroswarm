@@ -5,7 +5,10 @@ Supports:
 - GPT-2 (124M) - baseline
 - TinyLlama-1.1B (1.1B parameters)
 - Llama-2-7B (7B parameters, quantized)
-- Mistral-7B (7B parameters, quantized)
+
+Mistral models have been removed from the repository due to project policy.
+If you require a replacement model, add it to the MODEL_REGISTRY with an
+appropriate huggingface ID and metadata.
 """
 
 import argparse
@@ -40,13 +43,7 @@ MODEL_REGISTRY = {
         "quantize": True,
         "description": "Llama 2 7B chat model (requires HF token)"
     },
-    "mistral-7b": {
-        "hf_id": "mistralai/Mistral-7B-Instruct-v0.1",
-        "params": "7B",
-        "context_length": 8192,
-        "quantize": True,
-        "description": "Mistral 7B instruct model"
-    }
+    # Mistral entries intentionally removed
 }
 
 def export_model(model_key, output_dir, quantize=True, force=False):

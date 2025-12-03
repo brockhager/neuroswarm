@@ -65,7 +65,7 @@ Optimize for larger models and higher throughput.
 **Model Support:**
 - TinyLlama (1.1B parameters)
 - Llama-2-7B (quantized)
-- Mistral-7B (quantized)
+Mistral-7B (REMOVED_BY_POLICY)
 - Model switching API
 
 **Optimizations:**
