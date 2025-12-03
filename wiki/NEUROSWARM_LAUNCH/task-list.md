@@ -6,15 +6,19 @@ STATUS SUMMARY
 - **T21 (RBAC/Auth):** COMPLETE and deployed — secure cross-service JWT short-token framework, RBAC enforced on router-api and admin-node (GovernanceLogger restricted to Admin role).
 - **T23 (Audit Anchoring):** ✅ IPFS INTEGRATION COMPLETE — Pinata JWT authentication working, CID extraction verified in CI. ⚠️ Solana on-chain anchoring requires private key configuration (separate task).
 
-LOCAL LAUNCH STATUS (2025-12-03)
+LOCAL LAUNCH STATUS (2025-12-03 Evening)
 
 - Postgres (router_api test DB) — ✅ Running and healthy on host port 5433 (container: router_postgres_test). Schema applied; `jobs` table exists and migrations executed.
 - Router API — ✅ Started locally and listening on port 3000 (ts-node); migrations applied but note that the Router process warns when ROUTER_PRIVATE_KEY is missing and will use a random keypair until the secret is set correctly.
 - IPFS daemon — ✅ Kubo IPFS daemon started locally and listening on 127.0.0.1:5001 (API reachable via ipfs CLI / RPC API).
+- NS Node — ✅ Running on port 3009 with chat interface accessible at http://localhost:3009/
 - NS-LLM / Ollama / neuro-services / neuro-runner / neuro-web / alert-sink — ✅ Auxiliary services started and listening on ports used in local dev (3005, 3006, 3007, 3008, 3010, etc.).
+- **Launch Scripts** — ✅ Individual batch scripts created for all services in `/start/` directory with proper path resolution
 
 Notes / Next steps to reach full local E2E:
-- The core environment is now functional locally — Postgres + migrations, Router API, and IPFS are up. This enables local end-to-end flows (anchor -> IPFS -> optional Solana anchor) for diagnostic testing.
+- The core environment is now functional locally — Postgres + migrations, Router API, IPFS, and NS Node are up. This enables local end-to-end flows (anchor -> IPFS -> optional Solana anchor) for diagnostic testing.
+- **Launch Infrastructure Ready:** Individual batch scripts in `/start/` directory allow users to start any service independently (NS Node, Gateway, VP, Router API, etc.). All paths verified and working.
+- **Bug Fixes Applied:** Fixed JSON syntax error in `ns-node/src/services/data/governance.json` (removed JavaScript comment that broke JSON parsing).
 - Remaining blocking item: ROUTER_PRIVATE_KEY GitHub secret needs to be set in the correct format (JSON array of bytes) to enable real on-chain anchoring instead of the random keypair fallback.
 - Optional: run the `router-api/scripts/run-t23-full-anchor.ts` locally to test a full anchor flow (it will attempt to pin to IPFS before attempting to anchor on Solana).
 
@@ -71,6 +75,8 @@ Target completion date for Phase 2: Dec 9
 T24 — Decentralized State Management (Target: Dec 9)
 ID | Task | Component | Dependency | Status
 ---|------|-----------|-----------|------
+T24.0 | Launch Infrastructure Setup | Scripts / DevOps | None | ✅ COMPLETE (Dec 3)
+ | Individual batch scripts for all services in `/start/` directory. Fixed governance.json parsing error. |
 T24.1 | Implement State Sync Endpoints | VP-Node | T21 (RBAC/Auth), T27 Complete | READY TO START
 T24.2 | Refactor Router State Access | Router | T24.1 | PENDING
 T24.3 | Integrate State Validation Stub | VP-Node | T24.1 | PENDING
@@ -135,10 +141,18 @@ Below is a consolidated list of all completed items across the launch plan that 
 - T13 — Migration runners & cross-platform E2E migration runner — ✅ COMPLETE
 - T14 — CI E2E migration validation workflow (added; gated) — ✅ ADDED
 - T15 — Router API deployment runbook & docs — ✅ COMPLETE
-- T16 — Live Control Center + RBAC + secured metrics proxy — ✅ COMPLETE
-
 Additional engineering and CI hardening
 - H1 — NS-LLM server process hardening (prevent early exit) — ✅ COMPLETE
+- H2 — Windows Start-Process & logging rework for crash traces — ✅ COMPLETE
+- H3 — Robust two-file log merge for detached processes — ✅ COMPLETE
+- H4 — Individual launch scripts for all NeuroSwarm services — ✅ COMPLETE (Dec 3, 2025)
+  - 13 individual batch scripts created in `/start/` directory
+  - Scripts: start-ns-node, start-gateway-node, start-vp-node, start-router-api, start-postgres, start-ipfs, start-ollama, start-ns-llm, start-neuro-services, start-neuro-runner, start-neuro-web, start-alert-sink, start-admin-node
+  - All path references fixed to work from `/start/` subdirectory (using `%~dp0..\` pattern)
+  - README.md added with usage instructions and dependency documentation
+- H5 — NS Node governance.json syntax fix — ✅ COMPLETE (Dec 3, 2025)
+  - Fixed JSON parsing error caused by JavaScript-style comment in governance.json
+  - NS Node now starts successfully on port 3009 with chat interface accessibleLETE
 - H2 — Windows Start-Process & logging rework for crash traces — ✅ COMPLETE
 - H3 — Robust two-file log merge for detached processes — ✅ COMPLETE
 
