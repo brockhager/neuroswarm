@@ -25,7 +25,6 @@ This document lists the reserved ports for all NeuroSwarm services and nodes.
 | **Alert Sink** | `3010` | Alert monitoring and notification service |
 | **Agent 9 Discord Bot** | N/A | Discord integration (connects to NS-LLM) |
 | **Postgres (Router API)** | `5433` | PostgreSQL database for Router API |
-| **Neuro Web (Alt)** | `3005` | Chat Interface & Frontend |
 
 ## External Dependencies
 
@@ -46,14 +45,6 @@ This document lists the reserved ports for all NeuroSwarm services and nodes.
 - **Alert Sink**: Uses `PORT` env var. Defaults to 3010.
 - **Agent 9**: Discord bot. Requires `DISCORD_BOT_TOKEN` and connects to NS-LLM at port 3015.
 - **Postgres**: Docker container. Maps to host port 5433.
-- **NS-LLM**: Uses `PORT` env var. Defaults to 5555. Connects to Ollama at 11434.
-- **Neuro Services**: Uses `PORT` env var. Defaults to 3007.
-- **NS-Web**: Next.js app. Uses `PORT` env var. Defaults to 3010.
-
-## Port Conflicts
-
-If you encounter port conflicts, you can override the default ports using environment variables:
-
 ```powershell
 # Windows PowerShell
 $env:PORT=3019; node ns-node/server.js
@@ -73,7 +64,4 @@ See `neuroswarm/onboarding/docker-compose.yml` for the complete service configur
 **Source of Truth**: `neuroswarm/shared/ports.js`  
 **Launch Scripts**: `neuroswarm/start/` directory contains individual batch scripts for each service  
 **Last Updated**: December 3, 2025
----
-
-**Source of Truth**: `neuroswarm/shared/ports.js`  
-**Last Updated**: November 28, 2025
+ 
