@@ -4,7 +4,7 @@ import cors from 'cors';
 import NativeShim from './native-shim.js';
 
 const app = express();
-const PORT = 8080;
+const PORT = process.env.PORT || 3015;
 
 app.use(cors());
 app.use(bodyParser.json());

@@ -23,7 +23,7 @@ const AGENT9_APP_ID = process.env.AGENT9_APP_ID || '1445902568038334556';
 const AGENT9_PUBLIC_KEY = process.env.AGENT9_PUBLIC_KEY || 'e417ce8b6f802cc2a776201c943a32bbe7cea6beac05a87c0081dd503dfc6ee3';
 
 // NS-LLM Server Configuration
-const NS_LLM_URL = process.env.NS_LLM_URL || 'http://localhost:8080';
+const NS_LLM_URL = process.env.NS_LLM_URL || 'http://localhost:3015';
 
 // The channel name where the chat functionality is enabled.
 const CHAT_CHANNEL_NAME = process.env.CHAT_CHANNEL_NAME || 'chat-with-agent-9';
@@ -113,7 +113,7 @@ client.on('messageCreate', async message => {
         } catch (llmError) {
             console.error('[Agent 9] NS-LLM connection error:', llmError.message);
             errorOccurred = true;
-            responseText = "⚠️ **NS-LLM is currently offline**\n\nThe NeuroSwarm local LLM service is not responding. Please ensure:\n• NS-LLM is running on port 8080\n• Ollama service is active\n• Run `start-ns-llm.bat` to start the service\n\nI'll be back online once NS-LLM is available!";
+            responseText = "⚠️ **NS-LLM is currently offline**\n\nThe NeuroSwarm local LLM service is not responding. Please ensure:\n• NS-LLM is running on port 3015\n• Ollama service is active\n• Run `start-ns-llm.bat` to start the service\n\nI'll be back online once NS-LLM is available!";
         }
         
         const finalDiscordMessage = errorOccurred 

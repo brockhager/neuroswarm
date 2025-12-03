@@ -12,7 +12,7 @@ This document lists the reserved ports for all NeuroSwarm services and nodes.
 | **Gateway Node** | `8080` | Anti-spam gateway with mempool |
 | **VP Node** | `4000` | Block producer and consensus engine |
 | **Admin Node** | `3000` | Dashboard, governance, monitoring |
-| **NS-LLM** | `8080` | Local AI inference service (NS-LLM Server) |
+| **NS-LLM** | `3015` | Local AI inference service (NS-LLM Server) |
 | **NS-Web** | `3010` | React web interface (Phase E) |
 | **Router API** | `4001` | Router API service |
 
@@ -39,12 +39,12 @@ This document lists the reserved ports for all NeuroSwarm services and nodes.
 - **Gateway Node**: Uses `PORT` env var. Defaults to 8080. Requires `NS_NODE_URL` to point to NS-Server.
 - **VP Node**: Uses `PORT` env var. Defaults to 4000. Requires `NS_NODE_URL` and `GATEWAY_URL`.
 - **Admin Node**: Uses `PORT` env var. Defaults to 3000.
-- **NS-LLM**: Uses `PORT` env var. Defaults to 8080. Connects to Ollama at 11434.
+- **NS-LLM**: Uses `PORT` env var. Defaults to 3015. Connects to Ollama at 11434.
 - **Router API**: Uses `PORT` env var. Defaults to 4001. Requires `DATABASE_URL` for Postgres connection.
 - **Neuro Services**: Uses `PORT` env var. Defaults to 3007.
 - **NS-Web**: Next.js app. Uses `PORT` env var. Defaults to 3010.
 - **Alert Sink**: Uses `PORT` env var. Defaults to 3010.
-- **Agent 9**: Discord bot. Requires `DISCORD_BOT_TOKEN` and connects to NS-LLM at port 8080.
+- **Agent 9**: Discord bot. Requires `DISCORD_BOT_TOKEN` and connects to NS-LLM at port 3015.
 - **Postgres**: Docker container. Maps to host port 5433.
 - **NS-LLM**: Uses `PORT` env var. Defaults to 5555. Connects to Ollama at 11434.
 - **Neuro Services**: Uses `PORT` env var. Defaults to 3007.
