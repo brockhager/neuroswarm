@@ -91,19 +91,62 @@ async function uploadToIPFS(canonicalJson: string): Promise<string> {
 
       throw new Error('IPFS gateway did not return CID');
     } catch (err: any) {
-      // Provide richer, safer diagnostics for CI logs so failures are actionable.
-      // Preserve the original error for the final thrown message.
+      // Provide richer diagnostics for CI logs so failures are actionable and
+      // surface the real cause when an AggregateError wraps multiple inner errors.
+      const message = err?.message || String(err);
+      const code = err?.code || err?.errno || '';
       const status = err?.response?.status;
       const responseData = err?.response?.data;
-      const message = err?.message || String(err);
 
-      console.warn(`[AuditAnchoring] IPFS pin attempt ${attempt}/${attempts} failed:`,
-        message,
-        status ? `status=${status}` : '',
-        responseData ? `response=${JSON.stringify(responseData).slice(0, 200)}` : '',
-        err?.stack ? `stack=${(err.stack || '').split('\n')[0]}` : ''
-      );
-      lastErr = err;
+      // Try to extract request and config info (mask headers for safety)
+      let reqUrl = err?.config?.url || err?.request?.url || err?.request?.path || '';
+      let method = err?.config?.method || err?.request?.method || '';
+      let headersSummary = '';
+      try {
+        const headers = err?.config?.headers || {};
+        // Mask well-known auth fields
+        const safe = { ...headers };
+        if (safe?.authorization) safe.authorization = '[REDACTED]';
+        if (safe?.Authorization) safe.Authorization = '[REDACTED]';
+        if (safe?.['x-api-key']) safe['x-api-key'] = '[REDACTED]';
+        headersSummary = JSON.stringify(safe).slice(0, 200);
+      } catch (hErr) {
+        headersSummary = '';
+      }
+
+      // Handle AggregateError (e.g., Promise.any / multiple suberrors)
+      if (err?.name === 'AggregateError' && Array.isArray(err.errors)) {
+        const innerMsgs = err.errors.map((e: any, idx: number) => {
+          const innerMsg = e?.message || String(e);
+          const innerCode = e?.code || '';
+          const innerStatus = e?.response?.status || '';
+          return `#${idx + 1}:${innerMsg}${innerCode ? ` (code=${innerCode})` : ''}${innerStatus ? ` status=${innerStatus}` : ''}`;
+        }).join(' | ');
+
+        console.warn(`[AuditAnchoring] IPFS pin attempt ${attempt}/${attempts} failed: AGGREGATE ${message}`,
+          `code=${code}`,
+          reqUrl ? `url=${reqUrl}` : '',
+          method ? `method=${method}` : '',
+          headersSummary ? `headers=${headersSummary}` : '',
+          responseData ? `response=${JSON.stringify(responseData).slice(0, 300)}` : '',
+          `inner=${innerMsgs}`,
+          err?.stack ? `stack=${(err.stack || '').split('\n')[0]}` : ''
+        );
+
+        // capture inner messages for final error
+        lastErr = { message: message, inner: innerMsgs, code, status };
+      } else {
+        console.warn(`[AuditAnchoring] IPFS pin attempt ${attempt}/${attempts} failed:`,
+          message,
+          code ? `code=${code}` : '',
+          status ? `status=${status}` : '',
+          reqUrl ? `url=${reqUrl}` : '',
+          headersSummary ? `headers=${headersSummary}` : '',
+          responseData ? `response=${JSON.stringify(responseData).slice(0, 300)}` : '',
+          err?.stack ? `stack=${(err.stack || '').split('\n')[0]}` : ''
+        );
+        lastErr = err;
+      }
       if (attempt < attempts) {
         const backoff = baseBackoffMs * Math.pow(2, attempt - 1);
         await new Promise(r => setTimeout(r, backoff));
