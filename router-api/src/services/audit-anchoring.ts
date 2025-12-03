@@ -87,10 +87,31 @@ async function uploadToIPFS(canonicalJson: string): Promise<string> {
       }
 
       // Also support x-api-key / x-api-secret if provided (some services use custom headers)
-      if (process.env.IPFS_API_KEY) headers['x-api-key'] = process.env.IPFS_API_KEY;
-      if (process.env.IPFS_API_SECRET) headers['x-api-secret'] = process.env.IPFS_API_SECRET;
+      if (process.env.IPFS_API_KEY) headers['x-api-key'] = process.env.IPFS_API_KEY as string;
+      if (process.env.IPFS_API_SECRET) headers['x-api-secret'] = process.env.IPFS_API_SECRET as string;
 
-      const res = await axios.post(ipfsApi, canonicalJson, { headers, timeout: 20000 });
+      // Pinata expects a specific body shape for pinning JSON (pinJSONToIPFS)
+      // When targeting Pinata and no JWT is present, include pinata_api_key/pinata_secret_api_key
+      // and wrap the event as `pinataContent` object so Pinata will accept it.
+      let payload: any = canonicalJson;
+      try {
+        // If the endpoint looks like Pinata's API, wrap payload accordingly
+        if ((ipfsApi || '').includes('pinata') || (ipfsApi || '').includes('pinata.cloud')) {
+          const parsed = JSON.parse(canonicalJson);
+          payload = { pinataContent: parsed } as any;
+
+          // If JWT not supplied but API key/secret provided, attach them in body
+          if (!ipfsAuthToken && process.env.IPFS_API_KEY && process.env.IPFS_API_SECRET) {
+            payload.pinata_api_key = String(process.env.IPFS_API_KEY);
+            payload.pinata_secret_api_key = String(process.env.IPFS_API_SECRET);
+          }
+        }
+      } catch (pErr) {
+        // If parsing failed, fall back to sending the raw string (some gateways accept raw JSON strings)
+        payload = canonicalJson;
+      }
+
+      const res = await axios.post(ipfsApi, payload, { headers, timeout: 20000 });
 
       const cid = (res.data && (res.data.cid || res.data.Hash || res.data.hash)) || '';
       if (cid) {
