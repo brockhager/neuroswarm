@@ -91,8 +91,8 @@ async function uploadToIPFS(canonicalJson: string): Promise<string> {
       if (process.env.IPFS_API_SECRET) headers['x-api-secret'] = process.env.IPFS_API_SECRET as string;
 
       // Pinata expects a specific body shape for pinning JSON (pinJSONToIPFS)
-      // When targeting Pinata and no JWT is present, include pinata_api_key/pinata_secret_api_key
-      // and wrap the event as `pinataContent` object so Pinata will accept it.
+      // When using JWT: ONLY Authorization header is needed, body contains only pinataContent
+      // When using API key/secret: include them in the request body (legacy auth method)
       let payload: any = canonicalJson;
       try {
         // If the endpoint looks like Pinata's API, wrap payload accordingly
@@ -100,20 +100,17 @@ async function uploadToIPFS(canonicalJson: string): Promise<string> {
           const parsed = JSON.parse(canonicalJson);
           payload = { pinataContent: parsed } as any;
 
-              // If JWT not supplied but API key/secret provided, attach them in body
-              if (!ipfsAuthToken && process.env.IPFS_API_KEY && process.env.IPFS_API_SECRET) {
-                // Ensure values are strings and include in the payload body
-                const aKey = String(process.env.IPFS_API_KEY);
-                const aSecret = String(process.env.IPFS_API_SECRET);
-                payload.pinata_api_key = aKey;
-                payload.pinata_secret_api_key = aSecret;
-
-                // Some pinning endpoints are strict about types or prefer keys in headers
-                // — include them also in headers as a fallback (stringified) so the remote
-                // sees them consistently in either place. We avoid logging values.
-                headers['pinata_api_key'] = aKey;
-                headers['pinata_secret_api_key'] = aSecret;
-              }
+          // ONLY use API key/secret in body if JWT is NOT present
+          // Mixing JWT with API key/secret causes 401 errors from Pinata
+          if (!ipfsAuthToken && process.env.IPFS_API_KEY && process.env.IPFS_API_SECRET) {
+            // Legacy authentication: API key/secret in request body
+            const aKey = String(process.env.IPFS_API_KEY);
+            const aSecret = String(process.env.IPFS_API_SECRET);
+            payload.pinata_api_key = aKey;
+            payload.pinata_secret_api_key = aSecret;
+          }
+          // When JWT is present (ipfsAuthToken), we rely solely on the Authorization header
+          // and do NOT add any API key/secret fields to the body or headers
         }
       } catch (pErr) {
         // If parsing failed, fall back to sending the raw string (some gateways accept raw JSON strings)
