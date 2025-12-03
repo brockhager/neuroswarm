@@ -127,6 +127,11 @@ jobs:
           ROUTER_PRIVATE_KEY: ${{ secrets.ROUTER_PRIVATE_KEY }}
           SOLANA_SIGNER_KEY: ${{ secrets.SOLANA_SIGNER_KEY }}
           IPFS_API_URL: ${{ secrets.IPFS_API_URL }}
+          # Pinata / IPFS authentication tokens
+          PINATA_JWT: ${{ secrets.PINATA_JWT }}
+          IPFS_API_TOKEN: ${{ secrets.IPFS_API_TOKEN }}
+          IPFS_API_KEY: ${{ secrets.IPFS_API_KEY }}
+          IPFS_API_SECRET: ${{ secrets.IPFS_API_SECRET }}
           DISCORD_CRITICAL_ALERT_WEBHOOK: ${{ secrets.DISCORD_CRITICAL_ALERT_WEBHOOK }}
           GOVERNANCE_SERVICE_TOKEN: ${{ secrets.GOVERNANCE_SERVICE_TOKEN }}
         run: npx ts-node scripts/run-t23-full-anchor.ts
