@@ -1,0 +1,28 @@
+name: Airdrop Router Signer (Devnet)
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  airdrop:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install one-off dependency
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm i @solana/web3.js --no-audit --no-fund
+
+      - name: Run airdrop script (DERIVE PUBLIC KEY and REQUEST 1 SOL on DEVNET)
+        env:
+          ROUTER_PRIVATE_KEY: ${{ secrets.ROUTER_PRIVATE_KEY }}
+        run: |
+          node router-api/scripts/airdrop-signer.mjs
