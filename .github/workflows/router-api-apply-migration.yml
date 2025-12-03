@@ -12,8 +12,6 @@ on:
 jobs:
   apply_migration:
     runs-on: ubuntu-latest
-    # Only run if staging DB secrets are configured
-    if: secrets.STAGING_PG_HOST != '' && secrets.STAGING_PG_USER != '' && secrets.STAGING_PG_PASSWORD != '' && secrets.STAGING_PG_DATABASE != ''
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,6 +22,8 @@ jobs:
           sudo apt-get install -y postgresql-client
 
       - name: Execute migration runner (with pre-flight check)
+        # Only run if staging DB secrets are present
+        if: ${{ secrets.STAGING_PG_HOST != '' }}
         env:
           PGHOST: ${{ secrets.STAGING_PG_HOST }}
           PGPORT: ${{ secrets.STAGING_PG_PORT }}
