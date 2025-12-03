@@ -132,14 +132,22 @@ function extractMemoData(txInfo: any): string | null {
         // Instruction data is the memo (as a buffer)
         const data = ix.data;
         if (data) {
-          // Data may be base58 or base64 — decode and convert to string
+          // Solana RPC returns instruction data as base58-encoded string
+          // We need to decode it using base58 (use bs58 library or @solana/web3.js)
           try {
-            // Assume it's a buffer or base58/base64 string
-            const decoded = Buffer.from(data, 'base64').toString('utf8');
+            // Try importing bs58 if available, otherwise use Buffer with base58
+            const bs58 = require('bs58');
+            const decoded = Buffer.from(bs58.decode(data)).toString('utf8');
             return decoded;
-          } catch {
-            // Fallback: treat as raw string
-            return data.toString();
+          } catch (e1) {
+            // Fallback: try base64 decoding
+            try {
+              const decoded = Buffer.from(data, 'base64').toString('utf8');
+              return decoded;
+            } catch (e2) {
+              // Last resort: if data is already a string/buffer, return as-is
+              return typeof data === 'string' ? data : data.toString();
+            }
           }
         }
       }
