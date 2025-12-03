@@ -45,7 +45,8 @@ async function runT23FullAnchorTest() {
       ci_run_id: process.env.GITHUB_RUN_ID || 'local_preflight',
       signer_pubkey: (() => {
         try {
-          const key = JSON.parse(ROUTER_PRIVATE_KEY);
+          // ROUTER_PRIVATE_KEY is validated earlier to be present — assert to satisfy strict TypeScript
+          const key = JSON.parse(ROUTER_PRIVATE_KEY as string);
           // key is secret key array; derive pubkey from last 32 bytes
           return new PublicKey(Uint8Array.from(key.slice(32))).toBase58();
         } catch (e) {
