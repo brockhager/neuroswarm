@@ -6,6 +6,18 @@ STATUS SUMMARY
 - **T21 (RBAC/Auth):** COMPLETE and deployed — secure cross-service JWT short-token framework, RBAC enforced on router-api and admin-node (GovernanceLogger restricted to Admin role).
 - **T23 (Audit Anchoring):** ✅ IPFS INTEGRATION COMPLETE — Pinata JWT authentication working, CID extraction verified in CI. ⚠️ Solana on-chain anchoring requires private key configuration (separate task).
 
+LOCAL LAUNCH STATUS (2025-12-03)
+
+- Postgres (router_api test DB) — ✅ Running and healthy on host port 5433 (container: router_postgres_test). Schema applied; `jobs` table exists and migrations executed.
+- Router API — ✅ Started locally and listening on port 3000 (ts-node); migrations applied but note that the Router process warns when ROUTER_PRIVATE_KEY is missing and will use a random keypair until the secret is set correctly.
+- IPFS daemon — ✅ Kubo IPFS daemon started locally and listening on 127.0.0.1:5001 (API reachable via ipfs CLI / RPC API).
+- NS-LLM / Ollama / neuro-services / neuro-runner / neuro-web / alert-sink — ✅ Auxiliary services started and listening on ports used in local dev (3005, 3006, 3007, 3008, 3010, etc.).
+
+Notes / Next steps to reach full local E2E:
+- The core environment is now functional locally — Postgres + migrations, Router API, and IPFS are up. This enables local end-to-end flows (anchor -> IPFS -> optional Solana anchor) for diagnostic testing.
+- Remaining blocking item: ROUTER_PRIVATE_KEY GitHub secret needs to be set in the correct format (JSON array of bytes) to enable real on-chain anchoring instead of the random keypair fallback.
+- Optional: run the `router-api/scripts/run-t23-full-anchor.ts` locally to test a full anchor flow (it will attempt to pin to IPFS before attempting to anchor on Solana).
+
 This document consolidates the remaining work toward finalizing T23 and delivering the Phase 2 and Phase 3 roadmap through Dec 22.
 
 ---

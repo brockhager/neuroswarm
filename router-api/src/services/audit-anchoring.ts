@@ -8,6 +8,9 @@ const SUCCESS_COUNTER = (register.getSingleMetric('t23_anchor_onchain_success_to
 const FAILURE_COUNTER = (register.getSingleMetric('t23_anchor_onchain_failures_total') as Counter<string>) || new Counter({ name: 't23_anchor_onchain_failures_total', help: 'Total number of failed on-chain anchors after retries' });
 const CONFIRM_HIST = (register.getSingleMetric('t23_anchor_confirmation_seconds') as Histogram<string>) || new Histogram({ name: 't23_anchor_confirmation_seconds', help: 'Time to confirm the on-chain anchor (seconds)', buckets: [0.5, 1, 2, 5, 10, 30, 60] });
 import axios from 'axios';
+// spawn is no longer used (replaced CLI fallback with multipart HTTP upload)
+// 'form-data' gives a node-friendly multipart builder suitable for Kubo HTTP API
+import FormData from 'form-data';
 import fs from 'fs';
 import path from 'path';
 
@@ -120,6 +123,75 @@ async function uploadToIPFS(canonicalJson: string): Promise<string> {
       // Emit a short masked diagnostic for CI: which auth strategy will be used.
       const authMode = ipfsAuthToken ? 'JWT' : (process.env.IPFS_API_KEY ? 'API_KEY_BODY' : 'NONE');
       console.log('[AuditAnchoring] IPFS auth mode:', authMode);
+
+      // Special-case: when the configured endpoint points at a local Kubo/IPFS daemon
+      // perform a multipart/form-data POST to /api/v0/add?pin=true
+      if (ipfsApi.includes('127.0.0.1') || ipfsApi.includes('localhost')) {
+        try {
+          const addUrl = ipfsApi.endsWith('/') ? `${ipfsApi}api/v0/add?pin=true` : `${ipfsApi}/api/v0/add?pin=true`;
+
+          // Build multipart form body
+          const form = new FormData();
+          // Append the file payload as a Buffer so content-type can be set
+          form.append('file', Buffer.from(canonicalJson, 'utf8'), {
+            filename: 'audit_event.json',
+            contentType: 'application/json'
+          });
+
+          // Some deployments prefer a 'pin' field instead of query param; include both safely
+          try {
+            // @ts-ignore - form.getHeaders exists at runtime
+            const formHeaders = form.getHeaders();
+            // Merge any auth headers that might be needed (we already set Authorization above)
+            const allHeaders = { ...headers, ...formHeaders };
+
+            const res = await axios.post(addUrl, form as any, { headers: allHeaders, maxBodyLength: Infinity, timeout: 20000 });
+
+            // Kubo often returns a line-delimited stream of JSON objects for chunked adds — parse last line
+            const raw = res.data;
+            if (typeof raw === 'string') {
+              const lines = raw.trim().split('\n').filter(Boolean);
+              const lastLine = lines[lines.length - 1];
+              try {
+                const parsed = JSON.parse(lastLine);
+                const cid = parsed.Hash || parsed.cid || parsed.Cid || parsed.IpfsHash;
+                if (cid) {
+                  IPFS_PIN_SUCCESS_COUNTER.inc();
+                  console.log('[AuditAnchoring] IPFS pinned successfully via Kubo HTTP:', cid);
+                  return cid.toString();
+                }
+              } catch (e) {
+                // lastLine may be a bare string (older ipfs), treat as CID
+                const possibleCid = lastLine.trim();
+                if (possibleCid) {
+                  IPFS_PIN_SUCCESS_COUNTER.inc();
+                  console.log('[AuditAnchoring] IPFS pinned (string response) via Kubo HTTP:', possibleCid);
+                  return possibleCid;
+                }
+              }
+            }
+
+            // If response is JSON object, extract common keys
+            if (res.data && typeof res.data === 'object') {
+              const cid = res.data.Hash || res.data.cid || res.data.Cid || res.data.IpfsHash;
+              if (cid) {
+                IPFS_PIN_SUCCESS_COUNTER.inc();
+                console.log('[AuditAnchoring] IPFS pinned successfully via Kubo HTTP (json):', cid);
+                return cid.toString();
+              }
+            }
+
+            // if we get here, the add did not return a usable value — capture raw for diagnostics
+            lastErr = new Error(`Kubo /api/v0/add responded but no CID: ${JSON.stringify(res.data).slice(0, 400)}`);
+          } catch (httpErr) {
+            lastErr = httpErr;
+          }
+
+        } catch (e2) {
+          // Keep trying other approaches / retry loop will handle backoff
+          lastErr = e2;
+        }
+      }
 
       const res = await axios.post(ipfsApi, payload, { headers, timeout: 20000 });
 

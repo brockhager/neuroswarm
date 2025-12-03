@@ -24,7 +24,8 @@ services:
   router-api:
     image: node:20
     container_name: neuroswarm_router_api_test
-    build: false
+    # 'build' was previously set to 'false' which causes docker-compose validation errors
+    # Remove the build key for test env since we use the published image and/or run pnpm install at runtime.
     working_dir: /usr/src/app
     volumes:
       - ./:/usr/src/app:cached
