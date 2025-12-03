@@ -68,9 +68,7 @@ jobs:
     name: T23 Devnet Anchor Test (gated)
     runs-on: ubuntu-latest
     needs: [test, security]
-    # Temporarily allow this gated job to run on PRs so we can capture diagnostics.
-    # This will be reverted as soon as we have the T23 debug logs.
-    if: always()
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
