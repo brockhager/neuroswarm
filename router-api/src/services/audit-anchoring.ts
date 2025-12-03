@@ -77,10 +77,20 @@ async function uploadToIPFS(canonicalJson: string): Promise<string> {
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
       IPFS_PIN_RETRY_COUNTER.inc();
-      const res = await axios.post(ipfsApi, canonicalJson, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 20000,
-      });
+      // Build request headers and include an Authorization token if provided
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      // Generic env name for a bearer token for IPFS pinning services
+      const ipfsAuthToken = process.env.IPFS_API_TOKEN || process.env.PINATA_JWT || '';
+      if (ipfsAuthToken) {
+        // Use Authorization: Bearer <token> (Pinata supports JWTs this way)
+        headers['Authorization'] = `Bearer ${ipfsAuthToken}`;
+      }
+
+      // Also support x-api-key / x-api-secret if provided (some services use custom headers)
+      if (process.env.IPFS_API_KEY) headers['x-api-key'] = process.env.IPFS_API_KEY;
+      if (process.env.IPFS_API_SECRET) headers['x-api-secret'] = process.env.IPFS_API_SECRET;
+
+      const res = await axios.post(ipfsApi, canonicalJson, { headers, timeout: 20000 });
 
       const cid = (res.data && (res.data.cid || res.data.Hash || res.data.hash)) || '';
       if (cid) {
