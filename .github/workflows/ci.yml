@@ -31,9 +31,15 @@ jobs:
         version: 10
 
     - name: Install dependencies and run tests
+      shell: bash
       run: |
-        pnpm install --no-frozen-lockfile
-        pnpm test
+        if [ -d "./neuroswarm" ]; then
+          pnpm -C neuroswarm install --no-frozen-lockfile
+          pnpm -C neuroswarm test
+        else
+          pnpm install --no-frozen-lockfile
+          pnpm test
+        fi
 
   security:
     runs-on: ubuntu-latest
