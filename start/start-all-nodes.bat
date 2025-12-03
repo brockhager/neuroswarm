@@ -42,12 +42,12 @@ if errorlevel 1 goto docker_missing
 
 echo Starting Postgres container for router-api...
 REM Start Postgres in a separate helper script to avoid parsing issues inside this file
-start "Postgres Container" cmd /k "%~dp0scripts\start-postgres-window.bat"
-REM Pause here so the main batch window stays open for diagnostics before health-check loop.
-pause
+start "Postgres Container" cmd /k "%~dp0..\scripts\start-postgres-window.bat"
+REM Wait for Postgres to start before checking health
+timeout /t 5 /nobreak >nul
 REM Wait for Postgres health (pg_isready inside container); use clearer control flow to avoid nested parentheses errors
 for /L %%i in (1,1,60) do (
-    docker compose -f "%~dp0router-api\docker-compose.test.yml" exec -T db pg_isready -U neuroswarm_user -d neuroswarm_router_db_test >nul 2>&1
+    docker compose -f "%~dp0..\router-api\docker-compose.test.yml" exec -T db pg_isready -U neuroswarm_user -d neuroswarm_router_db_test >nul 2>&1
     if not errorlevel 1 (
         echo Postgres is healthy
         goto :postgres_up
