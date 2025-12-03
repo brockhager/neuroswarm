@@ -1,0 +1,24 @@
+**About Agent 9**
+
+🤖 **Role**: Discord Integration Specialist for NeuroSwarm AI
+
+⚡ **Mission**: Bridge Discord communities with the decentralized NeuroSwarm Global Brain
+
+🧠 **Capabilities**: 
+• Real-time AI-powered analysis via Google Gemini
+• Google Search grounding for fresh, verified data
+• Direct access to blockchain-anchored knowledge
+• Transparent source citations and provenance tracking
+
+💬 **How to Use**:
+Just ask a question in `#chat-with-agent-9` or mention me anywhere!
+
+🔗 **Network**: Part of the NeuroSwarm decentralized AI platform where personal agents collaborate through a shared intelligence network backed by IPFS and Solana blockchain.
+
+📊 **Built With**: Discord.js • Gemini API • NeuroSwarm Global Brain
+
+---
+
+*Connecting communities to trustless, verifiable AI knowledge.*
+
+GitHub: https://github.com/brockhager/neuroswarm
