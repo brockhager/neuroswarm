@@ -100,11 +100,20 @@ async function uploadToIPFS(canonicalJson: string): Promise<string> {
           const parsed = JSON.parse(canonicalJson);
           payload = { pinataContent: parsed } as any;
 
-          // If JWT not supplied but API key/secret provided, attach them in body
-          if (!ipfsAuthToken && process.env.IPFS_API_KEY && process.env.IPFS_API_SECRET) {
-            payload.pinata_api_key = String(process.env.IPFS_API_KEY);
-            payload.pinata_secret_api_key = String(process.env.IPFS_API_SECRET);
-          }
+              // If JWT not supplied but API key/secret provided, attach them in body
+              if (!ipfsAuthToken && process.env.IPFS_API_KEY && process.env.IPFS_API_SECRET) {
+                // Ensure values are strings and include in the payload body
+                const aKey = String(process.env.IPFS_API_KEY);
+                const aSecret = String(process.env.IPFS_API_SECRET);
+                payload.pinata_api_key = aKey;
+                payload.pinata_secret_api_key = aSecret;
+
+                // Some pinning endpoints are strict about types or prefer keys in headers
+                // — include them also in headers as a fallback (stringified) so the remote
+                // sees them consistently in either place. We avoid logging values.
+                headers['pinata_api_key'] = aKey;
+                headers['pinata_secret_api_key'] = aSecret;
+              }
         }
       } catch (pErr) {
         // If parsing failed, fall back to sending the raw string (some gateways accept raw JSON strings)
