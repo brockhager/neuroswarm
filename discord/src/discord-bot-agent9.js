@@ -22,6 +22,9 @@ const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || 'YOUR_SECRET_BOT_TOKE
 const AGENT9_APP_ID = process.env.AGENT9_APP_ID || '1445902568038334556';
 const AGENT9_PUBLIC_KEY = process.env.AGENT9_PUBLIC_KEY || 'e417ce8b6f802cc2a776201c943a32bbe7cea6beac05a87c0081dd503dfc6ee3';
 
+// NS-LLM Server Configuration
+const NS_LLM_URL = process.env.NS_LLM_URL || 'http://localhost:8080';
+
 // The channel name where the chat functionality is enabled.
 const CHAT_CHANNEL_NAME = process.env.CHAT_CHANNEL_NAME || 'chat-with-agent-9';
 
@@ -84,27 +87,40 @@ client.on('messageCreate', async message => {
     try {
         // ------------------------------------------------------------------
         // AGENT 9 Orchestration Layer:
-        // 1. Send userQuery to AGENT 9 (Query Optimizer LLM)
-        //    const optimizedQuery = await agent9LLM(userQuery); 
-        
-        // 2. Send optimizedQuery + AGENT 3 Persona to AGENT 3 (System Analyst LLM)
-        //    const swarmResponse = await agent3LLM(optimizedQuery);
-        //    (This is where the API logic from neuroswarm_chat_simulator.html goes)
+        // Call NS-LLM to generate AI-powered response
         // ------------------------------------------------------------------
 
-        // --- SIMULATION OF SWARM RESPONSE ---
-        // Replace this entire section with the real API call to Gemini (Agent 3)
-        // The real call must use Google Search grounding for fresh data.
-        let responseText = "Agent 9 is currently simulating the response. In the live system, Agent 3 (System Analyst) would now use its optimized query to fetch real-time, grounded data via the Gemini API and deliver a concise summary.";
-        let responseSources = "Simulation Source: The core logic is defined in the `neuroswarm_chat_simulator.html` file.";
-        
-        // Add a small artificial delay to simulate the API call latency
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        // --- END SIMULATION ---
-        
-        const finalDiscordMessage = `**Swarm Report (Agent 3):**\n${responseText}\n\n---\n**Data Sources:**\n${responseSources}`;
+        let responseText;
+        let errorOccurred = false;
 
-        // 3. Send the final response back to Discord
+        try {
+            const response = await fetch(`${NS_LLM_URL}/api/generate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    text: `You are Agent 3, the NeuroSwarm System Analyst. Provide a concise, data-driven answer to this question: ${userQuery}`,
+                    max_tokens: 500,
+                    stream: false
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`NS-LLM returned ${response.status}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            responseText = data.response || data.text || "I apologize, but I couldn't generate a response.";
+        } catch (llmError) {
+            console.error('[Agent 9] NS-LLM connection error:', llmError.message);
+            errorOccurred = true;
+            responseText = "⚠️ **NS-LLM is currently offline**\n\nThe NeuroSwarm local LLM service is not responding. Please ensure:\n• NS-LLM is running on port 8080\n• Ollama service is active\n• Run `start-ns-llm.bat` to start the service\n\nI'll be back online once NS-LLM is available!";
+        }
+        
+        const finalDiscordMessage = errorOccurred 
+            ? responseText 
+            : `**Swarm Report (Agent 3 via NS-LLM):**\n${responseText}\n\n---\n**Powered by:** NeuroSwarm Local LLM (Ollama)`;
+
+        // Send the final response back to Discord
         await message.reply(finalDiscordMessage);
         
         console.log(`[Agent 9] Response sent to channel: ${message.channel.name}`);
@@ -112,7 +128,7 @@ client.on('messageCreate', async message => {
     } catch (error) {
         console.error('[Agent 9 ERROR] Failed to process message or send reply:', error);
         // Reply with a helpful error message without revealing internal details
-        await message.reply("I'm sorry, an internal NeuroSwarm error occurred while processing your request. The system has logged the incident for review.");
+        await message.reply("⚠️ I'm sorry, an internal NeuroSwarm error occurred while processing your request. The system has logged the incident for review.");
     }
 });
 
