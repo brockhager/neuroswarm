@@ -18,7 +18,8 @@ jobs:
 
       - name: Install one-off dependency
         run: |
-          npm ci --ignore-scripts --no-audit --no-fund
+          # Use npm install here because this repository doesn't include a package-lock.json in the execution context
+          npm install --ignore-scripts --no-audit --no-fund
           npm i @solana/web3.js --no-audit --no-fund
 
       - name: Run airdrop script (DERIVE PUBLIC KEY and REQUEST 1 SOL on DEVNET)
