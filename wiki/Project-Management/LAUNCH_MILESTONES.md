@@ -150,6 +150,6 @@ This document supersedes all previous tokenomics specifications and serves as th
 ---
 
 For detailed economics, see:
-- [PoS Issuance Schedule](./POS_ISSUANCE_SCHEDULE.md) - Technical calculations
-- [Validator Economics](./VALIDATOR_ECONOMICS.md) - APY modeling and profitability
-- [NST Allocation & Vesting](./NST_ALLOCATION_AND_VESTING.md) - Supply breakdown
+- [PoS Issuance Schedule](../Staking/POS_ISSUANCE_SCHEDULE.md) - Technical calculations
+- [Validator Economics](../Staking/VALIDATOR_ECONOMICS.md) - APY modeling and profitability
+- [NST Allocation & Vesting](../Staking/NST_ALLOCATION_AND_VESTING.md) - Supply breakdown

@@ -17,7 +17,7 @@ Covers the dual-token architecture (NST for governance/security and NSD for util
 
 ---
 
-### [NST Allocation and Vesting](./NST_ALLOCATION_AND_VESTING.md)
+### [NST Allocation and Vesting](../Staking/NST_ALLOCATION_AND_VESTING.md)
 **Complete breakdown of the 21 million NST supply distribution**
 
 Details how the total NST supply is allocated across validators, ecosystem treasury, founding team, and strategic investors, along with the vesting schedules designed to protect market stability.
@@ -30,7 +30,7 @@ Details how the total NST supply is allocated across validators, ecosystem treas
 
 ---
 
-### [PoS Issuance Schedule](./POS_ISSUANCE_SCHEDULE.md)
+### [PoS Issuance Schedule](../Staking/POS_ISSUANCE_SCHEDULE.md)
 **Technical specification of the Proof-of-Stake consensus and block rewards**
 
 Provides the complete issuance schedule with mathematical calculations, consensus parameters for Byzantine Fault Tolerance (BFT), and the halving cycle timeline spanning 28+ years.
@@ -43,7 +43,7 @@ Provides the complete issuance schedule with mathematical calculations, consensu
 
 ---
 
-### [Validator Economics](./VALIDATOR_ECONOMICS.md)
+### [Validator Economics](../Staking/VALIDATOR_ECONOMICS.md)
 **APY modeling and profitability analysis for validators**
 
 Comprehensive economic modeling for validators including reward calculations, APY projections across halving cycles, delegation economics, and break-even analysis.

@@ -300,7 +300,7 @@ T+24h: First day success metrics
 ---
 
 #### NST Allocation
-**Document:** [NST_ALLOCATION_AND_VESTING.md](../Tokenomics/NST_ALLOCATION_AND_VESTING.md)
+**Document:** [NST_ALLOCATION_AND_VESTING.md](../Staking/NST_ALLOCATION_AND_VESTING.md)
 
 **Allocation Breakdown:**
 - Validator Rewards: 70% (14.7M NST)
@@ -312,7 +312,7 @@ T+24h: First day success metrics
 ---
 
 #### PoS Issuance Schedule
-**Document:** [POS_ISSUANCE_SCHEDULE.md](../Tokenomics/POS_ISSUANCE_SCHEDULE.md)
+**Document:** [POS_ISSUANCE_SCHEDULE.md](../Staking/POS_ISSUANCE_SCHEDULE.md)
 
 **Halving Schedule:**
 - Cycle 1 (2026-2029): 0.5 NST/block → 7.35M NST
@@ -324,7 +324,7 @@ T+24h: First day success metrics
 ---
 
 #### Validator Economics
-**Document:** [VALIDATOR_ECONOMICS.md](../Tokenomics/VALIDATOR_ECONOMICS.md)
+**Document:** [VALIDATOR_ECONOMICS.md](../Staking/VALIDATOR_ECONOMICS.md)
 
 **APY Modeling (Cycle 1):**
 - Solo validator (5K stake): 247.5% APY
@@ -338,7 +338,7 @@ T+24h: First day success metrics
 ---
 
 ### Launch Milestones
-**Document:** [LAUNCH_MILESTONES.md](../Tokenomics/LAUNCH_MILESTONES.md)
+**Document:** [LAUNCH_MILESTONES.md](../Project-Management/LAUNCH_MILESTONES.md)
 
 **Genesis Parameters:**
 - **Genesis Date**: January 3, 2026 (LOCKED)
