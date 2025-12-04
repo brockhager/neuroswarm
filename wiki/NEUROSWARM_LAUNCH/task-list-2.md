@@ -136,8 +136,8 @@ These tasks are necessary to support the advanced features above and remain crit
 
 ID | Component | Task Description | Priority | Related MDD Status
 :-- | :-- | :-- | :--: | :--
-RA-01 | Router API (4001) | Implement Governance Endpoint: Create the authenticated endpoint in the Router API to receive and validate governance/voting transactions from Agent 9 (Required for A9-03). | HIGH | ✅ Prototype available (router-api-prototype/server.js)
-RA-02 | Router API (4001) | Implement Artifact Ingestion Endpoint: Create the authenticated endpoint to receive IPFS content hashes and metadata for pinning and anchoring (Required for A9-02). | HIGH | ✅ Prototype available (router-api-prototype/server.js)
+RA-01 | Router API (4001) | Implement Governance Endpoint: Create the authenticated endpoint in the Router API to receive and validate governance/voting transactions from Agent 9 (Required for A9-03). | HIGH | ✅ Prototype available (router-api-prototype/server.js) — **Security hardening implemented** (JWT validation + RBAC enforced on /governance/vote)
+RA-02 | Router API (4001) | Implement Artifact Ingestion Endpoint: Create the authenticated endpoint to receive IPFS content hashes and metadata for pinning and anchoring (Required for A9-02). | HIGH | ✅ Prototype available (router-api-prototype/server.js) — **Server-side validation implemented** (CID checks, metadata validation, size/type limits). Server still requires DB/pinning policy + CI/E2E gating for production.
 -- Server TODO: enforce server-side validation (size/type/content checks), pinning policy & production auth (JWT/RBAC) before enabling public ingestion.
 OPS-01 | All Services | Prometheus/Grafana Dashboards: Focus on integrating metrics for Agent 9 performance (latency, token usage, command volume, connection health). | HIGH | 🚧 In Progress
 
