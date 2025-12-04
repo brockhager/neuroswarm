@@ -1,0 +1,43 @@
+openapi: 3.0.3
+info:
+  title: Router API - Artifact Ingest
+  version: 0.1.0
+paths:
+  /ingest/artifact:
+    post:
+      summary: "Ingest an artifact for IPFS pinning and anchoring"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../contracts/AnchorArtifactRequest.json'
+      responses:
+        '202':
+          description: Accepted (ingestion queued)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  job_id:
+                    type: string
+                  artifact_cid:
+                    type: string
+                  pin:
+                    type: object
+        '400':
+          description: Validation error — client payload did not match contract
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  details:
+                    type: array
+                    items:
+                      type: object

@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RouterErrorResponse",
+  "description": "Standardized error response envelope used by Router API for 4xx/5xx errors",
+  "type": "object",
+  "required": ["error"],
+  "properties": {
+    "error": {
+      "type": "object",
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "description": "Machine-readable error code (eg: invalid_payload)" },
+        "message": { "type": "string", "description": "Human-readable error message" },
+        "details": { "type": "array", "items": { "type": "object" }, "description": "Optional validation/error details" },
+        "correlationId": { "type": "string", "description": "Request correlation id for tracing" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "ISO8601 timestamp when error was created" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AnchorArtifactRequest",
+  "description": "Contract for artifact ingestion requests submitted to Router API /ingest/artifact endpoint",
+  "type": "object",
+  "required": ["contentCid", "uploaderId", "metadata"],
+  "additionalProperties": false,
+  "properties": {
+    "contentCid": {
+      "type": "string",
+      "description": "Content identifier (CID) for the artifact. Accepts CIDv0 (Qm...) and CIDv1 base32 (bafy...).",
+      "pattern": "^(bafy|Qm)[A-Za-z0-9]+$"
+    },
+    "uploaderId": {
+      "type": "string",
+      "description": "Namespaced uploader identity (e.g. 'discord:user-123' or 'agent:agent9'). Must be non-empty."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Artifact metadata used by Router to validate and record the artifact.",
+      "required": ["filename", "size"],
+      "additionalProperties": true,
+      "properties": {
+        "filename": { "type": "string", "minLength": 1 },
+        "size": { "type": "integer", "minimum": 0 },
+        "contentType": { "type": "string" },
+        "source": { "type": "string" },
+        "hashAlgorithm": { "type": "string" }
+      }
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Optional tags to help classify artifacts (eg: 'image','report','gov-doc')."
+    }
+  },
+  "examples": [
+    {
+      "contentCid": "bafybeigdyrzt...",
+      "uploaderId": "discord:user-123",
+      "metadata": { "filename": "report.pdf", "size": 102400, "contentType": "application/pdf", "source": "Discord/Agent9" },
+      "tags": ["report", "governance"]
+    }
+  ]
+}

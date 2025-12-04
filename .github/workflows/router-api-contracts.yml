@@ -13,6 +13,9 @@ on:
 jobs:
   test_router_contracts:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        persistence: [sqlite, fallback]
     defaults:
       run:
         working-directory: ./router-api-prototype
@@ -34,17 +37,28 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Run Unit and Integration Tests (expects sqlite)
+      - name: Run Unit and Integration Tests
         run: npm run test:ci
         env:
           # Crucial: Set the JWT secret the tests rely on for signing and validation
           ROUTER_JWT_SECRET: TEST_SECRET_12345
           # Set the file size limit for validation tests
           MAX_FILE_UPLOAD_BYTES: 5242880 # 5 MB
-          # Force CI to use the sqlite-backed path and assert it via tests
-          EXPECT_SQLITE: 'true'
-          # Use a file-backed db in CI (optional) to validate on-disk persistence
+          # Select persistence path via matrix
           PIN_DB_PATH: '/tmp/router_pins.db'
+          # When testing the sqlite matrix branch we expect the sqlite path to be active
+          EXPECT_SQLITE: ${{ matrix.persistence == 'sqlite' && 'true' || 'false' }}
+          # When testing the fallback branch we force the fallback behaviour explicitly
+          FORCE_FALLBACK: ${{ matrix.persistence == 'fallback' && 'true' || 'false' }}
+
+      - name: Run E2E smoke harness (Agent9 -> Router)
+        run: npm run test:integration -- --run tests/e2e/contract_smoke_harness.test.mjs
+        env:
+          ROUTER_JWT_SECRET: TEST_SECRET_12345
+          MAX_FILE_UPLOAD_BYTES: 5242880
+          PIN_DB_PATH: ${{ env.PIN_DB_PATH }}
+          EXPECT_SQLITE: ${{ matrix.persistence == 'sqlite' && 'true' || 'false' }}
+          FORCE_FALLBACK: ${{ matrix.persistence == 'fallback' && 'true' || 'false' }}
 
       - name: Verify Authentication Failures (Smoke Test Confirmation)
         run: echo "✅ Router API contracts and security checks passed CI."

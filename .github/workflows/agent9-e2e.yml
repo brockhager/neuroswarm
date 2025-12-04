@@ -13,6 +13,9 @@ on:
 jobs:
   run_agent9_e2e:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        persistence: [sqlite, fallback]
     defaults:
       run:
         working-directory: ./discord
@@ -33,17 +36,21 @@ jobs:
         run: |
           cd ../router-api-prototype
           sudo apt-get update
+          # install build tooling so better-sqlite3 can be built when testing the sqlite matrix
           sudo apt-get install -y build-essential python3 pkg-config libsqlite3-dev
           npm install
 
-      - name: Run Agent 9 E2E tests (with sqlite expected)
+      - name: Run Agent 9 E2E Tests (Router Persistence: ${{ matrix.persistence }})
         run: npm run test:e2e
         env:
           # For deterministic CI runs the Router API secret or JWKS may be set by tests.
           ROUTER_JWT_SECRET: TEST_SECRET_12345
           MAX_FILE_UPLOAD_BYTES: 5242880
-          EXPECT_SQLITE: 'true'
-          PIN_DB_PATH: '/tmp/router_pins.db'
+          # When the matrix selects sqlite, instruct tests to expect the sqlite path
+          EXPECT_SQLITE: ${{ matrix.persistence == 'sqlite' && 'true' || 'false' }}
+          # Force fallback when matrix is 'fallback'
+          FORCE_FALLBACK: ${{ matrix.persistence == 'fallback' && 'true' || 'false' }}
+          PIN_DB_PATH: /tmp/agent9_e2e_pins_${{ matrix.persistence }}.db
 
       - name: Post-run smoke confirmation
         run: echo "✅ Agent 9 E2E tests completed"

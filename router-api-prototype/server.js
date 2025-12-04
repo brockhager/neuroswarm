@@ -11,6 +11,8 @@ import crypto from 'crypto';
 import { jwtVerify, importSPKI, createRemoteJWKSet } from 'jose';
 import { fileURLToPath } from 'url';
 import { pinArtifact, listPins, clearPins } from './src/pinning.js';
+import Ajv from 'ajv';
+import { readFile } from 'fs/promises';
 const __filename = fileURLToPath(import.meta.url);
 const app = express();
 const PORT = process.env.PORT || 4001;
@@ -61,12 +63,32 @@ async function validateJwt(token) {
   return { valid: false, error: 'no_jwt_configured' };
 }
 
+// correlation id helper for errors / tracing
+function getCorrelationId(req) {
+  if (!req || !req.headers) return crypto.randomBytes(8).toString('hex');
+  const cid = req.headers['x-correlation-id'] || req.headers['x-request-id'];
+  if (cid && typeof cid === 'string' && cid.trim()) return cid.trim();
+  return crypto.randomBytes(8).toString('hex');
+}
+
+function formatError(code, message, details, req) {
+  return {
+    error: {
+      code: String(code),
+      message: String(message || ''),
+      details: details || [],
+      correlationId: getCorrelationId(req),
+      timestamp: new Date().toISOString()
+    }
+  };
+}
+
 const authenticateJwt = async (req, res, next) => {
   const authHeader = req.headers['authorization'] || '';
-  if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'Authentication required.' });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json(formatError('auth_required', 'Authentication required.', null, req));
   const token = authHeader.slice('Bearer '.length).trim();
   const result = await validateJwt(token);
-  if (!result.valid) return res.status(401).json({ error: `Invalid or expired token. ${result.error || ''}` });
+  if (!result.valid) return res.status(401).json(formatError('invalid_token', `Invalid or expired token. ${result.error || ''}`, null, req));
   const payload = result.payload || {};
   req.user = { id: payload.sub || payload.client_id || payload.userId || 'unknown', roles: payload.roles || [] };
   next();
@@ -74,9 +96,9 @@ const authenticateJwt = async (req, res, next) => {
 
 function requireRoles(requiredRoles = []) {
   return (req, res, next) => {
-    if (!req.user || !Array.isArray(req.user.roles)) return res.status(403).json({ error: 'Unauthorized - missing roles' });
+    if (!req.user || !Array.isArray(req.user.roles)) return res.status(403).json(formatError('unauthorized', 'Unauthorized - missing roles', null, req));
     const has = requiredRoles.some(r => req.user.roles.includes(r));
-    if (!has) return res.status(403).json({ error: 'Forbidden - insufficient role privileges' });
+    if (!has) return res.status(403).json(formatError('forbidden', 'Forbidden - insufficient role privileges', null, req));
     return next();
   };
 }
@@ -86,7 +108,7 @@ app.post('/governance/vote', authenticateJwt, requireRoles(['governance']), (req
   const votePayload = req.body;
 
   if (!votePayload.proposalId || !votePayload.voterId || !votePayload.vote) {
-    return res.status(400).json({ error: 'Missing required fields: proposalId, voterId, vote.' });
+    return res.status(400).json(formatError('missing_fields', 'Missing required fields: proposalId, voterId, vote.', null, req));
   }
 
   // Construct a transaction envelope the Router would forward to Gateway/ns-node
@@ -110,12 +132,38 @@ app.post('/governance/vote', authenticateJwt, requireRoles(['governance']), (req
 });
 
 // POST /ingest/artifact
-app.post('/ingest/artifact', authenticateJwt, requireRoles(['ingest', 'uploader', 'agent']), async (req, res) => {
+// compile schema-based validation middleware for /ingest/artifact
+let validateArtifactSchema = null;
+async function loadArtifactSchema() {
+  if (validateArtifactSchema) return validateArtifactSchema;
+  try {
+    const schemaRaw = await readFile(new URL('./contracts/AnchorArtifactRequest.json', import.meta.url));
+    const schema = JSON.parse(schemaRaw.toString());
+    const ajv = new Ajv({ allErrors: true, strict: false }); // allow draft-07
+    const validate = ajv.compile(schema);
+    validateArtifactSchema = validate;
+    return validateArtifactSchema;
+  } catch (err) {
+    console.error('Failed to load artifact schema:', err && err.message);
+    // If schema fails to load, fallback to old validation via validateArtifact helper
+    return null;
+  }
+}
+
+async function artifactValidationMiddleware(req, res, next) {
+  const validate = await loadArtifactSchema();
+  if (!validate) return next();
+  const ok = validate(req.body);
+  if (!ok) return res.status(400).json(formatError('invalid_payload', 'Payload failed schema validation', validate.errors, req));
+  return next();
+}
+
+app.post('/ingest/artifact', authenticateJwt, requireRoles(['ingest', 'uploader', 'agent']), artifactValidationMiddleware, async (req, res) => {
   const artifact = req.body;
 
-  // Server-side validation for artifacts (defense in depth)
+  // Additional server-side safety checks (defense in depth) — keep existing function
   const validation = validateArtifact(artifact);
-  if (!validation.valid) return res.status(400).json({ error: validation.reason });
+  if (!validation.valid) return res.status(400).json(formatError('invalid_payload', validation.reason, null, req));
 
   // Note: in production you may want stricter checks here linking authenticated client to uploader.
   // For prototype E2E flows we accept uploaderId provided by the client and rely on RBAC + audit trails.
@@ -141,7 +189,7 @@ app.post('/ingest/artifact', authenticateJwt, requireRoles(['ingest', 'uploader'
     });
   } catch (err) {
     console.error('pinning failed', err && err.message);
-    res.status(500).json({ error: 'pinning_failed' });
+    res.status(500).json(formatError('pinning_failed', 'Pinning failed', [{ message: err && err.message }], req));
   }
 });
 

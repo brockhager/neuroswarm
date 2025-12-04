@@ -85,6 +85,12 @@ npm run test:ci
 
 A workflow has been added at `.github/workflows/router-api-contracts.yml` which runs `npm run test:ci` on pushes and pull requests to `main`/`master`. This ensures the Router API contracts and security checks remain protected by CI.
 
+Note about persistence-path coverage in CI:
+- The Router API CI runs the test matrix across two persistence configurations: `sqlite` (high-fidelity, better-sqlite3) and `fallback` (file-backed JSON) to ensure both code paths are exercised.
+	This is controlled by `EXPECT_SQLITE` and `FORCE_FALLBACK` environment variables and verified by dedicated integration tests.
+
+Additionally, the Agent 9 E2E CI workflow (`.github/workflows/agent9-e2e.yml`) uses the same matrix to validate the client→server ingestion flow in both persistence modes.
+
 ## 🧩 Security notes & next steps
 
 - RS256 is recommended for production. The tests cover both HS256 and RS256 flows.

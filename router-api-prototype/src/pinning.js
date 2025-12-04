@@ -8,13 +8,20 @@ let sqliteAvailable = false;
 let Database = null;
 let DB_PATH = process.env.PIN_DB_PATH || ':memory:';
 
+// Allow CI/tests to force the fallback path even when the native module exists.
+// When FORCE_FALLBACK=true we will not attempt to load better-sqlite3 so tests
+// can validate the file-backed fallback behaviour explicitly.
+const FORCE_FALLBACK = String(process.env.FORCE_FALLBACK || '').toLowerCase() === 'true';
 try {
   // dynamic import so module load doesn't fail if dependency missing
   // eslint-disable-next-line no-undef
   const mod = await import('better-sqlite3').catch(() => null);
-  if (mod && mod.default) {
+  if (!FORCE_FALLBACK && mod && mod.default) {
     Database = mod.default;
     sqliteAvailable = true;
+  } else if (FORCE_FALLBACK) {
+    // explicitly forced into fallback mode
+    sqliteAvailable = false;
   }
 } catch (e) {
   sqliteAvailable = false;
@@ -88,7 +95,7 @@ if (sqliteAvailable) {
   // Fallback file-based impl (previous behavior) so tests run without native builds
   // fs/promises and fs.constants are imported at the top of the module instead of here
 
-  const MOCK_DB_FILE = 'mock_router_pins.json';
+  const MOCK_DB_FILE = process.env.MOCK_PIN_DB_FILE || 'mock_router_pins.json';
 
   async function loadDb() {
     try {
@@ -141,6 +148,8 @@ if (sqliteAvailable) {
 
 // Export a boolean to allow tests and CI to assert which path is active.
 // This is a live binding; it reflects whether the sqlite path was available at module load.
+// Export flags so tests/CI can assert runtime behavior.
 export const SQLITE_AVAILABLE = sqliteAvailable;
+export const FORCE_FALLBACK_ACTIVE = FORCE_FALLBACK;
 
 export { pinArtifact, listPins, clearPins };
