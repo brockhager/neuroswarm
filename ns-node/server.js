@@ -78,6 +78,18 @@ const p2pProtocol = new P2PProtocol(peerManager, {
   securityLogger: peerManager.securityLogger
 });
 
+// Sync controls
+const MAX_SYNC_BLOCKS = parseInt(process.env.MAX_SYNC_BLOCKS) || 100; // max blocks per response
+const MAX_CONCURRENT_SYNC_PER_PEER = parseInt(process.env.MAX_CONCURRENT_SYNC_PER_PEER) || 3;
+const syncInflight = new Map(); // track inflight requests per peer id
+
+// Register sync-related metrics
+metricsService.registerCounter('sync_requests_total', 'Total REQUEST_BLOCKS_SYNC received');
+metricsService.registerCounter('sync_ancestry_mismatch_total', 'Total ancestry mismatch rejections');
+metricsService.registerCounter('sync_too_many_concurrent_total', 'Total sync rejections due to concurrency limits (429)');
+metricsService.registerGauge('sync_inflight_total', 'Current number of in-flight sync handlers (global)');
+metricsService.registerGauge('sync_inflight_per_peer', 'Current number of in-flight sync handlers per peer');
+
 // Initialize Block Propagation Service
 const blockPropagation = new BlockPropagationService(p2pProtocol, peerManager);
 logNs('[Server] Block Propagation Service initialized');
@@ -199,6 +211,30 @@ app.post('/p2p/message', async (req, res) => {
     // Application-level handling for sync requests
     if (message.type === MessageType.REQUEST_BLOCKS_SYNC && result.processed) {
       const { fromHeight = 0, toHeight = null, max = 100 } = message.payload || {};
+      const originId = message.originNodeId || senderIp || 'unknown';
+
+      // Observability: count incoming sync requests
+      try { metricsService.inc('sync_requests_total', { origin: originId }); } catch (e) {}
+
+      // Concurrency protection per-peer
+      const cur = syncInflight.get(originId) || 0;
+      if (cur >= MAX_CONCURRENT_SYNC_PER_PEER) {
+        logNs('WARN', `REQUEST_BLOCKS_SYNC rejected due to too many concurrent syncs from ${originId}`);
+        try { metricsService.inc('sync_too_many_concurrent_total', { origin: originId }); } catch (e) {}
+        return res.status(429).json({ ok: false, error: 'too_many_concurrent_syncs' });
+      }
+      syncInflight.set(originId, cur + 1);
+      // update gauges
+      try {
+        const totalInflight = Array.from(syncInflight.values()).reduce((a, b) => a + b, 0);
+        metricsService.set('sync_inflight_total', totalInflight);
+        metricsService.set('sync_inflight_per_peer', syncInflight.get(originId), { peer: originId });
+      } catch (e) {}
+      // ensure we decrement after handling
+      let inflightDecremented = false;
+      // Support an optional anchorPrevHash supplied by the requester (their local tip hash)
+      // If supplied, the responder must ensure the first block of the response extends that anchor.
+      const { anchorPrevHash = null } = message.payload || {};
 
       // Build canonical chain array (genesis -> tip)
       const blocksArr = [];
@@ -212,22 +248,99 @@ app.post('/p2p/message', async (req, res) => {
         blocksArr.reverse();
       }
 
-      const slice = (typeof toHeight === 'number') ? blocksArr.slice(fromHeight, toHeight + 1) : blocksArr.slice(fromHeight, fromHeight + max);
+      const effectiveMax = Math.min(Number(max || MAX_SYNC_BLOCKS), MAX_SYNC_BLOCKS);
+      const slice = (typeof toHeight === 'number') ? blocksArr.slice(fromHeight, toHeight + 1) : blocksArr.slice(fromHeight, fromHeight + effectiveMax);
 
-      const respPayload = { requestId: message.id, blocks: slice.map(b => ({ header: b.header, blockHash: b.blockHash })) };
+      // Testing helper: allow optional delayMs in payload to simulate long-running syncs (only enabled in NODE_ENV=test)
+      if (process.env.NODE_ENV === 'test' && message.payload && Number(message.payload.delayMs) > 0) {
+        try { await new Promise(r => setTimeout(r, Number(message.payload.delayMs))); } catch (e) {}
+      }
+
+      // If an anchorPrevHash was supplied, validate that the first block we would send
+      // indeed references that anchor as its prevHash. If not, reject the sync request.
+      if (anchorPrevHash && slice.length > 0) {
+        const firstPrev = slice[0].header && slice[0].header.prevHash;
+        if (firstPrev !== anchorPrevHash) {
+          logNs('WARN', `REQUEST_BLOCKS_SYNC: anchor mismatch from ${message.originNodeId} - expected prevHash=${anchorPrevHash} got ${firstPrev}`);
+          try { metricsService.inc('sync_ancestry_mismatch_total', { origin: originId }); } catch (e) {}
+          // Reply to origin with an error message to avoid silent failures
+          const errPayload = { requestId: message.id, error: 'ANCESTRY_MISMATCH', details: { expected: anchorPrevHash, found: firstPrev } };
+          const errMsg = p2pProtocol.createMessage(MessageType.RESPONSE_BLOCKS_SYNC, errPayload, peerManager.nodeId);
+          const originId = message.originNodeId;
+          const originPeer = peerManager.getPeer(originId);
+          if (originPeer) {
+            const url = `http://${originPeer.host}:${originPeer.port}/p2p/message`;
+            try {
+              await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(errMsg), timeout: 5000 });
+            } catch (e) {
+              logNs('WARN', `Failed to send ancestry mismatch response to ${originId}: ${e.message}`);
+            }
+          } else {
+            await p2pProtocol.broadcastMessage(errMsg).catch(err => logNs('WARN', 'Failed to broadcast ancestry mismatch response', err.message));
+          }
+          // Don't send the normal response
+          // decrement inflight and return
+          syncInflight.set(originId, Math.max(0, (syncInflight.get(originId) || 1) - 1));
+          try {
+            const totalInflight = Array.from(syncInflight.values()).reduce((a, b) => a + b, 0);
+            metricsService.set('sync_inflight_total', totalInflight);
+            metricsService.set('sync_inflight_per_peer', syncInflight.get(originId) || 0, { peer: originId });
+          } catch (e) {}
+          inflightDecremented = true;
+          return res.json({ ok: true, result: { processed: true, action: 'request_blocks_sync_rejected', reason: 'ancestry_mismatch' } });
+        }
+      }
+
+      const respPayload = { requestId: message.id, blocks: slice.map(b => ({ header: b.header, blockHash: b.blockHash })), hasMore: (fromHeight + slice.length) < blocksArr.length, nextFrom: fromHeight + slice.length };
       const respMsg = p2pProtocol.createMessage(MessageType.RESPONSE_BLOCKS_SYNC, respPayload, peerManager.nodeId);
 
-      const originId = message.originNodeId;
-      const originPeer = peerManager.getPeer(originId);
+      const targetOriginId = message.originNodeId;
+      const originPeer = peerManager.getPeer(targetOriginId);
       if (originPeer) {
         const url = `http://${originPeer.host}:${originPeer.port}/p2p/message`;
-        try {
-          await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(respMsg), timeout: 5000 });
-        } catch (e) {
-          logNs('WARN', `Failed to send sync response to ${originId}: ${e.message}`);
-        }
+          try {
+            await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(respMsg), timeout: 5000 });
+          } catch (e) {
+            logNs('WARN', `Failed to send sync response to ${targetOriginId}: ${e.message}`);
+          }
+          // decrement inflight for this origin
+          if (!inflightDecremented) {
+            syncInflight.set(targetOriginId, Math.max(0, (syncInflight.get(targetOriginId) || 1) - 1));
+            try {
+              const totalInflight = Array.from(syncInflight.values()).reduce((a, b) => a + b, 0);
+              metricsService.set('sync_inflight_total', totalInflight);
+              metricsService.set('sync_inflight_per_peer', syncInflight.get(targetOriginId) || 0, { peer: targetOriginId });
+            } catch (e) {}
+          }
       } else {
-        await p2pProtocol.broadcastMessage(respMsg).catch(err => logNs('WARN', 'Failed to broadcast sync response', err.message));
+          await p2pProtocol.broadcastMessage(respMsg).catch(err => logNs('WARN', 'Failed to broadcast sync response', err.message));
+          if (!inflightDecremented) {
+            syncInflight.set(targetOriginId, Math.max(0, (syncInflight.get(targetOriginId) || 1) - 1));
+            try {
+              const totalInflight = Array.from(syncInflight.values()).reduce((a, b) => a + b, 0);
+              metricsService.set('sync_inflight_total', totalInflight);
+              metricsService.set('sync_inflight_per_peer', syncInflight.get(targetOriginId) || 0, { peer: targetOriginId });
+            } catch (e) {}
+          }
+      }
+    }
+
+    // Handle incoming sync responses: verify ancestry matches our tip
+    if (message.type === MessageType.RESPONSE_BLOCKS_SYNC && result.processed) {
+      try {
+        const blocks = (message.payload && message.payload.blocks) || [];
+        if (blocks.length > 0) {
+          const firstPrev = blocks[0].header && blocks[0].header.prevHash;
+          const localTip = state.canonicalTipHash || '0'.repeat(64);
+          if (firstPrev !== localTip) {
+            logNs('WARN', `RESPONSE_BLOCKS_SYNC ancestry mismatch: first prevHash=${firstPrev} does not equal local tip=${localTip}. Rejecting payload from ${message.originNodeId}`);
+            try { metricsService.inc('sync_ancestry_mismatch_total', { origin: message.originNodeId || senderIp || 'unknown' }); } catch (e) {}
+            // Respond with an error to the sender and mark as processed=false so peers know
+            return res.status(400).json({ ok: false, error: 'invalid_ancestry', expectedPrevHash: localTip, foundPrevHash: firstPrev });
+          }
+        }
+      } catch (e) {
+        logNs('ERROR', 'Error validating RESPONSE_BLOCKS_SYNC ancestry', e.message);
       }
     }
 

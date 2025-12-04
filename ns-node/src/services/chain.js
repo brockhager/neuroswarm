@@ -222,8 +222,8 @@ export function applyBlock(block) {
     const txIds = block.txs.map(tx => txIdFor(tx));
     const calcRoot = computeMerkleRoot(txIds);
     if (calcRoot !== block.header.merkleRoot) return { ok: false, reason: 'bad_merkle' };
-    // verify validator registration
-    const validatorId = block.header.validatorId;
+    // determine validator id (support VP header.producerId alias without mutating header before verification)
+    const validatorId = block.header.validatorId || block.header.producerId;
     if (!validators.has(validatorId)) return { ok: false, reason: 'unknown_validator' };
     const v = validators.get(validatorId);
     // verify header signature using ed25519 public key
@@ -240,8 +240,17 @@ export function applyBlock(block) {
     }
     if (!verified) {
         logNs('DEBUG', 'Signature verification failed headerDataLength=', headerData.length);
+        // Log canonical header data for debugging mismatch scenarios (truncated)
+        try {
+            logNs('DEBUG', 'Canonical header data (verify side, truncated 1024):', headerData.slice(0, 1024));
+            logNs('DEBUG', 'Header keys:', Object.keys(headerNoSig).sort());
+        } catch (e) {
+            logNs('DEBUG', 'Error logging headerData', e && e.message);
+        }
         return { ok: false, reason: 'bad_sig' };
     }
+    // safe to set validatorId on header now that signature verified (do not mutate before verification)
+    if (!block.header.validatorId && block.header.producerId) block.header.validatorId = block.header.producerId;
     // verify prevHash references a known parent or genesis
     const parentHash = block.header.prevHash;
     const genesisPrev = '0'.repeat(64);

@@ -19,10 +19,12 @@ function waitForUrl(url, timeout = 8000) {
 
 // Spawn a node process helper
 function spawnNode(cwd, env) {
-  const child = spawn('node', ['server.js'], {
+  const nodeBin = process.execPath || 'node';
+  const child = spawn(nodeBin, ['server.js'], {
     cwd,
     env: { ...process.env, ...env },
-    stdio: ['ignore', 'pipe', 'pipe']
+    stdio: ['ignore', 'pipe', 'pipe'],
+    shell: false
   });
 
   child.stdout.on('data', d => process.stdout.write(`[child ${cwd}] ${d}`));
@@ -53,7 +55,7 @@ test('Full cryptographic E2E: VP produces signed block, NS verifies and applies'
     // Ensure P2P signatures are optional during test submission (we will use /v1/blocks/produce)
     NODE_ENV: 'test'
   };
-  const nsProc = spawnNode(path.join(process.cwd(), 'ns-node'), nsEnv);
+  const nsProc = spawnNode(process.cwd(), nsEnv);
 
   await waitForUrl(`http://127.0.0.1:${nsPort}/health`, 10000);
 
@@ -66,7 +68,7 @@ test('Full cryptographic E2E: VP produces signed block, NS verifies and applies'
     NS_NODE_DB_PATH: tmpDbA,
     NODE_ENV: 'test'
   };
-  const vpProc = spawnNode(path.join(process.cwd(), 'vp-node'), vpEnv);
+  const vpProc = spawnNode(path.join(process.cwd(), '..', 'vp-node'), vpEnv);
 
   await waitForUrl(`http://127.0.0.1:${vpPort}/health`, 10000);
 

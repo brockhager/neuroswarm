@@ -81,11 +81,20 @@ test('Validator registration creates account and rewards/fees are credited + per
   const canonicalize = (await import('../../src/utils/crypto.js')).canonicalize;
   const headerData = canonicalize({ ...header, signature: undefined });
   const sig = crypto.sign(null, Buffer.from(headerData, 'utf8'), privateKey).toString('base64');
+  // quick self-check to ensure signature and canonicalization align in the test process
+  try {
+    const selfOk = crypto.verify(null, Buffer.from(headerData, 'utf8'), publicKey, Buffer.from(sig, 'base64'));
+    console.log('DEBUG test self verify ok=', selfOk, 'headerDataLength=', headerData.length);
+    console.log('DEBUG test headerData (truncated 1024):', headerData.slice(0, 1024));
+  } catch (e) {
+    console.log('DEBUG test self verify exception', e && e.message);
+  }
   header.signature = sig;
 
   // Apply block directly (simulate acceptance)
   const block = { header, txs };
   const result = applyBlock(block);
+  console.log('DEBUG applyBlock result:', result);
   assert.ok(result.ok, `applyBlock failed: ${result.reason || 'unknown'}`);
 
   // Verify account balances updated
@@ -95,6 +104,8 @@ test('Validator registration creates account and rewards/fees are credited + per
   const validatorShare = (totalFees * 9n) / 10n;
 
   const updatedAcct = db.getAccount(validatorId);
+  console.log('DEBUG updatedAcct:', updatedAcct);
+  console.log('DEBUG expectedNst:', expectedNst, 'validatorShare:', validatorShare);
   assert.ok(updatedAcct, 'expected persisted account after block apply');
   assert.strictEqual(BigInt(updatedAcct.nst_balance), expectedNst, 'NST reward mismatch');
   assert.strictEqual(BigInt(updatedAcct.nsd_balance), validatorShare, 'NSD validator share mismatch');

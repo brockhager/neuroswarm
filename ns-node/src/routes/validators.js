@@ -127,7 +127,7 @@ export function createBlocksRouter(p2pProtocol, peerManager, blockPropagation = 
     const router = express.Router();
 
     // Endpoint to produce block proposals from validators (vp-node posts here)
-    router.post('/produce', (req, res) => {
+    router.post('/produce', async (req, res) => {
         const { header, txs, signature, publicKey } = req.body || {};
         // Accept either header.validatorId (NS format) or header.producerId (VP format)
         if (!header || (!header.validatorId && !header.producerId)) return res.status(400).json({ error: 'invalid header' });
@@ -174,6 +174,43 @@ export function createBlocksRouter(p2pProtocol, peerManager, blockPropagation = 
         // If a payloadCid is provided in the header, attempt to fetch it from the producer
         // for integrity verification before accepting the block.
         const payloadCid = header.payloadCid || header.cid || null;
+        // If payloadCid is a deterministic fallback (no IPFS), we don't need to fetch from producer.
+        // VP produces 'cid:fallback:<hash>' when IPFS isn't available; accept that and validate against provided txs.
+        if (payloadCid && String(payloadCid).startsWith('cid:fallback:')) {
+            // validate merkle root & sources root using provided txs
+            const providedTxs = txs || [];
+            const providedIds = (providedTxs || []).map(tx => txIdFor(tx));
+            const providedRoot = computeMerkleRoot(providedIds);
+            if (providedRoot !== header.merkleRoot) return res.status(400).json({ error: 'payload_cid_merkle_mismatch' });
+            if (header.sourcesRoot) {
+                const srcRoot = computeSourcesRoot(providedTxs);
+                if (srcRoot !== header.sourcesRoot) return res.status(400).json({ error: 'payload_sources_root_mismatch' });
+            }
+            // proceed to apply (do NOT add validatorId — applyBlock will map producerId -> validatorId after verification)
+            header.signature = signature;
+            const block = { header, txs: providedTxs };
+            const result = applyBlock(block);
+            if (!result.ok) return res.status(400).json({ error: result.reason });
+
+            // Trigger reorg check
+            await chooseCanonicalTipAndReorg();
+
+            if (blockPropagation) {
+                const height = header.height || 0;
+                await blockPropagation.announceBlock(result.blockHash, header, height);
+            } else {
+                const blockMessage = p2pProtocol.createMessage(
+                    MessageType.NEW_BLOCK,
+                    { header, txs: providedTxs },
+                    peerManager.nodeId
+                );
+                p2pProtocol.broadcastMessage(blockMessage).catch(err => {
+                    logNs('Failed to broadcast block to peers:', err.message);
+                });
+            }
+
+            return res.json({ ok: true, blockHash: result.blockHash });
+        }
         if (payloadCid) {
             const producerUrl = req.header('x-producer-url') || null;
             if (!producerUrl) return res.status(400).json({ error: 'producer_url_required_for_payload_cid' });
@@ -224,10 +261,8 @@ export function createBlocksRouter(p2pProtocol, peerManager, blockPropagation = 
                             return res.status(500).json({ error: 'payload_signature_verify_exception', message: e.message });
                         }
                     }
-                    // Fetched content matches - proceed to apply block
+                    // Fetched content matches - proceed to apply block (do NOT add validatorId before verification)
                     header.signature = signature;
-                    // Ensure validatorId present for downstream processing (use producerId as fallback)
-                    if (!header.validatorId && header.producerId) header.validatorId = header.producerId;
                     const block = { header, txs };
                     const result = applyBlock(block);
                     if (!result.ok) return res.status(400).json({ error: result.reason });
@@ -260,9 +295,8 @@ export function createBlocksRouter(p2pProtocol, peerManager, blockPropagation = 
             })();
             return; // early return while we async-verified
         }
-                    // For application we need header.validatorId to be populated. Use producerId as fallback.
+                    // For application we must not mutate header fields before verification.
                     header.signature = signature;
-                    if (!header.validatorId && header.producerId) header.validatorId = header.producerId;
         const block = { header, txs };
         const result = applyBlock(block);
         if (!result.ok) return res.status(400).json({ error: result.reason });

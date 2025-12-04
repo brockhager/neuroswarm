@@ -8,7 +8,9 @@ export function sha256Hex(buf) {
 export function canonicalize(obj) {
     if (typeof obj !== 'object' || obj === null) return JSON.stringify(obj);
     if (Array.isArray(obj)) return '[' + obj.map(canonicalize).join(',') + ']';
-    const keys = Object.keys(obj).sort();
+    // Exclude properties whose value is `undefined` so callers can pass
+    // `{ ...obj, signature: undefined }` safely without inserting the key.
+    const keys = Object.keys(obj).filter(k => typeof obj[k] !== 'undefined').sort();
     return '{' + keys.map(k => JSON.stringify(k) + ':' + canonicalize(obj[k])).join(',') + '}';
 }
 
