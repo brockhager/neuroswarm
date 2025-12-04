@@ -1,6 +1,7 @@
 import assert from 'assert';
 import crypto from 'crypto';
-import { verifyJwt, validateArtifact, requireRoles } from '../server.js';
+import { validateJwt, validateArtifact, requireRoles } from '../server.js';
+import { generateKeyPair, exportSPKI, SignJWT } from 'jose';
 
 function base64url(input) {
   return Buffer.from(input).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
@@ -20,13 +21,26 @@ function signHS256(headerJson, payloadJson, secret) {
   // 1) HS256 JWT verification (happy path)
   process.env.ROUTER_JWT_SECRET = 'test-secret-1234';
   const token = signHS256({ alg: 'HS256', typ: 'JWT' }, { sub: 'agent9-discord-bot', roles: ['ingest', 'uploader'] }, process.env.ROUTER_JWT_SECRET);
-  const payload = verifyJwt(token);
-  assert.ok(payload && payload.sub === 'agent9-discord-bot', 'HS256 token should verify and return payload');
+  const validRes = await validateJwt(token);
+  assert.ok(validRes && validRes.valid && validRes.payload && validRes.payload.sub === 'agent9-discord-bot', 'HS256 token should verify and return payload');
 
   // 2) HS256 bad signature
   const bad = token.replace(/.$/, 'X');
-  const badPayload = verifyJwt(bad);
-  assert.ok(badPayload === null, 'Bad signature should not verify');
+  const badPayload = await validateJwt(bad);
+  assert.ok(!badPayload.valid, 'Bad signature should not verify');
+
+  // RS256 test — generate keypair and sign a token
+  const { publicKey, privateKey } = await generateKeyPair('RS256');
+  const pubPem = await exportSPKI(publicKey);
+  process.env.ROUTER_JWT_PUBLIC_KEY = pubPem;
+  // Create RS256 token using privateKey
+  const rsToken = await new SignJWT({ sub: 'agent9-discord-bot', roles: ['ingest', 'uploader'] })
+    .setProtectedHeader({ alg: 'RS256', typ: 'JWT' })
+    .setIssuedAt()
+    .setExpirationTime('2h')
+    .sign(privateKey);
+  const rsResult = await validateJwt(rsToken);
+  assert.ok(rsResult && rsResult.valid && rsResult.payload && rsResult.payload.sub === 'agent9-discord-bot', 'RS256 token should be validated by public key');
 
   // 3) requireRoles middleware (simulated) - allowed
   let called = false;

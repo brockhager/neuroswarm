@@ -1,0 +1,19 @@
+{
+  "name": "router-api-prototype",
+  "version": "0.1.0",
+  "description": "Router API prototype (tests + CI scripts)",
+  "type": "module",
+  "dependencies": {
+    "jose": "^5.0.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test:unit": "node tests/test-auth-validation.mjs",
+    "test:integration": "node --test tests/integration/router_auth.test.mjs",
+    "test:integration:rs256": "node --test tests/integration/router_rs256.test.mjs",
+    "test:ci": "npm run test:unit && npm run test:integration && npm run test:integration:rs256"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -8,6 +8,7 @@
 
 import express from 'express';
 import crypto from 'crypto';
+import { jwtVerify, importSPKI } from 'jose';
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const app = express();
@@ -17,60 +18,45 @@ app.use(express.json());
 
 // --- JWT verification and RBAC middleware ---
 
-function base64urlDecode(input) {
-  // base64url -> base64
-  input = input.replace(/-/g, '+').replace(/_/g, '/');
-  while (input.length % 4) input += '=';
-  return Buffer.from(input, 'base64').toString('utf8');
+// Validate JWT using 'jose' library. Support HS256 (shared secret) or RS256/ES256 (public key).
+async function validateJwt(token) {
+  if (!token) return { valid: false };
+
+  // Prefer RS256 if public key is configured
+  if (process.env.ROUTER_JWT_PUBLIC_KEY) {
+    try {
+      const pubKeyPem = process.env.ROUTER_JWT_PUBLIC_KEY;
+      // import SPKI (public PEM) to KeyLike
+      const key = await importSPKI(pubKeyPem, 'RS256');
+      const { payload } = await jwtVerify(token, key, { algorithms: ['RS256', 'ES256'] });
+      return { valid: true, payload };
+    } catch (err) {
+      return { valid: false, error: err.message };
+    }
+  }
+
+  // Fallback to HS256 using shared secret
+  if (process.env.ROUTER_JWT_SECRET) {
+    try {
+      const secret = new TextEncoder().encode(process.env.ROUTER_JWT_SECRET);
+      const { payload } = await jwtVerify(token, secret, { algorithms: ['HS256'] });
+      return { valid: true, payload };
+    } catch (err) {
+      return { valid: false, error: err.message };
+    }
+  }
+
+  return { valid: false, error: 'no_jwt_configured' };
 }
 
-function verifyJwt(token) {
-  if (!token) return null;
-  const parts = token.split('.');
-  if (parts.length !== 3) return null;
-  const [headerB64, payloadB64, sigB64] = parts;
-  let headerJson, payloadJson;
-  try {
-    headerJson = JSON.parse(base64urlDecode(headerB64));
-    payloadJson = JSON.parse(base64urlDecode(payloadB64));
-  } catch (e) {
-    return null;
-  }
-
-  const alg = headerJson.alg || 'HS256';
-  const signingInput = `${headerB64}.${payloadB64}`;
-  const signature = Buffer.from(sigB64.replace(/-/g, '+').replace(/_/g, '/'), 'base64');
-
-  if (alg === 'HS256') {
-    const secret = process.env.ROUTER_JWT_SECRET;
-    if (!secret) return null;
-    const expected = crypto.createHmac('sha256', secret).update(signingInput).digest();
-    if (!crypto.timingSafeEqual(expected, signature)) return null;
-    return payloadJson;
-  }
-
-  if (alg === 'RS256') {
-    const pub = process.env.ROUTER_JWT_PUBLIC_KEY; // PEM
-    if (!pub) return null;
-    const verify = crypto.createVerify('RSA-SHA256');
-    verify.update(signingInput);
-    verify.end();
-    if (!verify.verify(pub, signature)) return null;
-    return payloadJson;
-  }
-
-  // unsupported alg
-  return null;
-}
-
-const authenticateJwt = (req, res, next) => {
+const authenticateJwt = async (req, res, next) => {
   const authHeader = req.headers['authorization'] || '';
   if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'Authentication required.' });
   const token = authHeader.slice('Bearer '.length).trim();
-  const payload = verifyJwt(token);
-  if (!payload) return res.status(401).json({ error: 'Invalid or expired token.' });
-  // attach user context
-  req.user = { id: payload.sub || payload.client_id || payload.client || 'unknown', roles: payload.roles || [] };
+  const result = await validateJwt(token);
+  if (!result.valid) return res.status(401).json({ error: `Invalid or expired token. ${result.error || ''}` });
+  const payload = result.payload || {};
+  req.user = { id: payload.sub || payload.client_id || payload.userId || 'unknown', roles: payload.roles || [] };
   next();
 };
 
@@ -188,4 +174,4 @@ if (process.argv[1] === __filename) {
   });
 }
 
-export { app, verifyJwt, validateArtifact, authenticateJwt, requireRoles };
+export { app, validateJwt, validateArtifact, authenticateJwt, requireRoles };

@@ -15,7 +15,7 @@ OPS-02 | All Services | Standardize structured logging (JSON), correlation IDs &
 OPS-03 | CI/CD | Develop contract/E2E test suite validating inter-service contracts & flows | HIGH | Not Started
 OPS-04 | Secrets & Deployment | Formalize secrets management (Vault/Docker secrets) for local & containerized setups | HIGH | Not Started
 CN-01 | ns-node (3009) | Implement full canonical node logic (block validation, consensus, reorg handling, RBAC) | HIGH | Not Started
-CN-02 | Router API (4001) | Implement JWT/RBAC security, Postgres migrations + IPFS/on-chain anchoring | HIGH | Not Started
+CN-02 | Router API (4001) | Implement JWT/RBAC security, Postgres migrations + IPFS/on-chain anchoring | HIGH | In Progress
 CN-03 | VP Node (4000) | Implement deterministic block producer: mempool poll → payloadCid/sourcesRoot → sign & submit | HIGH | Not Started
 CN-04 | Gateway Node (8080) | Implement admission / mempool + per-IP/key rate limiting and requeue endpoints | HIGH | Not Started
 AI-01 | NS-LLM (3015) | Refactor /api/generate to support SSE/token streaming (and native fallback) | HIGH | ✅ Completed
@@ -136,8 +136,8 @@ These tasks are necessary to support the advanced features above and remain crit
 
 ID | Component | Task Description | Priority | Related MDD Status
 :-- | :-- | :-- | :--: | :--
-RA-01 | Router API (4001) | Implement Governance Endpoint: Create the authenticated endpoint in the Router API to receive and validate governance/voting transactions from Agent 9 (Required for A9-03). | HIGH | ✅ Prototype available (router-api-prototype/server.js) — **Security hardening implemented** (JWT validation + RBAC enforced on /governance/vote)
-RA-02 | Router API (4001) | Implement Artifact Ingestion Endpoint: Create the authenticated endpoint to receive IPFS content hashes and metadata for pinning and anchoring (Required for A9-02). | HIGH | ✅ Prototype available (router-api-prototype/server.js) — **Server-side validation implemented** (CID checks, metadata validation, size/type limits). Server still requires DB/pinning policy + CI/E2E gating for production.
+RA-01 | Router API (4001) | Implement Governance Endpoint: Create the authenticated endpoint in the Router API to receive and validate governance/voting transactions from Agent 9 (Required for A9-03). | HIGH | ✅ Prototype available (router-api-prototype/server.js) — **Security hardened (HS256 + RS256 supported), RBAC enforced, unit & integration tests added, README and CI workflow present**. Remaining work: DB persistence & anchoring pipeline for production.
+RA-02 | Router API (4001) | Implement Artifact Ingestion Endpoint: Create the authenticated endpoint to receive IPFS content hashes and metadata for pinning and anchoring (Required for A9-02). | HIGH | ✅ Prototype available (router-api-prototype/server.js) — **Server-side validation implemented (CID checks, metadata validation, size/type limits), HS256 & RS256 validation supported, tests and CI workflow added, README added**. Remaining work: pinning policy, durable storage, on-chain anchoring and production auth integration.
 -- Server TODO: enforce server-side validation (size/type/content checks), pinning policy & production auth (JWT/RBAC) before enabling public ingestion.
 OPS-01 | All Services | Prometheus/Grafana Dashboards: Focus on integrating metrics for Agent 9 performance (latency, token usage, command volume, connection health). | HIGH | 🚧 In Progress
 
