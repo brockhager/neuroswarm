@@ -55,7 +55,7 @@ neuroswarm_sync_inflight_total 0
 
 ## CN-06 VP-Node Staking & Validator Management — Task 6 (2025-12-04)
 
-**Status:** ✅ Implementation Complete (A-C) | 🚧 Production Integration Pending (D+)
+**Status:** ✅ Implementation & CI Verified — MERGED (2025-12-04)
 
 This task implements the financial gate that controls access to the Validator Pool and provides the fundamentals for validator candidacy and staking lifecycle.
 
@@ -73,10 +73,26 @@ This task implements the financial gate that controls access to the Validator Po
 - `accounts` table updated to include `is_validator_candidate` flag (migrated for existing DBs when starting the node).
 - `pending_unstakes` table added to persist unbonding records (id, address, amount, unlockAt, createdAt).
 
-**Remaining work (Production Integration Phase):**
-- **CN-06-D — Selection & Consensus Integration** 🚧: Wire candidate accounts into the consensus selection path (chooseValidator) and reconcile `staked_nst` with validator `stake` (validators table) or keep them separate with a clear policy (auto-compound? manual stake->validator mapping?).
-- **CN-06-E — Unbond Release Processor** 🚧: Implement a periodic job / on-chain finalization that moves matured `pending_unstakes` amounts into `nst_balance` after the unlock time (7-day unbond) and persist state; add tests.
-- **CN-06-F — CI Integration** 🚧: Add staking-specific integration tests to CI; ensure tests run on CI and DB migrations are validated.
+**Remaining work (Production Integration / Hardening):**
+- **CN-06-DEPLOY** — Deploy staking DB migrations to production, validate live reorg behaviour and release runner in hosted environment.
+- **CN-06-MONITORING** — Add metrics and dashboards for unbond release activity and slashing events; incorporate alerts for anomalies.
+
+## CN-07 VP-Node Block Production & Selection — Task 7 (2025-12-04)
+
+**Status:** ✅ CN-07-A & CN-07-B Implemented & Tests Passing (2025-12-04)
+
+This task implements deterministic, stake-weighted selection of block producers and integrates it into VP production so validators only produce when scheduled.
+
+**Completed work (implementation & verification):**
+- **CN-07-A — getProducer(height)** ✅: Implemented `getProducer(height)` in `ns-node/src/services/chain.js` that deterministically selects a producer for a given height using canonical tip + height as seed and a stake-weighted selection algorithm. Added `GET /chain/producer/:height` API and comprehensive integration tests validating determinism, stake-weighted frequency, slashed/insufficient-stake exclusions.
+- **CN-07-B — VP Production Guard** ✅: VP-node production loop now consults NS's `/chain/producer/:height` before attempting production. VP will skip producing unless it is the designated producer for the next height. Added unit tests to verify both the skip and produce paths.
+
+**Testing / CI status:**
+- Integration and unit tests added for `getProducer` and VP guard; local test runs show all relevant tests passing. CN-07 changes were committed and pushed to `main` and are included in the CI run triggered by PR merges for CN-06.
+
+**Next actions (CN-07 - production hardening):**
+- **CN-07-C — E2E validation**: Add end-to-end integration that boots a small NS + VP combo and validates that only the designated VP produces across several heights (validate network-level scheduling and handling of missed slots).
+- **CN-07-D — Scheduling & Slashing policies**: Design and implement deterministic slot scheduling for multi-VP networks and tie slashing/replacement policies to misbehavior (future work).
 
 These changes add the core staking lifecycle required for validators and VP node candidacy. Next, we'll connect this account-level staking to the validator stake used by consensus and implement the unbond release processor and CI gating.
 
@@ -131,6 +147,8 @@ CN-01 | ns-node (3009) | Implement full canonical node logic: block validation, 
 CN-01-E2E | ns-node + VP | VP→NS Cryptographic E2E: Validate full cryptographic flow from VP block production (ED25519 signing) through network transmission to NS verification and canonical chain application. | HIGH | ✅ Complete (header canonicalization bug fixed, `e2e_crypto_block_propagation.test.mjs` passing with spawned processes)
 CN-02 | Router API (4001) | Implement security and anchoring: JWT middleware (HS256/RS256/JWKS), RBAC, Postgres schema/migrations, deterministic audit hashing, IPFS pinning pipeline, and optional on-chain anchoring tests. | HIGH | 🚧 In Progress (prototype hardened with JWT/RBAC/validation, needs production Postgres + anchoring pipeline)
 CN-03 | VP Node (4000) | Implement consensus engine: poll Gateway mempool, deterministically build blocks, compute payloadCid and sourcesRoot, sign headers with ED25519, submit to ns-node, and provide metrics. | HIGH | ✅ Complete (deterministic production, ED25519 signing, Merkle root computation, CI tests passing)
+CN-07-A | ns-node (3009) | Implement getProducer(height): deterministic stake-weighted producer selection and API endpoint (`GET /chain/producer/:height`) with integration tests. | HIGH | ✅ Complete
+CN-07-B | vp-node (4000) | Production guard: VP consults NS `/chain/producer/:height` and only attempts production when designated; unit tests added. | HIGH | ✅ Complete
 CN-04 | Gateway Node (8080) | Implement admission control: mempool management, per-IP and per-key rate limiting, adapter sandboxing, and requeue endpoints for reorg handling. | HIGH | ✅ Complete (SQLite state persistence via `state-db.js`, block propagation service via `block-propagation.js`, server verified running)
 CN-05-A | ns-node (3009) | Sync Protocol - Ancestry Integrity: Implement REQUEST/RESPONSE ancestry validation to prevent feeding invalid chain history. | HIGH | ✅ Complete (implemented, `blocks_sync_ancestry.test.mjs` passing locally)
 CN-05-B | ns-node (3009) | Sync Protocol - Paging/Chunking: Enforce configurable per-response block limit (MAX_SYNC_BLOCKS) with hasMore/nextFrom metadata for continuation. | HIGH | ✅ Complete (implemented, `blocks_sync_paging.test.mjs` passing locally)
