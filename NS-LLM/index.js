@@ -135,6 +135,39 @@ const server = http.createServer((req, res) => {
       });
     }
 
+    // Basic non-streaming /generate endpoint for prototype fallback
+    if (req.method === 'POST' && req.url === '/generate') {
+      metrics.requests_total++;
+      let body = '';
+      const start = Date.now();
+      req.on('data', c => body += c);
+      req.on('end', () => {
+        try {
+          if (!body) { metrics.requests_failed++; return sendJSON(res, 400, { error: 'empty body' }); }
+          let json;
+          try { json = JSON.parse(body); } catch (e) { metrics.requests_failed++; return sendJSON(res, 400, { error: 'invalid json' }); }
+          if (!json.text || typeof json.text !== 'string') { metrics.requests_failed++; return sendJSON(res, 400, { error: "missing 'text' string" }); }
+
+          // Simple generator: echo back first N tokens or repeat input up to max_tokens
+          const max = Number.isFinite(json.max_tokens) ? Math.max(1, Math.min(1024, json.max_tokens)) : 64;
+          const parts = json.text.split(/\s+/).filter(Boolean);
+          let generated = parts.length ? parts.slice(0, Math.min(parts.length, max)).join(' ') : 'hello world';
+          // if parts shorter than max, repeat to create output
+          while (generated.split(/\s+/).length < Math.min(4, max)) generated += ' ' + generated;
+
+          const latency_ms = Math.max(1, Date.now() - start);
+          metrics.sum_latency_ms += latency_ms;
+          metrics.max_latency_ms = Math.max(metrics.max_latency_ms, latency_ms);
+
+          return sendJSON(res, 200, { text: generated, tokens_generated: generated.split(/\s+/).length, latency_ms });
+        } catch (err) {
+          metrics.requests_failed++; sendJSON(res, 500, { error: 'server error' });
+        }
+      });
+
+      return;
+    }
+
     res.writeHead(404, {'Content-Type': 'text/plain'});
     res.end('not found');
   } catch (err) {

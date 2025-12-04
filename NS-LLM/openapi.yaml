@@ -1,0 +1,73 @@
+openapi: 3.0.3
+info:
+  title: NS-LLM API
+  version: "0.2.1"
+  description: |
+    Lightweight contract for the NS-LLM service. Supports non-streaming generation (`POST /api/generate`), SSE streaming when `stream: true` on the same endpoint, and embedding (`POST /api/embed`).
+paths:
+  /api/generate:
+    post:
+      summary: Generate text or stream tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                max_tokens:
+                  type: integer
+                stream:
+                  type: boolean
+              required: [text]
+      responses:
+        '200':
+          description: Successful non-streaming generation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  text:
+                    type: string
+                  tokens_generated:
+                    type: integer
+        '500':
+          description: Server error
+  /api/embed:
+    post:
+      summary: Generate an embedding vector for text
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                text:
+                  type: string
+                model:
+                  type: string
+              required: [text]
+      responses:
+        '200':
+          description: Embedding result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  embedding:
+                    type: array
+                    items:
+                      type: number
+                  tokens:
+                    type: integer
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+
+components: {}

@@ -94,22 +94,125 @@ client.on('messageCreate', async message => {
         let errorOccurred = false;
 
         try {
-            const response = await fetch(`${NS_LLM_URL}/api/generate`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    text: `You are Agent 3, the NeuroSwarm System Analyst. Provide a concise, data-driven answer to this question: ${userQuery}`,
-                    max_tokens: 500,
-                    stream: false
-                })
-            });
+            // Try streaming first for a faster UX; fallback to non-streaming if the service doesn't support it.
+            const http = require('http');
+            const https = require('https');
+            const { URL } = require('url');
 
-            if (!response.ok) {
-                throw new Error(`NS-LLM returned ${response.status}: ${response.statusText}`);
+            const prompt = `You are Agent 3, the NeuroSwarm System Analyst. Provide a concise, data-driven answer to this question: ${userQuery}`;
+
+            // Create an initial message so we can edit it while streaming tokens
+            const initialMsg = await message.reply('Generating answer...');
+
+            try {
+                const u = new URL(`${NS_LLM_URL}/api/generate`);
+                const payload = JSON.stringify({ text: prompt, max_tokens: 500, stream: true });
+                const opts = {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Content-Length': Buffer.byteLength(payload)
+                    }
+                };
+
+                const client = u.protocol === 'https:' ? https : http;
+
+                const req = client.request(u, opts, res => {
+                    if (res.statusCode !== 200) {
+                        // fallback to non-stream pathway
+                        throw new Error(`NS-LLM returned ${res.statusCode}`);
+                    }
+
+                    res.setEncoding('utf8');
+                    let buffer = '';
+                    let assembled = '';
+
+                    res.on('data', chunk => {
+                        buffer += chunk;
+
+                        // Process complete SSE events
+                        while (true) {
+                            const idx = buffer.indexOf('\n\n');
+                            if (idx === -1) break;
+                            const raw = buffer.slice(0, idx).trim();
+                            buffer = buffer.slice(idx + 2);
+
+                            const lines = raw.split('\n');
+                            let event = 'message';
+                            let dataLines = [];
+                            for (const l of lines) {
+                                const m = l.match(/^event:\s*(.+)$/);
+                                if (m) { event = m[1]; continue; }
+                                const md = l.match(/^data:\s*(.*)$/);
+                                if (md) dataLines.push(md[1]);
+                            }
+
+                            const dataStr = dataLines.join('\n');
+                            let parsed = null;
+                            try { parsed = JSON.parse(dataStr); } catch (e) { parsed = dataStr; }
+
+                            if (event === 'token') {
+                                const token = parsed && parsed.token ? parsed.token : (typeof parsed === 'string' ? parsed : '');
+                                assembled += token;
+
+                                // edit message with partial content (throttled by token arrival)
+                                initialMsg.edit(`**Swarm Report (streaming):**\n\n${assembled}`)
+                                    .catch(e => console.warn('edit failed', e && e.message));
+                            }
+
+                            if (event === 'meta') {
+                                // can optionally log meta
+                                console.debug('[NS-LLM meta]', parsed);
+                            }
+
+                            if (event === 'done') {
+                                // finalize
+                                responseText = assembled || parsed && parsed.text;
+                                // once done, ensure final edited message contains final text
+                                initialMsg.edit(`**Swarm Report (Agent 3 via NS-LLM):**\n\n${responseText}\n\n---\n**Powered by:** NeuroSwarm Local LLM (Ollama)`)
+                                    .catch(e => console.warn('edit failed', e && e.message));
+                            }
+                        }
+                    });
+
+                    res.on('end', () => {
+                        // If the stream closed without 'done', fallback if we didn't get tokens
+                        if (!responseText && assembled) responseText = assembled;
+                    });
+                });
+
+                req.on('error', (err) => { throw err; });
+                req.write(payload);
+                req.end();
+
+                // Wait for a short fixed window to collect stream (give it time) and then continue
+                // If streaming completes it will have edited the message above.
+                // We'll wait up to 10 seconds for the stream to produce a result; otherwise fallback.
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+
+                // If streaming produced nothing after timeout, attempt non-stream fallback
+                if (!responseText) {
+                    // fallback to a single request
+                    const fallbackRes = await fetch(`${NS_LLM_URL}/api/generate`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: prompt, max_tokens: 500, stream: false })
+                    });
+                    if (fallbackRes.ok) {
+                        const data = await fallbackRes.json();
+                        responseText = data.response || data.text || "I couldn't generate a response.";
+                        await initialMsg.edit(`**Swarm Report (Agent 3 via NS-LLM):**\n\n${responseText}\n\n---\n**Powered by:** NeuroSwarm Local LLM (Ollama)`);
+                    }
+                }
+
+            } catch (streamErr) {
+                console.warn('[Agent9] streaming attempt failed, falling back to synchronous call:', streamErr && streamErr.message);
+                // fallback: regular request
+                const response = await fetch(`${NS_LLM_URL}/api/generate`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: prompt, max_tokens: 500, stream: false }) });
+                if (!response.ok) throw new Error(`NS-LLM returned ${response.status}`);
+                const data = await response.json();
+                responseText = data.response || data.text || "I couldn't generate a response.";
+                await initialMsg.edit(`**Swarm Report (Agent 3 via NS-LLM):**\n\n${responseText}\n\n---\n**Powered by:** NeuroSwarm Local LLM (Ollama)`);
             }
 
-            const data = await response.json();
-            responseText = data.response || data.text || "I apologize, but I couldn't generate a response.";
         } catch (llmError) {
             console.error('[Agent 9] NS-LLM connection error:', llmError.message);
             errorOccurred = true;

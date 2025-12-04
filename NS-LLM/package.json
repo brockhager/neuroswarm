@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "start:prototype": "node index.js",
-    "test": "node test-integration.js",
+    "test": "node tests/test-generate-http.js && node tests/test-generate-stream.js && node tests/test-embed.js && node test-integration.js",
     "test-health": "node ./build/test-health.js"
   },
   "dependencies": {
