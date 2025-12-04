@@ -1,10 +1,11 @@
 import fetch from 'node-fetch';
 import EventEmitter from 'events';
 import {
-    blockMap, heads, txIndex, validators, state, accounts,
+    blockMap, heads, txIndex, validators, state, accounts, pendingUnstakes,
     getBlockAncestors, findCommonAncestor,
     persistValidator, persistChainState, persistBlock, persistTxIndex,
     persistAllValidators, addHead, removeHead, clearTxIndex, persistAccount
+    , persistPendingUnstake, removePendingUnstake, persistReleasedUnstake, getReleasedUnstake, removeReleasedUnstake, beginTransaction, commitTransaction, rollbackTransaction, db
 } from './state.js';
 import {
     sha256Hex, canonicalize, txIdFor, verifyEd25519, computeMerkleRoot
@@ -36,6 +37,37 @@ export function chooseValidator(prevHash, slot) {
         if (r < acc) return id;
     }
     return null;
+}
+
+// Helper: synchronize a validator's staking weight from account.staked_nst
+export function syncValidatorStakeFromAccount(address) {
+    try {
+        const acct = accounts.get(address);
+        const currentStake = acct ? BigInt(acct.staked_nst || '0') : 0n;
+        const newStakeNum = Number(currentStake);
+        const prev = validators.get(address);
+        const prevStakeNum = prev ? Number(prev.stake || 0) : 0;
+        if (!validators.has(address)) {
+            // only add if account marked as candidate
+            if (acct && acct.is_validator_candidate) {
+                validators.set(address, { stake: newStakeNum, publicKey: prev ? prev.publicKey : 'unknown', slashed: prev ? !!prev.slashed : false });
+                persistValidator(address, validators.get(address));
+                state.totalStake += newStakeNum;
+                persistChainState();
+            }
+        } else {
+            // update and adjust totalStake
+            const vv = validators.get(address);
+            if (vv) {
+                vv.stake = newStakeNum;
+                persistValidator(address, vv);
+                state.totalStake = Math.max(0, state.totalStake - prevStakeNum + newStakeNum);
+                persistChainState();
+            }
+        }
+    } catch (e) {
+        logNs('ERROR', 'syncValidatorStakeFromAccount failed', e.message);
+    }
 }
 
 export function doSlash(id) {
@@ -79,8 +111,16 @@ export async function performReorg(oldTipHash, newTipHash) {
     if (ancestor) {
         const ancBlock = blockMap.get(ancestor);
         const snapArr = ancBlock.snapshot && ancBlock.snapshot.validators ? ancBlock.snapshot.validators : [];
+        // Restore validators from ancestor snapshot and recompute totalStake from snapshot
         validators.clear();
-        for (const [id, v] of snapArr) validators.set(id, { stake: Number(v.stake), publicKey: v.publicKey });
+        let restoredTotal = 0;
+        for (const [id, v] of snapArr) {
+            const stakeNum = Number(v && v.stake || 0);
+            validators.set(id, { stake: stakeNum, publicKey: v.publicKey });
+            restoredTotal += stakeNum;
+        }
+        state.totalStake = restoredTotal;
+        persistChainState();
     } else {
         // ancestor is null (genesis): do not clear global validator registrations here.
         // Keep global validators (registrations) as they are; snapshots are used only
@@ -99,47 +139,124 @@ export async function performReorg(oldTipHash, newTipHash) {
     // NS does not own a mempool; gateway manages pending txs. No local mempool clearing.
     const requeueCandidates = [];
     // replay blocks from genesis up to ancestor (if any)
-    const canonicalPath = [];
-    if (ancestor) {
-        // get ancestors of ancestor to genesis and reverse
-        let at = ancestor;
-        const ancestorsWithGen = [];
-        while (at) { ancestorsWithGen.push(at); at = blockMap.get(at).parentHash; }
-        ancestorsWithGen.reverse();
-        for (const bh of ancestorsWithGen) canonicalPath.push(bh);
-    }
-    // append applyHashes
-    canonicalPath.push(...applyHashes);
+        // canonicalPath is the ordered list of blocks to replay for the new canonical chain.
+        // applyHashes was collected from newTip back to ancestor (exclusive) and reversed,
+        // which yields the correct order from ancestor's child up to newTip; if ancestor is null
+        // applyHashes already contains the full chain from genesis up to newTip.
+        const canonicalPath = applyHashes;
     // reapply state along canonicalPath
-    for (const bh of canonicalPath) {
+        for (const bh of canonicalPath) {
         const b = blockMap.get(bh);
-        // process stake/unstake and txIndex
+        // process transactions in canonical replay: handle validator-level and account-level staking
         for (let i = 0; i < b.txs.length; i++) {
             const tx = b.txs[i];
             const id = txIdFor(tx);
             txIndex.set(id, { blockHash: bh, txIndex: i });
-            // gateway manages mempool; NS does not delete consumed txs locally
-            if (tx.type === 'stake') {
+
+            // validator-level stake/unstake (legacy)
+            if (tx.type === 'stake' && tx.validatorId) {
                 if (!validators.has(tx.validatorId)) validators.set(tx.validatorId, { stake: 0, publicKey: tx.publicKey || 'unknown' });
                 const vv = validators.get(tx.validatorId);
                 vv.stake += Number(tx.amount);
                 state.totalStake += Number(tx.amount);
+                persistValidator(tx.validatorId, vv);
             }
-            if (tx.type === 'unstake') {
+            if (tx.type === 'unstake' && tx.validatorId) {
                 if (validators.has(tx.validatorId)) {
                     const vv = validators.get(tx.validatorId);
                     const amt = Math.min(Number(tx.amount), vv.stake);
                     vv.stake -= amt;
                     state.totalStake -= amt;
+                    persistValidator(tx.validatorId, vv);
+                }
+            }
+
+            // account-level staking (NST_STAKE / NST_UNSTAKE / REGISTER_VALIDATOR)
+            if (tx.type === 'NST_STAKE' && tx.from && Number(tx.amount)) {
+                const addr = tx.from;
+                let acct = accounts.get(addr);
+                if (!acct) {
+                    acct = { address: addr, nst_balance: '0', nsd_balance: '0', staked_nst: '0', updatedAt: Date.now() };
+                    accounts.set(addr, acct);
+                }
+                const amt = BigInt(tx.amount);
+                const curBal = BigInt(acct.nst_balance || '0');
+                const curStaked = BigInt(acct.staked_nst || '0');
+                // On replay we assume txs were valid previously; clamp to available funds
+                const withdraw = amt > curBal ? curBal : amt;
+                acct.nst_balance = (curBal - withdraw).toString();
+                acct.staked_nst = (curStaked + withdraw).toString();
+                acct.updatedAt = Date.now();
+                persistAccount(addr, acct);
+                if (acct.is_validator_candidate) syncValidatorStakeFromAccount(addr);
+            }
+
+            if (tx.type === 'NST_UNSTAKE' && tx.from && Number(tx.amount)) {
+                const addr = tx.from;
+                let acct = accounts.get(addr);
+                if (!acct) continue; // nothing to do
+                const amt = BigInt(tx.amount);
+                const curStaked = BigInt(acct.staked_nst || '0');
+                const withdraw = amt > curStaked ? curStaked : amt;
+                acct.staked_nst = (curStaked - withdraw).toString();
+                acct.updatedAt = Date.now();
+                const txId = id;
+                const unlockAt = Date.now() + (7 * 24 * 60 * 60 * 1000);
+                const pending = { id: txId, address: addr, amount: withdraw.toString(), unlockAt, createdAt: Date.now() };
+                pendingUnstakes.set(txId, pending);
+                persistAccount(addr, acct);
+                persistPendingUnstake(txId, pending);
+                if (acct.is_validator_candidate) syncValidatorStakeFromAccount(addr);
+            }
+
+            if (tx.type === 'REGISTER_VALIDATOR' && tx.from) {
+                const addr = tx.from;
+                let acct = accounts.get(addr);
+                if (!acct) continue;
+                acct.is_validator_candidate = true;
+                acct.updatedAt = Date.now();
+                persistAccount(addr, acct);
+                // sync the validator stake from the account's staked_nst
+                syncValidatorStakeFromAccount(addr);
+            }
+        }
+
+        // reward validator: credit account balances (not auto-compound into stake)
+        const totalFees = b.txs.reduce((s, tx) => s + Number(tx.fee || 0), 0);
+        const baseReward = Number(process.env.BLOCK_REWARD || 10);
+        const reward = baseReward; // nst reward in atomic units (Number)
+        const nstReward = BigInt(reward);
+        const validatorShare = BigInt(Math.floor((Number(totalFees) * 9) / 10));
+        const poolShare = BigInt(totalFees) - validatorShare;
+
+        if (typeof b.header !== 'undefined') {
+            const vid = b.header.validatorId;
+            if (vid) {
+                // credit account balances for validator
+                let valAccount = accounts.get(vid);
+                if (!valAccount) {
+                    valAccount = { address: vid, nst_balance: '0', nsd_balance: '0', staked_nst: '0', updatedAt: Date.now() };
+                    accounts.set(vid, valAccount);
+                }
+                // add nstReward to nst_balance
+                valAccount.nst_balance = (BigInt(valAccount.nst_balance || '0') + nstReward).toString();
+                // credit NSD fees (validatorShare)
+                valAccount.nsd_balance = (BigInt(valAccount.nsd_balance || '0') + validatorShare).toString();
+                persistAccount(vid, valAccount);
+
+                // credit pool share
+                if (poolShare > 0n) {
+                    const NS_SHARED_POOL_ADDRESS = 'ns-rewards-pool';
+                    let poolAccount = accounts.get(NS_SHARED_POOL_ADDRESS);
+                    if (!poolAccount) {
+                        poolAccount = { address: NS_SHARED_POOL_ADDRESS, nst_balance: '0', nsd_balance: '0', staked_nst: '0', updatedAt: Date.now() };
+                        accounts.set(NS_SHARED_POOL_ADDRESS, poolAccount);
+                    }
+                    poolAccount.nsd_balance = (BigInt(poolAccount.nsd_balance || '0') + poolShare).toString();
+                    persistAccount(NS_SHARED_POOL_ADDRESS, poolAccount);
                 }
             }
         }
-        // reward validator
-        const totalFees = b.txs.reduce((s, tx) => s + Number(tx.fee || 0), 0);
-        const baseReward = Number(process.env.BLOCK_REWARD || 10);
-        const reward = baseReward + totalFees;
-        const vv = validators.get(b.header.validatorId);
-        if (vv) { vv.stake += reward; state.totalStake += reward; }
     }
     // any removed txs that are NOT now part of the canonical chain should be re-added to mempool
     // but NS is lightweight; instead, request gateway to requeue them
@@ -157,7 +274,47 @@ export async function performReorg(oldTipHash, newTipHash) {
                 if (found) break;
             }
             // gateway manages re-adding any txs post-reorg; NS does not re-add to mempool
-            if (found) requeueCandidates.push(found);
+            if (found) {
+                // If this tx was an NST_UNSTAKE and already released, we must revert the release
+                try {
+                    if (found.type === 'NST_UNSTAKE') {
+                        const rel = getReleasedUnstake(txId);
+                        if (rel) {
+                            // Revert release atomically
+                            beginTransaction();
+                            // subtract released amount from account nst_balance
+                            let acctRow = db.getAccount(rel.address) || { address: rel.address, nst_balance: '0', nsd_balance: '0', staked_nst: '0', is_validator_candidate: 0 };
+                            const releasedAmt = BigInt(rel.amount || '0');
+                            const currentBal = BigInt(acctRow.nst_balance || '0');
+                            // guard: avoid negative balances
+                            const newBal = currentBal >= releasedAmt ? currentBal - releasedAmt : 0n;
+                            acctRow.nst_balance = newBal.toString();
+                            acctRow.updatedAt = Date.now();
+                            // persist account
+                            if (typeof db.saveAccountFull === 'function') db.saveAccountFull(rel.address, acctRow);
+                            else db.saveAccount(rel.address, acctRow);
+
+                            // recreate pending_unstake (use now + 7 days as unlock window)
+                            const recreated = { id: txId, address: rel.address, amount: rel.amount, unlockAt: Date.now() + (7 * 24 * 60 * 60 * 1000), createdAt: Date.now() };
+                            db.savePendingUnstake(txId, recreated);
+
+                            // remove released record
+                            removeReleasedUnstake(txId);
+
+                            commitTransaction();
+
+                            // update in-memory state
+                            accounts.set(rel.address, acctRow);
+                            pendingUnstakes.set(txId, recreated);
+                            logNs('INFO', `Reverted release for ${txId} due to reorg; restored pending_unstake`);
+                        }
+                    }
+                } catch (e) {
+                    try { rollbackTransaction(); } catch (ee) {}
+                    logNs('ERROR', 'Failed to revert released_unstake during reorg', e && e.message);
+                }
+                requeueCandidates.push(found);
+            }
         }
     }
     // update heads: remove tip of old chain and add newTip
@@ -191,6 +348,69 @@ export async function performReorg(oldTipHash, newTipHash) {
         } catch (e) {
             logNs(`Exception requeue txs to gateway: ${e.message}`);
         }
+    }
+}
+
+// Sweep matured pending unstakes and credit account balances
+export async function releaseMatureUnstakes(cutoffTime) {
+    try {
+        const matured = [];
+        for (const [id, rec] of pendingUnstakes.entries()) {
+            if (rec && Number(rec.unlockAt || 0) <= Number(cutoffTime)) matured.push([id, rec]);
+        }
+        if (matured.length === 0) return;
+
+        // Process each matured record in its own db transaction to ensure atomicity
+        for (const [id, rec] of matured) {
+            try {
+                // start DB transaction
+                beginTransaction();
+                // re-check pending record in DB to avoid races / double-crediting
+                const dbRec = db.getPendingUnstake(id);
+                if (!dbRec) {
+                    // already removed by another concurrent caller
+                    commitTransaction();
+                    continue;
+                }
+
+                const addr = dbRec.address;
+                const amt = BigInt(dbRec.amount || '0');
+
+                // Save a released_unstake record (so it can be reverted if a later reorg occurs)
+                persistReleasedUnstake(id, { address: addr, amount: amt.toString(), releasedAt: Date.now() });
+                // Remove the pending_unstake record in DB first (prevents double-credit in race)
+                db.deletePendingUnstake(id);
+
+                // Then credit account balance
+                let acctRow = db.getAccount(addr);
+                if (!acctRow) {
+                    acctRow = { address: addr, nst_balance: '0', nsd_balance: '0', staked_nst: '0', is_validator_candidate: 0 };
+                }
+                const newBal = BigInt(acctRow.nst_balance || '0') + amt;
+                acctRow.nst_balance = newBal.toString();
+                acctRow.updatedAt = Date.now();
+
+                // persist account and commit transaction
+                if (typeof db.saveAccountFull === 'function') db.saveAccountFull(addr, acctRow);
+                else db.saveAccount(addr, acctRow);
+                commitTransaction();
+
+                // Remove from in-memory map to keep state consistent
+                pendingUnstakes.delete(id);
+                // Also ensure persisted cache removal is done (already done above)
+
+                // Update in-memory accounts map to reflect DB
+                accounts.set(addr, acctRow);
+
+                logNs('INFO', `Released pending_unstake ${id} -> ${addr} amount=${amt}`);
+            } catch (innerErr) {
+                // on any db error, rollback
+                try { rollbackTransaction(); } catch (e) {}
+                logNs('ERROR', 'releaseMatureUnstakes record processing failed', innerErr && innerErr.message);
+            }
+        }
+    } catch (e) {
+        logNs('ERROR', 'releaseMatureUnstakes failed', e && e.message);
     }
 }
 
@@ -292,7 +512,12 @@ export function applyBlock(block) {
     addHead(blockHash);
     let totalFees = 0;
     // determine if the block extends the current canonical tip (and therefore should update global state)
-    const extendsCanonical = (parentHash === state.canonicalTipHash);
+    // If we don't have a canonical tip yet (fresh DB) and the block's parent is genesis, treat
+    // the first block as extending the canonical chain so its effects (rewards/fees) are applied.
+    // If parent is genesis, and there are no existing child blocks of genesis in blockMap
+    // then treat this first child-of-genesis as extending the canonical chain (apply rewards).
+    const hasGenesisChild = Array.from(blockMap.values()).some(b => b.parentHash === genesisPrev);
+    const extendsCanonical = (parentHash === state.canonicalTipHash) || (parentHash === genesisPrev && (!hasGenesisChild || state.canonicalTipHash === null));
     const consumedIds = [];
     for (let i = 0; i < block.txs.length; i++) {
         const id = txIdFor(block.txs[i]);
@@ -302,9 +527,9 @@ export function applyBlock(block) {
             consumedIds.push(id);
         }
         totalFees += Number(block.txs[i].fee || 0);
-        // process stake/unstake
+        // process stake/unstake and staking txs
         const tx = block.txs[i];
-        if (tx.type === 'stake' && tx.validatorId && Number(tx.amount)) {
+        if ((tx.type === 'stake' || tx.type === 'NST_STAKE') && tx.validatorId && Number(tx.amount)) {
             const target = tx.validatorId;
             if (extendsCanonical) {
                 if (!validators.has(target)) validators.set(target, { stake: 0, publicKey: tx.publicKey || 'unknown' });
@@ -319,7 +544,7 @@ export function applyBlock(block) {
                 else snapshot.validators[idx][1].stake += Number(tx.amount);
             }
         }
-        if (tx.type === 'unstake' && tx.validatorId && Number(tx.amount)) {
+        if ((tx.type === 'unstake' || tx.type === 'NST_UNSTAKE') && tx.validatorId && Number(tx.amount)) {
             const target = tx.validatorId;
             if (extendsCanonical) {
                 if (validators.has(target)) {
@@ -336,6 +561,94 @@ export function applyBlock(block) {
                     const amt = Math.min(Number(tx.amount), vv.stake);
                     vv.stake -= amt;
                 }
+            }
+        }
+
+        // ACCOUNT-LEVEL staking txs: NST_STAKE / NST_UNSTAKE
+        // NST_STAKE: move amount from account.nst_balance -> account.staked_nst
+        if (tx.type === 'NST_STAKE' && tx.from && Number(tx.amount)) {
+            const addr = tx.from;
+            let acct = accounts.get(addr);
+            if (!acct) {
+                acct = { address: addr, nst_balance: '0', nsd_balance: '0', staked_nst: '0', updatedAt: Date.now() };
+                accounts.set(addr, acct);
+            }
+            const amt = BigInt(tx.amount);
+            const curBal = BigInt(acct.nst_balance || '0');
+            if (curBal < amt) return { ok: false, reason: 'insufficient_funds' };
+            const newBal = curBal - amt;
+            const curStaked = BigInt(acct.staked_nst || '0');
+            const newStaked = curStaked + amt;
+            // Enforce minimum self-stake: new staked must be >= MIN_SELF_STAKE
+            const MIN_SELF_STAKE = 5000n * COIN; // 5000 NST
+            if (newStaked < MIN_SELF_STAKE) return { ok: false, reason: 'insufficient_stake_minimum' };
+            acct.nst_balance = newBal.toString();
+            acct.staked_nst = newStaked.toString();
+            acct.updatedAt = Date.now();
+            if (extendsCanonical) {
+                persistAccount(addr, acct);
+                // if the account is a validator candidate, sync its validator stake
+                if (acct.is_validator_candidate) syncValidatorStakeFromAccount(addr);
+            } else {
+                // For non-canonical branch: reflect the account-level stake change in the block snapshot
+                const idx = snapshot.validators.findIndex(([id]) => id === addr);
+                const amtNum = Number(tx.amount);
+                if (idx === -1) snapshot.validators.push([addr, { stake: amtNum, publicKey: tx.publicKey || 'unknown' }]);
+                else snapshot.validators[idx][1].stake += amtNum;
+            }
+        }
+
+        // NST_UNSTAKE: move amount from staked_nst -> pending_unstakes (unbonding)
+        if (tx.type === 'NST_UNSTAKE' && tx.from && Number(tx.amount)) {
+            const addr = tx.from;
+            let acct = accounts.get(addr);
+            if (!acct) return { ok: false, reason: 'account_not_found' };
+            const amt = BigInt(tx.amount);
+            const curStaked = BigInt(acct.staked_nst || '0');
+            const withdraw = amt > curStaked ? curStaked : amt;
+            acct.staked_nst = (curStaked - withdraw).toString();
+            acct.updatedAt = Date.now();
+            // Create pending unbond record
+            const txId = txIdFor(tx);
+            const unlockAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days mock
+            const pending = { id: txId, address: addr, amount: withdraw.toString(), unlockAt, createdAt: Date.now() };
+            pendingUnstakes.set(txId, pending);
+            if (extendsCanonical) {
+                persistAccount(addr, acct);
+                persistPendingUnstake(txId, pending);
+                if (acct.is_validator_candidate) syncValidatorStakeFromAccount(addr);
+            } else {
+                // Track unstake in snapshot validators (if present) for branch state
+                const idx = snapshot.validators.findIndex(([id]) => id === addr);
+                if (idx !== -1) {
+                    const vv = snapshot.validators[idx][1];
+                    const withdrawAmt = Number(withdraw);
+                    vv.stake = Math.max(0, (vv.stake || 0) - withdrawAmt);
+                }
+                // Also add pending unstake record into snapshot if desired (skipped for now)
+            }
+        }
+
+        // REGISTER_VALIDATOR: activate account candidacy if staked_nst >= MIN_SELF_STAKE
+        if (tx.type === 'REGISTER_VALIDATOR' && tx.from) {
+            const addr = tx.from;
+            let acct = accounts.get(addr);
+            if (!acct) return { ok: false, reason: 'account_not_found' };
+            const curStaked = BigInt(acct.staked_nst || '0');
+            const MIN_SELF_STAKE = 5000n * COIN;
+            if (curStaked < MIN_SELF_STAKE) return { ok: false, reason: 'insufficient_stake_minimum' };
+            acct.is_validator_candidate = true;
+            acct.updatedAt = Date.now();
+            if (extendsCanonical) {
+                persistAccount(addr, acct);
+                // when a new candidate registers, create/update validators entry from account stake
+                syncValidatorStakeFromAccount(addr);
+            } else {
+                // reflect the registration in the snapshot validators so branch blocks see candidate
+                const idx = snapshot.validators.findIndex(([id]) => id === addr);
+                const stakeNum = Number(acct.staked_nst || 0);
+                if (idx === -1) snapshot.validators.push([addr, { stake: stakeNum, publicKey: 'unknown' }]);
+                else snapshot.validators[idx][1].stake = stakeNum;
             }
         }
     }
@@ -426,6 +739,22 @@ export function applyBlock(block) {
             chainEvents.emit('blockApplied', { blockHash, header: block.header, height });
         } catch (e) {
             logNs('ERROR', 'chainEvents.emit failed', e.message);
+        }
+        // For canonical blocks, update the block snapshot to reflect the current global validator state
+        // so child blocks will inherit the up-to-date snapshot when computing cumWeight.
+        try {
+            block.snapshot = { validators: JSON.parse(JSON.stringify(Array.from(validators.entries()))) };
+            blockMap.set(blockHash, block);
+            persistBlock(blockHash, block);
+        } catch (e) {
+            logNs('ERROR', 'Failed to update canonical block snapshot', e && e.message);
+        }
+        // sweep mature pending unstakes on canonical block finalization
+        try {
+            // fire-and-forget: run release processor asynchronously
+            releaseMatureUnstakes(Date.now()).catch((err) => logNs('ERROR', 'releaseMatureUnstakes failed', err && err.message));
+        } catch (err) {
+            logNs('ERROR', 'releaseMatureUnstakes scheduling failed', err && err.message);
         }
     } else {
         // update snapshot validator

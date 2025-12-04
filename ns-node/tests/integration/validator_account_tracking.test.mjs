@@ -14,12 +14,15 @@ const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ns-node-test-'));
 const tmpDbPath = path.join(tmpDir, `neuroswarm_test_${Date.now()}.db`);
 process.env.NS_NODE_DB_PATH = tmpDbPath;
 
-// Now import the stateful modules (they will use the test DB path)
-import createValidatorsRouter from '../../src/routes/validators.js';
-import { accounts, persistAccount, db } from '../../src/services/state.js';
-import { txIdFor, computeMerkleRoot, canonicalize } from '../../src/utils/crypto.js';
-import { applyBlock, calculateBlockReward } from '../../src/services/chain.js';
-import StateDatabase from '../../src/services/state-db.js';
+// Now import the stateful modules dynamically (so our NS_NODE_DB_PATH env var is applied
+// before modules that initialize global state are loaded). Using dynamic import avoids
+// ESM static import hoisting which would otherwise initialize the DB with the default
+// path before our override takes effect.
+const { default: createValidatorsRouter } = await import('../../src/routes/validators.js');
+const { accounts, persistAccount, db } = await import('../../src/services/state.js');
+const { txIdFor, computeMerkleRoot, canonicalize } = await import('../../src/utils/crypto.js');
+const { applyBlock, calculateBlockReward } = await import('../../src/services/chain.js');
+const StateDatabase = (await import('../../src/services/state-db.js')).StateDatabase;
 
 test('Validator registration creates account and rewards/fees are credited + persisted', async () => {
   // mount a minimal validators router for registration

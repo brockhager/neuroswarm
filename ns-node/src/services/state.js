@@ -31,6 +31,10 @@ console.log(`[State] Loaded ${proposals.size} proposals from DB`);
 export const accounts = db.getAllAccounts();
 console.log(`[State] Loaded ${accounts.size} accounts from DB`);
 
+// Load pending unstakes
+export const pendingUnstakes = db.getAllPendingUnstakes();
+console.log(`[State] Loaded ${pendingUnstakes.size} pending unstakes from DB`);
+
 // Initialize NS Shared Pool if not exists
 const NS_SHARED_POOL_ADDRESS = 'ns-rewards-pool';
 if (!accounts.has(NS_SHARED_POOL_ADDRESS)) {
@@ -129,7 +133,30 @@ export function persistProposal(id, proposal) {
  * Persist account to database
  */
 export function persistAccount(address, account) {
-    db.saveAccount(address, account);
+    // Use saveAccountFull which includes is_validator_candidate
+    if (typeof db.saveAccountFull === 'function') db.saveAccountFull(address, account);
+    else db.saveAccount(address, account);
+}
+
+export function persistPendingUnstake(id, record) {
+    db.savePendingUnstake(id, record);
+}
+
+export function removePendingUnstake(id) {
+    db.deletePendingUnstake(id);
+}
+
+export function persistReleasedUnstake(id, record) {
+    if (typeof db.saveReleasedUnstake === 'function') db.saveReleasedUnstake(id, record);
+}
+
+export function getReleasedUnstake(id) {
+    if (typeof db.getReleasedUnstake === 'function') return db.getReleasedUnstake(id);
+    return null;
+}
+
+export function removeReleasedUnstake(id) {
+    if (typeof db.deleteReleasedUnstake === 'function') db.deleteReleasedUnstake(id);
 }
 
 /**

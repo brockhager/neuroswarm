@@ -34,6 +34,16 @@ export class StateDatabase {
         this.db.pragma('journal_mode = WAL');
 
         this.initSchema();
+        // Ensure accounts table has the is_validator_candidate column (migrate if needed)
+        try {
+            const info = this.db.prepare("PRAGMA table_info(accounts)").all();
+            const hasCol = info.some(r => r.name === 'is_validator_candidate');
+            if (!hasCol) {
+                this.db.prepare("ALTER TABLE accounts ADD COLUMN is_validator_candidate INTEGER NOT NULL DEFAULT 0").run();
+            }
+        } catch (e) {
+            // ignore migration errors
+        }
     }
 
     initSchema() {
@@ -77,7 +87,8 @@ export class StateDatabase {
         address TEXT PRIMARY KEY,
         nst_balance TEXT NOT NULL DEFAULT '0',
         nsd_balance TEXT NOT NULL DEFAULT '0',
-        staked_nst TEXT NOT NULL DEFAULT '0',
+                staked_nst TEXT NOT NULL DEFAULT '0',
+                is_validator_candidate INTEGER NOT NULL DEFAULT 0,
         updatedAt INTEGER NOT NULL
       );
 
@@ -104,6 +115,23 @@ export class StateDatabase {
         blockHash TEXT PRIMARY KEY,
         FOREIGN KEY(blockHash) REFERENCES blocks(blockHash)
       );
+
+            -- Pending unstakes: amount locked with unlockAt timestamp (millis)
+            CREATE TABLE IF NOT EXISTS pending_unstakes (
+                id TEXT PRIMARY KEY,
+                address TEXT NOT NULL,
+                amount TEXT NOT NULL,
+                unlockAt INTEGER NOT NULL,
+                createdAt INTEGER NOT NULL
+            );
+
+            -- Released unstakes: records of releases so they can be reverted on reorg
+            CREATE TABLE IF NOT EXISTS released_unstakes (
+                id TEXT PRIMARY KEY,
+                address TEXT NOT NULL,
+                amount TEXT NOT NULL,
+                releasedAt INTEGER NOT NULL
+            );
     `);
     }
 
@@ -344,6 +372,51 @@ export class StateDatabase {
         return proposals;
     }
 
+    // ==================== Pending Unstakes ====================
+
+    savePendingUnstake(id, record) {
+        const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO pending_unstakes (id, address, amount, unlockAt, createdAt)
+        VALUES(?, ?, ?, ?, ?)
+        `);
+        stmt.run(id, record.address, record.amount, record.unlockAt, record.createdAt || Date.now());
+    }
+
+    getPendingUnstake(id) {
+        const row = this.db.prepare('SELECT * FROM pending_unstakes WHERE id = ?').get(id);
+        if (!row) return null;
+        return { id: row.id, address: row.address, amount: row.amount, unlockAt: row.unlockAt, createdAt: row.createdAt };
+    }
+
+    deletePendingUnstake(id) {
+        this.db.prepare('DELETE FROM pending_unstakes WHERE id = ?').run(id);
+    }
+
+    saveReleasedUnstake(id, record) {
+        const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO released_unstakes (id, address, amount, releasedAt)
+        VALUES(?, ?, ?, ?)
+        `);
+        stmt.run(id, record.address, record.amount, record.releasedAt || Date.now());
+    }
+
+    getReleasedUnstake(id) {
+        const row = this.db.prepare('SELECT * FROM released_unstakes WHERE id = ?').get(id);
+        if (!row) return null;
+        return { id: row.id, address: row.address, amount: row.amount, releasedAt: row.releasedAt };
+    }
+
+    deleteReleasedUnstake(id) {
+        this.db.prepare('DELETE FROM released_unstakes WHERE id = ?').run(id);
+    }
+
+    getAllPendingUnstakes() {
+        const rows = this.db.prepare('SELECT * FROM pending_unstakes ORDER BY createdAt ASC').all();
+        const out = new Map();
+        for (const r of rows) out.set(r.id, { id: r.id, address: r.address, amount: r.amount, unlockAt: r.unlockAt, createdAt: r.createdAt });
+        return out;
+    }
+
     // ==================== Account Operations ====================
 
     saveAccount(address, account) {
@@ -361,6 +434,23 @@ export class StateDatabase {
         );
     }
 
+    // Save account with validator candidate flag support
+    saveAccountFull(address, account) {
+        const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO accounts (address, nst_balance, nsd_balance, staked_nst, is_validator_candidate, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `);
+
+        stmt.run(
+            address,
+            account.nst_balance || '0',
+            account.nsd_balance || '0',
+            account.staked_nst || '0',
+            account.is_validator_candidate ? 1 : 0,
+            Date.now()
+        );
+    }
+
     getAccount(address) {
         const row = this.db.prepare('SELECT * FROM accounts WHERE address = ?').get(address);
         if (!row) return null;
@@ -370,6 +460,7 @@ export class StateDatabase {
             nst_balance: row.nst_balance,
             nsd_balance: row.nsd_balance,
             staked_nst: row.staked_nst,
+            is_validator_candidate: row.is_validator_candidate || 0,
             updatedAt: row.updatedAt
         };
     }
@@ -384,6 +475,7 @@ export class StateDatabase {
                 nst_balance: row.nst_balance,
                 nsd_balance: row.nsd_balance,
                 staked_nst: row.staked_nst,
+                is_validator_candidate: row.is_validator_candidate || 0,
                 updatedAt: row.updatedAt
             });
         }

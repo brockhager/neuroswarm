@@ -53,6 +53,33 @@ neuroswarm_sync_inflight_total 0
 - **CN-05-G** — Grafana Dashboards: Create dashboards for sync monitoring (request rates, rejection patterns, inflight tracking)
 - **CN-05-H** — Alert Rules: Implement alert rules for ancestry mismatch spikes, persistent 429 patterns, and sync failures
 
+## CN-06 VP-Node Staking & Validator Management — Task 6 (2025-12-04)
+
+**Status:** ✅ Implementation Complete (A-C) | 🚧 Production Integration Pending (D+)
+
+This task implements the financial gate that controls access to the Validator Pool and provides the fundamentals for validator candidacy and staking lifecycle.
+
+**Completed work (Implementation Phase):**
+- **CN-06-A — NST_STAKE** ✅: New transaction type `NST_STAKE` implemented. When applied in canonical blocks, the handler atomically moves the specified amount from the sender's `nst_balance` to `staked_nst` in the account state and persists the update.
+  - Enforcement: `NST_STAKE` transactions are rejected if the resulting `staked_nst` would be less than **5,000 NST** (enforced in atomic units: 5,000 * 10^8).
+- **CN-06-B — NST_UNSTAKE** ✅: New transaction type `NST_UNSTAKE` implemented. It immediately reduces `staked_nst` and creates a `pending_unstakes` record (persisted in DB) which holds the amount and an `unlockAt` timestamp (mocked as 7 days from request) — the liquid `nst_balance` is not increased until that pending entry matures.
+- **CN-06-C — REGISTER_VALIDATOR** ✅: New transaction type `REGISTER_VALIDATOR` implemented. It marks an account with `is_validator_candidate = true` only when the sender's `staked_nst` meets or exceeds the 5,000 NST Minimum Self-Stake.
+
+**Testing (Local Validation):**
+- Unit/integration tests were added and pass locally: `tests/integration/staking.test.mjs`
+- The tests validate: successful stake (>= 5,000 NST), rejection on below-minimum stake, creation of pending unstakes on unstake, and validator registration flagging only when minimum stake is met.
+
+**Database & Persistence:**
+- `accounts` table updated to include `is_validator_candidate` flag (migrated for existing DBs when starting the node).
+- `pending_unstakes` table added to persist unbonding records (id, address, amount, unlockAt, createdAt).
+
+**Remaining work (Production Integration Phase):**
+- **CN-06-D — Selection & Consensus Integration** 🚧: Wire candidate accounts into the consensus selection path (chooseValidator) and reconcile `staked_nst` with validator `stake` (validators table) or keep them separate with a clear policy (auto-compound? manual stake->validator mapping?).
+- **CN-06-E — Unbond Release Processor** 🚧: Implement a periodic job / on-chain finalization that moves matured `pending_unstakes` amounts into `nst_balance` after the unlock time (7-day unbond) and persist state; add tests.
+- **CN-06-F — CI Integration** 🚧: Add staking-specific integration tests to CI; ensure tests run on CI and DB migrations are validated.
+
+These changes add the core staking lifecycle required for validators and VP node candidacy. Next, we'll connect this account-level staking to the validator stake used by consensus and implement the unbond release processor and CI gating.
+
 ## Consolidated Task Backlog (ordered by priority: HIGH → MEDIUM → LOW)
 
 ID | Component | Task Description | Priority | Status
@@ -77,6 +104,10 @@ CN-05-E | CI/CD | Add sync protocol tests to CI pipeline | HIGH | Not Started
 CN-05-F | Deployment | Configure Prometheus scrape endpoints in production | MEDIUM | Not Started
 CN-05-G | Monitoring | Create Grafana dashboards for sync monitoring | MEDIUM | Not Started
 CN-05-H | Monitoring | Implement alert rules for sync failures and anomalies | MEDIUM | Not Started
+CN-06-A | ns-node + vp-node | NST_STAKE: Account staking transaction; move NST -> staked_nst and enforce 5,000 NST minimum | HIGH | ✅ Complete (tests added)
+CN-06-B | ns-node + vp-node | NST_UNSTAKE: Unstake + create pending_unstakes (7-day unbond record); staked_nst reduced immediately | HIGH | ✅ Complete (tests added)
+CN-06-C | ns-node + vp-node | REGISTER_VALIDATOR: Mark account candidacy if staked_nst >= 5,000 NST | HIGH | ✅ Complete (tests added)
+CN-06-D | vp-node / ns-node | Validator selection integration + unbond release processor | HIGH | Not Started
 AI-01 | NS-LLM (3015) | SSE/token streaming on `/api/generate` with native fallback | HIGH | ✅ Complete
 AI-02 | NS-LLM (3015) | `/api/embed` embedding endpoint with deterministic schema | MEDIUM | ✅ Complete
 AG4-01 | Agent 9 | Integrate with NS-LLM streaming + generate/embed contract | HIGH | ✅ Complete
