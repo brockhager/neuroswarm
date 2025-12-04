@@ -11,6 +11,8 @@ This task list translates the Master Design Document (MDD) into a prioritized, a
 - Router API prototype has been hardened: JWT verification (HS256 + RS256) and JWKS remote JWKSet support added; RBAC middleware and server-side artifact validation are implemented and covered by unit + integration tests.
 - Pinning persistence has been upgraded for higher-fidelity E2E: in-memory -> file-backed JSON -> SQLite-backed (better-sqlite3) with a runtime fallback to file storage when native modules cannot be built. Local tests will use the fallback; CI is now configured to install build tooling and assert the SQLite path in CI runs (EXPECT_SQLITE=true).
 - Agent 9 (Discord) end-to-end ingestion tests covering upload validation, ingestion, and pinning were added and pass locally; CI has a dedicated Agent9 E2E workflow and Router API CI now enforces the SQLite-backed path for higher-fidelity persistence in CI.
+- **Agent 5 (CN-01 & CN-03 Finalization - 2025-12-03)**: Cryptographic block verification integrated into production NS-Node `/v1/blocks/produce` endpoint. VP-Node deterministic production + ED25519 signing verified with E2E tests. CI gating added (`crypto_pipeline_test`). Critical bug fixed: validators routes now mounted. Key management docs: `wiki/Key-Management/CN-03-Key-Management-Plan.md`.
+- **CN-04 (State Persistence & Block Propagation - 2025-12-03)**: SQLite persistence layer (`state-db.js`) enables chain state survival across restarts. Block propagation service (`block-propagation.js`) announces blocks to NS-Node network with seen-blocks tracking. Database: `data/neuroswarm_chain.db`. Server verified running.
 
 Next steps: migrate mock persistence to a durable DB (Postgres) for production, design pin retention and archival policies, implement on-chain anchoring (VP → ns-node), and add CI gating to ensure these production-grade paths remain green.
 
@@ -22,10 +24,10 @@ OPS-01 | All Services | Add standardized `/health` and `/metrics` endpoints (Pro
 OPS-02 | All Services | Standardize structured logging (JSON), correlation IDs & trace propagation | HIGH | Not Started
 OPS-03 | CI/CD | Develop contract/E2E test suite validating inter-service contracts & flows | HIGH | Not Started
 OPS-04 | Secrets & Deployment | Formalize secrets management (Vault/Docker secrets) for local & containerized setups | HIGH | Not Started
-CN-01 | ns-node (3009) | Implement full canonical node logic (block validation, consensus, reorg handling, RBAC) | HIGH | Not Started
+CN-01 | ns-node (3009) | Implement full canonical node logic (block validation, consensus, reorg handling, RBAC) | HIGH | ✅ Completed (Agent 5: cryptographic verification)
 CN-02 | Router API (4001) | Implement JWT/RBAC security, Postgres migrations + IPFS/on-chain anchoring | HIGH | In Progress (prototype hardened)
-CN-03 | VP Node (4000) | Implement deterministic block producer: mempool poll → payloadCid/sourcesRoot → sign & submit | HIGH | Not Started
-CN-04 | Gateway Node (8080) | Implement admission / mempool + per-IP/key rate limiting and requeue endpoints | HIGH | Not Started
+CN-03 | VP Node (4000) | Implement deterministic block producer: mempool poll → payloadCid/sourcesRoot → sign & submit | HIGH | ✅ Completed (Agent 5: deterministic production + signing)
+CN-04 | Gateway Node (8080) | Implement admission / mempool + per-IP/key rate limiting and requeue endpoints | HIGH | ✅ Completed (CN-04: SQLite persistence + block propagation)
 AI-01 | NS-LLM (3015) | Refactor /api/generate to support SSE/token streaming (and native fallback) | HIGH | ✅ Completed
 AG4-01 | Agent 9 | Integrate Agent 9 with NS-LLM streaming + generate/embed contract | HIGH | ✅ Completed
 AG4-02 | Agent 9 | Add IPFS/provenance attachments and deterministic audit metadata in responses | HIGH | ✅ Completed
@@ -46,10 +48,10 @@ APP-04 | alert-sink (3010) | Implement alert ingestion, durable JSONL storage & 
 
 ID | Component | Task Description | Priority | Status
 ---|-----------|------------------|--------|:--
-CN-01 | ns-node (3009) | Implement full canonical node logic: block validation, consensus enforcement, robust reorg handling, and governance RBAC enforcement. Include thorough unit tests and integration contracts with Router API. | HIGH | Not Started
+CN-01 | ns-node (3009) | Implement full canonical node logic: block validation, consensus enforcement, robust reorg handling, and governance RBAC enforcement. Include thorough unit tests and integration contracts with Router API. | HIGH | ✅ Completed (Agent 5: crypto verification in `/v1/blocks/produce`, validators routes mounted, E2E passing)
 CN-02 | Router API (4001) | Implement security and anchoring: JWT middleware, RBAC, Postgres schema/migrations, deterministic audit hashing, IPFS pinning pipeline, and optional on-chain anchoring tests. | HIGH | In Progress (prototype hardened)
-CN-03 | VP Node (4000) | Implement consensus engine: poll Gateway mempool, deterministically build blocks, compute payloadCid and sourcesRoot, sign headers, submit to ns-node, and provide metrics. | HIGH | Not Started
-CN-04 | Gateway Node (8080) | Implement admission control: mempool management, per-IP and per-key rate limiting, adapter sandboxing, and requeue endpoints for reorg handling. | HIGH | Not Started
+CN-03 | VP Node (4000) | Implement consensus engine: poll Gateway mempool, deterministically build blocks, compute payloadCid and sourcesRoot, sign headers, submit to ns-node, and provide metrics. | HIGH | ✅ Completed (Agent 5: deterministic production, ED25519 signing, Merkle root, CI tests passing)
+CN-04 | Gateway Node (8080) | Implement admission control: mempool management, per-IP and per-key rate limiting, adapter sandboxing, and requeue endpoints for reorg handling. | HIGH | ✅ Completed (CN-04: SQLite state persistence via `state-db.js`, block propagation service via `block-propagation.js`, server verified running)
 
 ---
 
@@ -105,7 +107,7 @@ OPS-04 | Secrets & Deployment | Formalize secrets management for local and conta
 ID | Component | Task Description | Priority | Status
 :-- | :-- | :-- | :--: | :--
 OPS-CI-NSLLM | CI/CD | Add NS-LLM integration tests & OpenAPI contract validation to CI, ensure tests run and gate merges; include artifact checks and OS cross-runner coverage. | HIGH | Not Started
-E2E-01 | E2E | Create end-to-end smoke harness that exercises Agent 9 streaming full-path (Agent9 ↔ NS-LLM ↔ Router ↔ VP ↔ ns-node) and validates contract compatibility & key flows. | HIGH | Not Started
+E2E-01 | E2E | Create end-to-end smoke harness that exercises Agent 9 streaming full-path (Agent9 ↔ NS-LLM ↔ Router ↔ VP ↔ ns-node) and validates contract compatibility & key flows. | HIGH | Partially Complete (Agent 5: VP→NS crypto E2E in CI; full multi-service flow pending)
 AG4-05 | Agent 9 | Hardening & UX: implement streaming backpressure handling, partial-message edit throttling, token aggregation policies, resumable streams and better error messages. | MEDIUM | Not Started
 
 

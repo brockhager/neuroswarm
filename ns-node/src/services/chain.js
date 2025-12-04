@@ -1,13 +1,27 @@
 import fetch from 'node-fetch';
 import {
-    blockMap, heads, txIndex, validators, state,
-    getBlockAncestors, findCommonAncestor
+    blockMap, heads, txIndex, validators, state, accounts,
+    getBlockAncestors, findCommonAncestor,
+    persistValidator, persistChainState, persistBlock, persistTxIndex,
+    persistAllValidators, addHead, removeHead, clearTxIndex, persistAccount
 } from './state.js';
 import {
     sha256Hex, canonicalize, txIdFor, verifyEd25519, computeMerkleRoot
 } from '../utils/crypto.js';
 import { logNs } from '../utils/logger.js';
 import { getGatewayConfig } from './gateway.js';
+
+// Tokenomics Constants
+const COIN = 100000000n; // 1 NST = 10^8 atomic units
+const INITIAL_REWARD = 50000000n; // 0.5 NST
+const HALVING_INTERVAL = 14700000;
+const NS_SHARED_POOL_ADDRESS = 'ns-rewards-pool';
+
+export function calculateBlockReward(height) {
+    const cycle = Math.floor(height / HALVING_INTERVAL);
+    if (cycle >= 64) return 0n;
+    return INITIAL_REWARD >> BigInt(cycle);
+}
 
 export function chooseValidator(prevHash, slot) {
     // deterministic selection: seed = sha256(prevHash + slot)
@@ -32,6 +46,9 @@ export function doSlash(id) {
     state.totalStake -= toSlash;
     vv.slashed = true;
     vv.slashedAt = Date.now();
+    // Persist validator and chain state changes
+    persistValidator(id, vv);
+    persistChainState();
     logNs('WARN', `Slashed validator ${id} by ${toSlash} (${state.slashPct}%) due to equivocation`);
 }
 
@@ -69,7 +86,7 @@ export async function performReorg(oldTipHash, newTipHash) {
         // for branch-local state during reorgs.
     }
     // rebuild txIndex and mempool: collect txs removed by rollback, clear mempool, then replay canonical chain
-    txIndex.clear();
+    clearTxIndex();
     const removedTxIds = new Set();
     if (rollbackHashes.length > 0) {
         for (const rh of rollbackHashes) {
@@ -249,10 +266,15 @@ export function applyBlock(block) {
         if (id === validatorId) { vStake = Number(vs.stake || 0); break; }
     }
     block.cumWeight = parentWeight + (Number(vStake) || 0);
-    // copy snapshot without mutating global state for branch blocks
+    //copy snapshot without mutating global state for branch blocks
     const snapshot = { validators: JSON.parse(JSON.stringify(baseSnapArr)) };
+    block.snapshot = snapshot;
     blockMap.set(blockHash, block);
-    heads.add(blockHash);
+
+    // Persist block to database
+    persistBlock(blockHash, block);
+
+    addHead(blockHash);
     let totalFees = 0;
     // determine if the block extends the current canonical tip (and therefore should update global state)
     const extendsCanonical = (parentHash === state.canonicalTipHash);
@@ -261,6 +283,7 @@ export function applyBlock(block) {
         const id = txIdFor(block.txs[i]);
         if (extendsCanonical) {
             txIndex.set(id, { blockHash, txIndex: i });
+            persistTxIndex(id, blockHash, i);
             consumedIds.push(id);
         }
         totalFees += Number(block.txs[i].fee || 0);
@@ -273,6 +296,7 @@ export function applyBlock(block) {
                 const vv = validators.get(target);
                 vv.stake += Number(tx.amount);
                 state.totalStake += Number(tx.amount);
+                persistValidator(target, vv);
             } else {
                 // apply to snapshot validators
                 const idx = snapshot.validators.findIndex(([id]) => id === target);
@@ -288,6 +312,7 @@ export function applyBlock(block) {
                     const amt = Math.min(Number(tx.amount), vv.stake);
                     vv.stake -= amt;
                     state.totalStake -= amt;
+                    persistValidator(target, vv);
                 }
             } else {
                 const idx = snapshot.validators.findIndex(([id]) => id === target);
@@ -300,20 +325,104 @@ export function applyBlock(block) {
         }
     }
     // reward validator
-    const baseReward = Number(process.env.BLOCK_REWARD || 10);
-    const reward = baseReward + totalFees;
-    if (extendsCanonical) {
-        v.stake += reward;
-        state.totalStake += reward;
-    } else {
-        // update snapshot validator
-        const idx = snapshot.validators.findIndex(([id]) => id === validatorId);
-        if (idx !== -1) snapshot.validators[idx][1].stake += reward;
+    const height = block.header.height || (parentHeight + 1);
+    const nstReward = calculateBlockReward(height);
+
+    // Calculate total NSD fees
+    let totalNsdFees = 0n;
+    for (const tx of block.txs) {
+        totalNsdFees += BigInt(tx.fee || 0);
     }
-    block.snapshot = snapshot;
+
+    // Split NSD fees: 90% to validator, 10% to shared pool
+    const validatorShare = (totalNsdFees * 9n) / 10n;
+    const poolShare = totalNsdFees - validatorShare;
 
     if (extendsCanonical) {
+        // Update validator stake (consensus weight)
+        // Note: In this model, stake might be separate from liquid NST balance.
+        // For now, we add reward to stake to maintain existing behavior, 
+        // BUT we also need to credit the account balance.
+        // The prompt says "Mint... and transfer it to the winning Validator".
+        // We will credit the account. Stake updates via transactions (stake/unstake) are separate.
+        // However, existing code adds reward to stake. We should probably keep that for consensus security
+        // if the model implies auto-compounding, OR separate it.
+        // "Mint the calculated Dynamic NST Block Reward and transfer it to the winning Validator (VP-Node)."
+        // This implies liquid balance.
+        // Let's update the Account.
+
+        // 1. Get/Create Validator Account
+        let valAccount = accounts.get(validatorId);
+        if (!valAccount) {
+            valAccount = {
+                address: validatorId,
+                nst_balance: '0',
+                nsd_balance: '0',
+                staked_nst: '0',
+                updatedAt: Date.now()
+            };
+            accounts.set(validatorId, valAccount);
+        }
+
+        // 2. Credit NST Reward
+        const currentNst = BigInt(valAccount.nst_balance);
+        valAccount.nst_balance = (currentNst + nstReward).toString();
+
+        // 3. Credit NSD Fee Share
+        const currentNsd = BigInt(valAccount.nsd_balance);
+        valAccount.nsd_balance = (currentNsd + validatorShare).toString();
+
+        // 4. Persist Validator Account
+        persistAccount(validatorId, valAccount);
+
+        // 5. Credit Pool Share
+        if (poolShare > 0n) {
+            let poolAccount = accounts.get(NS_SHARED_POOL_ADDRESS);
+            // Pool should exist from startup, but safety check
+            if (!poolAccount) {
+                poolAccount = {
+                    address: NS_SHARED_POOL_ADDRESS,
+                    nst_balance: '0',
+                    nsd_balance: '0',
+                    staked_nst: '0',
+                    updatedAt: Date.now()
+                };
+                accounts.set(NS_SHARED_POOL_ADDRESS, poolAccount);
+            }
+            const currentPoolNsd = BigInt(poolAccount.nsd_balance);
+            poolAccount.nsd_balance = (currentPoolNsd + poolShare).toString();
+            persistAccount(NS_SHARED_POOL_ADDRESS, poolAccount);
+        }
+
+        // Update total stake if we are auto-compounding? 
+        // The prompt doesn't explicitly say auto-compound. 
+        // "Mint... and transfer it to the winning Validator". Usually means liquid.
+        // Existing code: v.stake += reward. 
+        // I will COMMENT OUT the auto-stake increase to strictly follow "transfer to... nst_balance".
+        // Validators must explicitly stake if they want to compound.
+        // v.stake += Number(nstReward); // DISABLED for strict separation
+        // state.totalStake += Number(nstReward); // DISABLED
+
+        // Update canonical tip and persist chain state
         state.canonicalTipHash = blockHash;
+        persistChainState();
+    } else {
+        // update snapshot validator
+        // For branch blocks, we don't update global accounts.
+        // We only update the snapshot validators if we were tracking rewards there.
+        // Since we moved to account-based rewards, snapshot validators (which track stake)
+        // might not need update unless we auto-compound.
+        // If we don't auto-compound, we don't touch snapshot stake.
+
+        // However, to keep `cumWeight` accurate if it depends on stake, we might need to know.
+        // But `cumWeight` is usually static stake + work.
+        // If we stop auto-compounding, `cumWeight` won't grow by rewards.
+
+        const idx = snapshot.validators.findIndex(([id]) => id === validatorId);
+        // if (idx !== -1) snapshot.validators[idx][1].stake += reward; // DISABLED
+
+        // Re-persist block with updated snapshot
+        persistBlock(blockHash, block);
     }
 
     return { ok: true, blockHash };

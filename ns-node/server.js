@@ -41,6 +41,7 @@ import createKvCacheRouter from './src/routes/kv-cache.js';
 import createPerformanceRouter from './src/routes/performance.js';
 import createPluginRouter from './src/routes/plugins.js';
 import createValidatorsRouter, { createTxRouter, createBlocksRouter, createChainRouter } from './src/routes/validators.js';
+import { BlockPropagationService } from './src/services/block-propagation.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,6 +75,10 @@ const p2pProtocol = new P2PProtocol(peerManager, {
   metricsService: metricsService,
   securityLogger: peerManager.securityLogger
 });
+
+// Initialize Block Propagation Service
+const blockPropagation = new BlockPropagationService(p2pProtocol, peerManager);
+logNs('[Server] Block Propagation Service initialized');
 
 // Initialize Phase G Services
 const gpuResourceManager = new GpuResourceManager();
@@ -155,6 +160,12 @@ app.use('/api/kv-cache', createKvCacheRouter(kvCacheService));
 app.use('/api/performance', createPerformanceRouter(performanceProfiler));
 app.use('/api/plugins', createPluginRouter(pluginManager));
 app.use('/api/generative', createGenerativeRouter(generativeGovernanceService, blockchainAnchor));
+
+// Mount Validators & Blockchain Routes (Critical: enables consensus and cryptographic verification)
+app.use('/validators', createValidatorsRouter(p2pProtocol, peerManager));
+app.use('/v1/tx', createTxRouter(p2pProtocol, peerManager));
+app.use('/v1/blocks', createBlocksRouter(p2pProtocol, peerManager, blockPropagation));
+app.use('/', createChainRouter(p2pProtocol, peerManager));
 
 // Query History Routes
 app.get('/api/query-history', (req, res) => {
@@ -382,3 +393,6 @@ process.on('unhandledRejection', (reason, promise) => {
 process.on('exit', (code) => {
   logNs(`Process exiting with code: ${code}`);
 });
+
+// Export app for E2E testing
+export default app;

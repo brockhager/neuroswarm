@@ -1,8 +1,8 @@
 import express from 'express';
 import fetch from 'node-fetch';
 import {
-    validators, blockMap, txIndex, proposals, state,
-    getCanonicalHeight
+    validators, blockMap, txIndex, proposals, state, accounts,
+    getCanonicalHeight, persistAccount
 } from '../services/state.js';
 import {
     applyBlock, chooseCanonicalTipAndReorg
@@ -11,6 +11,7 @@ import { getGatewayConfig } from '../services/gateway.js';
 import {
     canonicalize, verifyEd25519, txIdFor, computeMerkleRoot, sha256Hex
 } from '../utils/crypto.js';
+import { verifyBlockSubmission } from '../block-verifier.mjs';
 import { logNs } from '../utils/logger.js';
 import { MessageType } from '../../../shared/peer-discovery/index.js';
 import { computeSourcesRoot } from '../../../sources/index.js';
@@ -23,8 +24,25 @@ export default function createValidatorsRouter(p2pProtocol, peerManager) {
         const { validatorId, stake = 0, publicKey } = req.body || {};
         if (!validatorId || !publicKey) return res.status(400).json({ error: 'validatorId/publicKey required' });
         if (validators.has(validatorId)) return res.status(400).json({ error: 'already registered' });
+
+        // Register validator
         validators.set(validatorId, { stake: Number(stake || 0), publicKey, slashed: false });
         state.totalStake += Number(stake || 0);
+
+        // Create account if not exists
+        if (!accounts.has(validatorId)) {
+            const newAccount = {
+                address: validatorId,
+                nst_balance: '0',
+                nsd_balance: '0',
+                staked_nst: '0',
+                updatedAt: Date.now()
+            };
+            accounts.set(validatorId, newAccount);
+            persistAccount(validatorId, newAccount);
+            logNs(`[Validator] Created account for new validator ${validatorId}`);
+        }
+
         res.json({ ok: true });
     });
 
@@ -105,23 +123,34 @@ export function createTxRouter(p2pProtocol, peerManager) {
     return router;
 }
 
-export function createBlocksRouter(p2pProtocol, peerManager) {
+export function createBlocksRouter(p2pProtocol, peerManager, blockPropagation = null) {
     const router = express.Router();
 
     // Endpoint to produce block proposals from validators (vp-node posts here)
     router.post('/produce', (req, res) => {
-        const { header, txs, signature } = req.body || {};
+        const { header, txs, signature, publicKey } = req.body || {};
         if (!header || !header.validatorId) return res.status(400).json({ error: 'invalid header' });
         if (!validators.has(header.validatorId)) return res.status(400).json({ error: 'unknown validator' });
         const maybeSlashed = validators.get(header.validatorId) && validators.get(header.validatorId).slashed;
         if (maybeSlashed) return res.status(400).json({ error: 'validator_slashed' });
         const v = validators.get(header.validatorId);
+
+        // CRYPTOGRAPHIC VERIFICATION GATE: Verify signature and merkle root using block-verifier
+        // This is the first line of defense - reject tampered blocks before any consensus checks
+        const publicKeyPem = publicKey || v.publicKey;
+        const verifyResult = verifyBlockSubmission({ header, txs, signature, publicKeyPem });
+        if (!verifyResult.ok) {
+            logNs('Block verification failed:', verifyResult.reason, verifyResult);
+            return res.status(401).json({ error: 'AUTH_FAILED', reason: verifyResult.reason, details: verifyResult });
+        }
+
+        // Legacy verification logic (kept for backwards compatibility and additional validation)
         // canonical data excludes signature key entirely
         const { signature: _sigDrop, ...headerNoSig } = header;
         const data = canonicalize(headerNoSig);
         const verified = verifyEd25519(v.publicKey, data, signature);
         if (!verified) {
-            return res.status(400).json({ error: 'invalid header signature' });
+            return res.status(401).json({ error: 'AUTH_FAILED', reason: 'invalid header signature (legacy check)' });
         }
         // verify merkle root
         const txIds = (txs || []).map(tx => txIdFor(tx));
@@ -203,14 +232,21 @@ export function createBlocksRouter(p2pProtocol, peerManager) {
                     await chooseCanonicalTipAndReorg();
 
                     // Broadcast block to peers
-                    const blockMessage = p2pProtocol.createMessage(
-                        MessageType.NEW_BLOCK,
-                        { header, txs },
-                        peerManager.nodeId
-                    );
-                    p2pProtocol.broadcastMessage(blockMessage).catch(err => {
-                        logNs('Failed to broadcast block to peers:', err.message);
-                    });
+                    // Broadcast block to network via Block Propagation Service
+                    if (blockPropagation) {
+                        const height = header.height || 0;
+                        await blockPropagation.announceBlock(result.blockHash, header, height);
+                    } else {
+                        // Legacy P2P broadcast (fallback)
+                        const blockMessage = p2pProtocol.createMessage(
+                            MessageType.NEW_BLOCK,
+                            { header, txs },
+                            peerManager.nodeId
+                        );
+                        p2pProtocol.broadcastMessage(blockMessage).catch(err => {
+                            logNs('Failed to broadcast block to peers:', err.message);
+                        });
+                    }
 
                     res.json({ ok: true, blockHash: result.blockHash });
                 } catch (e) {
