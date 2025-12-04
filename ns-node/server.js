@@ -13,7 +13,8 @@ import { PORTS } from '../shared/ports.js';
 import { logNs } from './src/utils/logger.js';
 import { loadGatewayConfig, getGatewayConfig } from './src/services/gateway.js';
 import * as nsLlmService from './src/services/ns-llm.js';
-import { state, getCanonicalHeight, validators } from './src/services/state.js';
+import { state, getCanonicalHeight, validators, blockMap } from './src/services/state.js';
+import { chainEvents } from './src/services/chain.js';
 import QueryHistoryService from './src/services/query-history.js';
 import GovernanceService from './src/services/governance.js';
 import CacheVisualizationService from './src/services/cache-visualization.js';
@@ -42,6 +43,7 @@ import createPerformanceRouter from './src/routes/performance.js';
 import createPluginRouter from './src/routes/plugins.js';
 import createValidatorsRouter, { createTxRouter, createBlocksRouter, createChainRouter } from './src/routes/validators.js';
 import { BlockPropagationService } from './src/services/block-propagation.js';
+import { MessageType } from '../shared/peer-discovery/p2p-protocol.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -79,6 +81,21 @@ const p2pProtocol = new P2PProtocol(peerManager, {
 // Initialize Block Propagation Service
 const blockPropagation = new BlockPropagationService(p2pProtocol, peerManager);
 logNs('[Server] Block Propagation Service initialized');
+
+// Listen for applied blocks and broadcast via P2P if blockPropagation is not present
+chainEvents.on('blockApplied', async ({ blockHash, header, height }) => {
+  try {
+    // Prefer BlockPropagationService, otherwise fallback to simple P2P gossip
+    if (blockPropagation && typeof blockPropagation.announceBlock === 'function') {
+      await blockPropagation.announceBlock(blockHash, header, height);
+    } else {
+      const gossipMsg = p2pProtocol.createMessage(MessageType.NEW_BLOCK_GOSSIP, { blockHash, header }, peerManager.nodeId);
+      await p2pProtocol.broadcastMessage(gossipMsg).catch(err => logNs('WARN', 'Gossip broadcast failed', err.message));
+    }
+  } catch (e) {
+    logNs('ERROR', 'blockApplied handler error', e.message);
+  }
+});
 
 // Initialize Phase G Services
 const gpuResourceManager = new GpuResourceManager();
@@ -166,6 +183,60 @@ app.use('/validators', createValidatorsRouter(p2pProtocol, peerManager));
 app.use('/v1/tx', createTxRouter(p2pProtocol, peerManager));
 app.use('/v1/blocks', createBlocksRouter(p2pProtocol, peerManager, blockPropagation));
 app.use('/', createChainRouter(p2pProtocol, peerManager));
+
+// P2P HTTP message ingress endpoint - used by peers to POST messages
+app.post('/p2p/message', async (req, res) => {
+  try {
+    const message = req.body;
+    const senderIp = req.ip || req.socket.remoteAddress;
+
+    if (!message || !message.type || !message.id) {
+      return res.status(400).json({ error: 'Invalid message format' });
+    }
+
+    const result = await p2pProtocol.handleMessage(message, senderIp);
+
+    // Application-level handling for sync requests
+    if (message.type === MessageType.REQUEST_BLOCKS_SYNC && result.processed) {
+      const { fromHeight = 0, toHeight = null, max = 100 } = message.payload || {};
+
+      // Build canonical chain array (genesis -> tip)
+      const blocksArr = [];
+      let h = state.canonicalTipHash;
+      if (h) {
+        while (h && blockMap.has(h)) {
+          const b = blockMap.get(h);
+          blocksArr.push(b);
+          h = b.parentHash;
+        }
+        blocksArr.reverse();
+      }
+
+      const slice = (typeof toHeight === 'number') ? blocksArr.slice(fromHeight, toHeight + 1) : blocksArr.slice(fromHeight, fromHeight + max);
+
+      const respPayload = { requestId: message.id, blocks: slice.map(b => ({ header: b.header, blockHash: b.blockHash })) };
+      const respMsg = p2pProtocol.createMessage(MessageType.RESPONSE_BLOCKS_SYNC, respPayload, peerManager.nodeId);
+
+      const originId = message.originNodeId;
+      const originPeer = peerManager.getPeer(originId);
+      if (originPeer) {
+        const url = `http://${originPeer.host}:${originPeer.port}/p2p/message`;
+        try {
+          await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(respMsg), timeout: 5000 });
+        } catch (e) {
+          logNs('WARN', `Failed to send sync response to ${originId}: ${e.message}`);
+        }
+      } else {
+        await p2pProtocol.broadcastMessage(respMsg).catch(err => logNs('WARN', 'Failed to broadcast sync response', err.message));
+      }
+    }
+
+    return res.json({ ok: true, result });
+  } catch (err) {
+    logNs('ERROR', 'Error handling P2P message:', err.message);
+    return res.status(500).json({ error: 'handle_message_failed', detail: err.message });
+  }
+});
 
 // Query History Routes
 app.get('/api/query-history', (req, res) => {

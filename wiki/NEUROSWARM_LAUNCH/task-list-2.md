@@ -6,7 +6,7 @@ This task list translates the Master Design Document (MDD) into a prioritized, a
 
 ---
 
-## Recent updates — status snapshot (2025-12-03)
+## Recent updates — status snapshot (2025-12-04)
 
 - Router API prototype has been hardened: JWT verification (HS256 + RS256) and JWKS remote JWKSet support added; RBAC middleware and server-side artifact validation are implemented and covered by unit + integration tests.
 - Pinning persistence has been upgraded for higher-fidelity E2E: in-memory -> file-backed JSON -> SQLite-backed (better-sqlite3) with a runtime fallback to file storage when native modules cannot be built. Local tests will use the fallback; CI is now configured to install build tooling and assert the SQLite path in CI runs (EXPECT_SQLITE=true).
@@ -14,7 +14,9 @@ This task list translates the Master Design Document (MDD) into a prioritized, a
 - **Agent 5 (CN-01 & CN-03 Finalization - 2025-12-03)**: Cryptographic block verification integrated into production NS-Node `/v1/blocks/produce` endpoint. VP-Node deterministic production + ED25519 signing verified with E2E tests. CI gating added (`crypto_pipeline_test`). Critical bug fixed: validators routes now mounted. Key management docs: `wiki/Key-Management/CN-03-Key-Management-Plan.md`.
 - **CN-04 (State Persistence & Block Propagation - 2025-12-03)**: SQLite persistence layer (`state-db.js`) enables chain state survival across restarts. Block propagation service (`block-propagation.js`) announces blocks to NS-Node network with seen-blocks tracking. Database: `data/neuroswarm_chain.db`. Server verified running.
 
-Next steps: migrate mock persistence to a durable DB (Postgres) for production, design pin retention and archival policies, implement on-chain anchoring (VP → ns-node), and add CI gating to ensure these production-grade paths remain green.
+- **CN-05 (VP→NS Cryptographic E2E — 2025-12-04)**: Investigated a failing production-grade E2E where NS rejected VP-produced ED25519 signatures (AUTH_FAILED / invalid_signature). Root cause: the NS server mutated the header (added `validatorId`) before verifying signatures, which changed the canonicalized bytes and broke verification. Fix applied: NS now verifies the original VP-produced header (accepts `producerId`), only mapping `producerId` → `validatorId` after successful verification. E2E test updated to register the VP `producerId` and submit the header unchanged. Final test runs pending to confirm full green CI pass.
+
+Next steps: re-run and validate the full cryptographic E2E tests in CI (confirm VP→NS signing and verification without test-only bypass), migrate mock persistence to a durable DB (Postgres) for production, design pin retention and archival policies, implement on-chain anchoring (VP → ns-node), and add CI gating to ensure these production-grade paths remain green.
 
 ## Consolidated Task Backlog (ordered by priority: HIGH → MEDIUM → LOW)
 

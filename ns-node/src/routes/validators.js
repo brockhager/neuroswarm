@@ -129,11 +129,13 @@ export function createBlocksRouter(p2pProtocol, peerManager, blockPropagation = 
     // Endpoint to produce block proposals from validators (vp-node posts here)
     router.post('/produce', (req, res) => {
         const { header, txs, signature, publicKey } = req.body || {};
-        if (!header || !header.validatorId) return res.status(400).json({ error: 'invalid header' });
-        if (!validators.has(header.validatorId)) return res.status(400).json({ error: 'unknown validator' });
-        const maybeSlashed = validators.get(header.validatorId) && validators.get(header.validatorId).slashed;
+        // Accept either header.validatorId (NS format) or header.producerId (VP format)
+        if (!header || (!header.validatorId && !header.producerId)) return res.status(400).json({ error: 'invalid header' });
+        const vId = header.validatorId || header.producerId;
+        if (!validators.has(vId)) return res.status(400).json({ error: 'unknown validator' });
+        const maybeSlashed = validators.get(vId) && validators.get(vId).slashed;
         if (maybeSlashed) return res.status(400).json({ error: 'validator_slashed' });
-        const v = validators.get(header.validatorId);
+        const v = validators.get(vId);
 
         // CRYPTOGRAPHIC VERIFICATION GATE: Verify signature and merkle root using block-verifier
         // This is the first line of defense - reject tampered blocks before any consensus checks
@@ -224,6 +226,8 @@ export function createBlocksRouter(p2pProtocol, peerManager, blockPropagation = 
                     }
                     // Fetched content matches - proceed to apply block
                     header.signature = signature;
+                    // Ensure validatorId present for downstream processing (use producerId as fallback)
+                    if (!header.validatorId && header.producerId) header.validatorId = header.producerId;
                     const block = { header, txs };
                     const result = applyBlock(block);
                     if (!result.ok) return res.status(400).json({ error: result.reason });
@@ -256,7 +260,9 @@ export function createBlocksRouter(p2pProtocol, peerManager, blockPropagation = 
             })();
             return; // early return while we async-verified
         }
-        header.signature = signature;
+                    // For application we need header.validatorId to be populated. Use producerId as fallback.
+                    header.signature = signature;
+                    if (!header.validatorId && header.producerId) header.validatorId = header.producerId;
         const block = { header, txs };
         const result = applyBlock(block);
         if (!result.ok) return res.status(400).json({ error: result.reason });

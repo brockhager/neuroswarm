@@ -1,7 +1,10 @@
 import { StateDatabase } from './state-db.js';
 
 // Initialize database connection
-const db = new StateDatabase();
+// Allow tests to provide an isolated DB path via environment variable.
+// This keeps integration tests deterministic and avoids polluting the shared DB.
+const DB_PATH = process.env.NS_NODE_DB_PATH || null;
+const db = new StateDatabase(DB_PATH);
 
 // Load initial state from database on startup
 console.log('[State] Loading chain state from database...');

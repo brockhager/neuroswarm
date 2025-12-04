@@ -67,6 +67,21 @@ export class MessageHandlers {
                 result = { processed: true, action: 'block_received' };
                 break;
 
+            case MessageType.NEW_BLOCK_GOSSIP:
+                // New compact gossip for applied blocks
+                result = { processed: true, action: 'block_gossip_received' };
+                break;
+
+            case MessageType.REQUEST_BLOCKS_SYNC:
+                // Request for block range synchronization
+                result = { processed: true, action: 'request_blocks_sync' };
+                break;
+
+            case MessageType.RESPONSE_BLOCKS_SYNC:
+                // Response to a previous sync request
+                result = { processed: true, action: 'response_blocks_sync' };
+                break;
+
             case MessageType.NEW_TX:
                 result = { processed: true, action: 'tx_received' };
                 break;

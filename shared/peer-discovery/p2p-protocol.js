@@ -19,7 +19,10 @@ const gunzip = promisify(zlib.gunzip);
 export const MessageType = {
     PEER_LIST: 'PEER_LIST',      // Share known peers
     NEW_BLOCK: 'NEW_BLOCK',      // Broadcast new block
+    NEW_BLOCK_GOSSIP: 'NEW_BLOCK_GOSSIP', // Optimized gossip message for newly-applied blocks
     NEW_TX: 'NEW_TX',            // Broadcast new transaction
+    REQUEST_BLOCKS_SYNC: 'REQUEST_BLOCKS_SYNC', // Request for block headers/range
+    RESPONSE_BLOCKS_SYNC: 'RESPONSE_BLOCKS_SYNC', // Response with blocks for a sync request
     PING: 'PING',                // Health check
     PONG: 'PONG',                // Health check response
     VOTE: 'VOTE',                // Consensus vote

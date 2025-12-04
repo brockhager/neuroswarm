@@ -36,6 +36,10 @@ jobs:
         if [ -d "./neuroswarm" ]; then
           pnpm -C neuroswarm install --no-frozen-lockfile
           pnpm -C neuroswarm test
+          # Run ns-node integration tests (networking & tokenomics)
+          echo "Running ns-node integration tests..."
+          pnpm -C neuroswarm exec -- node --test ./ns-node/tests/integration/network_block_gossip.test.mjs
+          pnpm -C neuroswarm exec -- node --test ./ns-node/tests/integration/blocks_sync_roundtrip.test.mjs
         else
           pnpm install --no-frozen-lockfile
           pnpm test
