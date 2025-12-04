@@ -39,6 +39,52 @@ export function chooseValidator(prevHash, slot) {
     return null;
 }
 
+/**
+ * CN-07-A: getProducer(height)
+ * Deterministically selects the block producer for a given height based on stake weight.
+ * Uses the canonical tip hash and height to seed selection, ensuring the same height
+ * always returns the same producer (deterministic), and higher stake yields higher
+ * selection frequency (stake-weighted).
+ * 
+ * @param {number} height - The block height for which to select a producer
+ * @returns {string|null} - The validator ID (address) selected to produce the block, or null if no eligible validators
+ */
+export function getProducer(height) {
+    // Use canonical tip hash as prevHash seed; if no canonical tip exists, use genesis placeholder
+    const prevHash = state.canonicalTipHash || '0'.repeat(64);
+    
+    // Filter only active validator candidates with stake >= minimum (5,000 NST = 500,000,000,000 atomic units)
+    const MIN_STAKE = 500000000000; // 5,000 NST in atomic units
+    const eligible = [];
+    let eligibleTotalStake = 0;
+    
+    for (const [id, v] of validators.entries()) {
+        const acct = accounts.get(id);
+        // Only include validators that are registered candidates with sufficient stake and not slashed
+        if (acct && acct.is_validator_candidate && !v.slashed && Number(v.stake || 0) >= MIN_STAKE) {
+            eligible.push({ id, stake: Number(v.stake || 0) });
+            eligibleTotalStake += Number(v.stake || 0);
+        }
+    }
+    
+    if (eligible.length === 0 || eligibleTotalStake === 0) return null;
+    
+    // Deterministic seed from prevHash + height
+    const seed = sha256Hex(Buffer.from(String(prevHash) + String(height), 'utf8'));
+    const seedNum = parseInt(seed.slice(0, 12), 16);
+    const r = seedNum % eligibleTotalStake;
+    
+    // Weighted selection
+    let acc = 0;
+    for (const v of eligible) {
+        acc += v.stake;
+        if (r < acc) return v.id;
+    }
+    
+    // Fallback: return last eligible validator
+    return eligible[eligible.length - 1].id;
+}
+
 // Helper: synchronize a validator's staking weight from account.staked_nst
 export function syncValidatorStakeFromAccount(address) {
     try {

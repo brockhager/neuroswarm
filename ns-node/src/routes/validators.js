@@ -5,7 +5,7 @@ import {
     getCanonicalHeight, persistAccount
 } from '../services/state.js';
 import {
-    applyBlock, chooseCanonicalTipAndReorg
+    applyBlock, chooseCanonicalTipAndReorg, getProducer
 } from '../services/chain.js';
 import { getGatewayConfig } from '../services/gateway.js';
 import {
@@ -346,6 +346,16 @@ export function createChainRouter(p2pProtocol, peerManager) {
 
     router.get('/chain/height', (req, res) => {
         res.json({ height: getCanonicalHeight() });
+    });
+
+    // CN-07-A: Get the selected producer for a given height
+    router.get('/chain/producer/:height', (req, res) => {
+        const height = parseInt(req.params.height, 10);
+        if (!Number.isFinite(height) || height < 0) {
+            return res.status(400).json({ error: 'invalid_height', message: 'Height must be a non-negative integer' });
+        }
+        const producerId = getProducer(height);
+        res.json({ height, producerId });
     });
 
     router.get('/headers/tip', (req, res) => {
