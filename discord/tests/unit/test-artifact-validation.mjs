@@ -1,5 +1,7 @@
-const assert = require('assert');
-const { validateAttachment, sanitizeFileName } = require('../src/lib/file_validation');
+import assert from 'assert';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { validateAttachment, sanitizeFileName } = require('../../src/lib/file_validation.js');
 
 (async function run() {
   console.log('Running Agent9 artifact validation unit tests...');

@@ -1,0 +1,23 @@
+[
+  {
+    "cid": "Qmf4d2zL12A34B5C6D7E8F9G0H1I2J3K4L5M6N7O8P9Q",
+    "uploaderId": "agent9-discord-bot",
+    "metadata": {
+      "filename": "valid.txt",
+      "size": 1000,
+      "contentType": "text/plain"
+    },
+    "pinata_status": "pending",
+    "timestamp": 1764820928786
+  },
+  {
+    "cid": "QmJWKS",
+    "uploaderId": "jwks-agent",
+    "metadata": {
+      "filename": "ok-jwks.txt",
+      "size": 512
+    },
+    "pinata_status": "pending",
+    "timestamp": 1764820928836
+  }
+]

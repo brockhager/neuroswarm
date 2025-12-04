@@ -1,0 +1,49 @@
+name: Agent 9 E2E (Discord -> Router)
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  run_agent9_e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./discord
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Discord package dependencies
+        run: npm install
+
+      - name: Ensure Router API prototype deps (build native modules)
+        run: |
+          cd ../router-api-prototype
+          sudo apt-get update
+          sudo apt-get install -y build-essential python3 pkg-config libsqlite3-dev
+          npm install
+
+      - name: Run Agent 9 E2E tests (with sqlite expected)
+        run: npm run test:e2e
+        env:
+          # For deterministic CI runs the Router API secret or JWKS may be set by tests.
+          ROUTER_JWT_SECRET: TEST_SECRET_12345
+          MAX_FILE_UPLOAD_BYTES: 5242880
+          EXPECT_SQLITE: 'true'
+          PIN_DB_PATH: '/tmp/router_pins.db'
+
+      - name: Post-run smoke confirmation
+        run: echo "✅ Agent 9 E2E tests completed"

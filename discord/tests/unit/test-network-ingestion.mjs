@@ -1,7 +1,9 @@
-const assert = require('assert');
-const fs = require('fs');
-const path = require('path');
-const { createDeterministicCid, addBufferToIpfs } = require('../src/lib/network_ingestion');
+import assert from 'assert';
+import fs from 'fs';
+import path from 'path';
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const { createDeterministicCid, addBufferToIpfs } = require('../../src/lib/network_ingestion.js');
 
 (async function run() {
   console.log('Running Agent9 network_ingestion unit tests...');

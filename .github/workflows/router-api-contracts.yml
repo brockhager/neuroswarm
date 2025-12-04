@@ -26,16 +26,25 @@ jobs:
         with:
           node-version: '20'
 
+      - name: Install build tools (required for native modules)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential python3 pkg-config libsqlite3-dev
+
       - name: Install Dependencies
         run: npm install
 
-      - name: Run Unit and Integration Tests
+      - name: Run Unit and Integration Tests (expects sqlite)
         run: npm run test:ci
         env:
           # Crucial: Set the JWT secret the tests rely on for signing and validation
           ROUTER_JWT_SECRET: TEST_SECRET_12345
           # Set the file size limit for validation tests
           MAX_FILE_UPLOAD_BYTES: 5242880 # 5 MB
+          # Force CI to use the sqlite-backed path and assert it via tests
+          EXPECT_SQLITE: 'true'
+          # Use a file-backed db in CI (optional) to validate on-disk persistence
+          PIN_DB_PATH: '/tmp/router_pins.db'
 
       - name: Verify Authentication Failures (Smoke Test Confirmation)
         run: echo "✅ Router API contracts and security checks passed CI."
