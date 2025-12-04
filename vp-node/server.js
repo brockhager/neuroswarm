@@ -423,7 +423,7 @@ app.post('/v1/blocks/produce', async (req, res) => {
     // attach signature for contract verification
     const signedHeader = { ...header, signature };
 
-    return res.json({ ok: true, header: signedHeader, txs: sorted });
+    return res.json({ ok: true, header: signedHeader, txs: sorted, publicKey: PUBLIC_KEY_PEM });
   } catch (e) {
     console.error('Produce route error', e && e.message);
     return res.status(500).json({ ok: false, error: e && e.message });
