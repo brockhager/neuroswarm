@@ -1,4 +1,4 @@
-# NEUROSWARM_LAUNCH — Task List 2 (Agent 4 Integration)
+# NEUROSWARM_LAUNCH — Task List 2 
 
 This task list translates the Master Design Document (MDD) into a prioritized, actionable implementation backlog for Agent 4 (Discord/Swarm Chat integration) and adjacent foundational services that must be implemented or refactored to achieve v1.2 compatibility.
 
