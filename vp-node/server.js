@@ -169,7 +169,19 @@ function pickValidator(validators, slot, prevHash) {
   return validators[validators.length - 1];
 }
 
-async function produceLoop() {
+export async function getNSDesignatedProducer(slot) {
+  try {
+    const res = await fetch(NS_URL + `/chain/producer/${slot}`);
+    if (!res.ok) return null;
+    const j = await res.json();
+    return j && j.producerId ? j.producerId : null;
+  } catch (e) {
+    logVp('WARN', 'Failed to fetch designated producer from NS:', e.message);
+    return null;
+  }
+}
+
+export async function produceLoop() {
   try {
     const m = await fetch(GATEWAY_URL + '/v1/mempool');
     let mp = { mempool: [] };
@@ -193,6 +205,20 @@ async function produceLoop() {
     let validatorsResp = { validators: [] };
     try { validatorsResp = await (await fetch(NS_URL + '/validators')).json(); } catch (e) { logVp('WARN', 'Failed to parse validators JSON from NS:', e.message); }
     const prevHash = prev ? sha256Hex(canonicalize(prev)) : '0'.repeat(64);
+    // Check with NS for the canonical designated producer for this height
+    const designated = await getNSDesignatedProducer(slot);
+    if (designated) {
+      if (designated !== VAL_ID) {
+        // Not our turn — don't attempt to produce
+        logVp(`skip produce: height=${slot} designated=${designated} me=${VAL_ID}`);
+        return;
+      }
+      // else: designated matches our VAL_ID -> proceed
+    } else {
+      // No designated producer (no eligible validators) — conservative behavior: skip producing
+      logVp(`skip produce: height=${slot} no designated producer returned from NS`);
+      return;
+    }
     const chosen = await pickValidator(validatorsResp.validators, slot, prevHash);
     if (!chosen) {
       logVp('no eligible validator');
