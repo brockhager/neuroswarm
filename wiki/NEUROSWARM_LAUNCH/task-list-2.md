@@ -20,7 +20,7 @@ CN-03 | VP Node (4000) | Implement deterministic block producer: mempool poll �
 CN-04 | Gateway Node (8080) | Implement admission / mempool + per-IP/key rate limiting and requeue endpoints | HIGH | Not Started
 AI-01 | NS-LLM (3015) | Refactor /api/generate to support SSE/token streaming (and native fallback) | HIGH | Completed
 AG4-01 | Agent 9 | Integrate Agent 9 with NS-LLM streaming + generate/embed contract | HIGH | Completed
-AG4-02 | Agent 9 | Add IPFS/provenance attachments and deterministic audit metadata in responses | HIGH | Not Started
+AG4-02 | Agent 9 | Add IPFS/provenance attachments and deterministic audit metadata in responses | HIGH | Completed
 OPS-CI-NSLLM | CI/CD | Add NS-LLM integration tests + OpenAPI contract validation into CI pipeline | HIGH | Not Started
 E2E-01 | E2E | End-to-end contract smoke tests (Agent 9 ↔ NS-LLM ↔ Router ↔ VP ↔ ns-node) | HIGH | Not Started
 AG4-05 | Agent 9 | Streaming UX hardening (backpressure, edit throttling, resumable streams, improved error handling) | MEDIUM | Not Started
@@ -28,7 +28,7 @@ AI-02 | NS-LLM (3015) | Add `POST /api/embed` embedding endpoint (deterministic 
 APP-01 | neuro-services (3007) | Implement core business logic (billing, reconciliation) and DB access | MEDIUM | Not Started
 APP-02 | neuro-runner (3008) | Implement background worker framework (job queues, metrics, retry logic) | MEDIUM | Not Started
 APP-03 | admin-node (3000) | Implement secure admin UI with RBAC + audit trails | MEDIUM | Not Started
-AG4-03 | Agent 9 | Offline/resiliency handling (status notifications, backoff, monitoring) | MEDIUM | Not Started
+AG4-03 | Agent 9 | Offline/resiliency handling (status notifications, backoff, monitoring) | MEDIUM | In Progress
 AG4-04 | Agent 9 | Fine-grained audit logging for user-visible interactions | MEDIUM | Not Started
 APP-04 | alert-sink (3010) | Implement alert ingestion, durable JSONL storage & replay hooks | LOW | Not Started
 
@@ -57,6 +57,10 @@ AI-02 | NS-LLM (3015) | Implement embedding API: add `POST /api/embed` endpoint 
 - ✅ AI-01 — NS-LLM `/api/generate` streaming + fallback implemented (SSE streaming, HTTP fallback, native shim support). OpenAPI contract (`openapi.yaml`) and integration tests were added.
 - ✅ AI-02 — `/api/embed` endpoint tested and included in integration tests.
 - ✅ AG4-01 — Agent 9 updated to consume streaming tokens; sample client and bot edits were added for streaming UX with a synchronous fallback.
+
+- ✅ AG4-02 — Agent 9 artifact ingestion (A9-02) completed: added ipfs-http-client integration with deterministic CID fallback for dev, implemented robust file validation and sanitization in the Discord bot (size/type limits + filename normalization), and added unit tests covering deterministic CID generation, IPFS add, and upload validation.
+
+> Note: This is a bot-side hardening step — the Router API still needs server-side enforcement (validation, pinning policy) and production-grade authentication (JWT/RBAC) to complete the end-to-end secure ingestion pipeline.
 
 ### Follow-up tasks created after Sprint A
 
@@ -107,6 +111,37 @@ AG4-03 | Add offline/resiliency handling and monitoring (status channel notifica
 AG4-04 | Add fine-grained audit logging for all user-visible interactions for compliance & reconciliation. | MEDIUM
 
 ---
+
+## Agent 4 Task List: Priority Focus — Agent 9 Completion
+
+This list prioritizes the implementation of the Future enhancements defined in Section 9 of the MDD, which will transform the bot from a simple gateway into a core network interaction tool.
+
+### 1. Agent 9 Core Enhancements (Discord Feature Parity)
+
+These tasks integrate the Discord bot with the network's decentralized features (Router API, ns-node).
+
+ID | Component | Task Description | Priority | MDD Feature
+:-- | :-- | :-- | :--: | :--
+A9-01 | Agent 9 | Multi-Agent Conversation Routing: Implement routing logic to allow users to invoke and coordinate other agents (Agent 3, Agent 7, etc.) within a single Discord thread. | HIGH | Multi-agent conversations
+A9-02 | Agent 9 | IPFS Attachment Support: Develop handlers to securely process user-uploaded files, calculate the content hash, and submit the artifact to the Router API (4001) for IPFS pinning. | HIGH | Completed
+ - ✅ Bot-side hardening completed: added ipfs-http-client integration, deterministic CID fallback for dev, strict file validation (size/type), filename sanitization, and unit tests.
+ - ⚠️ Server-side follow-up: Router API must enforce the same validation, pinning policy, and add JWT/RBAC before production enablement.
+A9-03 | Agent 9 | Governance Voting Commands: Implement command handlers (/vote, /propose) to allow users to submit voting transactions or governance proposals directly to the Router API (4001). | HIGH | Completed
+ - ✅ Bot-side: /vote handler integrated and wired to Router prototype. Add server-side validation & auth (JWT/RBAC) for production.
+A9-04 | Agent 9 | Personal Agent Deployment: Implement the workflow for users to define and deploy custom, personalized AI configurations via a Discord command interface (integration with future Personal AI marketplace feature). | MEDIUM | Personal agent deployment
+
+### 2. Supporting Infrastructure & API Contracts
+
+These tasks are necessary to support the advanced features above and remain critical to the In Progress list.
+
+ID | Component | Task Description | Priority | Related MDD Status
+:-- | :-- | :-- | :--: | :--
+RA-01 | Router API (4001) | Implement Governance Endpoint: Create the authenticated endpoint in the Router API to receive and validate governance/voting transactions from Agent 9 (Required for A9-03). | HIGH | ✅ Prototype available (router-api-prototype/server.js)
+RA-02 | Router API (4001) | Implement Artifact Ingestion Endpoint: Create the authenticated endpoint to receive IPFS content hashes and metadata for pinning and anchoring (Required for A9-02). | HIGH | ✅ Prototype available (router-api-prototype/server.js)
+-- Server TODO: enforce server-side validation (size/type/content checks), pinning policy & production auth (JWT/RBAC) before enabling public ingestion.
+OPS-01 | All Services | Prometheus/Grafana Dashboards: Focus on integrating metrics for Agent 9 performance (latency, token usage, command volume, connection health). | HIGH | 🚧 In Progress
+
+This focused list ensures that the Discord experience is fully developed first, leveraging the in-progress backend services where necessary. Coordinate A9 tasks with the Router API team so RA-01/RA-02 are available as gates for the high-priority Agent 9 features.
 
 ## Acceptance Criteria (applies to all HIGH tasks)
 

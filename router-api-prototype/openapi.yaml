@@ -1,0 +1,90 @@
+openapi: 3.0.3
+info:
+  title: Router API (Prototype)
+  version: 0.1.0
+  description: Prototype contracts for Agent 9 interactions — governance vote ingestion and artifact ingestion (IPFS)
+paths:
+  /governance/vote:
+    post:
+      summary: Submit a governance vote transaction
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                proposalId:
+                  type: string
+                voterId:
+                  type: string
+                vote:
+                  type: string
+                metadata:
+                  type: object
+              required:
+                - proposalId
+                - voterId
+                - vote
+      responses:
+        '202':
+          description: Accepted and queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  transaction_id:
+                    type: string
+                  status:
+                    type: string
+        '400':
+          description: Bad request
+  /ingest/artifact:
+    post:
+      summary: Ingest artifact CID for IPFS pinning and anchoring
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                contentCid:
+                  type: string
+                uploaderId:
+                  type: string
+                metadata:
+                  type: object
+              required:
+                - contentCid
+                - uploaderId
+                - metadata
+      responses:
+        '202':
+          description: Ingestion started
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  job_id:
+                    type: string
+                  artifact_cid:
+                    type: string
+                  status:
+                    type: string
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

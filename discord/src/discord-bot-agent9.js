@@ -10,6 +10,8 @@
  * and must be run on a persistent server (e.g., AWS, Render, Heroku).
  */
 const { Client, GatewayIntentBits } = require('discord.js');
+const { submitGovernanceVote, ingestArtifactFromFile } = require('./lib/network_ingestion');
+const { validateAttachment } = require('./lib/file_validation');
 // In a real project, replace 'require' with 'import' if using ES Modules
 // and ensure you install discord.js (npm install discord.js)
 
@@ -27,30 +29,109 @@ const NS_LLM_URL = process.env.NS_LLM_URL || 'http://localhost:3015';
 
 // The channel name where the chat functionality is enabled.
 const CHAT_CHANNEL_NAME = process.env.CHAT_CHANNEL_NAME || 'chat-with-agent-9';
+// Artifact channel can be configured either by ID (preferred) or by name
+const ARTIFACT_CHANNEL_ID = process.env.ARTIFACT_CHANNEL_ID || null;
+const ARTIFACT_CHANNEL_NAME = process.env.ARTIFACT_CHANNEL_NAME || 'artifacts';
 
 // --- INITIALIZATION ---
 
 // Intents are crucial: they define what events the bot listens to.
 // We need GUILDS (to join the server) and MESSAGE_CONTENT (to read messages).
 const client = new Client({ 
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent 
-    ] 
+    try {
+        // Artifact channel: enforce strict validation (size/type) and sanitize filenames
+        const isArtifactChannel = (ARTIFACT_CHANNEL_ID && message.channelId === ARTIFACT_CHANNEL_ID) || message.channel.name === ARTIFACT_CHANNEL_NAME;
+        if (isArtifactChannel && message.attachments && message.attachments.size > 0) {
+            const attachment = message.attachments.first();
+            const rawFileName = attachment.name || 'upload.bin';
+            const userId = message.author.id;
+
+            // Validate using shared helper (this keeps the handler thin and testable)
+            const validation = validateAttachment(attachment);
+            if (!validation.valid) {
+                if (validation.reason === 'size_exceeds_limit') {
+                    const MAX_UPLOAD_BYTES = Number(process.env.MAX_FILE_UPLOAD_BYTES || 5 * 1024 * 1024);
+                    await message.reply(`❌ File too large — max ${Math.round(MAX_UPLOAD_BYTES/1024/1024)} MB allowed. Please reduce the file size and try again.`);
+                    return;
+                }
+                if (validation.reason === 'invalid_extension') {
+                    const ALLOWED_EXT = (process.env.ALLOWED_FILE_EXTENSIONS || '.png,.jpg,.jpeg,.gif,.txt,.md,.pdf');
+                    await message.reply(`❌ Unsupported file type. Allowed: ${ALLOWED_EXT}`);
+                    return;
+                }
+                // generic
+                await message.reply('❌ Invalid file upload.');
+                return;
+            }
+
+            // Indicate we accepted the upload and will verify content
+            await message.react('👀');
+            try {
+                const fileResponse = await fetch(attachment.url);
+                if (!fileResponse.ok) throw new Error(`failed to download: ${fileResponse.status} ${fileResponse.statusText}`);
+
+                // If server reports content-length and we didn't have reportedSize, check it
+                const contentLength = fileResponse.headers && fileResponse.headers.get ? fileResponse.headers.get('content-length') : null;
+                if (!reportedSize && contentLength && Number(contentLength) > MAX_UPLOAD_BYTES) {
+                    await message.reply(`❌ File too large when downloaded — maximum ${Math.round(MAX_UPLOAD_BYTES/1024/1024)} MB.`);
+                    return;
+                }
+
+                const buf = await fileResponse.buffer();
+                if (buf.length > MAX_UPLOAD_BYTES) {
+                    await message.reply(`❌ File too large after download — maximum ${Math.round(MAX_UPLOAD_BYTES/1024/1024)} MB.`);
+                    return;
+                }
+
+                // Use sanitized filename from validator (or fallback)
+                const safeName = validation.safeName || rawFileName.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 200);
+
+                // Ingest to Router/IPFS (ingestArtifactFromFile handles IPFS API config internally)
+                const ingest = await ingestArtifactFromFile(buf, safeName, userId);
+                const artifactCid = (ingest && ingest.result && ingest.result.artifact_cid) ? ingest.result.artifact_cid : ingest.cid;
+                await message.reply({ content: `✅ **Artifact Anchored!** The Router API accepted your file \`${safeName}\`. Content CID: \`${artifactCid}\`` });
+            } catch (ingestErr) {
+                console.error('[A9-02] artifact ingestion failed', ingestErr && ingestErr.message);
+                await message.reply(`❌ Artifact ingestion failed: ${ingestErr && ingestErr.message}`);
+            }
+
+            return; // don't fall through to LLM handling
+        }
+    } catch (ex) {
+        console.warn('[A9-02] artifact channel check failed', ex && ex.message);
+    }
+            { name: 'proposal_id', type: 3, description: 'The ID of the proposal', required: true },
+            { name: 'vote', type: 3, description: "Your vote: YEA, NAY, or ABSTAIN", required: true }
+        ]
+    }]).catch(e => console.warn('Failed to register slash commands', e && e.message));
 });
 
-// --- EVENT HANDLERS ---
-
 /**
- * Event: Bot is ready and connected to Discord.
+ * Event: handle slash commands — particularly /vote for governance submissions
  */
-client.on('ready', () => {
-    console.log(`[Agent 9] Bot is logged in as ${client.user.tag}!`);
-    console.log(`[Agent 9] Application ID: ${AGENT9_APP_ID}`);
-    console.log(`Ready to listen for messages in configured channels.`);
-    // Set an activity status to show the bot is live
-    client.user.setActivity('Monitoring Swarm Data');
+client.on('interactionCreate', async interaction => {
+    try {
+        if (!interaction.isCommand()) return;
+        if (interaction.commandName !== 'vote') return;
+
+        await interaction.deferReply({ ephemeral: true });
+        const proposalId = interaction.options.getString('proposal_id');
+        const vote = interaction.options.getString('vote');
+        const userId = interaction.user.id;
+
+        console.log(`[A9-03] User ${userId} voting on ${proposalId} -> ${vote}`);
+
+        try {
+            const data = await submitGovernanceVote({ proposalId, vote, userId, context: `Discord vote by ${interaction.user.tag}` });
+            await interaction.editReply({ content: `✅ Vote accepted and queued (tx: ${data.transaction_id})`, ephemeral: true });
+        } catch (e) {
+            console.error('[A9-03] submitGovernanceVote failed', e && e.message);
+            await interaction.editReply({ content: `❌ Vote failed: ${e.message}`, ephemeral: true });
+        }
+
+    } catch (err) {
+        console.error('[interactionCreate] handler error', err && err.message);
+    }
 });
 
 /**
@@ -61,7 +142,33 @@ client.on('messageCreate', async message => {
     // 1. Ignore messages from bots (including itself) to prevent loops
     if (message.author.bot) return;
 
-    // 2. Determine if the message is relevant for the NeuroSwarm chat
+    // 2. If this message is in the artifact channel, handle file ingestion (A9-02)
+    try {
+        const isArtifactChannel = (ARTIFACT_CHANNEL_ID && message.channelId === ARTIFACT_CHANNEL_ID) || message.channel.name === ARTIFACT_CHANNEL_NAME;
+        if (isArtifactChannel && message.attachments && message.attachments.size > 0) {
+            const attachment = message.attachments.first();
+            const fileName = attachment.name || 'upload.bin';
+            const userId = message.author.id;
+
+            await message.react('👀');
+            try {
+                const fileResponse = await fetch(attachment.url);
+                if (!fileResponse.ok) throw new Error(`failed to download: ${fileResponse.statusText}`);
+                const buf = await fileResponse.buffer();
+                const ingest = await ingestArtifactFromFile(buf, fileName, userId);
+                const artifactCid = (ingest && ingest.result && ingest.result.artifact_cid) ? ingest.result.artifact_cid : ingest.cid;
+                await message.reply({ content: `✅ **Artifact Anchored!** The Router API accepted your file \\`${fileName}\\`. Content CID: \\`${artifactCid}\\`` });
+            } catch (ingestErr) {
+                console.error('[A9-02] artifact ingestion failed', ingestErr && ingestErr.message);
+                await message.reply(`❌ Artifact ingestion failed: ${ingestErr && ingestErr.message}`);
+            }
+            return; // don't fall through to LLM handling
+        }
+    } catch (ex) {
+        console.warn('[A9-02] artifact channel check failed', ex && ex.message);
+    }
+
+    // 3. Determine if the message is relevant for the NeuroSwarm chat
     // We only respond if the bot is explicitly mentioned in the message OR
     // if the message is in the designated chat channel.
     const isMentioned = message.mentions.users.has(client.user.id);
