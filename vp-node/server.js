@@ -259,7 +259,9 @@ export async function produceLoop() {
       logVp('IPFS not connected - producing block without payload CID');
     }
     const headerData = canonicalize(header);
-    const sig = signEd25519PrivateKey(PRIVATE_KEY_PEM, headerData);
+    // If private key not configured for this VP instance (e.g. unit tests)
+    // allow producing without a signature (tests / dev harnesses skip verification).
+    const sig = PRIVATE_KEY_PEM ? signEd25519PrivateKey(PRIVATE_KEY_PEM, headerData) : null;
     const producerUrl = process.env.VP_PUBLISH_URL || `http://localhost:${PORT}`;
     const res = await fetch(NS_URL + '/blocks/produce', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Producer-Url': producerUrl }, body: JSON.stringify({ header, txs, signature: sig }) });
     let j = null;
