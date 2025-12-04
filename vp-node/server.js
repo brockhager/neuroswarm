@@ -1,9 +1,11 @@
 import crypto from 'crypto';
+import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import path from 'path';
 import express from 'express';
 import { computeSourcesRoot } from '../sources/index.js';
+import { deterministicSortEntries, computeMerkleRootFromTxs } from './src/producer-core.mjs';
 import { PeerManager, P2PProtocol, MessageType, startHTTPSServer } from '../shared/peer-discovery/index.js';
 // ipfs-http-client is an optional runtime dependency. Dynamically import it
 // inside initIpfs so the server can start without IPFS being installed.
@@ -27,17 +29,9 @@ function logVp(...args) { const _ts = new Date().toISOString(); console.log(`[VP
 logVp(`vp-node starting on port ${PORT}`);
 if (STATUS_ENABLED) logVp(`vp-node heartbeat enabled (interval ${Number(process.env.STATUS_INTERVAL_MS || 60000)}ms)`);
 
-// Initialize Peer Discovery for VP Node
-const peerManager = new PeerManager({
-  nodeType: 'VP',
-  port: PORT,
-  bootstrapPeers: process.env.BOOTSTRAP_PEERS || '',
-  maxPeers: parseInt(process.env.MAX_PEERS) || 8,
-  dataDir: path.join(process.cwd(), 'data')
-});
-
-const p2pProtocol = new P2PProtocol(peerManager);
-logVp(`Peer discovery enabled | nodeId=${peerManager.nodeId} | nodeType=VP | bootstrapPeers=${process.env.BOOTSTRAP_PEERS || 'none'}`);
+// Peer discovery objects will be initialized when the server is started directly
+let peerManager = null;
+let p2pProtocol = null;
 
 let lastProduceSuccess = null;
 let nsReachable = false;
@@ -360,6 +354,82 @@ app.post('/ipfs', async (req, res) => {
   }
 });
 
+// Test / Produce endpoint for integration / developer flows
+// Accepts an optional body { txs: [ ... ] } and returns a produced header + txs
+app.post('/v1/blocks/produce', async (req, res) => {
+  try {
+    let txs = null;
+    if (req.body && Array.isArray(req.body.txs)) txs = req.body.txs;
+    // If no txs provided, try to fetch from gateway
+    if (!txs) {
+      try {
+        const m = await fetch(GATEWAY_URL + '/v1/mempool');
+        const mp = await m.json();
+        txs = (mp && mp.mempool) ? (mp.mempool || []).map(e => e.payload || e.tx || {}) : [];
+      } catch (e) {
+        txs = [];
+      }
+    }
+
+    // Apply deterministic ordering
+    const sorted = deterministicSortEntries(txs || []);
+
+    // compute merkle and sources root
+    const merkleRoot = computeMerkleRootFromTxs(sorted);
+    const sourcesRoot = computeSourcesRoot(sorted);
+
+    // header fields per contracts/VPBlockHeader.json
+    const header = {
+      version: '1.0.0',
+      chainId: process.env.CHAIN_ID || 'neuroswarm-testnet',
+      height: Number(req.body.height || 0),
+      producerId: VAL_ID,
+      prevHash: req.body.prevHash || '0'.repeat(64),
+      payloadCid: null,
+      sourcesRoot,
+      merkleRoot,
+      timestamp: Date.now(),
+      slot: Number(req.body.slot || 0),
+      txCount: sorted.length
+    };
+
+    // compute payload CID:
+    // - if IPFS available, add to IPFS and set CID
+    // - otherwise use a deterministic fallback payloadCid based on header+txs
+    if (ipfsConnected && ipfs) {
+      try {
+        const addRes = await ipfs.add(JSON.stringify({ header, txs: sorted }));
+        header.payloadCid = addRes.cid ? addRes.cid.toString() : addRes.toString();
+      } catch (e) {
+        // ignore
+      }
+    } else {
+      // Not connected to IPFS - produce a deterministic fallback payloadCid so header.payloadCid is a string
+      const fallbackPayload = sha256Hex(Buffer.from(canonicalize({ header, txs }), 'utf8'));
+      header.payloadCid = `cid:fallback:${fallbackPayload}`;
+      logVp('IPFS not connected - using fallback payloadCid', header.payloadCid);
+    }
+
+    // ensure keypair exists (tests may import server without running register())
+    if (!PRIVATE_KEY_PEM) {
+      const keypair = crypto.generateKeyPairSync('ed25519');
+      PRIVATE_KEY_PEM = keypair.privateKey.export({ type: 'pkcs8', format: 'pem' });
+      PUBLIC_KEY_PEM = keypair.publicKey.export({ type: 'spki', format: 'pem' });
+    }
+    // sign header deterministically
+    const headerData = canonicalize(header);
+    const signature = signEd25519PrivateKey(PRIVATE_KEY_PEM, headerData);
+
+    // attach signature for contract verification
+    const signedHeader = { ...header, signature };
+
+    return res.json({ ok: true, header: signedHeader, txs: sorted });
+  } catch (e) {
+    console.error('Produce route error', e && e.message);
+    return res.status(500).json({ ok: false, error: e && e.message });
+  }
+});
+
 // Add validator proofs to IPFS (e.g., slashing proofs)
 app.post('/proofs', async (req, res) => {
   if (!ipfsConnected || !ipfs) return res.status(503).json({ error: 'ipfs_unavailable' });
@@ -452,7 +522,19 @@ app.post('/p2p/message', async (req, res) => {
   }
 });
 
-const server = app.listen(PORT, () => {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  // Initialize Peer Discovery for VP Node when starting as standalone
+  peerManager = new PeerManager({
+    nodeType: 'VP',
+    port: PORT,
+    bootstrapPeers: process.env.BOOTSTRAP_PEERS || '',
+    maxPeers: parseInt(process.env.MAX_PEERS) || 8,
+    dataDir: path.join(process.cwd(), 'data')
+  });
+  p2pProtocol = new P2PProtocol(peerManager);
+  logVp(`Peer discovery enabled | nodeId=${peerManager.nodeId} | nodeType=VP | bootstrapPeers=${process.env.BOOTSTRAP_PEERS || 'none'}`);
+
+  const server = app.listen(PORT, () => {
   logVp('VP node started, producing blocks');
   logVp(`Listening at http://localhost:${PORT}`);
   logVp('Health endpoint available at /health');
@@ -465,7 +547,7 @@ const server = app.listen(PORT, () => {
   }).catch(err => {
     logVp(`HTTPS server failed: ${err.message}`);
   });
-});
+  });
 
 server.on('connection', (socket) => {
   const remote = `${socket.remoteAddress}:${socket.remotePort}`;
@@ -474,7 +556,7 @@ server.on('connection', (socket) => {
 });
 
 // Periodic peer health check and peer exchange
-setInterval(async () => {
+  setInterval(async () => {
   const peers = peerManager.getAllPeers();
   for (const peer of peers) {
     await p2pProtocol.pingPeer(peer);
@@ -488,7 +570,11 @@ setInterval(async () => {
     const randomPeer = peers[Math.floor(Math.random() * peers.length)];
     await p2pProtocol.sendPeerList(randomPeer);
   }
-}, 30000); // Every 30 seconds
+  }, 30000); // Every 30 seconds
+
+  // start main loop only when running as a standalone server
+  main();
+}
 
 // Standardized crash handling: log and exit so the CMD window remains open for diagnostics
 process.on('uncaughtException', (err) => {
@@ -501,4 +587,5 @@ process.on('unhandledRejection', (reason) => {
   process.exit(1);
 });
 
-main();
+// export the express app for tests
+export { app };

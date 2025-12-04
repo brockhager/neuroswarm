@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VPBlockHeader",
+  "description": "Canonical Block Header signed by Validator Producer (VP) — defines fields required for signing and verification.",
+  "type": "object",
+  "required": ["version","chainId","height","producerId","prevHash","payloadCid","sourcesRoot","merkleRoot","timestamp","txCount","signature"],
+  "properties": {
+    "version": { "type": "string", "description": "Format version of header (semantic)" },
+    "chainId": { "type": "string", "description": "Network identifier" },
+    "height": { "type": "integer", "minimum": 0, "description": "Chain height" },
+    "producerId": { "type": "string", "description": "Producer id / public key (did:key or hex)" },
+    "prevHash": { "type": "string", "description": "Hash of previous header (hex/base58)" },
+    "payloadCid": { "type": "string", "description": "CID or content-address of the payload" },
+    "sourcesRoot": { "type": "string", "description": "Merkle root of sources metadata (hex/base58)" },
+    "merkleRoot": { "type": "string", "description": "Merkle root of ordered payload entries (hex/base58)" },
+    "timestamp": { "type": "integer", "description": "Epoch milliseconds when block was produced" },
+    "slot": { "type": "integer", "description": "Optional slot/epoch number" },
+    "txCount": { "type": "integer", "minimum": 0 },
+    "extra": { "type": "object", "description": "Extension object for future needs", "additionalProperties": true },
+    "signature": { "type": "string", "description": "Signature over canonical header bytes (hex/base64)" }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "version": "1.0.0",
+      "chainId": "neuroswarm-testnet",
+      "height": 42,
+      "producerId": "did:key:z6Mkp...",
+      "prevHash": "aabbccddeeff001122...",
+      "payloadCid": "bafy...",
+      "sourcesRoot": "f0e1d2...",
+      "merkleRoot": "1a2b3c...",
+      "timestamp": 1730457600000,
+      "slot": 4310,
+      "txCount": 12,
+      "signature": "MEUCIQ..."
+    }
+  ]
+}
