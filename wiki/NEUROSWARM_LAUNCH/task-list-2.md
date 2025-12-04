@@ -18,13 +18,13 @@ CN-01 | ns-node (3009) | Implement full canonical node logic (block validation, 
 CN-02 | Router API (4001) | Implement JWT/RBAC security, Postgres migrations + IPFS/on-chain anchoring | HIGH | Not Started
 CN-03 | VP Node (4000) | Implement deterministic block producer: mempool poll → payloadCid/sourcesRoot → sign & submit | HIGH | Not Started
 CN-04 | Gateway Node (8080) | Implement admission / mempool + per-IP/key rate limiting and requeue endpoints | HIGH | Not Started
-AI-01 | NS-LLM (3015) | Refactor /api/generate to support SSE/token streaming (and native fallback) | HIGH | Completed
-AG4-01 | Agent 9 | Integrate Agent 9 with NS-LLM streaming + generate/embed contract | HIGH | Completed
-AG4-02 | Agent 9 | Add IPFS/provenance attachments and deterministic audit metadata in responses | HIGH | Completed
+AI-01 | NS-LLM (3015) | Refactor /api/generate to support SSE/token streaming (and native fallback) | HIGH | ✅ Completed
+AG4-01 | Agent 9 | Integrate Agent 9 with NS-LLM streaming + generate/embed contract | HIGH | ✅ Completed
+AG4-02 | Agent 9 | Add IPFS/provenance attachments and deterministic audit metadata in responses | HIGH | ✅ Completed
 OPS-CI-NSLLM | CI/CD | Add NS-LLM integration tests + OpenAPI contract validation into CI pipeline | HIGH | Not Started
 E2E-01 | E2E | End-to-end contract smoke tests (Agent 9 ↔ NS-LLM ↔ Router ↔ VP ↔ ns-node) | HIGH | Not Started
 AG4-05 | Agent 9 | Streaming UX hardening (backpressure, edit throttling, resumable streams, improved error handling) | MEDIUM | Not Started
-AI-02 | NS-LLM (3015) | Add `POST /api/embed` embedding endpoint (deterministic schema, tests) | MEDIUM | Completed
+AI-02 | NS-LLM (3015) | Add `POST /api/embed` embedding endpoint (deterministic schema, tests) | MEDIUM | ✅ Completed
 APP-01 | neuro-services (3007) | Implement core business logic (billing, reconciliation) and DB access | MEDIUM | Not Started
 APP-02 | neuro-runner (3008) | Implement background worker framework (job queues, metrics, retry logic) | MEDIUM | Not Started
 APP-03 | admin-node (3000) | Implement secure admin UI with RBAC + audit trails | MEDIUM | Not Started
@@ -49,8 +49,8 @@ CN-04 | Gateway Node (8080) | Implement admission control: mempool management, p
 
 ID | Component | Task Description | Priority
 ---|-----------|------------------|--------
-AI-01 | NS-LLM (3015) | Refactor for streaming support: implement SSE token-by-token streaming on `POST /api/generate`, ensure fallback behaviour to HTTP prototype/native binary, add contract tests. | HIGH | Completed
-AI-02 | NS-LLM (3015) | Implement embedding API: add `POST /api/embed` endpoint with deterministic embedding schema and tests; ensure low-latency and robust errors. | MEDIUM | Completed
+AI-01 | NS-LLM (3015) | Refactor for streaming support: implement SSE token-by-token streaming on `POST /api/generate`, ensure fallback behaviour to HTTP prototype/native binary, add contract tests. | HIGH | ✅ Completed
+AI-02 | NS-LLM (3015) | Implement embedding API: add `POST /api/embed` endpoint with deterministic embedding schema and tests; ensure low-latency and robust errors. | MEDIUM | ✅ Completed
 
 ### Completed (Sprint A work)
 
@@ -105,7 +105,7 @@ AG4-05 | Agent 9 | Hardening & UX: implement streaming backpressure handling, pa
 
 ID | Task Description | Priority
 ---|------------------|--------
-AG4-01 | Integrate Agent 9 with NS-LLM contract (streaming + generate/embed). | HIGH | Completed
+AG4-01 | Integrate Agent 9 with NS-LLM contract (streaming + generate/embed). | HIGH | ✅ Completed
 AG4-02 | Add source provenance to responses and attach IPFS/anchoring data when applicable. | HIGH
 AG4-03 | Add offline/resiliency handling and monitoring (status channel notifications, automatic backoff and retries). | MEDIUM
 AG4-04 | Add fine-grained audit logging for all user-visible interactions for compliance & reconciliation. | MEDIUM
@@ -123,10 +123,10 @@ These tasks integrate the Discord bot with the network's decentralized features 
 ID | Component | Task Description | Priority | MDD Feature
 :-- | :-- | :-- | :--: | :--
 A9-01 | Agent 9 | Multi-Agent Conversation Routing: Implement routing logic to allow users to invoke and coordinate other agents (Agent 3, Agent 7, etc.) within a single Discord thread. | HIGH | Multi-agent conversations
-A9-02 | Agent 9 | IPFS Attachment Support: Develop handlers to securely process user-uploaded files, calculate the content hash, and submit the artifact to the Router API (4001) for IPFS pinning. | HIGH | Completed
+A9-02 | Agent 9 | IPFS Attachment Support: Develop handlers to securely process user-uploaded files, calculate the content hash, and submit the artifact to the Router API (4001) for IPFS pinning. | HIGH | ✅ Completed
  - ✅ Bot-side hardening completed: added ipfs-http-client integration, deterministic CID fallback for dev, strict file validation (size/type), filename sanitization, and unit tests.
  - ⚠️ Server-side follow-up: Router API must enforce the same validation, pinning policy, and add JWT/RBAC before production enablement.
-A9-03 | Agent 9 | Governance Voting Commands: Implement command handlers (/vote, /propose) to allow users to submit voting transactions or governance proposals directly to the Router API (4001). | HIGH | Completed
+A9-03 | Agent 9 | Governance Voting Commands: Implement command handlers (/vote, /propose) to allow users to submit voting transactions or governance proposals directly to the Router API (4001). | HIGH | ✅ Completed
  - ✅ Bot-side: /vote handler integrated and wired to Router prototype. Add server-side validation & auth (JWT/RBAC) for production.
 A9-04 | Agent 9 | Personal Agent Deployment: Implement the workflow for users to define and deploy custom, personalized AI configurations via a Discord command interface (integration with future Personal AI marketplace feature). | MEDIUM | Personal agent deployment
 
@@ -155,7 +155,7 @@ This focused list ensures that the Discord experience is fully developed first, 
 
 ## Next actions / Sprint-ready slices
 
-1. Sprint A (2-week) — Completed: NS-LLM streaming + embed (AI-01 / AI-02) and Agent 9 streaming integration (AG4-01) implemented. Follow-ups: add CI gating for NS-LLM tests & OpenAPI, E2E smoke tests across services (Agent9 ↔ NS-LLM ↔ Router ↔ VP ↔ ns-node), and streaming UX hardening (AG4-05).
+1. Sprint A (2-week) — ✅ Completed: NS-LLM streaming + embed (AI-01 / AI-02) and Agent 9 streaming integration (AG4-01) implemented. Follow-ups: add CI gating for NS-LLM tests & OpenAPI, E2E smoke tests across services (Agent9 ↔ NS-LLM ↔ Router ↔ VP ↔ ns-node), and streaming UX hardening (AG4-05).
 2. Sprint B (2-week): Router API security & anchoring + Postgres migrations (CN-02 + OPS-03). Add CI tests for anchoring pipeline.
 3. Sprint C (2-week): Gateway + VP (CN-03, CN-04) with mempool tests and deterministic block producer integration tests.
 4. Sprint D (2-week): Application services (APP-01..APP-04) + admin UI and alert sink + operational cross-cutting work (OPS-01..OPS-04).
