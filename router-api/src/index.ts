@@ -207,6 +207,10 @@ app.post('/api/v1/governance/anchor', async (req: Request, res: Response) => {
     }
 });
 
+// Artifact review endpoint (LLM critique)
+import { reviewArtifactHandler } from './services/artifact-review';
+app.post('/api/v1/artifact/review', async (req: Request, res: Response) => reviewArtifactHandler(req, res));
+
 // Start Server
 app.listen(port, () => {
     console.log(`NeuroSwarm Router API running on port ${port}`);
