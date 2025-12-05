@@ -44,6 +44,17 @@ export class StateDatabase {
         } catch (e) {
             // ignore migration errors
         }
+
+        // Ensure validators table has consecutive_misses column (migrate if needed)
+        try {
+            const vinfo = this.db.prepare("PRAGMA table_info(validators)").all();
+            const hasMisses = vinfo.some(r => r.name === 'consecutive_misses');
+            if (!hasMisses) {
+                this.db.prepare("ALTER TABLE validators ADD COLUMN consecutive_misses INTEGER DEFAULT 0").run();
+            }
+        } catch (e) {
+            // ignore migration errors
+        }
     }
 
     initSchema() {
@@ -73,14 +84,15 @@ export class StateDatabase {
       CREATE INDEX IF NOT EXISTS idx_tx_block ON tx_index(blockHash);
 
       -- Validators: stake, public keys, slashing status
-      CREATE TABLE IF NOT EXISTS validators (
-        validatorId TEXT PRIMARY KEY,
-        stake INTEGER NOT NULL,
-        publicKey TEXT NOT NULL,
-        slashed INTEGER DEFAULT 0,
-        slashedAt INTEGER,
-        updatedAt INTEGER NOT NULL
-      );
+            CREATE TABLE IF NOT EXISTS validators (
+                validatorId TEXT PRIMARY KEY,
+                stake INTEGER NOT NULL,
+                publicKey TEXT NOT NULL,
+                slashed INTEGER DEFAULT 0,
+                slashedAt INTEGER,
+                consecutive_misses INTEGER DEFAULT 0,
+                updatedAt INTEGER NOT NULL
+            );
 
       -- Accounts: dual-token balances (NST/NSD)
       CREATE TABLE IF NOT EXISTS accounts (
@@ -228,8 +240,8 @@ export class StateDatabase {
 
     saveValidator(validatorId, validator) {
         const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO validators(validatorId, stake, publicKey, slashed, slashedAt, updatedAt)
-        VALUES(?, ?, ?, ?, ?, ?)
+      INSERT OR REPLACE INTO validators(validatorId, stake, publicKey, slashed, slashedAt, consecutive_misses, updatedAt)
+        VALUES(?, ?, ?, ?, ?, ?, ?)
             `);
 
         stmt.run(
@@ -238,6 +250,7 @@ export class StateDatabase {
             validator.publicKey,
             validator.slashed ? 1 : 0,
             validator.slashedAt || null,
+            validator.consecutiveMisses || 0,
             Date.now()
         );
     }
@@ -250,7 +263,8 @@ export class StateDatabase {
             stake: row.stake,
             publicKey: row.publicKey,
             slashed: row.slashed === 1,
-            slashedAt: row.slashedAt
+            slashedAt: row.slashedAt,
+            consecutiveMisses: row.consecutive_misses || 0
         };
     }
 
@@ -263,7 +277,8 @@ export class StateDatabase {
                 stake: row.stake,
                 publicKey: row.publicKey,
                 slashed: row.slashed === 1,
-                slashedAt: row.slashedAt
+                slashedAt: row.slashedAt,
+                consecutiveMisses: row.consecutive_misses || 0
             });
         }
 
