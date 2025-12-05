@@ -94,6 +94,83 @@ paths:
           description: Unauthorized (missing or invalid JWT)
         '403':
           description: Forbidden (insufficient role privileges)
+  /artifact/critique/{artifact_id}:
+    get:
+      summary: Get critique history for an artifact
+      description: Query all completed ARTIFACT_CRITIQUE transactions for a specific artifact from NS-Node's StateDB
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: artifact_id
+          in: path
+          required: true
+          description: CID of the artifact (bafy... or Qm...)
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Critique history successfully retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  artifact_id:
+                    type: string
+                  total_critiques:
+                    type: number
+                  critiques:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        artifact_id:
+                          type: string
+                        review_block_height:
+                          type: number
+                        fulfilled_by:
+                          type: string
+                        fulfilled_at_height:
+                          type: number
+                        fulfilled_at:
+                          type: number
+                        block_hash:
+                          type: string
+                        critique:
+                          type: object
+                          properties:
+                            artifact_id:
+                              type: string
+                            review_block_height:
+                              type: number
+                            critique_version:
+                              type: string
+                            llm_model:
+                              type: string
+                            issues:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  severity:
+                                    type: string
+                                    enum: [CRITICAL, HIGH, MEDIUM, LOW, SUGGESTION]
+                                  type:
+                                    type: string
+                                  file_path:
+                                    type: string
+                                  line_range:
+                                    type: string
+                                  comment:
+                                    type: string
+        '400':
+          description: Bad request (invalid artifact_id format)
+        '401':
+          description: Unauthorized (missing or invalid JWT)
+        '404':
+          description: No critiques found for this artifact
+        '500':
+          description: Internal server error or NS-Node unavailable
   /ingest/artifact:
     post:
       summary: Ingest artifact CID for IPFS pinning and anchoring

@@ -2,7 +2,7 @@ import express from 'express';
 import fetch from 'node-fetch';
 import {
     validators, blockMap, txIndex, proposals, state, accounts,
-    getCanonicalHeight, persistAccount
+    getCanonicalHeight, persistAccount, db
 } from '../services/state.js';
 import {
     applyBlock, chooseCanonicalTipAndReorg, getProducer
@@ -295,8 +295,8 @@ export function createBlocksRouter(p2pProtocol, peerManager, blockPropagation = 
             })();
             return; // early return while we async-verified
         }
-                    // For application we must not mutate header fields before verification.
-                    header.signature = signature;
+        // For application we must not mutate header fields before verification.
+        header.signature = signature;
         const block = { header, txs };
         const result = applyBlock(block);
         if (!result.ok) return res.status(400).json({ error: result.reason });
@@ -356,6 +356,72 @@ export function createChainRouter(p2pProtocol, peerManager) {
         }
         const producerId = getProducer(height);
         res.json({ height, producerId });
+    });
+
+    // CN-09-B: Get critique history for an artifact
+    router.get('/chain/critiques/:artifact_id', (req, res) => {
+        try {
+            const { artifact_id } = req.params;
+
+            // Validate CID format
+            if (!artifact_id || (artifact_id.length < 10)) {
+                return res.status(400).json({
+                    error: 'invalid_artifact_id',
+                    message: 'artifact_id must be a valid CID'
+                });
+            }
+
+            // Get all completed reviews for this artifact using StateDB
+            const reviews = db.getCompletedReviewsByArtifact(artifact_id);
+
+            // Enrich each review with the full critique transaction payload
+            const enrichedReviews = reviews.map(review => {
+                // Look up the critique transaction in the txIndex
+                const txLookup = txIndex.get(review.critique_tx_id);
+                if (!txLookup) {
+                    return {
+                        ...review,
+                        critique_payload: null,
+                        error: 'transaction_not_found'
+                    };
+                }
+
+                // Get the block containing this transaction
+                const block = blockMap.get(txLookup.blockHash);
+                if (!block || !block.txs || txLookup.txIndex >= block.txs.length) {
+                    return {
+                        ...review,
+                        critique_payload: null,
+                        error: 'block_or_tx_not_found'
+                    };
+                }
+
+                // Extract the transaction
+                const tx = block.txs[txLookup.txIndex];
+
+                return {
+                    artifact_id: review.artifact_id,
+                    review_block_height: review.review_block_height,
+                    fulfilled_by: review.fulfilled_by,
+                    fulfilled_at_height: review.fulfilled_at_height,
+                    fulfilled_at: review.fulfilled_at,
+                    block_hash: txLookup.blockHash,
+                    critique: tx.payload || null
+                };
+            });
+
+            res.json({
+                artifact_id,
+                total_critiques: enrichedReviews.length,
+                critiques: enrichedReviews
+            });
+        } catch (error) {
+            logNs('ERROR', 'Failed to fetch critique history:', error.message);
+            res.status(500).json({
+                error: 'critique_history_fetch_failed',
+                details: error.message
+            });
+        }
     });
 
     router.get('/headers/tip', (req, res) => {
