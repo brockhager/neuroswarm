@@ -1,0 +1,99 @@
+{
+    "network": {
+        "name": "Neuroswarm Mainnet",
+        "chain_id": "neuroswarm-1",
+        "genesis_time": "2025-01-02T00:00:00Z",
+        "genesis_unix": 1735804800
+    },
+    "consensus": {
+        "slot_duration_seconds": 5,
+        "halving_interval_blocks": 14700000,
+        "initial_block_reward_nst": "0.5",
+        "initial_block_reward_atomic": "50000000",
+        "slashing_percentage": 10,
+        "unbonding_period_seconds": 604800,
+        "min_validator_stake_nst": "5000",
+        "min_validator_stake_atomic": "500000000000"
+    },
+    "tokenomics": {
+        "initial_supply_nst": "100000000",
+        "initial_supply_atomic": "10000000000000000",
+        "coin_decimal_places": 8,
+        "atomic_unit_name": "nanoNST",
+        "native_token_symbol": "NST",
+        "staking_token_symbol": "NST",
+        "fee_token_symbol": "NSD"
+    },
+    "distribution": {
+        "genesis_validators": {
+            "percentage": 20,
+            "amount_nst": "20000000",
+            "description": "Initial validator set allocation"
+        },
+        "community_pool": {
+            "percentage": 30,
+            "amount_nst": "30000000",
+            "description": "Community governance and incentives"
+        },
+        "foundation_reserve": {
+            "percentage": 25,
+            "amount_nst": "25000000",
+            "description": "Long-term development and operations"
+        },
+        "early_contributors": {
+            "percentage": 15,
+            "amount_nst": "15000000",
+            "description": "Team and early contributors"
+        },
+        "public_sale": {
+            "percentage": 10,
+            "amount_nst": "10000000",
+            "description": "Public token sale"
+        }
+    },
+    "genesis_validators": [
+        {
+            "address": "NS-Genesis-1",
+            "stake_nst": "100000",
+            "stake_atomic": "10000000000000",
+            "public_key": "PLACEHOLDER_GENESIS_1_PUBKEY",
+            "description": "CTO-controlled genesis validator"
+        },
+        {
+            "address": "NS-Genesis-2",
+            "stake_nst": "100000",
+            "stake_atomic": "10000000000000",
+            "public_key": "PLACEHOLDER_GENESIS_2_PUBKEY",
+            "description": "Foundation-controlled genesis validator"
+        },
+        {
+            "address": "NS-Genesis-3",
+            "stake_nst": "100000",
+            "stake_atomic": "10000000000000",
+            "public_key": "PLACEHOLDER_GENESIS_3_PUBKEY",
+            "description": "Community-elected genesis validator"
+        }
+    ],
+    "shared_pool": {
+        "address": "ns-rewards-pool",
+        "initial_balance_nst": "0",
+        "description": "Shared pool for validator rewards (10% of fees)"
+    },
+    "critique_config": {
+        "default_llm_model": "gemini-2.5-flash-preview-09-2025",
+        "critique_version": "1.0.0",
+        "severity_levels": [
+            "CRITICAL",
+            "HIGH",
+            "MEDIUM",
+            "LOW",
+            "SUGGESTION"
+        ]
+    },
+    "network_endpoints": {
+        "router_api": "https://api.neuroswarm.io",
+        "ns_node_default": "http://localhost:3009",
+        "vp_node_default": "http://localhost:4000",
+        "gateway_default": "http://localhost:8080"
+    }
+}

@@ -172,8 +172,8 @@ CN-07-C | ns-node + vp-node | Slashing Evidence + Missed Slot Tracking (PR #18) 
 CN-08-A | Router API (4001) | POST /artifact/review endpoint: JWT auth + RBAC + CID validation + request queuing | HIGH | ✅ Complete (7/7 tests pass)
 CN-08-B | VP-Node (4000) | REQUEST_REVIEW processor: Gemini LLM integration + ARTIFACT_CRITIQUE generation + mempool gossip | HIGH | ✅ Complete (11/11 tests pass)
 CN-08-C | NS-Node (3009) | ARTIFACT_CRITIQUE consensus validation: producer-only + schema + anti-spam checks | HIGH | ✅ Complete (10/10 tests pass)
-CN-09-A | NS-Node (3009) | Request Fulfillment: completed_reviews state tracking + 4th security check (state-based duplicate prevention) | HIGH | ✅ Complete (server verified)
-CN-09-B | Router API + NS-Node | Critique History Endpoint: GET /artifact/critique/:artifact_id with JWT auth | HIGH | 🚧 In Progress
+CN-09-A | NS-Node (3009) | Request Fulfillment: completed_reviews state tracking + 4th security check (state-based duplicate prevention) | HIGH | ✅ Complete (merged 2025-12-04)
+CN-09-B | Router API + NS-Node | Critique History Endpoint: GET /artifact/critique/:artifact_id with JWT auth | HIGH | ✅ Complete (merged 2025-12-04)
 AI-01 | NS-LLM (3015) | SSE/token streaming on `/api/generate` with native fallback | HIGH | ✅ Complete
 AI-02 | NS-LLM (3015) | `/api/embed` embedding endpoint with deterministic schema | MEDIUM | ✅ Complete
 AG4-01 | Agent 9 | Integrate with NS-LLM streaming + generate/embed contract | HIGH | ✅ Complete
