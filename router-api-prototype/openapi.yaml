@@ -44,6 +44,56 @@ paths:
                     type: string
         '400':
           description: Bad request
+  /artifact/review:
+    post:
+      summary: Request LLM analysis of an artifact
+      description: Queue artifact review request for VP-Node to process. VP-Node will call LLM and generate ARTIFACT_CRITIQUE transaction.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                artifact_id:
+                  type: string
+                  description: CID of the artifact to review (bafy... or Qm...)
+                requestor:
+                  type: string
+                  description: Address of the entity requesting the review
+                block_height:
+                  type: number
+                  description: Optional block height for tracking
+                metadata:
+                  type: object
+                  description: Optional metadata about the review request
+              required:
+                - artifact_id
+                - requestor
+      responses:
+        '202':
+          description: Review request accepted and queued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  request_id:
+                    type: string
+                  artifact_id:
+                    type: string
+                  status:
+                    type: string
+        '400':
+          description: Bad request (invalid artifact_id or missing fields)
+        '401':
+          description: Unauthorized (missing or invalid JWT)
+        '403':
+          description: Forbidden (insufficient role privileges)
   /ingest/artifact:
     post:
       summary: Ingest artifact CID for IPFS pinning and anchoring

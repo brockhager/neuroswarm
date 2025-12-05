@@ -131,6 +131,45 @@ app.post('/governance/vote', authenticateJwt, requireRoles(['governance']), (req
   });
 });
 
+// POST /artifact/review (CN-08-A)
+// Request LLM analysis of an uploaded artifact
+app.post('/artifact/review', authenticateJwt, requireRoles(['review', 'governance', 'validator']), (req, res) => {
+  const reviewRequest = req.body;
+
+  // Validate required fields
+  if (!reviewRequest.artifact_id || !reviewRequest.requestor) {
+    return res.status(400).json(formatError('missing_fields', 'Missing required fields: artifact_id, requestor.', null, req));
+  }
+
+  // Validate artifact_id format (CID: bafy... or Qm...)
+  const artifactId = reviewRequest.artifact_id;
+  if (!(String(artifactId).startsWith('bafy') || String(artifactId).startsWith('Qm'))) {
+    return res.status(400).json(formatError('invalid_artifact_id', 'artifact_id must be a valid CID (bafy... or Qm...).', null, req));
+  }
+
+  // Construct review request envelope for VP-Node consumption
+  const request = {
+    type: 'REQUEST_REVIEW',
+    artifact_id: artifactId,
+    requestor: reviewRequest.requestor,
+    block_height: reviewRequest.block_height || null,  // Optional: block height for tracking
+    metadata: reviewRequest.metadata || {},
+    timestamp: new Date().toISOString(),
+  };
+
+  console.log('[router] artifact review request queued ->', request.artifact_id, 'requestor:', request.requestor);
+
+  // Prototype: return queued state
+  // In production, this would publish to a queue/message bus for VP-Node to consume
+  res.status(202).json({
+    message: 'Artifact review request accepted and queued for VP-Node processing.',
+    request_id: `review-${Date.now()}`,
+    artifact_id: request.artifact_id,
+    status: 'queued_for_vp'
+  });
+});
+
+
 // POST /ingest/artifact
 // compile schema-based validation middleware for /ingest/artifact
 let validateArtifactSchema = null;
@@ -231,7 +270,7 @@ function validateArtifact(artifact = {}) {
   return { valid: true };
 }
 
-app.get('/', (req, res) => res.send('Router API Prototype — /governance/vote (POST), /ingest/artifact (POST)'));
+app.get('/', (req, res) => res.send('Router API Prototype — /governance/vote (POST), /ingest/artifact (POST), /artifact/review (POST)'));
 
 // Debug endpoints for testing: view and clear pinned artifacts
 app.get('/debug/pins', async (req, res) => {
