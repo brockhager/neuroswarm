@@ -610,6 +610,41 @@ export function applyBlock(block) {
             }
         }
 
+        // SLASHING EVIDENCE: on-chain proof of double-signing / equivocation
+        if (tx.type === 'SLASHEVIDENCE' && tx.evidence && tx.evidence.validatorId) {
+            const target = tx.evidence.validatorId;
+            // Canonical apply: enforce full slashing (burn stake, revoke candidacy)
+            if (extendsCanonical) {
+                if (validators.has(target)) {
+                    const vv = validators.get(target);
+                    const toBurn = Number(vv.stake || 0);
+                    // zero out the validator's stake and mark slashed
+                    vv.stake = 0;
+                    vv.slashed = true;
+                    vv.slashedAt = Date.now();
+                    // persist and update chain state
+                    persistValidator(target, vv);
+                    state.totalStake = Math.max(0, state.totalStake - toBurn);
+                    persistChainState();
+                }
+
+                // Burn account-level staked NST and revoke candidate status as well
+                const acct = accounts.get(target);
+                if (acct) {
+                    acct.staked_nst = '0';
+                    acct.is_validator_candidate = 0;
+                    persistAccount(target, acct);
+                    accounts.set(target, acct);
+                }
+            } else {
+                // Non-canonical branch: reflect slashing in snapshot validators (stake -> 0)
+                const idx = snapshot.validators.findIndex(([id]) => id === target);
+                if (idx !== -1) snapshot.validators[idx][1].stake = 0;
+            }
+            // slashing evidence is a terminal action; continue to next tx
+            continue;
+        }
+
         // ACCOUNT-LEVEL staking txs: NST_STAKE / NST_UNSTAKE
         // NST_STAKE: move amount from account.nst_balance -> account.staked_nst
         if (tx.type === 'NST_STAKE' && tx.from && Number(tx.amount)) {
@@ -713,6 +748,31 @@ export function applyBlock(block) {
     const poolShare = totalNsdFees - validatorShare;
 
     if (extendsCanonical) {
+        // CN-07-C Scheduling: track missed production windows
+        try {
+            const designated = getProducer(height);
+            if (designated) {
+                if (designated === validatorId) {
+                    // reset consecutive misses for the designated producer
+                    if (validators.has(designated)) {
+                        const vv = validators.get(designated);
+                        if (vv && vv.consecutiveMisses) {
+                            vv.consecutiveMisses = 0;
+                            persistValidator(designated, vv);
+                        }
+                    }
+                } else {
+                    // designated missed their slot: increment their consecutive misses
+                    if (validators.has(designated)) {
+                        const vv = validators.get(designated);
+                        vv.consecutiveMisses = (vv.consecutiveMisses || 0) + 1;
+                        persistValidator(designated, vv);
+                    }
+                }
+            }
+        } catch (e) {
+            logNs('ERROR', 'getProducer scheduling hook failed', e && e.message);
+        }
         // Update validator stake (consensus weight)
         // Note: In this model, stake might be separate from liquid NST balance.
         // For now, we add reward to stake to maintain existing behavior, 
