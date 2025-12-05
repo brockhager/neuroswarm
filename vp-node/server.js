@@ -7,6 +7,7 @@ import express from 'express';
 import { computeSourcesRoot } from '../sources/index.js';
 import { deterministicSortEntries, computeMerkleRootFromTxs } from './src/producer-core.mjs';
 import { PeerManager, P2PProtocol, MessageType, startHTTPSServer } from '../shared/peer-discovery/index.js';
+import { CritiqueProcessor } from './src/critique-processor.mjs';
 // ipfs-http-client is an optional runtime dependency. Dynamically import it
 // inside initIpfs so the server can start without IPFS being installed.
 
@@ -32,6 +33,9 @@ if (STATUS_ENABLED) logVp(`vp-node heartbeat enabled (interval ${Number(process.
 // Peer discovery objects will be initialized when the server is started directly
 let peerManager = null;
 let p2pProtocol = null;
+
+// CN-08-B: Critique processor for REQUEST_REVIEW handling
+let critiqueProcessor = null;
 
 let lastProduceSuccess = null;
 let nsReachable = false;
@@ -189,6 +193,33 @@ export async function produceLoop() {
     // mp.mempool elements: { txId, payload }
     const txs = (mp.mempool || []).slice(0, MAX_TX).map(entry => entry.payload || entry.tx || {});
 
+    // CN-08-B: Scan mempool for REQUEST_REVIEW transactions
+    if (critiqueProcessor) {
+      for (const tx of txs) {
+        if (tx.type === 'REQUEST_REVIEW') {
+          logVp(`[CN-08-B] Detected REQUEST_REVIEW for artifact ${tx.artifact_id}`);
+          try {
+            const critiqueTx = await critiqueProcessor.processReviewRequest(tx, GATEWAY_URL);
+            if (critiqueTx) {
+              // Gossip ARTIFACT_CRITIQUE transaction to gateway mempool
+              const gossipRes = await fetch(GATEWAY_URL + '/v1/mempool', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tx: critiqueTx })
+              });
+              if (gossipRes.ok) {
+                logVp(`[CN-08-B] Gossiped ARTIFACT_CRITIQUE for ${tx.artifact_id} to mempool`);
+              } else {
+                logVp(`[CN-08-B] Failed to gossip ARTIFACT_CRITIQUE: HTTP ${gossipRes.status}`);
+              }
+            }
+          } catch (error) {
+            logVp(`[CN-08-B] Error processing REQUEST_REVIEW: ${error.message}`);
+          }
+        }
+      }
+    }
+
     let head = null;
     try {
       const headRes = await fetch(NS_URL + '/headers/tip');
@@ -310,6 +341,24 @@ export async function produceLoop() {
 async function main() {
   await initIpfs();
   await register();
+
+  // CN-08-B: Initialize CritiqueProcessor if GEMINI_API_KEY is set
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      critiqueProcessor = new CritiqueProcessor({
+        geminiApiKey: process.env.GEMINI_API_KEY,
+        validatorId: VAL_ID,
+        logFn: logVp,
+      });
+      logVp('[CN-08-B] CritiqueProcessor initialized with Gemini API');
+    } catch (error) {
+      logVp('[CN-08-B] Failed to initialize CritiqueProcessor:', error.message);
+      logVp('[CN-08-B] REQUEST_REVIEW transactions will be ignored');
+    }
+  } else {
+    logVp('[CN-08-B] GEMINI_API_KEY not set - REQUEST_REVIEW transactions will be ignored');
+  }
+
   setInterval(produceLoop, INTERVAL_MS);
   logVp('VP production loop initialized');
 }
@@ -563,41 +612,41 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   logVp(`Peer discovery enabled | nodeId=${peerManager.nodeId} | nodeType=VP | bootstrapPeers=${process.env.BOOTSTRAP_PEERS || 'none'}`);
 
   const server = app.listen(PORT, () => {
-  logVp('VP node started, producing blocks');
-  logVp(`Listening at http://localhost:${PORT}`);
-  logVp('Health endpoint available at /health');
+    logVp('VP node started, producing blocks');
+    logVp(`Listening at http://localhost:${PORT}`);
+    logVp('Health endpoint available at /health');
 
-  // Start HTTPS server for encrypted P2P communication
-  startHTTPSServer(app, PORT, 'VP', peerManager.nodeId).then(httpsServer => {
-    if (httpsServer) {
-      logVp(`HTTPS server enabled on port ${PORT + 1}`);
-    }
-  }).catch(err => {
-    logVp(`HTTPS server failed: ${err.message}`);
+    // Start HTTPS server for encrypted P2P communication
+    startHTTPSServer(app, PORT, 'VP', peerManager.nodeId).then(httpsServer => {
+      if (httpsServer) {
+        logVp(`HTTPS server enabled on port ${PORT + 1}`);
+      }
+    }).catch(err => {
+      logVp(`HTTPS server failed: ${err.message}`);
+    });
   });
+
+  server.on('connection', (socket) => {
+    const remote = `${socket.remoteAddress}:${socket.remotePort}`;
+    logVp(`Connection from ${remote}`);
+    socket.on('close', () => logVp(`Connection closed ${remote}`));
   });
 
-server.on('connection', (socket) => {
-  const remote = `${socket.remoteAddress}:${socket.remotePort}`;
-  logVp(`Connection from ${remote}`);
-  socket.on('close', () => logVp(`Connection closed ${remote}`));
-});
-
-// Periodic peer health check and peer exchange
+  // Periodic peer health check and peer exchange
   setInterval(async () => {
-  const peers = peerManager.getAllPeers();
-  for (const peer of peers) {
-    await p2pProtocol.pingPeer(peer);
-  }
+    const peers = peerManager.getAllPeers();
+    for (const peer of peers) {
+      await p2pProtocol.pingPeer(peer);
+    }
 
-  // Prune inactive peers
-  peerManager.pruneInactivePeers();
+    // Prune inactive peers
+    peerManager.pruneInactivePeers();
 
-  // Send peer list to a random peer (Peer Exchange)
-  if (peers.length > 0) {
-    const randomPeer = peers[Math.floor(Math.random() * peers.length)];
-    await p2pProtocol.sendPeerList(randomPeer);
-  }
+    // Send peer list to a random peer (Peer Exchange)
+    if (peers.length > 0) {
+      const randomPeer = peers[Math.floor(Math.random() * peers.length)];
+      await p2pProtocol.sendPeerList(randomPeer);
+    }
   }, 30000); // Every 30 seconds
 
   // start main loop only when running as a standalone server

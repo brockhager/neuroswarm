@@ -6,24 +6,13 @@ import {
     persistValidator, persistChainState, persistBlock, persistTxIndex,
     persistAllValidators, addHead, removeHead, clearTxIndex, persistAccount
     , persistPendingUnstake, removePendingUnstake, persistReleasedUnstake, getReleasedUnstake, removeReleasedUnstake, beginTransaction, commitTransaction, rollbackTransaction, db
-} from './state.js';
-import {
-    sha256Hex, canonicalize, txIdFor, verifyEd25519, computeMerkleRoot
-} from '../utils/crypto.js';
-import { logNs } from '../utils/logger.js';
-import { getGatewayConfig } from './gateway.js';
-
-// Tokenomics Constants
-const COIN = 100000000n; // 1 NST = 10^8 atomic units
-const INITIAL_REWARD = 50000000n; // 0.5 NST
-const HALVING_INTERVAL = 14700000;
 const NS_SHARED_POOL_ADDRESS = 'ns-rewards-pool';
 
 export function calculateBlockReward(height) {
-    const cycle = Math.floor(height / HALVING_INTERVAL);
-    if (cycle >= 64) return 0n;
-    return INITIAL_REWARD >> BigInt(cycle);
-}
+        const cycle = Math.floor(height / HALVING_INTERVAL);
+        if (cycle >= 64) return 0n;
+        return INITIAL_REWARD >> BigInt(cycle);
+    }
 
 export function chooseValidator(prevHash, slot) {
     // deterministic selection: seed = sha256(prevHash + slot)
@@ -52,12 +41,12 @@ export function chooseValidator(prevHash, slot) {
 export function getProducer(height) {
     // Use canonical tip hash as prevHash seed; if no canonical tip exists, use genesis placeholder
     const prevHash = state.canonicalTipHash || '0'.repeat(64);
-    
+
     // Filter only active validator candidates with stake >= minimum (5,000 NST = 500,000,000,000 atomic units)
     const MIN_STAKE = 500000000000; // 5,000 NST in atomic units
     const eligible = [];
     let eligibleTotalStake = 0;
-    
+
     for (const [id, v] of validators.entries()) {
         const acct = accounts.get(id);
         // Only include validators that are registered candidates with sufficient stake and not slashed
@@ -66,21 +55,21 @@ export function getProducer(height) {
             eligibleTotalStake += Number(v.stake || 0);
         }
     }
-    
+
     if (eligible.length === 0 || eligibleTotalStake === 0) return null;
-    
+
     // Deterministic seed from prevHash + height
     const seed = sha256Hex(Buffer.from(String(prevHash) + String(height), 'utf8'));
     const seedNum = parseInt(seed.slice(0, 12), 16);
     const r = seedNum % eligibleTotalStake;
-    
+
     // Weighted selection
     let acc = 0;
     for (const v of eligible) {
         acc += v.stake;
         if (r < acc) return v.id;
     }
-    
+
     // Fallback: return last eligible validator
     return eligible[eligible.length - 1].id;
 }
@@ -185,13 +174,13 @@ export async function performReorg(oldTipHash, newTipHash) {
     // NS does not own a mempool; gateway manages pending txs. No local mempool clearing.
     const requeueCandidates = [];
     // replay blocks from genesis up to ancestor (if any)
-        // canonicalPath is the ordered list of blocks to replay for the new canonical chain.
-        // applyHashes was collected from newTip back to ancestor (exclusive) and reversed,
-        // which yields the correct order from ancestor's child up to newTip; if ancestor is null
-        // applyHashes already contains the full chain from genesis up to newTip.
-        const canonicalPath = applyHashes;
+    // canonicalPath is the ordered list of blocks to replay for the new canonical chain.
+    // applyHashes was collected from newTip back to ancestor (exclusive) and reversed,
+    // which yields the correct order from ancestor's child up to newTip; if ancestor is null
+    // applyHashes already contains the full chain from genesis up to newTip.
+    const canonicalPath = applyHashes;
     // reapply state along canonicalPath
-        for (const bh of canonicalPath) {
+    for (const bh of canonicalPath) {
         const b = blockMap.get(bh);
         // process transactions in canonical replay: handle validator-level and account-level staking
         for (let i = 0; i < b.txs.length; i++) {
@@ -356,7 +345,7 @@ export async function performReorg(oldTipHash, newTipHash) {
                         }
                     }
                 } catch (e) {
-                    try { rollbackTransaction(); } catch (ee) {}
+                    try { rollbackTransaction(); } catch (ee) { }
                     logNs('ERROR', 'Failed to revert released_unstake during reorg', e && e.message);
                 }
                 requeueCandidates.push(found);
@@ -451,7 +440,7 @@ export async function releaseMatureUnstakes(cutoffTime) {
                 logNs('INFO', `Released pending_unstake ${id} -> ${addr} amount=${amt}`);
             } catch (innerErr) {
                 // on any db error, rollback
-                try { rollbackTransaction(); } catch (e) {}
+                try { rollbackTransaction(); } catch (e) { }
                 logNs('ERROR', 'releaseMatureUnstakes record processing failed', innerErr && innerErr.message);
             }
         }
