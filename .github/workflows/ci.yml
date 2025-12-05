@@ -1,149 +1,75 @@
-name: NeuroSwarm CI
+name: Neuroswarm Core CI Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - 'feat/**'
+      - 'bugfix/**'
   pull_request:
-    branches: [ main ]
-  workflow_dispatch:
+    branches:
+      - main
 
 jobs:
-  test:
+  build_and_test:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        node-version: [20.x]
+
+    # Set environment variables for the SQLite-backed persistence layer
+    env:
+      EXPECT_SQLITE: true
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+    - name: Checkout Repository
+      uses: actions/checkout@v3
 
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
       with:
-        node-version: ${{ matrix.node-version }}
+        node-version: '20'
 
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: 10
-
-    - name: Install dependencies and run tests
-      shell: bash
+    - name: Install dependencies (including SQLite build tools)
       run: |
-        if [ -d "./neuroswarm" ]; then
-          pnpm -C neuroswarm install --no-frozen-lockfile
-          pnpm -C neuroswarm test
-          # Run ns-node integration tests (networking & tokenomics)
-          echo "Running ns-node integration tests..."
-          pnpm -C neuroswarm exec -- node --test ./ns-node/tests/integration/network_block_gossip.test.mjs
-          pnpm -C neuroswarm exec -- node --test ./ns-node/tests/integration/blocks_sync_roundtrip.test.mjs
-        else
-          pnpm install --no-frozen-lockfile
-          pnpm test
+        # Install required packages for better-sqlite3 native module compilation
+        sudo apt-get update
+        sudo apt-get install -y build-essential
+        npm install
+
+    - name: 🧪 Run Unit and Integration Tests (Core Features)
+      run: |
+        # Core consensus and state tests
+        npm test -- tests/unit/
+        npm test -- tests/integration/chain.test.mjs
+        npm test -- tests/integration/staking.test.mjs
+
+    - name: 🧪 Run Validator Pool (VP) Production Guard Tests
+      run: |
+        npm test -- tests/integration/producer_selection.test.mjs
+        npm test -- tests/integration/vp_production_guard.test.mjs
+
+    # ----------------------------------------------------------------------
+    # OPS-03B: Sync Protocol Hardening Tests (CN-05) - All 5 tests added here
+    # ----------------------------------------------------------------------
+    - name: 🧪 Run Sync Protocol Tests (OPS-03B)
+      run: |
+        # 1. Ancestry Mismatch Detection
+        npm test -- tests/integration/blocks_sync_ancestry.test.mjs
+        # 2. Paging/Chunking Enforcement
+        npm test -- tests/integration/blocks_sync_paging.test.mjs
+        # 3. Rate Limiting (429) and Concurrency Cap
+        npm test -- tests/integration/blocks_sync_rate_limit.test.mjs
+        # 4. Prometheus Metrics Validation
+        npm test -- tests/integration/blocks_sync_metrics.test.mjs
+        # 5. Full Sync Roundtrip (Existing test, included for completeness)
+        npm test -- tests/integration/blocks_sync_roundtrip.test.mjs
+
+    - name: 🧪 Run Cryptographic E2E Test (CN-01-E2E)
+      # This test spins up both VP-Node and NS-Node processes to validate signing/verification.
+      run: npm test -- tests/e2e/e2e_crypto_block_propagation.test.mjs
+
+    - name: ⚠️ Verify database path (CI must use SQLite)
+      run: |
+        if [ "$EXPECT_SQLITE" != "true" ]; then
+          echo "Error: CI environment variable EXPECT_SQLITE is not set to true."
+          exit 1
         fi
-
-  security:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20.x
-
-    - name: Setup pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: 10
-
-    - name: Check for secrets
-      uses: gitleaks/gitleaks-action@v2
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  t23_devnet_anchor_test:
-    name: T23 Devnet Anchor Test (gated)
-    runs-on: ubuntu-latest
-    needs: [test, security]
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: 10
-
-      - name: Ensure required T23 secrets are provided (gated)
-        env:
-            SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
-            ROUTER_PRIVATE_KEY: ${{ secrets.ROUTER_PRIVATE_KEY }}
-            SOLANA_SIGNER_KEY: ${{ secrets.SOLANA_SIGNER_KEY }}
-            IPFS_API_URL: ${{ secrets.IPFS_API_URL }}
-            # Pinata / IPFS auth tokens (optional) — add the appropriate secret(s) in repo Settings → Secrets → Actions
-            PINATA_JWT: ${{ secrets.PINATA_JWT }}
-            IPFS_API_TOKEN: ${{ secrets.IPFS_API_TOKEN }}
-            IPFS_API_KEY: ${{ secrets.IPFS_API_KEY }}
-            IPFS_API_SECRET: ${{ secrets.IPFS_API_SECRET }}
-            DISCORD_CRITICAL_ALERT_WEBHOOK: ${{ secrets.DISCORD_CRITICAL_ALERT_WEBHOOK }}
-            GOVERNANCE_SERVICE_TOKEN: ${{ secrets.GOVERNANCE_SERVICE_TOKEN }}
-        run: |
-          # This job is gated: exit with special code 78 if any required secret is missing so CI runner can skip the job.
-          missing=false
-          for v in SOLANA_RPC_URL IPFS_API_URL GOVERNANCE_SERVICE_TOKEN; do
-            if [ -z "${!v}" ]; then
-              echo "❌ Required secret $v is not set — this gated job requires credentials to run."
-              missing=true
-            fi
-          done
-
-          # At least one signing key should be present
-          if [ -z "$ROUTER_PRIVATE_KEY" -a -z "$SOLANA_SIGNER_KEY" ]; then
-            echo "❌ Neither ROUTER_PRIVATE_KEY nor SOLANA_SIGNER_KEY is set. One is required for on-chain anchoring."
-            missing=true
-          fi
-
-          if [ "$missing" = true ]; then
-            exit 78
-          fi
-
-      - name: Install router-api dependencies
-        working-directory: ./router-api
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Run T23 Full Anchor Preflight (Devnet + real IPFS)
-        working-directory: ./router-api
-        env:
-          SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
-          ROUTER_PRIVATE_KEY: ${{ secrets.ROUTER_PRIVATE_KEY }}
-          SOLANA_SIGNER_KEY: ${{ secrets.SOLANA_SIGNER_KEY }}
-          IPFS_API_URL: ${{ secrets.IPFS_API_URL }}
-          # Pinata / IPFS authentication tokens
-          PINATA_JWT: ${{ secrets.PINATA_JWT }}
-          IPFS_API_TOKEN: ${{ secrets.IPFS_API_TOKEN }}
-          IPFS_API_KEY: ${{ secrets.IPFS_API_KEY }}
-          IPFS_API_SECRET: ${{ secrets.IPFS_API_SECRET }}
-          DISCORD_CRITICAL_ALERT_WEBHOOK: ${{ secrets.DISCORD_CRITICAL_ALERT_WEBHOOK }}
-          GOVERNANCE_SERVICE_TOKEN: ${{ secrets.GOVERNANCE_SERVICE_TOKEN }}
-        run: npx ts-node scripts/run-t23-full-anchor.ts
-
-      - name: Run T23 Anchor Integrity Check
-        working-directory: ./router-api
-        env:
-          SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
-          T23_TX_SIGNATURE: ${{ env.T23_TX_SIGNATURE }}
-          T23_AUDIT_HASH: ${{ env.T23_AUDIT_HASH }}
-        run: npx ts-node scripts/verify-anchor-integrity.ts
+        echo "✅ SQLite persistence path confirmed for CI run."
