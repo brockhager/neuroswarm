@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import express from 'express';
 import { computeSourcesRoot } from '../sources/index.js';
+import nsLlmClient from '../shared/ns-llm-client.js';
 import { deterministicSortEntries, computeMerkleRootFromTxs } from './src/producer-core.mjs';
 import { PeerManager, P2PProtocol, MessageType, startHTTPSServer } from '../shared/peer-discovery/index.js';
 // ipfs-http-client is an optional runtime dependency. Dynamically import it
@@ -228,6 +229,95 @@ export async function produceLoop() {
       // not our turn
       return;
     }
+    // Pre-process special tx types (REQUEST_REVIEW)
+    for (let i = 0; i < txs.length; i++) {
+      const tx = txs[i];
+      try {
+        if (tx && tx.type === 'REQUEST_REVIEW' && tx.artifactId) {
+          logVp(`Found REQUEST_REVIEW tx for artifact=${tx.artifactId} txId=${txIdFor(tx)}`);
+
+          // Fetch artifact content (try IPFS, then NS node, then public IPFS gateway)
+          let artContent = null;
+          try {
+            if (ipfsConnected && ipfs) {
+              let chunks = [];
+              for await (const chunk of ipfs.cat(tx.artifactId)) chunks.push(Buffer.from(chunk));
+              artContent = Buffer.concat(chunks).toString('utf8');
+            }
+          } catch (e) { /* ignore and try next */ }
+
+          if (!artContent) {
+            try {
+              const r = await fetch(`${NS_URL.replace(/\/$/, '')}/api/v1/artifact/${tx.artifactId}`);
+              if (r.ok) artContent = await r.text();
+            } catch (e) { /* ignore */ }
+          }
+
+          if (!artContent) {
+            try {
+              const r2 = await fetch(`https://ipfs.io/ipfs/${tx.artifactId}`);
+              if (r2.ok) artContent = await r2.text();
+            } catch (e) { /* ignore */ }
+          }
+
+          if (!artContent) {
+            logVp(`Unable to fetch artifact ${tx.artifactId} for review`);
+            continue; // cannot perform review
+          }
+
+          // Ask NS-LLM to produce a structured critique
+          const systemPrompt = `You are a world-class code and document reviewer. Return a JSON array of objects: {severity:'info|minor|major|critical', line_number?:number, comment:string}. Return ONLY the JSON array.`;
+          const userPrompt = `ARTIFACT ${tx.artifactId} CONTENT:\n${artContent}`;
+
+          let generation = null;
+          try {
+            generation = await nsLlmClient.generate(`${systemPrompt}\n\n${userPrompt}`, { maxTokens: 2048, timeout: 20000 });
+          } catch (e) {
+            logVp('NS-LLM generate failed for artifact review', e.message);
+            continue; // don't block producing other txs
+          }
+
+          // Parse generation result
+          let parsed = null;
+          if (typeof generation === 'string') {
+            try { parsed = JSON.parse(generation); } catch (e) { parsed = null; }
+          } else if (generation && typeof generation === 'object') {
+            if (generation.text) {
+              try { parsed = JSON.parse(generation.text); } catch (e) { parsed = null; }
+            } else if (Array.isArray(generation)) parsed = generation;
+          }
+
+          // Validate shape
+          if (!parsed || !Array.isArray(parsed) || parsed.some(it => typeof it.comment !== 'string' || typeof it.severity !== 'string')) {
+            logVp('LLM returned invalid structured critique for', tx.artifactId);
+            continue;
+          }
+
+          // Create an ARTIFACT_CRITIQUE tx and append to txs to include in produced block
+          const critiqueTx = {
+            type: 'ARTIFACT_CRITIQUE',
+            artifactId: tx.artifactId,
+            validatorId: VAL_ID,
+            critique: parsed,
+            timestamp: Date.now()
+          };
+
+          // Broadcast the new tx to peers via P2P (best-effort)
+          try {
+            if (p2pProtocol && peerManager) {
+              const msg = p2pProtocol.createMessage(MessageType.NEW_TX, { payload: critiqueTx }, peerManager.nodeId);
+              await p2pProtocol.broadcastMessage(msg);
+            }
+          } catch (e) { logVp('Failed to broadcast ARTIFACT_CRITIQUE via P2P', e.message); }
+
+          // Include critique in the block so it's canonical
+          txs.push(critiqueTx);
+        }
+      } catch (e) {
+        logVp('Error processing REQUEST_REVIEW tx:', e && e.message ? e.message : String(e));
+      }
+    }
+
     const txIds = txs.map(tx => txIdFor(tx));
     const merkleRoot = computeMerkleRoot(txIds);
     const sourcesRoot = computeSourcesRoot(txs);
