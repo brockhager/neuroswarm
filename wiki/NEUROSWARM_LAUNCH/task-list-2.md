@@ -90,52 +90,53 @@ This task implements deterministic, stake-weighted selection of block producers 
 **Testing / CI status:**
 - Integration and unit tests added for `getProducer` and VP guard; local test runs show all relevant tests passing. CN-07 changes were committed and pushed to `main` and are included in the CI run triggered by PR merges for CN-06.
 
-**Next actions (CN-07 - production hardening):**
-- **CN-07-C — E2E validation**: ✅ **COMPLETE** (2025-12-04) — Slashing and missed slot tracking integrated. PR #18 merged.
-- **CN-07-D — Scheduling & Slashing policies**: Design and implement deterministic slot scheduling for multi-VP networks and tie slashing/replacement policies to misbehavior (future work).
-
-## CN-08 LLM-Driven Artifact Critique System — Task 8 (2025-12-04)
-
-**Status:** ✅ CN-08-A, CN-08-B, CN-08-C Implemented & Tests Passing (2025-12-04)
-
-This task implements the decentralized code review system where VP-Nodes use LLM analysis to generate structured critiques of artifacts, secured by consensus-level validation.
-
-**Completed work (full implementation):**
-- **CN-08-A — Router API Endpoint** ✅: Implemented `POST /artifact/review` endpoint in router-api-prototype with JWT authentication, RBAC (review/governance/validator roles), CID validation (bafy/Qm formats), and request queuing. Added comprehensive integration tests (7 test cases) and updated OpenAPI specification.
-- **CN-08-B — VP-Node LLM Integration** ✅: Created `critique-processor.mjs` module with Google Gemini SDK integration. VP-Node now monitors mempool for `REQUEST_REVIEW` transactions, fetches artifact content, calls Gemini API with CTO-approved JSON schema enforcement via `responseSchema`, generates `ARTIFACT_CRITIQUE` transactions, and gossips to mempool. Added unit tests (11 total VP-Node tests passing).
-- **CN-08-C — NS-Node Security Validation** ✅: Implemented three mandatory consensus-level security checks in `chain.js`:
-  1. **Producer-Only Verification**: Only designated block producers can include `ARTIFACT_CRITIQUE` transactions
-  2. **Structural Integrity**: Created `critique-validation.js` module with `validateCritiquePayload()` enforcing CTO-approved schema (5 required top-level fields + issues array with severity enum)
-  3. **Anti-Spam Protection**: Only one critique per `artifact_id` per block allowed
-
-**Testing / CI status:**
-- ✅ Router API: 7/7 integration tests passing (auth, RBAC, validation, error handling)
-- ✅ VP-Node: 11/11 unit tests passing (critique processor + existing tests)
-- ✅ NS-Node: 10/10 schema validation tests passing (all severity levels, field validation, edge cases)
-- ✅ Total: 28/28 tests passing across all three components
-- ✅ chain.js compiles without errors after surgical integration
-
-**Architecture:**
-```
-Router API (CN-08-A) → Gateway Mempool → VP-Node (CN-08-B) → Gemini LLM → ARTIFACT_CRITIQUE tx → NS-Node Consensus (CN-08-C)
-```
-
-**Files created/modified:**
-- Router API: `server.js`, `openapi.yaml`, `tests/integration/artifact_review.test.mjs` (~177 lines)
-- VP-Node: `src/critique-processor.mjs`, `server.js`, `package.json`, `tests/unit/critique_processor.test.mjs` (~370 lines)
-- NS-Node: `src/services/critique-validation.js`, `src/services/chain.js`, `tests/integration/critique_validation.test.mjs` (~310 lines)
-- **Total**: ~857 lines across 10 files
-
-**Security guarantees:**
-- Request authentication via JWT + RBAC at API layer
-- LLM output validated against strict JSON schema with severity enum
-- Only block producers can finalize critiques (prevents unauthorized critique injection)
-- Rate limiting via anti-spam (one critique per artifact per block)
-
 **Next actions (CN-08 - production readiness):**
 - **CN-08-E2E**: End-to-end test covering full flow (Router → VP → NS consensus)
 - **CN-08-DEPLOY**: Configure Gemini API keys for production VP-Nodes
 - **CN-08-MONITOR**: Add metrics for critique generation latency and approval rates
+
+## CN-09 Request Fulfillment & History — Task 9 (2025-12-04)
+
+**Status:** ✅ CN-09-A Implemented & Verified (2025-12-04) | 🚧 CN-09-B In Progress
+
+This task completes the user-facing critique lifecycle by tracking fulfilled requests and exposing query endpoints.
+
+**Completed work (CN-09-A - Request Fulfillment):**
+- **Database Layer** ✅: Added `completed_reviews` table to `state-db.js` with 6 CRUD operations (save, get, getByArtifact, getAll, delete) and indices on `artifact_id` and `review_block_height`.
+- **State Management** ✅: Added `completedReviews` Map to `state.js` that loads on startup, with `persistCompletedReview()` and `getCompletedReview()` helper functions.
+- **Consensus Integration** ✅: Enhanced `ARTIFACT_CRITIQUE` handler in `chain.js` with 4th security check (state-based duplicate prevention) and fulfillment tracking via composite key `${artifact_id}:${review_block_height}`.
+
+**Security Architecture:**
+```
+ARTIFACT_CRITIQUE Handler Security Checks:
+1. Producer-Only Verification (tx.from == block.producer)
+2. JSON Schema Validation (validateCritiquePayload)
+3. Block-Level Anti-Spam (one critique/artifact/block)
+4. State-Level Anti-Spam (one fulfillment/artifact_id:review_height EVER) ← NEW
+```
+
+**Fulfillment Record Structure:**
+```javascript
+{
+  artifact_id: string,              // CID of artifact
+  review_block_height: number,      // Height of REQUEST_REVIEW tx
+  critique_tx_id: string,           // Transaction ID of ARTIFACT_CRITIQUE
+  fulfilled_by: string,             // Validator address
+  fulfilled_at_height: number,      // Block height of fulfillment
+  fulfilled_at: number              // Timestamp
+}
+```
+
+**Testing / Validation:**
+- ✅ NS-Node starts successfully with new schema
+- ✅ Database migration creates `completed_reviews` table automatically
+- ✅ `[State] Loaded 0 completed reviews from DB` confirms proper initialization
+- ⏳ Integration tests pending
+
+**Remaining work (CN-09-B - History Query Endpoint):**
+- **NS-Node Query Endpoint**: `GET /chain/critiques/:artifact_id`
+- **Router API Proxy**: `GET /artifact/critique/:artifact_id` with JWT auth
+- **Integration Tests**: Full flow validation
 
 These changes add the core staking lifecycle required for validators and VP node candidacy. Next, we'll connect this account-level staking to the validator stake used by consensus and implement the unbond release processor and CI gating.
 
@@ -171,6 +172,8 @@ CN-07-C | ns-node + vp-node | Slashing Evidence + Missed Slot Tracking (PR #18) 
 CN-08-A | Router API (4001) | POST /artifact/review endpoint: JWT auth + RBAC + CID validation + request queuing | HIGH | ✅ Complete (7/7 tests pass)
 CN-08-B | VP-Node (4000) | REQUEST_REVIEW processor: Gemini LLM integration + ARTIFACT_CRITIQUE generation + mempool gossip | HIGH | ✅ Complete (11/11 tests pass)
 CN-08-C | NS-Node (3009) | ARTIFACT_CRITIQUE consensus validation: producer-only + schema + anti-spam checks | HIGH | ✅ Complete (10/10 tests pass)
+CN-09-A | NS-Node (3009) | Request Fulfillment: completed_reviews state tracking + 4th security check (state-based duplicate prevention) | HIGH | ✅ Complete (server verified)
+CN-09-B | Router API + NS-Node | Critique History Endpoint: GET /artifact/critique/:artifact_id with JWT auth | HIGH | 🚧 In Progress
 AI-01 | NS-LLM (3015) | SSE/token streaming on `/api/generate` with native fallback | HIGH | ✅ Complete
 AI-02 | NS-LLM (3015) | `/api/embed` embedding endpoint with deterministic schema | MEDIUM | ✅ Complete
 AG4-01 | Agent 9 | Integrate with NS-LLM streaming + generate/embed contract | HIGH | ✅ Complete
