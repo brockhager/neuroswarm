@@ -169,6 +169,46 @@ app.post('/artifact/review', authenticateJwt, requireRoles(['review', 'governanc
   });
 });
 
+// GET /artifact/critique/:artifact_id (CN-09-B)
+// Query critique history for an artifact from NS-Node's StateDB
+app.get('/artifact/critique/:artifact_id', authenticateJwt, async (req, res) => {
+  const { artifact_id } = req.params;
+
+  // Validate artifact_id format (CID: bafy... or Qm...)
+  if (!(String(artifact_id).startsWith('bafy') || String(artifact_id).startsWith('Qm'))) {
+    return res.status(400).json(formatError('invalid_artifact_id', 'artifact_id must be a valid CID (bafy... or Qm...).', null, req));
+  }
+
+  try {
+    // Proxy request to NS-Node internal endpoint
+    const NS_NODE_URL = process.env.NS_NODE_URL || 'http://localhost:3009';
+    const nsNodeEndpoint = `${NS_NODE_URL}/chain/critiques/${artifact_id}`;
+
+    console.log(`[router] Fetching critique history from NS-Node: ${nsNodeEndpoint}`);
+
+    const response = await fetch(nsNodeEndpoint, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'unknown_error');
+      console.error(`[router] NS-Node critique query failed: ${response.status} - ${errorText}`);
+      return res.status(response.status).json({
+        error: 'ns_node_query_failed',
+        message: `Failed to query NS-Node for critique history (HTTP ${response.status})`,
+        details: errorText
+      });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error(`[router] Error querying critique history:`, error.message);
+    return res.status(500).json(formatError('critique_query_failed', 'Failed to fetch critique history from NS-Node.', error.message, req));
+  }
+});
+
 
 // POST /ingest/artifact
 // compile schema-based validation middleware for /ingest/artifact
