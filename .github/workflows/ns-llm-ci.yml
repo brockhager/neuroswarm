@@ -93,8 +93,8 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       working-directory: ./NS-LLM
       run: |
-        # Check OpenAPI YAML syntax
-        spectral lint openapi.yaml --ruleset spectral:oas
+        # Check OpenAPI YAML syntax (uses .spectral.yaml config)
+        spectral lint openapi.yaml
 
     - name: 📋 Verify OpenAPI Contract Matches Implementation
       if: matrix.os == 'ubuntu-latest'
