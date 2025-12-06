@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import express from 'express';
 import { computeSourcesRoot } from '../sources/index.js';
+import nsLlmClient from '../shared/ns-llm-client.js';
 import { deterministicSortEntries, computeMerkleRootFromTxs } from './src/producer-core.mjs';
 import { PeerManager, P2PProtocol, MessageType, startHTTPSServer } from '../shared/peer-discovery/index.js';
 import { CritiqueProcessor } from './src/critique-processor.mjs';
@@ -236,7 +237,6 @@ export async function produceLoop() {
       // not our turn
       return;
     }
-
     // CN-08-B + CN-08-C: Only the canonical producer should generate ARTIFACT_CRITIQUE txs.
     // Process REQUEST_REVIEW entries, synthesize critiques via CritiqueProcessor and sign them
     // for inclusion in the block payload. This prevents non-producers from issuing critique txs.
