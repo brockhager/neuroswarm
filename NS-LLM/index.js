@@ -71,7 +71,7 @@ function sendJSON(res, code, body) {
 
 const server = http.createServer((req, res) => {
   try {
-    if (req.method === 'POST' && req.url === '/embed') {
+    if (req.method === 'POST' && req.url === '/api/embed') {
       metrics.requests_total++;
       let body = '';
       const start = Date.now();
@@ -136,7 +136,7 @@ const server = http.createServer((req, res) => {
     }
 
     // Basic non-streaming /generate endpoint for prototype fallback
-    if (req.method === 'POST' && req.url === '/generate') {
+    if (req.method === 'POST' && req.url === '/api/generate') {
       metrics.requests_total++;
       let body = '';
       const start = Date.now();
@@ -168,7 +168,7 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    res.writeHead(404, {'Content-Type': 'text/plain'});
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
     res.end('not found');
   } catch (err) {
     metrics.requests_failed++;
@@ -206,9 +206,9 @@ function shutdown(code) {
     // Attempt graceful socket shutdown, then forcibly destroy any that remain.
     try {
       for (const s of Array.from(_connections)) {
-        try { s.end(); } catch (e) {}
+        try { s.end(); } catch (e) { }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     // Wait briefly so sockets that will naturally close get a chance to do so.
     const WAIT_MS = 120;
@@ -219,9 +219,9 @@ function shutdown(code) {
 
     try {
       for (const s of Array.from(_connections)) {
-        try { s.destroy(); } catch (e) {}
+        try { s.destroy(); } catch (e) { }
       }
-    } catch (e) {}
+    } catch (e) { }
 
     server.close(() => process.exit(code || 0));
     setTimeout(() => process.exit(code || 1), 5000);
@@ -234,13 +234,13 @@ process.on('SIGTERM', () => shutdown(0));
 // If executed directly ensure we log so tests/CI know this ran as main
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(__filename)) {
   console.log('Running NS-LLM prototype index.js as main module');
-  
+
   // Add global error handlers to capture crash reasons
   process.on('uncaughtException', (err) => {
     console.error('FATAL: Uncaught Exception:', err);
     process.exit(1);
   });
-  
+
   process.on('unhandledRejection', (reason, promise) => {
     console.error('FATAL: Unhandled Rejection:', reason);
     process.exit(1);

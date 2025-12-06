@@ -1,4 +1,4 @@
-(async function(){
+(async function () {
   // Integration smoke tests for the prototype embedding backend
   const port = process.env.PORT || 5555;
   // Start the server in a child process to isolate socket lifecycle and avoid
@@ -29,14 +29,14 @@
     setTimeout(() => reject(new Error('server start timeout')), 2000);
   });
   const base = `http://127.0.0.1:${port}`;
-  
+
   const wait = ms => new Promise(r => setTimeout(r, ms));
   // Give server a moment to start
   await wait(100);
 
   try {
-    console.log('POST /embed -> short text');
-    let res = await fetch(base + '/embed', { method: 'POST', headers: {'Content-Type':'application/json', 'Connection': 'close'}, body: JSON.stringify({text: 'hello world'}) });
+    console.log('POST /api/embed -> short text');
+    let res = await fetch(base + '/api/embed', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Connection': 'close' }, body: JSON.stringify({ text: 'hello world' }) });
     console.log('status', res.status);
     let json = await res.json();
     console.log('embedding length', json.embedding.length, 'tokens', json.tokens, 'model', json.model);
@@ -49,9 +49,9 @@
     res = await fetch(base + '/metrics', { headers: { 'Connection': 'close' } });
     console.log('status', res.status, 'body', await res.json());
 
-    console.log('POST /embed -> long text');
+    console.log('POST /api/embed -> long text');
     const longText = 'word '.repeat(200); // larger input
-    res = await fetch(base + '/embed', { method: 'POST', headers: {'Content-Type':'application/json', 'Connection': 'close'}, body: JSON.stringify({text: longText}) });
+    res = await fetch(base + '/api/embed', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Connection': 'close' }, body: JSON.stringify({ text: longText }) });
     console.log('status', res.status);
     json = await res.json();
     console.log('embedding length', json.embedding.length, 'tokens', json.tokens);
@@ -77,11 +77,11 @@
     process.exit(0);
   } catch (err) {
     console.error('integration test failed', err);
-    try { serverProc.kill('SIGINT'); await new Promise((res) => serverProc.on('exit', () => res())); } catch (e) {}
+    try { serverProc.kill('SIGINT'); await new Promise((res) => serverProc.on('exit', () => res())); } catch (e) { }
     try {
       const handles = process._getActiveHandles ? process._getActiveHandles() : [];
       console.log('diagnostic (on error): activeHandles=', handles.map(h => h && h.constructor && h.constructor.name));
-    } catch (e) {}
+    } catch (e) { }
     process.exit(2);
   }
 })();
