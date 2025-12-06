@@ -217,6 +217,18 @@ export async function produceLoop() {
       vpState.setState(STATES.SYNCING_LEDGER);
     }
 
+    // After sync-check: ensure we queue incoming REQUEST_REVIEW items while out-of-sync
+    for (const tx of txs.slice()) {
+      if (tx.type === 'REQUEST_REVIEW') {
+        const state = vpState.getState();
+        const canProcess = (state === STATES.LISTENING_FOR_REVIEWS || state === STATES.PRODUCING_BLOCK);
+        if (!canProcess) {
+          logVp(`[CN-06] VP not ready to process incoming REQUEST_REVIEW (state=${state}) — enqueueing ${tx.artifact_id || tx.id}`);
+          reviewQueue.enqueue(tx);
+        }
+      }
+    }
+
     let head = null;
     try {
       const headRes = await fetch(NS_URL + '/headers/tip');
@@ -260,6 +272,19 @@ export async function produceLoop() {
     // CN-08-B + CN-08-C: Only the canonical producer should generate ARTIFACT_CRITIQUE txs.
     // Process REQUEST_REVIEW entries, synthesize critiques via CritiqueProcessor and sign them
     // for inclusion in the block payload. This prevents non-producers from issuing critique txs.
+    // Regardless of whether a CritiqueProcessor is available, queue REQUEST_REVIEW
+    // items while this VP is not in a safe state to process them (CN-06 behavior)
+    for (const tx of txs.slice()) {
+      if (tx.type === 'REQUEST_REVIEW') {
+        const state = vpState.getState();
+        const canProcess = (state === STATES.LISTENING_FOR_REVIEWS || state === STATES.PRODUCING_BLOCK);
+        if (!canProcess) {
+          logVp(`[CN-06] VP not ready to process REQUEST_REVIEW (state=${state}). Enqueueing artifact ${tx.artifact_id || tx.id}`);
+          reviewQueue.enqueue(tx);
+        }
+      }
+    }
+
     if (critiqueProcessor) {
       for (const tx of txs.slice()) { // iterate over a copy because we may append
         if (tx.type === 'REQUEST_REVIEW') {
@@ -764,4 +789,4 @@ process.on('unhandledRejection', (reason) => {
 });
 
 // export the express app for tests
-export { app };
+export { app, vpState, reviewQueue };
