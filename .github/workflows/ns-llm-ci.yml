@@ -39,6 +39,10 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: '10'
     - name: Install NS-LLM Dependencies
       working-directory: ./NS-LLM
       # The repo uses pnpm for workspace installs. Use pnpm here so CI installs succeed.
