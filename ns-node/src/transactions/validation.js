@@ -1,7 +1,7 @@
 import { validateCritiquePayload } from '../services/critique-validation.js';
 import { verifyEd25519, canonicalize } from '../utils/crypto.js';
 import { getProducer } from '../services/chain.js';
-import { validators } from '../services/state.js';
+import { validators, getCompletedReview } from '../services/state.js';
 
 /**
  * Validate ARTIFACT_CRITIQUE transactions for CN-08-C enforcement.
@@ -18,6 +18,12 @@ export function validateArtifactCritiqueTx(tx) {
   // Schema validation
   const schemaRes = validateCritiquePayload(payload);
   if (!schemaRes.valid) return { ok: false, reason: 'invalid_payload', details: schemaRes.errors };
+
+  // Duplicate prevention: ensure review for this artifact at this height hasn't already been fulfilled
+  const artifactId = payload.artifact_id;
+  const reviewKey = `${artifactId}:${payload.review_block_height}`;
+  const existingFulfillment = getCompletedReview(reviewKey);
+  if (existingFulfillment) return { ok: false, reason: 'critique_already_fulfilled', details: existingFulfillment };
 
   // SignedBy should be present and correspond to a registered validator
   const signer = tx.signedBy || tx.from || tx.validatorId || null;
@@ -44,6 +50,8 @@ export function validateArtifactCritiqueTx(tx) {
   const designated = getProducer(height);
   if (!designated) return { ok: false, reason: 'no_designated_producer_for_height' };
   if (designated !== signer) return { ok: false, reason: 'signer_not_designated_producer', details: { designated, signer } };
+
+  // (duplicate-check already performed earlier)
 
   return { ok: true };
 }
