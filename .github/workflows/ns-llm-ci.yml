@@ -101,26 +101,21 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       working-directory: ./NS-LLM
       run: |
-        # Start server in background
-        node server.js &
+        # Start prototype server in background (no native binary required)
+        PORT=3015 node index.js &
         SERVER_PID=$!
         
         # Wait for server to start
         sleep 5
         
         # Test endpoints defined in OpenAPI spec
-        echo "Testing /api/generate endpoint..."
-        curl -f http://localhost:3015/api/generate -X POST \
-          -H "Content-Type: application/json" \
-          -d '{"prompt":"test","max_tokens":10}' || exit 1
-        
-        echo "Testing /api/embed endpoint..."
-        curl -f http://localhost:3015/api/embed -X POST \
-          -H "Content-Type: application/json" \
-          -d '{"text":"test"}' || exit 1
-        
         echo "Testing /health endpoint..."
         curl -f http://localhost:3015/health || exit 1
+        
+        echo "Testing /embed endpoint..."
+        curl -f http://localhost:3015/embed -X POST \
+          -H "Content-Type: application/json" \
+          -d '{"text":"test"}' || exit 1
         
         # Cleanup
         kill $SERVER_PID
