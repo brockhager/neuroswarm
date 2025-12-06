@@ -40,8 +40,22 @@ jobs:
           sudo apt-get install -y build-essential python3 pkg-config libsqlite3-dev
           npm install
 
+      - name: CI debug info (discord)
+        run: |
+          echo "=== ENV ===" > e2e-debug.txt
+          env >> e2e-debug.txt
+          echo "=== NODE VERSION ===" >> e2e-debug.txt
+          node -v >> e2e-debug.txt
+          echo "=== WORKDIR CONTENTS (discord) ===" >> e2e-debug.txt
+          ls -la >> e2e-debug.txt || true
+          echo "=== ROUTER DIR CONTENTS (router-api-prototype) ===" >> e2e-debug.txt
+          ls -la ../router-api-prototype >> e2e-debug.txt || true
+
       - name: Run Agent 9 E2E Tests (Router Persistence: ${{ matrix.persistence }})
-        run: npm run test:e2e
+        run: |
+          mkdir -p artifacts/e2e
+          # capture test output to artifacts for post-mortem
+          npm run test:e2e 2>&1 | tee artifacts/e2e/e2e-output-${{ matrix.persistence }}.log
         env:
           # For deterministic CI runs the Router API secret or JWKS may be set by tests.
           ROUTER_JWT_SECRET: TEST_SECRET_12345
@@ -54,3 +68,10 @@ jobs:
 
       - name: Post-run smoke confirmation
         run: echo "✅ Agent 9 E2E tests completed"
+
+      - name: Upload agent9-e2e artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent9-e2e-artifacts-${{ matrix.persistence }}
+          path: artifacts/e2e

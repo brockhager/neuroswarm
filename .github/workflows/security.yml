@@ -74,7 +74,8 @@ jobs:
         awk '$2 == "B" || $2 == "U" {print $0}' commit-status.txt || true
 
     - name: Comment on PR with unsigned commits & remediation
-      if: github.event_name == 'pull_request'
+      # Only comment when the PR originates from the same repo (avoid 403 on forked PRs)
+      if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
       uses: actions/github-script@v6
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}

@@ -24,7 +24,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          # Use Node 20 so the ns-node server (ESM code) runs without syntax errors
+          node-version: '20'
           
       - name: Cache node_modules
         uses: actions/cache@v4
@@ -48,7 +49,8 @@ jobs:
       - name: Start NS-Node server
         run: |
           cd ns-node
-          node server.js &
+          # Start the server with module mode in case files are ESM; Node 20 handles ECMAScript modules
+          node --input-type=module server.js &
           SERVER_PID=$!
           echo "SERVER_PID=$SERVER_PID" >> $GITHUB_ENV
           
@@ -92,7 +94,7 @@ jobs:
           node .github/scripts/check-performance-regression.js
           
       - name: Comment PR with results
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
         uses: actions/github-script@v6
         with:
           script: |
