@@ -4,19 +4,19 @@ This page lists the important terminology used across the NeuroSwarm system, wit
 
 --
 
-## Core Nodes & Services
+## Consensus & Production
 
-- **NS Node (brain)**
-  - Explanation: The canonical chain service — validates blocks and transactions, applies consensus rules, stores chain state, and enforces economic rules (rewards, slashing).
-  - Example: `ns-node` receives a `POST /blocks/produce` from a VP and verifies signatures, merkle root, and sourcesRoot before applying the block.
+- **Producer / designated producer**
+  - Explanation: Deterministically chosen validator that produces a block at a specific height (stake-weighted selection). Only canonical producer is allowed to produce a block and — for CN-08 — sign certain LLM-generated TXs like `ARTIFACT_CRITIQUE`.
+  - Example: `getProducer(42)` returns `validator-abc` — that validator should sign the block header for height 42.
 
-- **Gateway (gateway-node)**
-  - Explanation: The public-facing mempool and admission validator. Accepts client `POST /v1/tx`, performs source validation and authorization, and acts as the canonical mempool owner.
-  - Example: A dApp POSTs a `REQUEST_REVIEW` transaction to the Gateway; the Gateway enriches tx with `sources` metadata then exposes it to VP nodes via `/v1/mempool`.
+- **Slot / height**
+  - Explanation: An increasing integer that identifies the next block index in the canonical chain; used for scheduling and producer selection.
+  - Example: Current height = 100, the next slot/height = 101 (producer selected deterministically).
 
-- **VP Node (validator / producer)**
-  - Explanation: Produces blocks, polls the Gateway mempool, builds signed headers, optionally publishes block payloads to IPFS, and posts `POST /blocks/produce` to NS.
-  - Example: A VP is selected as the producer for height 123; it signs the block header, uploads payload to IPFS, sets `header.payloadCid`, and posts to NS.
+- **Merkle root / merkleRoot**
+  - Explanation: Compact cryptographic commitment to the set of transaction ids included in the block header.
+  - Example: Calculate `merkleRoot` from an ordered list of txIds and include in the header.
 
 --
 
@@ -36,19 +36,19 @@ This page lists the important terminology used across the NeuroSwarm system, wit
 
 --
 
-## Consensus & Production
+## Core Nodes & Services
 
-- **Producer / designated producer**
-  - Explanation: Deterministically chosen validator that produces a block at a specific height (stake-weighted selection). Only canonical producer is allowed to produce a block and — for CN-08 — sign certain LLM-generated TXs like `ARTIFACT_CRITIQUE`.
-  - Example: `getProducer(42)` returns `validator-abc` — that validator should sign the block header for height 42.
+- **NS Node (brain)**
+  - Explanation: The canonical chain service — validates blocks and transactions, applies consensus rules, stores chain state, and enforces economic rules (rewards, slashing).
+  - Example: `ns-node` receives a `POST /blocks/produce` from a VP and verifies signatures, merkle root, and sourcesRoot before applying the block.
 
-- **Slot / height**
-  - Explanation: An increasing integer that identifies the next block index in the canonical chain; used for scheduling and producer selection.
-  - Example: Current height = 100, the next slot/height = 101 (producer selected deterministically).
+- **Gateway (gateway-node)**
+  - Explanation: The public-facing mempool and admission validator. Accepts client `POST /v1/tx`, performs source validation and authorization, and acts as the canonical mempool owner.
+  - Example: A dApp POSTs a `REQUEST_REVIEW` transaction to the Gateway; the Gateway enriches tx with `sources` metadata then exposes it to VP nodes via `/v1/mempool`.
 
-- **Merkle root / merkleRoot**
-  - Explanation: Compact cryptographic commitment to the set of transaction ids included in the block header.
-  - Example: Calculate `merkleRoot` from an ordered list of txIds and include in the header.
+- **VP Node (validator / producer)**
+  - Explanation: Produces blocks, polls the Gateway mempool, builds signed headers, optionally publishes block payloads to IPFS, and posts `POST /blocks/produce` to NS.
+  - Example: A VP is selected as the producer for height 123; it signs the block header, uploads payload to IPFS, sets `header.payloadCid`, and posts to NS.
 
 --
 
@@ -64,7 +64,7 @@ This page lists the important terminology used across the NeuroSwarm system, wit
 
 --
 
-## LLM & Review Transactions (CN-08 & CN-09)
+## Developer & Ops Terms
 
 - **REQUEST_REVIEW**
   - Explanation: Client or Router API submits a request to review an artifact (CID). VP nodes (when producer) will process this and generate `ARTIFACT_CRITIQUE` transactions.
@@ -80,7 +80,7 @@ This page lists the important terminology used across the NeuroSwarm system, wit
 
 --
 
-## State & Database
+## LLM & Review Transactions (CN-08 & CN-09)
 
 - **StateDB / state.db**
   - Explanation: NS persistent storage for validators, blocks, txIndex, accounts and completed reviews (e.g., `persistCompletedReview` lookups used to prevent duplicate critiques).
@@ -92,7 +92,7 @@ This page lists the important terminology used across the NeuroSwarm system, wit
 
 --
 
-## Developer & Ops Terms
+## State & Database
 
 - **E2E harness (OPS-03C)**
   - Explanation: Multi-service test harness (Docker Compose + deterministic LLM stub) that verifies the integrated flow across Router → VP → NS and validates security properties (signature, producer provenance, dedupe).
