@@ -47,9 +47,9 @@ jobs:
           ROUTER_JWT_SECRET: TEST_SECRET_12345
           MAX_FILE_UPLOAD_BYTES: 5242880
           # When the matrix selects sqlite, instruct tests to expect the sqlite path
-          EXPECT_SQLITE: ${{ matrix.persistence == 'sqlite' && 'true' || 'false' }}
+          EXPECT_SQLITE: ${{ (matrix.persistence == 'sqlite' && 'true') || 'false' }}
           # Force fallback when matrix is 'fallback'
-          FORCE_FALLBACK: ${{ matrix.persistence == 'fallback' && 'true' || 'false' }}
+          FORCE_FALLBACK: ${{ (matrix.persistence == 'fallback' && 'true') || 'false' }}
           PIN_DB_PATH: /tmp/agent9_e2e_pins_${{ matrix.persistence }}.db
 
       - name: Post-run smoke confirmation
