@@ -514,7 +514,13 @@ app.use((err, req, res, next) => {
   next(err);
 });
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', version: VP_VERSION, uptime: process.uptime(), ipfsPeer: ipfsPeer || null });
+  res.json({
+    status: 'ok',
+    version: VP_VERSION,
+    uptime: process.uptime(),
+    ipfsPeer: ipfsPeer || null,
+    vp_state: vpState ? vpState.getState() : 'UNKNOWN'
+  });
 });
 
 // IPFS endpoints

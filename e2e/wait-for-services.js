@@ -15,8 +15,18 @@ function get(url) {
   return new Promise((resolve, reject) => {
     const lib = url.startsWith('https') ? https : http;
     const req = lib.get(url, (res) => {
-      res.resume();
-      resolve(res.statusCode);
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        const body = Buffer.concat(chunks).toString('utf8');
+        let json = null;
+        try {
+          if (res.headers['content-type'] && res.headers['content-type'].includes('application/json')) {
+            json = JSON.parse(body);
+          }
+        } catch (e) { /* ignore */ }
+        resolve({ code: res.statusCode, json });
+      });
     });
     req.on('error', (err) => reject(err));
     req.setTimeout(5000, () => {
@@ -31,10 +41,22 @@ async function waitForAll(urls, timeout = 300000, interval = 5000) {
     let ok = true;
     for (const url of urls) {
       try {
-        const code = await get(url);
+        const { code, json } = await get(url);
         if (code < 200 || code >= 300) {
           ok = false;
+          // console.log(`Waiting for ${url} (status ${code})...`);
           break;
+        }
+
+        // Smart check for VP Node readiness (CN-06 FSM)
+        // If the service exposes vp_state, we must wait for it to be ready.
+        if (json && json.vp_state) {
+          const readyStates = ['LISTENING_FOR_REVIEWS', 'PRODUCING_BLOCK'];
+          if (!readyStates.includes(json.vp_state)) {
+            console.log(`Waiting for VP Node ${url} to reach ready state (current: ${json.vp_state})...`);
+            ok = false;
+            break;
+          }
         }
       } catch (err) {
         ok = false;
