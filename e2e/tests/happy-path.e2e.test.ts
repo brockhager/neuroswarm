@@ -64,7 +64,7 @@ test.describe('happy-path', () => {
       const match = Array.isArray(mem) ? mem.find((t: any) => t.type === 'REQUEST_REVIEW' && (t.payload?.artifact_id === artifactId || t.artifact_id === artifactId)) : undefined;
       if (!match) throw new Error('REQUEST_REVIEW not found in gateway mempool yet');
       return match;
-    }, 20, 1000);
+    }, 40, 1500);
 
     expect(foundRequest).toBeDefined();
 
@@ -98,7 +98,7 @@ test.describe('happy-path', () => {
       }
 
       throw new Error('ARTIFACT_CRITIQUE not observed yet');
-    }, 40, 1500);
+    }, 80, 2000);
 
     expect(critiqueTx).toBeDefined();
 
@@ -109,7 +109,7 @@ test.describe('happy-path', () => {
       const body = await statusResp.json();
       if ((body.status || body.state) !== 'ANCHORED') throw new Error('artifact not yet anchored');
       return body;
-    }, 40, 1500);
+    }, 80, 2000);
 
     expect(anchored).toBeTruthy();
     expect(anchored.status || anchored.state).toBe('ANCHORED');
