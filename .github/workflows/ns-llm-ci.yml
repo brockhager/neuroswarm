@@ -131,7 +131,7 @@ jobs:
         node --input-type=module -e "
         import { spawn } from 'child_process';
         
-        const server = spawn('node', ['server.js']);
+        const server = spawn('node', ['index.js']);
         
         setTimeout(async () => {
           try {
@@ -170,7 +170,7 @@ jobs:
         node --input-type=module -e "
         import { spawn } from 'child_process';
         
-        const server = spawn('node', ['server.js']);
+        const server = spawn('node', ['index.js']);
         
         setTimeout(async () => {
           try {
