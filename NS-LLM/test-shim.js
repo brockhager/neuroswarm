@@ -11,7 +11,8 @@ const __dirname = path.dirname(__filename);
 
   // Point to a deliberately-missing binary path to force fallback
   const notExists = path.join(__dirname, 'native', 'build', 'nonexistent-binary');
-  const shim = new NativeShim({ binaryPath: notExists, prototypeUrl: 'http://127.0.0.1:5555' });
+  const PORT = process.env.PORT || 5555;
+  const shim = new NativeShim({ binaryPath: notExists, prototypeUrl: `http://127.0.0.1:${PORT}` });
 
   try {
     console.log('calling shim.health() (should hit prototype)');
