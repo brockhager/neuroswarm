@@ -51,6 +51,23 @@ jobs:
           # When testing the fallback branch we force the fallback behaviour explicitly
           FORCE_FALLBACK: ${{ matrix.persistence == 'fallback' && 'true' || 'false' }}
 
+      - name: Wait for Router API to be healthy
+        run: |
+          echo "Waiting for Router API health endpoint at http://127.0.0.1:4001/health"
+          for i in $(seq 1 60); do
+            status=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:4001/health || echo "000")
+            echo "health -> $status"
+            if [ "$status" = "200" ]; then
+              echo "Router API healthy"
+              exit 0
+            fi
+            echo "Router not ready (attempt $i/60), sleeping 2s"
+            sleep 2
+          done
+          echo "Router API did not become healthy in time" >&2
+          docker ps || true
+          exit 1
+
       - name: Run E2E smoke harness (Agent9 -> Router)
         run: npm run test:integration -- --run tests/e2e/contract_smoke_harness.test.mjs
         env:
