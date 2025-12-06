@@ -72,7 +72,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: e2e-playwright-report
-          path: e2e/playwright-report || .
+          path: |
+            e2e/playwright-report
+            playwright-report
+            test-results
+            e2e/test-results
+            e2e/playwright-report/**/*
 
       - name: Collect docker compose logs
         if: failure()
