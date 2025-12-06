@@ -134,4 +134,13 @@ async function run() {
   process.exit(0);
 }
 
-if (require.main === module) run();
+// In ESM this file may be evaluated as a module. If invoked directly, process.argv[1]
+// will point to this file. Run the test when invoked directly.
+try {
+  const invoked = process.argv[1] ? path.resolve(process.argv[1]) : null;
+  const self = fileURLToPath(import.meta.url);
+  if (invoked && path.resolve(invoked) === path.resolve(self)) await run();
+} catch (err) {
+  // best-effort: if anything goes wrong here, attempt to run anyway
+  await run();
+}
