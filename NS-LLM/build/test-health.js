@@ -1,11 +1,15 @@
 #!/usr/bin/env node
-// Node-based cross-platform health test for NS-LLM
+// Node-based cross-platform health test for NS-LLM (ES Module)
 // Starts node index.js in this folder, polls /health until success or timeout, then stops process.
 
-const { spawn } = require('child_process');
-const http = require('http');
-const path = require('path');
+import { spawn } from 'child_process';
+import http from 'http';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const ROOT = path.resolve(__dirname, '..');
 const INDEX = path.join(ROOT, 'index.js');
 const PORT = process.env.PORT || 5555;
@@ -87,7 +91,6 @@ async function run() {
       console.error('Runtime: node exec=', process.execPath, 'version=', process.version);
       console.error('TEST_HEALTH_TIMEOUT=', process.env.TEST_HEALTH_TIMEOUT, 'TIMEOUT_SECONDS=', TIMEOUT_SECONDS);
       console.error('PORT=', process.env.PORT || PORT);
-      const fs = require('fs');
       const files = fs.readdirSync(ROOT);
       console.error('Root files:', files.join(', '));
       if (fs.existsSync(path.join(ROOT, 'node_modules'))) {
