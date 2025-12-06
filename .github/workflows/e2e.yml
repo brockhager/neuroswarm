@@ -41,7 +41,7 @@ jobs:
         run: |
           set -e
           echo "Waiting for services to become healthy..."
-          for i in $(seq 1 60); do
+          for i in $(seq 1 120); do
             ok=true
             for url in "$NS_URL" "$GATEWAY_URL" "$VP_URL" "$ROUTER_URL"; do
               if ! curl -fsS ${url}/health >/dev/null 2>&1; then
@@ -53,6 +53,7 @@ jobs:
               echo "All services healthy"
               exit 0
             fi
+            echo "waiting ($i) - retrying in 5s"
             sleep 5
           done
           echo "Services did not become healthy" >&2
@@ -80,13 +81,18 @@ jobs:
             e2e/playwright-report/**/*
 
       - name: Collect docker compose logs
-        if: failure()
+        if: always()
         run: |
           mkdir -p artifacts/logs
-          docker compose -f docker-compose.yml -f e2e/docker-compose.ci.yml -f ../neuro-services/docker-compose.yml logs --no-color > artifacts/logs/compose.log || true
+          echo "=== docker-compose ps ===" > artifacts/logs/compose.ps.txt || true
+          docker compose -f docker-compose.yml -f e2e/docker-compose.ci.yml -f ../neuro-services/docker-compose.yml ps --no-color >> artifacts/logs/compose.ps.txt || true
+          echo "=== tail 200 docker logs for all services ===" > artifacts/logs/compose.tail.txt || true
+          docker compose -f docker-compose.yml -f e2e/docker-compose.ci.yml -f ../neuro-services/docker-compose.yml logs --no-color --tail 200 >> artifacts/logs/compose.tail.txt || true
+          # full logs (kept as fallback) - keep compact but useful
+          docker compose -f docker-compose.yml -f e2e/docker-compose.ci.yml -f ../neuro-services/docker-compose.yml logs --no-color > artifacts/logs/compose.full.log || true
 
       - name: Upload logs
-        if: failure()
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: compose-logs
