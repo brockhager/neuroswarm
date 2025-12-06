@@ -100,7 +100,36 @@ export class P2PProtocol {
         });
 
         // Periodically clean up old seen messages
-        setInterval(() => this.cleanupSeenMessages(), 60000); // Every minute
+        this.cleanupIntervalId = setInterval(() => this.cleanupSeenMessages(), 60000); // Every minute
+        // Allow the timer not to keep the process alive if only timer remains (tests)
+        if (this.cleanupIntervalId && typeof this.cleanupIntervalId.unref === 'function') this.cleanupIntervalId.unref();
+    }
+
+    /**
+     * Destroy resources and timers
+     */
+    destroy() {
+        if (this.cleanupIntervalId) {
+            clearInterval(this.cleanupIntervalId);
+            this.cleanupIntervalId = null;
+        }
+        if (this.batchTimer) {
+            clearTimeout(this.batchTimer);
+            this.batchTimer = null;
+        }
+        if (this.messageSigner && typeof this.messageSigner.destroy === 'function') {
+            try { this.messageSigner.destroy(); } catch (e) {}
+        }
+        if (this.rateLimiter && typeof this.rateLimiter.destroy === 'function') {
+            try { this.rateLimiter.destroy(); } catch (e) {}
+        }
+        if (this.consensusManager && typeof this.consensusManager.destroy === 'function') {
+            try { this.consensusManager.destroy(); } catch (e) {}
+        }
+        // Clear seen messages
+        this.seenMessages.clear();
+        this.messageBuffer = [];
+        console.log('[P2PProtocol] Destroyed');
     }
 
     /**

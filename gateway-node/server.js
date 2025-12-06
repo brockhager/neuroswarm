@@ -7,6 +7,8 @@ import path from 'path';
 import { ensureDirInRepoSync } from '../scripts/repoScopedFs.mjs';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
+import { canonicalize as sharedCanonicalize, verifyEd25519 } from '../shared/crypto.js';
+import { validateCritiquePayload } from '../ns-node/src/services/critique-validation.js';
 import { loadRegistry, queryAdapter, listStatuses, queryAdapterWithOpts } from '../sources/index.js';
 import { PeerManager, P2PProtocol, MessageType, startHTTPSServer } from '../shared/peer-discovery/index.js';
 
@@ -33,6 +35,9 @@ const HISTORY_FILE = path.join(DATA_DIR, 'history.json');
 if (!fs.existsSync(HISTORY_FILE)) fs.writeFileSync(HISTORY_FILE, JSON.stringify([]));
 
 const app = express();
+let httpServer = null; // server handle for tests and graceful shutdown
+let peerHealthInterval = null;
+let heartbeatInterval = null;
 app.use(helmet());
 app.use(cors());
 app.use(bodyParser.json());
@@ -126,6 +131,53 @@ app.post('/v1/tx', async (req, res) => {
   if (tx.fee < Number(process.env.MIN_FEE || 1)) { gwSpamRejected += 1; logGw(`Rejected tx from ${remoteIP} (${src}) insufficient fee ${tx.fee}`); return res.status(400).json({ error: 'insufficient_fee' }); }
   // duplicate check
   const entry = createMempoolEntry(tx);
+  // For ARTIFACT_CRITIQUE detect duplicates by artifact+height BEFORE checking txId duplicates
+  if (tx.type === 'ARTIFACT_CRITIQUE') {
+    const aid = tx.payload && tx.payload.artifact_id ? tx.payload.artifact_id : null;
+    const rh = tx.payload && typeof tx.payload.review_block_height === 'number' ? tx.payload.review_block_height : null;
+    if (aid && rh !== null) {
+      for (const [k, existing] of gwMempool.entries()) {
+        try {
+          // Support both entry.payload (tx) and entry.payload.payload (tx.payload)
+          const p = existing.payload || existing.tx || {};
+          const candidate = (p && p.payload) ? p.payload : p;
+          if (existing.type === 'ARTIFACT_CRITIQUE' && candidate && candidate.artifact_id === aid && candidate.review_block_height === rh) {
+            gwSpamRejected += 1; logGw(`Rejected ARTIFACT_CRITIQUE duplicate for ${aid} @${rh}`);
+            return res.status(409).json({ error: 'duplicate_review' });
+          }
+        } catch (e) {}
+      }
+    }
+  }
+  // Special handling for ARTIFACT_CRITIQUE transactions: enforce CN-08-C checks
+  if (tx.type === 'ARTIFACT_CRITIQUE') {
+    // require signedBy and signature
+    if (!tx.signedBy) { gwSpamRejected += 1; logGw(`Rejected ARTIFACT_CRITIQUE missing signedBy`); return res.status(400).json({ error: 'missing_signer' }); }
+    if (!tx.signature) { gwSpamRejected += 1; logGw(`Rejected ARTIFACT_CRITIQUE missing signature`); return res.status(400).json({ error: 'missing_signature' }); }
+    // require public key to verify signature
+    if (!tx.publicKey) { gwSpamRejected += 1; logGw(`Rejected ARTIFACT_CRITIQUE missing publicKey`); return res.status(400).json({ error: 'missing_public_key' }); }
+    // structural validation of payload
+    const schemaRes = validateCritiquePayload(tx.payload || {});
+    if (!schemaRes.valid) { gwSpamRejected += 1; logGw(`Rejected ARTIFACT_CRITIQUE invalid payload: ${schemaRes.errors.join(', ')}`); return res.status(400).json({ error: 'invalid_payload', details: schemaRes.errors }); }
+    // verify signature over canonicalized tx (exclude signature)
+    const copy = { ...tx };
+    delete copy.signature;
+    const canon = sharedCanonicalize(copy);
+    if (!verifyEd25519(tx.publicKey, canon, tx.signature)) { gwSpamRejected += 1; logGw(`Rejected ARTIFACT_CRITIQUE invalid signature`); return res.status(400).json({ error: 'invalid_signature' }); }
+    // duplicate enforcement: only one ARTIFACT_CRITIQUE per artifact_id+review_block_height
+    const aid = tx.payload && tx.payload.artifact_id ? tx.payload.artifact_id : null;
+    const rh = tx.payload && typeof tx.payload.review_block_height === 'number' ? tx.payload.review_block_height : null;
+    if (aid && rh !== null) {
+      for (const [k, existing] of gwMempool.entries()) {
+        try {
+          const p = existing.payload || existing.tx || {};
+          if (existing.type === 'ARTIFACT_CRITIQUE' && p && p.artifact_id === aid && p.review_block_height === rh) {
+            gwSpamRejected += 1; logGw(`Rejected ARTIFACT_CRITIQUE duplicate for ${aid} @${rh}`); return res.status(409).json({ error: 'duplicate_review' });
+          }
+        } catch (e) {}
+      }
+    }
+  }
   if (gwMempool.has(entry.txId)) { gwSpamRejected += 1; logGw(`Rejected duplicate tx ${entry.txId} from ${remoteIP} (${src})`); return res.status(409).json({ error: 'duplicate' }); }
   // accept
   // If the tx declares it requires sources validation, query and attach results
@@ -397,7 +449,7 @@ async function startServer() {
       logGw(`Connected to ns-node ${NS_NODE_URL}`);
     }
   }
-  const server = app.listen(PORT, () => {
+  httpServer = app.listen(PORT, () => {
     logGw(`Gateway node started, listening on port ${PORT}`);
     logGw(`Health endpoint available at /health`);
 
@@ -411,14 +463,14 @@ async function startServer() {
     });
   });
 
-  server.on('connection', (socket) => {
+  httpServer.on('connection', (socket) => {
     const remote = `${socket.remoteAddress}:${socket.remotePort}`;
     logGw(`Connection from ${remote}`);
     socket.on('close', () => logGw(`Connection closed ${remote}`));
   });
 
   // Periodic peer health check and peer exchange
-  setInterval(async () => {
+  peerHealthInterval = setInterval(async () => {
     const peers = peerManager.getAllPeers();
     for (const peer of peers) {
       await p2pProtocol.pingPeer(peer);
@@ -433,6 +485,7 @@ async function startServer() {
       await p2pProtocol.sendPeerList(randomPeer);
     }
   }, 30000); // Every 30 seconds
+  if (peerHealthInterval && typeof peerHealthInterval.unref === 'function') peerHealthInterval.unref();
 
 
   // If ns not reachable, retry in background using exponential backoff
@@ -472,7 +525,7 @@ async function startServer() {
 
   // Periodic heartbeat status logs
   if (STATUS_ENABLED) {
-    setInterval(() => {
+    heartbeatInterval = setInterval(() => {
       try {
         const mempoolSize = gwMempool ? gwMempool.size : 0;
         // Adapter query stats
@@ -480,8 +533,35 @@ async function startServer() {
         logGw(`heartbeat | ns=${NS_NODE_URL} nsReachable=${nsReachable} mempoolSize=${mempoolSize} adapters=${adapterCount} uptime=${process.uptime().toFixed(0)}s`);
       } catch (e) { logGw('Heartbeat error', e.message); }
     }, Number(process.env.STATUS_INTERVAL_MS || 60000));
+    if (heartbeatInterval && typeof heartbeatInterval.unref === 'function') heartbeatInterval.unref();
   }
 }
+
+// Expose a small test-only shutdown endpoint so unit tests can stop the server
+app.post('/__test/shutdown', async (req, res) => {
+  try {
+    if (httpServer) {
+      // clear background intervals that may keep event loop alive
+      try { if (peerHealthInterval) { clearInterval(peerHealthInterval); peerHealthInterval = null; } } catch (e) {}
+      try { if (heartbeatInterval) { clearInterval(heartbeatInterval); heartbeatInterval = null; } } catch (e) {}
+
+      // try to clean up p2p and peer discovery resources
+      try { if (p2pProtocol && typeof p2pProtocol.destroy === 'function') p2pProtocol.destroy(); } catch (e) {}
+      try { if (peerManager && peerManager.natTraversal && typeof peerManager.natTraversal.destroy === 'function') peerManager.natTraversal.destroy(); } catch (e) {}
+      try { if (peerManager && peerManager.localDiscovery && typeof peerManager.localDiscovery.stop === 'function') peerManager.localDiscovery.stop(); } catch (e) {}
+      try { if (peerManager && peerManager.reputation && typeof peerManager.reputation.destroy === 'function') peerManager.reputation.destroy(); } catch (e) {}
+
+      httpServer.close(() => {
+        logGw('Test shutdown: server closed');
+      });
+      httpServer = null;
+      return res.json({ ok: true });
+    }
+    return res.json({ ok: false, reason: 'no_server' });
+  } catch (e) {
+    return res.status(500).json({ error: e.message });
+  }
+});
 
 startServer();
 
