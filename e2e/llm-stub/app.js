@@ -12,6 +12,7 @@ app.get('/health', (req, res) => res.json({ ok: true, name: 'e2e-llm-stub' }));
 
 app.post('/generate', (req, res) => {
   const { artifactContent, artifact_id } = req.body || {};
+  console.log('LLM stub /generate called', { artifact_id, hasContent: !!artifactContent });
 
   // Deterministic behavior: echo artifact_id and create a short critique
   const id = artifact_id || (artifactContent && artifactContent.artifact_id) || `unknown-${Date.now()}`;
@@ -33,6 +34,7 @@ app.post('/generate', (req, res) => {
   };
 
   res.json({ ok: true, critique });
+  console.log('LLM stub responded with critique', { artifact_id: id });
 });
 
 const port = process.env.PORT || 5555;
