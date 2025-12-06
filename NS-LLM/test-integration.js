@@ -5,11 +5,13 @@
   // libuv handle assertions when the test runner exits on Windows.
   const { spawn } = await import('child_process');
   const { fileURLToPath } = await import('url');
+  const path = await import('path');
   const serverPath = fileURLToPath(new URL('./index.js', import.meta.url));
+  const cwd = path.dirname(serverPath);
   // Use `node` from PATH which works in CI / dev boxes (process.execPath sometimes
   // isn't directly spawnable in some Windows sandboxes).
   const serverProc = spawn('node', [serverPath], {
-    cwd: new URL('.', import.meta.url).pathname,
+    cwd,
     env: process.env,
     stdio: ['ignore', 'pipe', 'pipe']
   });
