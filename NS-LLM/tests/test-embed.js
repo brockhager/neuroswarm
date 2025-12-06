@@ -6,14 +6,14 @@ import { spawn } from 'child_process';
 import { fileURLToPath } from 'url';
 import http from 'http';
 
-const serverPath = fileURLToPath(new URL('../server.js', import.meta.url));
+const serverPath = fileURLToPath(new URL('../index.js', import.meta.url));
 const PORT = process.env.PORT || 6003;
 
 async function waitForStart(proc) {
   return new Promise((resolve, reject) => {
     const onData = d => {
       const s = String(d);
-      if (s.includes('Listening on port')) {
+      if (s.includes('ns-llm-prototype listening')) {
         proc.stdout.off('data', onData);
         resolve();
       }
@@ -36,7 +36,7 @@ async function run() {
     const payload = JSON.stringify({ text: 'embed me' });
 
     const res = await new Promise((resolve, reject) => {
-      const req = http.request({ hostname: '127.0.0.1', port: PORT, path: '/api/embed', method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) } }, (r) => {
+      const req = http.request({ hostname: '127.0.0.1', port: PORT, path: '/embed', method: 'POST', headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) } }, (r) => {
         let buf = '';
         r.setEncoding('utf8');
         r.on('data', c => buf += c);
