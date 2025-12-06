@@ -128,9 +128,8 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       working-directory: ./NS-LLM
       run: |
-        node -e "
-        const fetch = require('node-fetch');
-        const { spawn } = require('child_process');
+        node --input-type=module -e "
+        import { spawn } from 'child_process';
         
         const server = spawn('node', ['server.js']);
         
@@ -168,9 +167,8 @@ jobs:
       if: matrix.os == 'ubuntu-latest'
       working-directory: ./NS-LLM
       run: |
-        node -e "
-        const fetch = require('node-fetch');
-        const { spawn } = require('child_process');
+        node --input-type=module -e "
+        import { spawn } from 'child_process';
         
         const server = spawn('node', ['server.js']);
         
