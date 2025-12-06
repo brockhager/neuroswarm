@@ -45,7 +45,7 @@ jobs:
             ok=true
             for url in "$NS_URL" "$GATEWAY_URL" "$VP_URL" "$ROUTER_URL"; do
               # attempt to hit /health and emit full diagnostic info for CI logs
-              status_code=$(curl -sS -o /dev/null -w "%{http_code}" ${url}/health 2>/tmp/err_${i}.txt || echo "curl-fail")
+              status_code=$(curl -sS -o /dev/null -w "%{http_code}" "${url}/health" 2>/tmp/err_${i}.txt || echo "curl-fail")
               echo "health check ${url}/health -> ${status_code}"
               if [ "${status_code}" != "200" ]; then
                 ok=false
