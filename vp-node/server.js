@@ -11,6 +11,7 @@ import { CritiqueProcessor } from './src/critique-processor.mjs';
 import VPStateMachine, { STATES } from './src/vp-state-machine.mjs';
 import ReviewQueue from './src/review-queue.mjs';
 import { verifyNsSynced } from './src/ns-sync-verifier.mjs';
+import * as metrics from './src/metrics.mjs';
 // ipfs-http-client is an optional runtime dependency. Dynamically import it
 // inside initIpfs so the server can start without IPFS being installed.
 
@@ -45,9 +46,11 @@ let nsReachable = false;
 let ipfs = null;
 let ipfsPeer = null;
 let ipfsConnected = false;
-// CN-06: VP state machine + review queue
-const vpState = new VPStateMachine({ initial: STATES.INITIALIZING, logger: logVp });
+// CN-06: VP state machine + review queue + metrics
+metrics.initMetrics({ defaultLabels: { validator: VAL_ID } });
+const vpState = new VPStateMachine({ initial: STATES.INITIALIZING, logger: logVp, metrics });
 const reviewQueue = new ReviewQueue({ ttlMs: Number(process.env.VP_REVIEW_QUEUE_TTL_MS || 1000 * 60 * 60) });
+let lastSuccessfulSyncTs = null;
 
 async function pingNsHealth() {
   try {
@@ -204,6 +207,13 @@ export async function produceLoop() {
     try {
       const sync = await verifyNsSynced({ nsUrl: NS_URL });
       if (sync && sync.synced) {
+        lastSuccessfulSyncTs = Date.now();
+        metrics.setNsSyncLagSeconds(0);
+      } else {
+        const lag = lastSuccessfulSyncTs ? Math.floor((Date.now() - lastSuccessfulSyncTs) / 1000) : 0;
+        metrics.setNsSyncLagSeconds(lag);
+      }
+      if (sync && sync.synced) {
         // If we were syncing, and now synced — transition to listening
         if (vpState.getState() === STATES.SYNCING_LEDGER || vpState.getState() === STATES.INITIALIZING) {
           vpState.setState(STATES.LISTENING_FOR_REVIEWS);
@@ -225,6 +235,7 @@ export async function produceLoop() {
         if (!canProcess) {
           logVp(`[CN-06] VP not ready to process incoming REQUEST_REVIEW (state=${state}) — enqueueing ${tx.artifact_id || tx.id}`);
           reviewQueue.enqueue(tx);
+          metrics.setReviewQueueSize(reviewQueue.size());
         }
       }
     }
@@ -333,6 +344,7 @@ export async function produceLoop() {
       // If we had queued items and we're now in LISTENING_FOR_REVIEWS, try draining
       if (vpState.getState() === STATES.LISTENING_FOR_REVIEWS && reviewQueue.size() > 0) {
         const items = reviewQueue.drainAll();
+        metrics.setReviewQueueSize(reviewQueue.size());
         for (const tx of items) {
           try {
             logVp(`[CN-06] Draining queued REQUEST_REVIEW for ${tx.artifact_id || tx.id}`);
@@ -355,10 +367,12 @@ export async function produceLoop() {
     const sourcesRoot = computeSourcesRoot(txs);
     // Build header and payload; optionally add payload CID if IPFS is available
     // Before starting production, perform a final synchronization checkpoint and acquire produce state
+    metrics.incProduceAttempt();
     // Prevent production unless we're in LISTENING_FOR_REVIEWS and NS is synced.
     const preCheck = await verifyNsSynced({ nsUrl: NS_URL });
     if (!preCheck || !preCheck.synced) {
       logVp('[CN-06] Aborting produce: pre-production NS sync check failed');
+      metrics.incProduceFailure();
       vpState.setState(STATES.SYNCING_LEDGER);
       return;
     }
@@ -417,6 +431,7 @@ export async function produceLoop() {
       }
     } else {
       logVp('produce failed:', j);
+      metrics.incProduceFailure();
       lastProduceSuccess = false;
     }
     // Production finished - return to listening state (if synced)
@@ -515,6 +530,15 @@ app.use((err, req, res, next) => {
 });
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', version: VP_VERSION, uptime: process.uptime(), ipfsPeer: ipfsPeer || null });
+});
+
+// Metrics endpoint for Prometheus-style scraping
+app.get('/metrics', async (req, res) => {
+  try {
+    await metrics.metricsHandler(req, res);
+  } catch (e) {
+    res.status(500).send('metrics error');
+  }
 });
 
 // IPFS endpoints

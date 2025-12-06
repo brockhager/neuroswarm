@@ -9,10 +9,12 @@ export const STATES = Object.freeze({
 });
 
 export class VPStateMachine {
-  constructor({ initial = STATES.INITIALIZING, logger = console } = {}) {
+  constructor({ initial = STATES.INITIALIZING, logger = console, metrics = null } = {}) {
     this._state = initial;
     this._logger = logger;
     this._listeners = new Set();
+    // optional metrics object with incrementStateTransition and vmSetCurrentState
+    this._metrics = metrics;
   }
 
   getState() { return this._state; }
@@ -23,6 +25,8 @@ export class VPStateMachine {
     if (prev === next) return prev;
     this._state = next;
     try { this._logger && this._logger(`VP state: ${prev} -> ${next}`); } catch (e) {}
+    try { if (this._metrics && typeof this._metrics.incrementStateTransition === 'function') this._metrics.incrementStateTransition(prev, next); } catch (e) {}
+    try { if (this._metrics && typeof this._metrics.vmSetCurrentState === 'function') this._metrics.vmSetCurrentState(next); } catch (e) {}
     for (const l of Array.from(this._listeners)) {
       try { l(prev, next); } catch (e) { /* swallow listener errors */ }
     }
