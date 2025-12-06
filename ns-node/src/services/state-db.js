@@ -144,6 +144,20 @@ export class StateDatabase {
                 amount TEXT NOT NULL,
                 releasedAt INTEGER NOT NULL
             );
+
+            -- CN-09-A: Completed reviews tracking (fulfilled critique requests)
+            CREATE TABLE IF NOT EXISTS completed_reviews (
+                id TEXT PRIMARY KEY,
+                artifact_id TEXT NOT NULL,
+                review_block_height INTEGER NOT NULL,
+                critique_tx_id TEXT NOT NULL,
+                fulfilled_by TEXT NOT NULL,
+                fulfilled_at_height INTEGER NOT NULL,
+                fulfilled_at INTEGER NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_artifact_reviews ON completed_reviews(artifact_id);
+            CREATE INDEX IF NOT EXISTS idx_review_height ON completed_reviews(review_block_height);
     `);
     }
 
@@ -432,6 +446,95 @@ export class StateDatabase {
         return out;
     }
 
+    // ==================== CN-09-A: Completed Reviews ====================
+
+    /**
+     * Mark a review request as fulfilled
+     * @param {string} key - Composite key: `${artifact_id}:${review_block_height}`
+     * @param {Object} fulfillmentData - { artifact_id, review_block_height, critique_tx_id, fulfilled_by, fulfilled_at_height, fulfilled_at }
+     */
+    saveCompletedReview(key, fulfillmentData) {
+        const stmt = this.db.prepare(`
+            INSERT OR REPLACE INTO completed_reviews (id, artifact_id, review_block_height, critique_tx_id, fulfilled_by, fulfilled_at_height, fulfilled_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
+        stmt.run(
+            key,
+            fulfillmentData.artifact_id,
+            fulfillmentData.review_block_height,
+            fulfillmentData.critique_tx_id,
+            fulfillmentData.fulfilled_by,
+            fulfillmentData.fulfilled_at_height,
+            fulfillmentData.fulfilled_at
+        );
+    }
+
+    /**
+     * Check if a review request has been fulfilled
+     * @param {string} key - Composite key: `${artifact_id}:${review_block_height}`
+     * @returns {Object|null} - Fulfillment record or null if not found
+     */
+    getCompletedReview(key) {
+        const row = this.db.prepare('SELECT * FROM completed_reviews WHERE id = ?').get(key);
+        if (!row) return null;
+
+        return {
+            artifact_id: row.artifact_id,
+            review_block_height: row.review_block_height,
+            critique_tx_id: row.critique_tx_id,
+            fulfilled_by: row.fulfilled_by,
+            fulfilled_at_height: row.fulfilled_at_height,
+            fulfilled_at: row.fulfilled_at
+        };
+    }
+
+    /**
+     * Get all completed reviews for an artifact
+     * @param {string} artifact_id - The artifact CID
+     * @returns {Array} - Array of fulfillment records
+     */
+    getCompletedReviewsByArtifact(artifact_id) {
+        const rows = this.db.prepare('SELECT * FROM completed_reviews WHERE artifact_id = ? ORDER BY fulfilled_at DESC').all(artifact_id);
+        return rows.map(row => ({
+            artifact_id: row.artifact_id,
+            review_block_height: row.review_block_height,
+            critique_tx_id: row.critique_tx_id,
+            fulfilled_by: row.fulfilled_by,
+            fulfilled_at_height: row.fulfilled_at_height,
+            fulfilled_at: row.fulfilled_at
+        }));
+    }
+
+    /**
+     * Load all completed reviews into memory (for state restoration)
+     * @returns {Map} - Map of composite keys to fulfillment records
+     */
+    getAllCompletedReviews() {
+        const rows = this.db.prepare('SELECT * FROM completed_reviews ORDER BY fulfilled_at ASC').all();
+        const reviews = new Map();
+
+        for (const row of rows) {
+            reviews.set(row.id, {
+                artifact_id: row.artifact_id,
+                review_block_height: row.review_block_height,
+                critique_tx_id: row.critique_tx_id,
+                fulfilled_by: row.fulfilled_by,
+                fulfilled_at_height: row.fulfilled_at_height,
+                fulfilled_at: row.fulfilled_at
+            });
+        }
+
+        return reviews;
+    }
+
+    /**
+     * Delete a completed review record (for reorg handling)
+     * @param {string} key - Composite key
+     */
+    deleteCompletedReview(key) {
+        this.db.prepare('DELETE FROM completed_reviews WHERE id = ?').run(key);
+    }
+
     // ==================== Account Operations ====================
 
     saveAccount(address, account) {
@@ -531,6 +634,7 @@ export class StateDatabase {
         const txCount = this.db.prepare('SELECT COUNT(*) as count FROM tx_index').get().count;
         const accountCount = this.db.prepare('SELECT COUNT(*) as count FROM accounts').get().count;
         const proposalCount = this.db.prepare('SELECT COUNT(*) as count FROM proposals').get().count;
+        const completedReviewCount = this.db.prepare('SELECT COUNT(*) as count FROM completed_reviews').get().count;
 
         return {
             blocks: blockCount,
@@ -538,6 +642,7 @@ export class StateDatabase {
             transactions: txCount,
             accounts: accountCount,
             proposals: proposalCount,
+            completedReviews: completedReviewCount,
             dbPath: this.dbPath
         };
     }

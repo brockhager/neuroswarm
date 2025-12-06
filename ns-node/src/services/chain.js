@@ -5,13 +5,15 @@ import {
     getBlockAncestors, findCommonAncestor,
     persistValidator, persistChainState, persistBlock, persistTxIndex,
     persistAllValidators, addHead, removeHead, clearTxIndex, persistAccount
-    , persistPendingUnstake, removePendingUnstake, persistReleasedUnstake, getReleasedUnstake, removeReleasedUnstake, beginTransaction, commitTransaction, rollbackTransaction, db
+    , persistPendingUnstake, removePendingUnstake, persistReleasedUnstake, getReleasedUnstake, removeReleasedUnstake, beginTransaction, commitTransaction, rollbackTransaction, db,
+    persistCompletedReview, getCompletedReview
 } from './state.js';
 import {
     sha256Hex, canonicalize, txIdFor, verifyEd25519, computeMerkleRoot
 } from '../utils/crypto.js';
 import { logNs } from '../utils/logger.js';
 import { getGatewayConfig } from './gateway.js';
+import { validateCritiquePayload } from './critique-validation.js';
 
 // Tokenomics Constants
 const COIN = 100000000n; // 1 NST = 10^8 atomic units
@@ -52,12 +54,12 @@ export function chooseValidator(prevHash, slot) {
 export function getProducer(height) {
     // Use canonical tip hash as prevHash seed; if no canonical tip exists, use genesis placeholder
     const prevHash = state.canonicalTipHash || '0'.repeat(64);
-    
+
     // Filter only active validator candidates with stake >= minimum (5,000 NST = 500,000,000,000 atomic units)
     const MIN_STAKE = 500000000000; // 5,000 NST in atomic units
     const eligible = [];
     let eligibleTotalStake = 0;
-    
+
     for (const [id, v] of validators.entries()) {
         const acct = accounts.get(id);
         // Only include validators that are registered candidates with sufficient stake and not slashed
@@ -66,21 +68,21 @@ export function getProducer(height) {
             eligibleTotalStake += Number(v.stake || 0);
         }
     }
-    
+
     if (eligible.length === 0 || eligibleTotalStake === 0) return null;
-    
+
     // Deterministic seed from prevHash + height
     const seed = sha256Hex(Buffer.from(String(prevHash) + String(height), 'utf8'));
     const seedNum = parseInt(seed.slice(0, 12), 16);
     const r = seedNum % eligibleTotalStake;
-    
+
     // Weighted selection
     let acc = 0;
     for (const v of eligible) {
         acc += v.stake;
         if (r < acc) return v.id;
     }
-    
+
     // Fallback: return last eligible validator
     return eligible[eligible.length - 1].id;
 }
@@ -185,13 +187,13 @@ export async function performReorg(oldTipHash, newTipHash) {
     // NS does not own a mempool; gateway manages pending txs. No local mempool clearing.
     const requeueCandidates = [];
     // replay blocks from genesis up to ancestor (if any)
-        // canonicalPath is the ordered list of blocks to replay for the new canonical chain.
-        // applyHashes was collected from newTip back to ancestor (exclusive) and reversed,
-        // which yields the correct order from ancestor's child up to newTip; if ancestor is null
-        // applyHashes already contains the full chain from genesis up to newTip.
-        const canonicalPath = applyHashes;
+    // canonicalPath is the ordered list of blocks to replay for the new canonical chain.
+    // applyHashes was collected from newTip back to ancestor (exclusive) and reversed,
+    // which yields the correct order from ancestor's child up to newTip; if ancestor is null
+    // applyHashes already contains the full chain from genesis up to newTip.
+    const canonicalPath = applyHashes;
     // reapply state along canonicalPath
-        for (const bh of canonicalPath) {
+    for (const bh of canonicalPath) {
         const b = blockMap.get(bh);
         // process transactions in canonical replay: handle validator-level and account-level staking
         for (let i = 0; i < b.txs.length; i++) {
@@ -356,7 +358,7 @@ export async function performReorg(oldTipHash, newTipHash) {
                         }
                     }
                 } catch (e) {
-                    try { rollbackTransaction(); } catch (ee) {}
+                    try { rollbackTransaction(); } catch (ee) { }
                     logNs('ERROR', 'Failed to revert released_unstake during reorg', e && e.message);
                 }
                 requeueCandidates.push(found);
@@ -451,7 +453,7 @@ export async function releaseMatureUnstakes(cutoffTime) {
                 logNs('INFO', `Released pending_unstake ${id} -> ${addr} amount=${amt}`);
             } catch (innerErr) {
                 // on any db error, rollback
-                try { rollbackTransaction(); } catch (e) {}
+                try { rollbackTransaction(); } catch (e) { }
                 logNs('ERROR', 'releaseMatureUnstakes record processing failed', innerErr && innerErr.message);
             }
         }
@@ -731,6 +733,63 @@ export function applyBlock(block) {
                 if (idx === -1) snapshot.validators.push([addr, { stake: stakeNum, publicKey: 'unknown' }]);
                 else snapshot.validators[idx][1].stake = stakeNum;
             }
+        }
+
+        // CN-08-C + CN-09-A: ARTIFACT_CRITIQUE - LLM-generated code review with security enforcement
+        if (tx.type === 'ARTIFACT_CRITIQUE' && extendsCanonical) {
+            // Security Check #1: Producer-Only Source Verification
+            const producer = block.header.validatorId || block.header.producerId;
+            if (tx.from !== producer) {
+                logNs('WARN', `ARTIFACT_CRITIQUE rejected: sender ${tx.from} != producer ${producer}`);
+                return { ok: false, reason: 'critique_unauthorized_producer' };
+            }
+
+            // Security Check #2: Structural Integrity (JSON Schema Validation)
+            if (!tx.payload) {
+                return { ok: false, reason: 'critique_missing_payload' };
+            }
+
+            const validation = validateCritiquePayload(tx.payload);
+            if (!validation.valid) {
+                logNs('WARN', `ARTIFACT_CRITIQUE schema validation failed: ${validation.errors.join('; ')}`);
+                return { ok: false, reason: 'critique_invalid_schema', details: validation.errors };
+            }
+
+            // CN-09-A: Security Check #4 - State-Based Duplicate Prevention
+            const artifactId = tx.payload.artifact_id;
+            const reviewKey = `${artifactId}:${tx.payload.review_block_height}`;
+            const existingFulfillment = db.getCompletedReview(reviewKey);
+
+            if (existingFulfillment) {
+                logNs('WARN', `ARTIFACT_CRITIQUE rejected: review already fulfilled at height ${existingFulfillment.fulfilled_at_height} by ${existingFulfillment.fulfilled_by}`);
+                return { ok: false, reason: 'critique_already_fulfilled', details: existingFulfillment };
+            }
+
+            // Security Check #3: Anti-Spam (One critique per artifact_id per block)
+            const existingCritique = block.txs.find(t =>
+                t.type === 'ARTIFACT_CRITIQUE' &&
+                t.payload &&
+                t.payload.artifact_id === artifactId &&
+                t !== tx
+            );
+            if (existingCritique) {
+                logNs('WARN', `ARTIFACT_CRITIQUE rejected: duplicate for artifact ${artifactId} in current block`);
+                return { ok: false, reason: 'critique_duplicate_artifact' };
+            }
+
+            // All validation passed - mark the review request as fulfilled
+            const fulfillmentData = {
+                artifact_id: artifactId,
+                review_block_height: tx.payload.review_block_height,
+                critique_tx_id: txIdFor(tx),
+                fulfilled_by: producer,
+                fulfilled_at_height: height,
+                fulfilled_at: Date.now()
+            };
+
+            db.saveCompletedReview(reviewKey, fulfillmentData);
+
+            logNs('INFO', `ARTIFACT_CRITIQUE accepted & fulfilled: ${artifactId} by ${producer}, issues: ${tx.payload.issues.length}`);
         }
     }
     // reward validator

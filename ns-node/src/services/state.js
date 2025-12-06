@@ -35,6 +35,10 @@ console.log(`[State] Loaded ${accounts.size} accounts from DB`);
 export const pendingUnstakes = db.getAllPendingUnstakes();
 console.log(`[State] Loaded ${pendingUnstakes.size} pending unstakes from DB`);
 
+// Load completed reviews (CN-09-A)
+export const completedReviews = db.getAllCompletedReviews();
+console.log(`[State] Loaded ${completedReviews.size} completed reviews from DB`);
+
 // Initialize NS Shared Pool if not exists
 const NS_SHARED_POOL_ADDRESS = 'ns-rewards-pool';
 if (!accounts.has(NS_SHARED_POOL_ADDRESS)) {
@@ -157,6 +161,20 @@ export function getReleasedUnstake(id) {
 
 export function removeReleasedUnstake(id) {
     if (typeof db.deleteReleasedUnstake === 'function') db.deleteReleasedUnstake(id);
+}
+
+/**
+ * CN-09-A: Persist completed review (fulfillment record)
+ */
+export function persistCompletedReview(key, fulfillmentData) {
+    db.saveCompletedReview(key, fulfillmentData);
+}
+
+/**
+ * CN-09-A: Get completed review by key
+ */
+export function getCompletedReview(key) {
+    return db.getCompletedReview(key);
 }
 
 /**

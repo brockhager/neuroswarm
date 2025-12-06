@@ -131,6 +131,85 @@ app.post('/governance/vote', authenticateJwt, requireRoles(['governance']), (req
   });
 });
 
+// POST /artifact/review (CN-08-A)
+// Request LLM analysis of an uploaded artifact
+app.post('/artifact/review', authenticateJwt, requireRoles(['review', 'governance', 'validator']), (req, res) => {
+  const reviewRequest = req.body;
+
+  // Validate required fields
+  if (!reviewRequest.artifact_id || !reviewRequest.requestor) {
+    return res.status(400).json(formatError('missing_fields', 'Missing required fields: artifact_id, requestor.', null, req));
+  }
+
+  // Validate artifact_id format (CID: bafy... or Qm...)
+  const artifactId = reviewRequest.artifact_id;
+  if (!(String(artifactId).startsWith('bafy') || String(artifactId).startsWith('Qm'))) {
+    return res.status(400).json(formatError('invalid_artifact_id', 'artifact_id must be a valid CID (bafy... or Qm...).', null, req));
+  }
+
+  // Construct review request envelope for VP-Node consumption
+  const request = {
+    type: 'REQUEST_REVIEW',
+    artifact_id: artifactId,
+    requestor: reviewRequest.requestor,
+    block_height: reviewRequest.block_height || null,  // Optional: block height for tracking
+    metadata: reviewRequest.metadata || {},
+    timestamp: new Date().toISOString(),
+  };
+
+  console.log('[router] artifact review request queued ->', request.artifact_id, 'requestor:', request.requestor);
+
+  // Prototype: return queued state
+  // In production, this would publish to a queue/message bus for VP-Node to consume
+  res.status(202).json({
+    message: 'Artifact review request accepted and queued for VP-Node processing.',
+    request_id: `review-${Date.now()}`,
+    artifact_id: request.artifact_id,
+    status: 'queued_for_vp'
+  });
+});
+
+// GET /artifact/critique/:artifact_id (CN-09-B)
+// Query critique history for an artifact from NS-Node's StateDB
+app.get('/artifact/critique/:artifact_id', authenticateJwt, async (req, res) => {
+  const { artifact_id } = req.params;
+
+  // Validate artifact_id format (CID: bafy... or Qm...)
+  if (!(String(artifact_id).startsWith('bafy') || String(artifact_id).startsWith('Qm'))) {
+    return res.status(400).json(formatError('invalid_artifact_id', 'artifact_id must be a valid CID (bafy... or Qm...).', null, req));
+  }
+
+  try {
+    // Proxy request to NS-Node internal endpoint
+    const NS_NODE_URL = process.env.NS_NODE_URL || 'http://localhost:3009';
+    const nsNodeEndpoint = `${NS_NODE_URL}/chain/critiques/${artifact_id}`;
+
+    console.log(`[router] Fetching critique history from NS-Node: ${nsNodeEndpoint}`);
+
+    const response = await fetch(nsNodeEndpoint, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'unknown_error');
+      console.error(`[router] NS-Node critique query failed: ${response.status} - ${errorText}`);
+      return res.status(response.status).json({
+        error: 'ns_node_query_failed',
+        message: `Failed to query NS-Node for critique history (HTTP ${response.status})`,
+        details: errorText
+      });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error(`[router] Error querying critique history:`, error.message);
+    return res.status(500).json(formatError('critique_query_failed', 'Failed to fetch critique history from NS-Node.', error.message, req));
+  }
+});
+
+
 // POST /ingest/artifact
 // compile schema-based validation middleware for /ingest/artifact
 let validateArtifactSchema = null;
@@ -231,7 +310,7 @@ function validateArtifact(artifact = {}) {
   return { valid: true };
 }
 
-app.get('/', (req, res) => res.send('Router API Prototype — /governance/vote (POST), /ingest/artifact (POST)'));
+app.get('/', (req, res) => res.send('Router API Prototype — /governance/vote (POST), /ingest/artifact (POST), /artifact/review (POST)'));
 
 // Debug endpoints for testing: view and clear pinned artifacts
 app.get('/debug/pins', async (req, res) => {

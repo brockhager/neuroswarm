@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neuroswarm CLI (Command Line Interface)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap');
+        body {
+            font-family: 'Fira Code', monospace;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            margin: 0;
+            padding: 0;
+        }
+        .terminal {
+            background-color: #010409;
+            border: 1px solid #30363d;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .prompt {
+            color: #58a6ff; /* Blue for input prompt */
+        }
+        .success {
+            color: #3fb950; /* Green for success */
+        }
+        .info {
+            color: #79c0ff; /* Light blue for info */
+        }
+        .warn {
+            color: #d29922; /* Yellow for warnings */
+        }
+        .error {
+            color: #f85149; /* Red for errors */
+        }
+    </style>
+</head>
+<body class="p-4 flex items-center justify-center min-h-screen">
+
+    <!-- Main CLI Container -->
+    <div id="cli-container" class="terminal w-full max-w-4xl p-4 rounded-lg flex flex-col">
+        
+        <!-- Output Display -->
+        <div id="output" class="flex-grow overflow-y-auto mb-2 text-sm leading-relaxed" style="min-height: 400px;">
+            <div class="info">Neuroswarm CLI v1.0.0 (CN-10-B)</div>
+            <div class="info">Connecting to Router API... Status: Online.</div>
+            <div class="info">Type 'ns help' for a list of commands.</div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="flex items-center">
+            <span id="current-user" class="prompt mr-2">guest@neuroswarm:~$</span>
+            <input type="text" id="command-input" class="flex-grow bg-transparent border-none outline-none text-white p-1" autofocus>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        const ROUTER_API_BASE = 'https://router.neuroswarm.network/v1'; // Simulated Router API Base URL
+        const MOCK_TOKEN = 'jwt.mock_token.signed'; // Mock JWT for simulation
+        const MOCK_CID = 'QmXyz789aBcD12345eFgH6789iJkL01234mNoP5678qRsT9012uVwXyZ';
+        // ---------------------
+
+        const output = document.getElementById('output');
+        const input = document.getElementById('command-input');
+        const userPrompt = document.getElementById('current-user');
+
+        let isAuthenticated = false;
+        let username = 'guest';
+        let jwtToken = null;
+
+        /**
+         * Appends a line of text to the terminal output.
+         * @param {string} text - The content to display.
+         * @param {string} className - Tailwind class for styling (e.g., 'success', 'error', 'info').
+         * @param {string} prefix - Optional prefix (e.g., '=>').
+         */
+        function writeLine(text, className = '', prefix = '') {
+            const line = document.createElement('div');
+            line.className = className;
+            line.innerHTML = `${prefix} ${text}`;
+            output.appendChild(line);
+            // Auto-scroll to the bottom
+            output.scrollTop = output.scrollHeight;
+        }
+
+        /**
+         * Displays the result of a simulated API call.
+         * @param {string} command - The command run.
+         * @param {boolean} success - Whether the call succeeded.
+         * @param {string} message - The response message.
+         */
+        function displayApiResult(command, success, message) {
+            if (success) {
+                writeLine(`Command: ${command}`, 'info');
+                writeLine(`✅ Success: ${message}`, 'success', '=>');
+            } else {
+                writeLine(`Command: ${command}`, 'info');
+                writeLine(`❌ Error: ${message}`, 'error', '=>');
+            }
+        }
+
+        /**
+         * Simulates an API call with exponential backoff and mock data.
+         * @param {string} url - The mock API endpoint.
+         * @param {object} options - Request options (method, body).
+         * @param {number} retries - Current retry count.
+         */
+        async function mockApiCall(url, options = {}, retries = 0) {
+            // Mock API logic based on URL and authentication status
+            const endpoint = url.split(ROUTER_API_BASE)[1] || url;
+            const commandName = endpoint.split('/')[2] || 'unknown';
+            const mockLatency = 500 + Math.random() * 1000;
+            
+            await new Promise(resolve => setTimeout(resolve, mockLatency)); // Simulate network delay
+
+            if (!isAuthenticated && endpoint !== '/auth/login') {
+                return { success: false, message: 'Unauthorized. Run "ns auth login" first.', status: 401 };
+            }
+
+            // Mock responses for the five core commands
+            switch (endpoint.split('?')[0]) {
+                case '/auth/login':
+                    if (options.body && JSON.parse(options.body).username) {
+                        return { success: true, token: MOCK_TOKEN, status: 200, user: JSON.parse(options.body).username };
+                    }
+                    return { success: false, message: 'Invalid credentials.', status: 400 };
+
+                case '/validator/register':
+                    return { success: true, message: 'Validator candidacy submitted successfully. Awaiting stake lock-up.', status: 200 };
+
+                case '/stake':
+                    const amount = JSON.parse(options.body)?.amount;
+                    if (amount > 0) {
+                        return { success: true, message: `Staked ${amount} NST. Total stake: 5000 NST.`, status: 200 };
+                    }
+                    return { success: false, message: 'Invalid stake amount.', status: 400 };
+
+                case '/artifact/review':
+                    const cid = JSON.parse(options.body)?.artifact_id;
+                    if (cid && cid.startsWith('Qm')) {
+                        return { success: true, message: `Review request submitted for CID ${cid}. Tracking Block Height: 1245.`, status: 202 };
+                    }
+                    return { success: false, message: 'Invalid Artifact ID (CID).', status: 400 };
+
+                case `/artifact/critique/${MOCK_CID}`: // Assuming the CID is the mock one
+                    // Simulate critique retrieval
+                    return {
+                        success: true,
+                        status: 200,
+                        data: {
+                            artifact_id: MOCK_CID,
+                            fulfilled_at_height: 1250,
+                            critique: [
+                                { severity: 'CRITICAL', file: 'chain.js', line: '789', comment: 'Slashing logic vulnerable to replay attack.' },
+                                { severity: 'SUGGESTION', file: 'router.js', line: '12', comment: 'Use BigInt for stake amounts.' }
+                            ]
+                        }
+                    };
+                default:
+                    return { success: false, message: `Unknown API command for endpoint: ${endpoint}`, status: 404 };
+            }
+        }
+
+        /**
+         * Main command processor function.
+         */
+        async function processCommand(inputString) {
+            if (!inputString.trim()) return;
+
+            // Display the command run
+            writeLine(`${userPrompt.textContent} ${inputString}`, 'info');
+
+            const parts = inputString.trim().split(/\s+/);
+            const cmd = parts[0].toLowerCase();
+            const args = parts.slice(1);
+            
+            let response = null;
+
+            switch (cmd) {
+                case 'ns':
+                    if (args[0] === 'auth' && args[1] === 'login') {
+                        // ns auth login <username>
+                        const inputUsername = args[2] || 'cto-user';
+                        const url = `${ROUTER_API_BASE}/auth/login`;
+                        writeLine('Attempting authentication...', 'info');
+                        
+                        response = await mockApiCall(url, { method: 'POST', body: JSON.stringify({ username: inputUsername, password: 'mock-password' }) });
+
+                        if (response.success) {
+                            isAuthenticated = true;
+                            jwtToken = response.token;
+                            username = response.user;
+                            userPrompt.innerHTML = `<span class="prompt">${username}@neuroswarm:$</span>`;
+                            displayApiResult(inputString, true, `Welcome, ${username}. Auth token stored for session.`);
+                        } else {
+                            displayApiResult(inputString, false, response.message);
+                        }
+                        
+                    } else if (!isAuthenticated) {
+                        writeLine('Please run "ns auth login <username>" first.', 'warn');
+                        
+                    } else if (args[0] === 'validator' && args[1] === 'register') {
+                        // ns validator register
+                        writeLine('Registering validator candidate...', 'info');
+                        const url = `${ROUTER_API_BASE}/validator/register`;
+                        response = await mockApiCall(url, { method: 'POST', headers: { 'Authorization': `Bearer ${jwtToken}` } });
+                        displayApiResult(inputString, response.success, response.message);
+
+                    } else if (args[0] === 'stake') {
+                        // ns stake <amount>
+                        const amount = parseFloat(args[1]);
+                        if (isNaN(amount) || amount <= 0) {
+                            writeLine('Usage: ns stake <amount>. Amount must be a positive number.', 'error');
+                            return;
+                        }
+                        writeLine(`Staking ${amount} NST...`, 'info');
+                        const url = `${ROUTER_API_BASE}/stake`;
+                        response = await mockApiCall(url, { method: 'POST', headers: { 'Authorization': `Bearer ${jwtToken}` }, body: JSON.stringify({ amount: amount }) });
+                        displayApiResult(inputString, response.success, response.message);
+
+                    } else if (args[0] === 'review') {
+                        // ns review <artifact_cid>
+                        const cid = args[1];
+                        if (!cid || !cid.startsWith('Qm')) {
+                            writeLine('Usage: ns review <artifact_cid>. CID format error (must start with Qm).', 'error');
+                            return;
+                        }
+                        writeLine(`Submitting artifact ${cid} for review...`, 'info');
+                        const url = `${ROUTER_API_BASE}/artifact/review`;
+                        response = await mockApiCall(url, { method: 'POST', headers: { 'Authorization': `Bearer ${jwtToken}` }, body: JSON.stringify({ artifact_id: cid }) });
+                        displayApiResult(inputString, response.success, response.message);
+                        writeLine(`NOTE: Use 'ns critique get ${cid}' later to retrieve the result.`, 'warn');
+
+                    } else if (args[0] === 'critique' && args[1] === 'get') {
+                        // ns critique get <artifact_cid>
+                        const cid = args[2] || MOCK_CID; // Use mock CID if none provided
+                        if (!cid || !cid.startsWith('Qm')) {
+                            writeLine('Usage: ns critique get <artifact_cid>. CID format error (must start with Qm).', 'error');
+                            return;
+                        }
+                        writeLine(`Querying critique history for ${cid}...`, 'info');
+                        const url = `${ROUTER_API_BASE}/artifact/critique/${cid}`;
+                        response = await mockApiCall(url, { method: 'GET', headers: { 'Authorization': `Bearer ${jwtToken}` } });
+                        
+                        if (response.success && response.data) {
+                            writeLine('--- ARTIFACT CRITIQUE (Consensus-Approved) ---', 'success');
+                            response.data.critique.forEach(issue => {
+                                writeLine(`[${issue.severity}] ${issue.file}:${issue.line}`, 'warn', ' >');
+                                writeLine(`  - ${issue.comment}`, 'info');
+                            });
+                            writeLine('------------------------------------------------', 'success');
+                        } else {
+                            displayApiResult(inputString, false, `Critique not found or API error: ${response.message || 'No data received'}`);
+                        }
+
+                    } else if (args[0] === 'help' || args.length === 0) {
+                        writeLine('Neuroswarm CLI Commands:', 'success');
+                        writeLine('-----------------------------------------------------------------------------------------------------------------', 'info');
+                        writeLine('ns auth login [username]    : Authenticates session and stores JWT.', 'info');
+                        writeLine('ns validator register       : Submits validator candidacy to the network.', 'info');
+                        writeLine('ns stake <amount>           : Locks NST tokens for staking (e.g., 5000).', 'info');
+                        writeLine(`ns review <artifact_cid>    : Submits an artifact (e.g., ${MOCK_CID}) for decentralized LLM review.`, 'info');
+                        writeLine('ns critique get <artifact_cid>: Retrieves the final consensus-approved LLM critique.', 'info');
+                        writeLine('ns help                     : Show this help message.', 'info');
+                        writeLine('-----------------------------------------------------------------------------------------------------------------', 'info');
+
+                    } else {
+                        writeLine(`Unknown command or missing arguments. Type 'ns help'.`, 'error');
+                    }
+                    break;
+                default:
+                    writeLine(`Command not recognized. Use 'ns <command>'.`, 'error');
+            }
+        }
+
+        // --- Event Listener ---
+        input.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                const command = input.value;
+                input.value = ''; // Clear input
+                processCommand(command);
+            }
+        });
+        
+        // Initial focus on load
+        window.onload = () => {
+            input.focus();
+        };
+    </script>
+</body>
+</html>

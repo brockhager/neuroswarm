@@ -1,0 +1,219 @@
+name: NS-LLM CI Integration & OpenAPI Validation
+
+on:
+  push:
+    branches:
+      - main
+      - 'feat/**'
+      - 'bugfix/**'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'NS-LLM/**'
+      - '.github/workflows/ns-llm-ci.yml'
+
+jobs:
+  # ----------------------------------------------------------------------
+  # OPS-CI-NSLLM: NS-LLM Integration Tests with OpenAPI Contract Validation
+  # ----------------------------------------------------------------------
+  ns_llm_integration:
+    name: NS-LLM Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: ['20.x']
+
+    env:
+      PORT: 3015
+      TEST_TIMEOUT: 180000
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+
+    - name: Install NS-LLM Dependencies
+      working-directory: ./NS-LLM
+      run: npm ci
+
+    # Test 1: Health Check
+    - name: 🧪 Test NS-LLM Health Endpoint
+      working-directory: ./NS-LLM
+      run: npm run test-health
+      env:
+        TEST_HEALTH_TIMEOUT: 180
+        PORT: 3015
+
+    # Test 2: Generate Endpoint (HTTP)
+    - name: 🧪 Test Generate Endpoint (HTTP)
+      working-directory: ./NS-LLM
+      run: node tests/test-generate-http.js
+
+    # Test 3: Generate Endpoint (Streaming)
+    - name: 🧪 Test Generate Endpoint (SSE Stream)
+      working-directory: ./NS-LLM
+      run: node tests/test-generate-stream.js
+
+    # Test 4: Embed Endpoint
+    - name: 🧪 Test Embed Endpoint
+      working-directory: ./NS-LLM
+      run: node tests/test-embed.js
+
+    # Test 5: Integration Test (Full Workflow)
+    - name: 🧪 Run Full Integration Test
+      working-directory: ./NS-LLM
+      run: node test-integration.js
+
+    # Test 6: Native Inference (if applicable)
+    - name: 🧪 Test Native Inference Shim
+      working-directory: ./NS-LLM
+      run: node test-shim.js
+      continue-on-error: true  # Native inference may not be available on all platforms
+
+    # ----------------------------------------------------------------------
+    # OpenAPI Contract Validation
+    # ----------------------------------------------------------------------
+    - name: 📋 Install OpenAPI Validator
+      if: matrix.os == 'ubuntu-latest'
+      run: npm install -g @stoplight/spectral-cli
+
+    - name: 📋 Validate OpenAPI Specification
+      if: matrix.os == 'ubuntu-latest'
+      working-directory: ./NS-LLM
+      run: |
+        # Check OpenAPI YAML syntax
+        spectral lint openapi.yaml --ruleset spectral:oas
+
+    - name: 📋 Verify OpenAPI Contract Matches Implementation
+      if: matrix.os == 'ubuntu-latest'
+      working-directory: ./NS-LLM
+      run: |
+        # Start server in background
+        node server.js &
+        SERVER_PID=$!
+        
+        # Wait for server to start
+        sleep 5
+        
+        # Test endpoints defined in OpenAPI spec
+        echo "Testing /api/generate endpoint..."
+        curl -f http://localhost:3015/api/generate -X POST \
+          -H "Content-Type: application/json" \
+          -d '{"prompt":"test","max_tokens":10}' || exit 1
+        
+        echo "Testing /api/embed endpoint..."
+        curl -f http://localhost:3015/api/embed -X POST \
+          -H "Content-Type: application/json" \
+          -d '{"text":"test"}' || exit 1
+        
+        echo "Testing /health endpoint..."
+        curl -f http://localhost:3015/health || exit 1
+        
+        # Cleanup
+        kill $SERVER_PID
+        echo "✅ All OpenAPI endpoints validated"
+
+    # ----------------------------------------------------------------------
+    # Artifact Checks (Embeddings & Response Quality)
+    # ----------------------------------------------------------------------
+    - name: 🔍 Verify Embedding Dimensions
+      if: matrix.os == 'ubuntu-latest'
+      working-directory: ./NS-LLM
+      run: |
+        node -e "
+        const fetch = require('node-fetch');
+        const { spawn } = require('child_process');
+        
+        const server = spawn('node', ['index.js']);
+        
+        setTimeout(async () => {
+          try {
+            const res = await fetch('http://localhost:3015/api/embed', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ text: 'test embedding' })
+            });
+            const data = await res.json();
+            
+            if (!data.embedding || !Array.isArray(data.embedding)) {
+              console.error('❌ Invalid embedding format');
+              process.exit(1);
+            }
+            
+            console.log('✅ Embedding dimension:', data.embedding.length);
+            if (data.embedding.length === 0) {
+              console.error('❌ Empty embedding vector');
+              process.exit(1);
+            }
+            
+            server.kill();
+            process.exit(0);
+          } catch (err) {
+            console.error('❌ Embedding test failed:', err.message);
+            server.kill();
+            process.exit(1);
+          }
+        }, 5000);
+        "
+
+    - name: 🔍 Verify Generate Response Quality
+      if: matrix.os == 'ubuntu-latest'
+      working-directory: ./NS-LLM
+      run: |
+        node -e "
+        const fetch = require('node-fetch');
+        const { spawn } = require('child_process');
+        
+        const server = spawn('node', ['index.js']);
+        
+        setTimeout(async () => {
+          try {
+            const res = await fetch('http://localhost:3015/api/generate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ prompt: 'Hello world', max_tokens: 50 })
+            });
+            const data = await res.json();
+            
+            if (!data.text || typeof data.text !== 'string') {
+              console.error('❌ Invalid response format');
+              process.exit(1);
+            }
+            
+            if (data.text.trim().length === 0) {
+              console.error('❌ Empty response');
+              process.exit(1);
+            }
+            
+            console.log('✅ Generated text length:', data.text.length);
+            server.kill();
+            process.exit(0);
+          } catch (err) {
+            console.error('❌ Generate test failed:', err.message);
+            server.kill();
+            process.exit(1);
+          }
+        }, 5000);
+        "
+
+    # ----------------------------------------------------------------------
+    # Performance Benchmarking
+    # ----------------------------------------------------------------------
+    - name: 📊 Run Performance Benchmark
+      if: matrix.os == 'ubuntu-latest'
+      working-directory: ./NS-LLM
+      run: node benchmark.js
+      continue-on-error: true  # Benchmarks shouldn't fail CI
+
+    - name: ✅ Summary
+      if: always()
+      run: |
+        echo "NS-LLM CI Tests Complete on ${{ matrix.os }}"
+        echo "Node.js version: ${{ matrix.node-version }}"
