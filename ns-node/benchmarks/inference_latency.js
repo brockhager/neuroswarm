@@ -143,11 +143,13 @@ function calculateStats(results) {
         };
     };
 
+    // Defensive: if some result arrays are empty (no successful requests), return zeros
+    const safeCalc = (vals) => (vals && vals.length ? calc(vals) : { avg: 0, p50: 0, p95: 0, p99: 0 });
     return {
-        ttft: calc(results.ttft),
-        perToken: calc(results.perToken),
-        endToEnd: calc(results.endToEnd),
-        tokensPerSec: calc(results.tokensPerSec)
+        ttft: safeCalc(results.ttft),
+        perToken: safeCalc(results.perToken),
+        endToEnd: safeCalc(results.endToEnd),
+        tokensPerSec: safeCalc(results.tokensPerSec)
     };
 }
 
