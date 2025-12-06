@@ -41,7 +41,8 @@ jobs:
 
     - name: Install NS-LLM Dependencies
       working-directory: ./NS-LLM
-      run: npm ci
+      # The repo uses pnpm for workspace installs. Use pnpm here so CI installs succeed.
+      run: pnpm -C NS-LLM install --no-frozen-lockfile
 
     # Test 1: Health Check
     - name: 🧪 Test NS-LLM Health Endpoint
