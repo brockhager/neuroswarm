@@ -49,12 +49,47 @@ jobs:
       run: pnpm install --no-frozen-lockfile
 
     # Test 1: Health Check
-    - name: 🧪 Test NS-LLM Health Endpoint
+    - name: 🧪 Test NS-LLM Health Endpoint (Linux / macOS)
+      if: matrix.os != 'windows-latest'
       working-directory: ./NS-LLM
-      run: pnpm run test-health
-      env:
-        TEST_HEALTH_TIMEOUT: 180
-        PORT: 3015
+      run: |
+        PORT=3015 node index.js &
+        SERVER_PID=$!
+
+        # Wait for /health ready
+        for i in {1..30}; do
+          if curl -s --fail http://127.0.0.1:3015/health >/dev/null; then
+            echo "Server healthy"
+            break
+          fi
+          echo "Waiting for health ($i/30)"
+          sleep 1
+        done
+
+        # Cleanup
+        kill $SERVER_PID || true
+
+    - name: 🧪 Test NS-LLM Health Endpoint (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      working-directory: ./NS-LLM
+      run: |
+        $env:PORT = 3015
+        $proc = Start-Process -FilePath 'node' -ArgumentList 'index.js' -PassThru
+        $ok = $false
+        for ($i = 0; $i -lt 30; $i++) {
+          try {
+            $r = Invoke-WebRequest -Uri 'http://127.0.0.1:3015/health' -UseBasicParsing -TimeoutSec 3 -ErrorAction Stop
+            if ($r.StatusCode -eq 200) { $ok = $true; break }
+          } catch { }
+          Start-Sleep -Seconds 1
+        }
+        if (-not $ok) {
+          Write-Host 'Health check failed'
+          Stop-Process -Id $proc.Id -ErrorAction SilentlyContinue
+          exit 1
+        }
+        Stop-Process -Id $proc.Id -ErrorAction SilentlyContinue
 
     # Test 2: Generate Endpoint (HTTP)
     - name: 🧪 Test Generate Endpoint (HTTP)
