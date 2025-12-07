@@ -9,7 +9,6 @@ This document consolidates all outstanding work from the Master Design Document 
 | ID | Component | Task Description | Priority | Status |
 |-----------|------------|------------------|----------|--------|
 | CN-12-A | Gateway Node (8080) | Core Routing & Validation: Secure HTTP endpoint with JWT middleware, rate limiting, request validation, and routing to NS-Node. | HIGH | In Progress |
-
 | CN-02 | Router API (4001) | Implement security and anchoring: JWT/RBAC ✅, Postgres schema/migrations, deterministic audit hashing, IPFS pinning pipeline, and optional on-chain anchoring tests. | HIGH | In Progress (Phase 4 complete, pending testing) |
 | OPS-03C | CI/CD | Multi-service E2E harness validating full flows (Agent 9 ↔ NS-LLM ↔ Router ↔ VP ↔ ns-node). | HIGH | Not Started |
 | CN-06-D | VP-Node / NS-Node | Validator selection integration + unbond release processor. | HIGH | Not Started |
@@ -279,12 +278,12 @@ This document consolidates all outstanding work from the Master Design Document 
 ## 📊 COMPLETION METRICS
 
 **Total Tasks**: 77
-**Completed**: 31 (40.3%)
+**Completed**: 32 (41.6%)
 **In Progress**: 2 (2.6%)
-**Not Started**: 44 (57.1%)
+**Not Started**: 43 (55.8%)
 
 **By Priority**:
-- HIGH: 20/31 complete (64.5%)
+- HIGH: 21/31 complete (67.7%)
 - MEDIUM: 2/17 complete (11.8%)
 - LOW: 0/1 complete (0%)
 
