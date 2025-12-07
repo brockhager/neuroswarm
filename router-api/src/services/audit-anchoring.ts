@@ -1,17 +1,9 @@
 import crypto from 'crypto';
 import { Connection, Keypair, Transaction, TransactionInstruction, PublicKey } from '@solana/web3.js';
-import { Counter, Histogram, register } from 'prom-client';
 import { logger } from '../utils/logger';
+import { metrics } from './metrics';
 import axios from 'axios';
 import FormData from 'form-data';
-import fs from 'fs';
-import path from 'path';
-
-// Metrics - ensure they are registered once per process
-const RETRY_COUNTER = (register.getSingleMetric('t23_anchor_onchain_retries_total') as Counter<string>) || new Counter({ name: 't23_anchor_onchain_retries_total', help: 'Total number of on-chain anchor retry attempts' });
-const SUCCESS_COUNTER = (register.getSingleMetric('t23_anchor_onchain_success_total') as Counter<string>) || new Counter({ name: 't23_anchor_onchain_success_total', help: 'Total number of successful on-chain anchors' });
-const FAILURE_COUNTER = (register.getSingleMetric('t23_anchor_onchain_failures_total') as Counter<string>) || new Counter({ name: 't23_anchor_onchain_failures_total', help: 'Total number of failed on-chain anchors after retries' });
-const CONFIRM_HIST = (register.getSingleMetric('t23_anchor_confirmation_seconds') as Histogram<string>) || new Histogram({ name: 't23_anchor_confirmation_seconds', help: 'Time to confirm the on-chain anchor (seconds)', buckets: [0.5, 1, 2, 5, 10, 30, 60] });
 
 /**
  * Audit event payload structure
@@ -44,16 +36,12 @@ function toCanonicalJson(event: AuditEvent): string {
   return JSON.stringify(sortObjectKeys(event), null, 0);
 }
 
-// Metrics for IPFS pinning
-const IPFS_PIN_RETRY_COUNTER = (register.getSingleMetric('t23_ipfs_pin_retries_total') as Counter<string>) || new Counter({ name: 't23_ipfs_pin_retries_total', help: 'Total attempts to pin to IPFS' });
-const IPFS_PIN_SUCCESS_COUNTER = (register.getSingleMetric('t23_ipfs_pin_success_total') as Counter<string>) || new Counter({ name: 't23_ipfs_pin_success_total', help: 'Successful IPFS pins' });
-const IPFS_PIN_FAILURE_COUNTER = (register.getSingleMetric('t23_ipfs_pin_failures_total') as Counter<string>) || new Counter({ name: 't23_ipfs_pin_failures_total', help: 'Failed IPFS pins after retries' });
-
 async function uploadToIPFS(canonicalJson: string): Promise<string> {
   const attempts = Number(process.env.IPFS_PIN_ATTEMPTS || 3);
   const baseBackoffMs = Number(process.env.IPFS_PIN_BACKOFF_MS || 200);
 
   const ipfsApi = process.env.IPFS_API_URL || IPFS_API_URL || '';
+  // If Mock IPFS
   if (!ipfsApi || ipfsApi === 'mock') {
     const contentHash = crypto.createHash('sha256').update(canonicalJson, 'utf8').digest('hex');
     const cid = `Qm${contentHash.substring(0, 44)}`;
@@ -64,7 +52,6 @@ async function uploadToIPFS(canonicalJson: string): Promise<string> {
 
   for (let attempt = 1; attempt <= attempts; attempt++) {
     try {
-      IPFS_PIN_RETRY_COUNTER.inc();
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       const ipfsAuthToken = process.env.IPFS_API_TOKEN || process.env.PINATA_JWT || '';
       if (ipfsAuthToken) {
@@ -103,67 +90,55 @@ async function uploadToIPFS(canonicalJson: string): Promise<string> {
             contentType: 'application/json'
           });
 
-          try {
-            // @ts-ignore
-            const formHeaders = form.getHeaders();
-            const allHeaders = { ...headers, ...formHeaders };
+          // @ts-ignore
+          const formHeaders = form.getHeaders();
+          const allHeaders = { ...headers, ...formHeaders };
 
-            const res = await axios.post(addUrl, form as any, { headers: allHeaders, maxBodyLength: Infinity, timeout: 20000 });
+          const res = await axios.post(addUrl, form as any, { headers: allHeaders, maxBodyLength: Infinity, timeout: 20000 });
 
-            const raw = res.data;
-            let cidSub: string | null = null;
-            if (typeof raw === 'string') {
-              const lines = raw.trim().split('\n').filter(Boolean);
-              const lastLine = lines[lines.length - 1];
-              try {
-                const parsed = JSON.parse(lastLine);
-                cidSub = parsed.Hash || parsed.cid || parsed.Cid || parsed.IpfsHash;
-              } catch (e) {
-                cidSub = lastLine.trim();
-              }
-            } else if (res.data && typeof res.data === 'object') {
-              cidSub = res.data.Hash || res.data.cid || res.data.Cid || res.data.IpfsHash;
+          const raw = res.data;
+          let cidSub: string | null = null;
+          if (typeof raw === 'string') {
+            const lines = raw.trim().split('\n').filter(Boolean);
+            const lastLine = lines[lines.length - 1];
+            try {
+              const parsed = JSON.parse(lastLine);
+              cidSub = parsed.Hash || parsed.cid || parsed.Cid || parsed.IpfsHash;
+            } catch (e) {
+              cidSub = lastLine.trim();
             }
-
-            if (cidSub) {
-              IPFS_PIN_SUCCESS_COUNTER.inc();
-              logger.info(`[AuditAnchoring] IPFS pinned successfully via Kubo HTTP`, { cid: cidSub });
-              return cidSub.toString();
-            }
-
-            lastErr = new Error(`Kubo /api/v0/add responded but no CID: ${JSON.stringify(res.data).slice(0, 400)}`);
-          } catch (httpErr) {
-            lastErr = httpErr;
+          } else if (res.data && typeof res.data === 'object') {
+            cidSub = res.data.Hash || res.data.cid || res.data.Cid || res.data.IpfsHash;
           }
+
+          if (cidSub) {
+            logger.info(`[AuditAnchoring] IPFS pinned successfully via Kubo HTTP`, { cid: cidSub });
+            return cidSub.toString();
+          }
+
+          lastErr = new Error(`Kubo /api/v0/add responded but no CID: ${JSON.stringify(res.data).slice(0, 400)}`);
 
         } catch (e2) {
           lastErr = e2;
         }
+      } else {
+        // Standard remote pin (Pinata style)
+        const res = await axios.post(ipfsApi, payload, { headers, timeout: 20000 });
+        const cid = (res.data && (res.data.IpfsHash || res.data.cid || res.data.Hash || res.data.hash)) || '';
+        if (cid) {
+          logger.info(`[AuditAnchoring] IPFS pinned successfully`, { cid: cid.toString() });
+          return cid.toString();
+        }
+        throw new Error('IPFS gateway did not return CID');
       }
 
-      const res = await axios.post(ipfsApi, payload, { headers, timeout: 20000 });
-
-      const cid = (res.data && (res.data.IpfsHash || res.data.cid || res.data.Hash || res.data.hash)) || '';
-      if (cid) {
-        IPFS_PIN_SUCCESS_COUNTER.inc();
-        logger.info(`[AuditAnchoring] IPFS pinned successfully`, { cid: cid.toString() });
-        return cid.toString();
-      }
-
-      throw new Error('IPFS gateway did not return CID');
     } catch (err: any) {
       const message = err?.message || String(err);
-      const code = err?.code || err?.errno || '';
-      const status = err?.response?.status;
-      const responseData = err?.response?.data;
       let reqUrl = err?.config?.url || err?.request?.url || err?.request?.path || '';
 
       logger.warn(`[AuditAnchoring] IPFS pin attempt ${attempt}/${attempts} failed`, {
         message,
-        code,
-        status,
-        url: reqUrl,
-        responseData: JSON.stringify(responseData).slice(0, 300)
+        url: reqUrl
       });
 
       lastErr = err;
@@ -174,11 +149,8 @@ async function uploadToIPFS(canonicalJson: string): Promise<string> {
         continue;
       }
 
-      IPFS_PIN_FAILURE_COUNTER.inc();
       logger.error('[AuditAnchoring] IPFS pinning failed after all retries');
-
-      const lastMessage = lastErr?.message || (lastErr ? String(lastErr) : 'unknown');
-      throw new Error(`IPFS pinning failed after retries: ${lastMessage}`);
+      throw new Error(`IPFS pinning failed after retries: ${message}`);
     }
   }
 
@@ -224,9 +196,18 @@ export async function anchorAudit(event: AuditEvent): Promise<AuditAnchorResult>
 
   logger.info(`[AuditAnchoring] Processing audit event: ${event.event_type}`, { audit_hash });
 
-  const ipfs_cid = await uploadToIPFS(canonicalJson);
-  const governance_notified = await sendGovernanceNotification(event, ipfs_cid);
+  let ipfs_cid = '';
+  try {
+    ipfs_cid = await uploadToIPFS(canonicalJson);
+  } catch (e: any) {
+    // If IPFS fails, we still want to try to inform governance/log if possible, but standard flow requires IPFS.
+    // We'll mark it as failed unless mock mode is active? 
+    // Actually throw here to ensure it counts as failure
+    metrics.anchorFailureTotal.inc();
+    throw e;
+  }
 
+  const governance_notified = await sendGovernanceNotification(event, ipfs_cid);
   const transaction_signature = await anchorAuditOnChain(audit_hash);
 
   logger.info('Audit anchored', { ipfs_cid, transaction_signature, audit_hash });
@@ -280,7 +261,6 @@ async function persistTimelineRecord(payload: {
       logger.info('[AuditAnchoring] Persisted timeline record to admin-node governance logger');
       return;
     } catch (err: any) {
-      logger.warn(`[AuditAnchoring] Persist attempt ${attempt}/${attempts} to governance logger failed: ${err?.message}`);
       if (attempt < attempts) {
         const backoff = baseBackoffMs * Math.pow(2, attempt - 1);
         await new Promise(r => setTimeout(r, backoff));
@@ -297,6 +277,8 @@ async function anchorAuditOnChain(audit_hash: string): Promise<string> {
   if (!rpc || rpc === 'mock') {
     const now = Date.now().toString();
     const txSig = crypto.createHash('sha256').update(audit_hash + '|' + now).digest('hex');
+    // Record explicit success for mock
+    metrics.anchorSuccessTotal.inc();
     return `mock_tx_${txSig}`;
   }
 
@@ -321,13 +303,13 @@ async function anchorAuditOnChain(audit_hash: string): Promise<string> {
 
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        RETRY_COUNTER.inc();
         const instruction = new TransactionInstruction({ keys: [], programId: memoProgramId, data: Buffer.from(audit_hash) });
         const tx = new Transaction().add(instruction);
         const sig = await connection.sendTransaction(tx, [signer]);
         const startConfirm = Date.now();
         const deadline = Date.now() + confirmationTimeoutMs;
         let confirmed = false;
+
         while (Date.now() < deadline) {
           try {
             const statuses = await connection.getSignatureStatuses([sig]);
@@ -341,39 +323,40 @@ async function anchorAuditOnChain(audit_hash: string): Promise<string> {
         }
 
         const confirmDurationSec = (Date.now() - startConfirm) / 1000;
-        CONFIRM_HIST.observe(confirmDurationSec);
+        metrics.anchorLatency.observe(confirmDurationSec); // Track latency
 
         if (confirmed) {
-          SUCCESS_COUNTER.inc();
+          metrics.anchorSuccessTotal.inc(); // Track Success
           logger.info(`[AuditAnchoring] On-chain TX confirmed`, { sig, duration: confirmDurationSec });
           return sig;
         }
         throw new Error('Transaction not confirmed within timeout');
 
       } catch (err: any) {
-        logger.warn(`[AuditAnchoring] Attempt ${attempt}/${maxAttempts} failed`, { error: err?.message, attempt });
+        logger.warn(`[AuditAnchoring] Attempt ${attempt}/${maxAttempts} failed`, { error: err?.message });
         if (attempt < maxAttempts) {
           const backoff = baseBackoffMs * Math.pow(2, attempt - 1);
-          logger.debug(`[AuditAnchoring] Backing off for ${backoff} ms`);
           await new Promise(r => setTimeout(r, backoff));
           continue;
         }
-        FAILURE_COUNTER.inc();
+
+        metrics.anchorFailureTotal.inc();
         logger.error('[AuditAnchoring] All on-chain anchor attempts failed. Escalating.');
+
+        // Mock fallback if RPC fails (allows system to proceed in dev)
         const now = Date.now().toString();
         const txSig = crypto.createHash('sha256').update(audit_hash + '|' + now).digest('hex');
-        return `mock_tx_${txSig}`;
+        return `mock_tx_${txSig} (fallback)`;
       }
     }
   } catch (err: any) {
-    logger.error('[AuditAnchoring] On-chain anchoring failed, falling back to mock signature', err);
+    logger.error('[AuditAnchoring] On-chain anchoring failed unexpectedly', err);
+    metrics.anchorFailureTotal.inc();
     const now = Date.now().toString();
     const txSig = crypto.createHash('sha256').update(audit_hash + '|' + now).digest('hex');
-    return `mock_tx_${txSig}`;
+    return `mock_tx_${txSig} (fallback)`;
   }
-  const now2 = Date.now().toString();
-  const finalSig = crypto.createHash('sha256').update(audit_hash + '|' + now2).digest('hex');
-  return `mock_tx_${finalSig}`;
+  return 'mock_tx_failed_fallback';
 }
 
 function sortObjectKeys<T>(obj: T): any {
@@ -386,3 +369,26 @@ function sortObjectKeys<T>(obj: T): any {
 }
 
 export default { anchorAudit };
+
+
+/**
+ * Audit event payload structure
+ */
+export interface AuditEvent {
+  event_type: string;
+  timestamp: string; // ISO string
+  triggering_job_ids?: string[];
+  details?: string;
+  metadata?: Record<string, any>;
+}
+
+/**
+ * Audit result
+ */
+export interface AuditAnchorResult {
+  audit_hash: string;
+  ipfs_cid: string;
+  governance_notified: boolean;
+  transaction_signature?: string;
+}
+

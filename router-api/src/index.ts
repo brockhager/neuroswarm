@@ -15,6 +15,7 @@ import crypto from 'crypto';
 import { LedgerDB } from './services/ledger-db';
 import { authenticate } from './middleware/auth';
 import { logger } from './utils/logger';
+import { metrics } from './services/metrics';
 import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config();
@@ -227,6 +228,7 @@ const ledgerDB = new LedgerDB();
 app.post('/api/v1/ledger/write', authenticate('internal_service'), async (req: Request, res: Response) => {
     const correlationId = (req as any).correlationId;
     const reqLogger = logger.child({ correlationId, endpoint: '/api/v1/ledger/write' });
+    metrics.ledgerWritesTotal.inc(); // Increment metric
 
     try {
         const payload = req.body;
