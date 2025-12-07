@@ -16,9 +16,6 @@ jobs:
     strategy:
       matrix:
         persistence: [sqlite, fallback]
-    defaults:
-      run:
-        working-directory: ./discord
 
     steps:
       - name: Checkout
@@ -31,6 +28,7 @@ jobs:
 
       - name: Install Discord package dependencies
         run: npm install
+        working-directory: ./discord
 
       - name: Ensure Router API prototype deps (build native modules)
         run: |
@@ -50,12 +48,14 @@ jobs:
           ls -la >> e2e-debug.txt || true
           echo "=== ROUTER DIR CONTENTS (router-api-prototype) ===" >> e2e-debug.txt
           ls -la ../router-api-prototype >> e2e-debug.txt || true
+        working-directory: ./discord
 
       - name: Run Agent 9 E2E Tests (Router Persistence: ${{ matrix.persistence }})
         run: |
           mkdir -p artifacts/e2e
           # capture test output to artifacts for post-mortem
           npm run test:e2e 2>&1 | tee artifacts/e2e/e2e-output-${{ matrix.persistence }}.log
+        working-directory: ./discord
         env:
           # For deterministic CI runs the Router API secret or JWKS may be set by tests.
           ROUTER_JWT_SECRET: TEST_SECRET_12345
@@ -68,6 +68,7 @@ jobs:
 
       - name: Post-run smoke confirmation
         run: echo "✅ Agent 9 E2E tests completed"
+        working-directory: ./discord
 
       - name: Upload agent9-e2e artifacts
         if: always()
