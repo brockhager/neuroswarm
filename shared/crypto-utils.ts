@@ -115,7 +115,8 @@ export async function deriveKeypairFromSeed(seed: string): Promise<{ privateKey:
         return { privateKey, publicKey: Buffer.from(pub) };
     }
 
-    // Fallback: derive public key deterministically from seed (not cryptographically correct, only for tests)
-    const publicKey = crypto.createHash(HASH_ALGORITHM).update(`PUB:${seed}`).digest();
+    // Fallback: use the same key for both private and public in HMAC mode (prototype only)
+    // This allows HMAC(key, data) to work for both sign and verify operations
+    const publicKey = Buffer.from(seedHash);
     return { privateKey, publicKey };
 }

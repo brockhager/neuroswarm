@@ -4,7 +4,7 @@
 // and an authoritative public key registry. This is intentionally simple for
 // prototyping; Phase 3 should be replaced with a real KMS/HSM integration.
 
-import { hexToBuffer, bufferToHex, deriveKeypairFromSeed } from './crypto-utils'; 
+import { hexToBuffer, bufferToHex, deriveKeypairFromSeed } from './crypto-utils.ts'; 
 import { Buffer } from 'buffer';
 import crypto from 'crypto';
 
@@ -16,8 +16,10 @@ import crypto from 'crypto';
 export class VaultClient {
   private isAuthenticated: boolean = false;
   private vaultUrl: string = process.env.VAULT_URL || 'http://vault.internal:8200';
+  private token: string;
 
-  constructor(private token: string = process.env.VAULT_TOKEN || 'MOCK_VP_SERVICE_TOKEN_123') {
+  constructor(token: string = process.env.VAULT_TOKEN || 'MOCK_VP_SERVICE_TOKEN_123') {
+    this.token = token;
     if (!this.token) throw new Error('VaultClient: VAULT_TOKEN not provided');
     // In a real implementation we would authenticate here and refresh tokens.
     this.isAuthenticated = true;

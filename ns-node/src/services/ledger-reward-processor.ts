@@ -1,10 +1,9 @@
 import express from 'express';
 import crypto from 'crypto';
 import { sendSettlementConfirmationToVP } from './ledger-settlement-confirmation.ts';
-import { getCanonicalPayloadHash, verifySignature, hexToBuffer, bufferToHex, signPayload } from '../../shared/crypto-utils.ts';
+import { getCanonicalPayloadHash, verifySignature, hexToBuffer, bufferToHex, signPayload } from '../../../shared/crypto-utils.ts';
 import IdempotencyStore from '../../../shared/idempotency-store.ts';
 import { PublicKeyRegistry } from '../../../shared/key-management.ts';
-import { getPublicKeyFromRegistry } from '../../../shared/key-management.ts';
 
 // use shared crypto utilities (CN-07-H Phase 1) for canonical hashing and ED25519-style verification
 

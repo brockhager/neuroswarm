@@ -3,8 +3,8 @@ import http from 'node:http';
 import fetch from 'node-fetch';
 
 // imports for signing
-import { getCanonicalPayloadHash, signPayload, bufferToHex } from '../../shared/crypto-utils.js';
-import { deriveKeypairFromSeed } from '../../shared/crypto-utils.js';
+import { getCanonicalPayloadHash, signPayload, bufferToHex } from '../../shared/crypto-utils.ts';
+import { deriveKeypairFromSeed } from '../../shared/crypto-utils.ts';
 
 (async () => {
   // start a small VP stub that will receive confirmation

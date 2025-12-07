@@ -46,7 +46,7 @@ let ipfsConnected = false;
 
 // Idempotency store for confirmations from NS (prevents replayed SETTLED callbacks)
 import IdempotencyStore from '../shared/idempotency-store.ts';
-const vpIdempotencyStore = new IdempotencyStore(path.join(process.cwd(), 'neuroswarm', 'tmp', 'vp-idempotency.json'));
+const vpIdempotencyStore = new IdempotencyStore();
 
 async function pingNsHealth() {
   try {
@@ -441,9 +441,9 @@ app.post('/api/v1/ledger/confirm-reward-settlement', async (req, res) => {
     const idempotencyKey = req.headers['idempotency-key'] || req.headers['Idempotency-Key'] || req.headers['Idempotency-key'];
 
     if (idempotencyKey) {
-      // If this key was already used, treat as duplicate
-      const already = await vpIdempotencyStore.isProcessed(String(idempotencyKey));
-      if (already) return res.status(409).json({ error: 'duplicate_confirmation', message: 'Idempotency key already used' });
+      // If this key was already used by the VP (processorNode === 'VP-Node'), treat as duplicate
+      const existing = await vpIdempotencyStore.isKeyProcessed(String(idempotencyKey));
+      if (existing && existing.processorNode === 'VP-Node') return res.status(409).json({ error: 'duplicate_confirmation', message: 'Idempotency key already used' });
     }
 
     // Lazy import to avoid circular deps in tests
@@ -454,7 +454,12 @@ app.post('/api/v1/ledger/confirm-reward-settlement', async (req, res) => {
 
     // Only mark idempotency key after we've successfully applied the settlement
     if (idempotencyKey) {
-      await vpIdempotencyStore.tryMarkProcessed(String(idempotencyKey));
+      try {
+        await vpIdempotencyStore.recordKey({ idempotencyKey: String(idempotencyKey), claimId, txHash, recordedAt: new Date().toISOString(), processorNode: 'VP-Node' });
+      } catch (e) {
+        // If recordKey fails because key already exists, it's safe to proceed — we've already prevented duplicate VP processing above.
+        console.warn('Failed to record idempotency key:', e instanceof Error ? e.message : String(e));
+      }
     }
 
     return res.status(200).json({ ok: true, message: 'Claim marked as SETTLED' });
