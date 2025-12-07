@@ -44,6 +44,10 @@ let ipfs = null;
 let ipfsPeer = null;
 let ipfsConnected = false;
 
+// Idempotency store for confirmations from NS (prevents replayed SETTLED callbacks)
+import IdempotencyStore from '../shared/idempotency-store.ts';
+const vpIdempotencyStore = new IdempotencyStore(path.join(process.cwd(), 'neuroswarm', 'tmp', 'vp-idempotency.json'));
+
 async function pingNsHealth() {
   try {
     const res = await fetch(NS_URL + '/health');
@@ -433,9 +437,25 @@ app.post('/api/v1/ledger/confirm-reward-settlement', async (req, res) => {
     const { claimId, txHash } = req.body || {};
     if (!claimId || !txHash) return res.status(400).json({ error: 'claimId and txHash required' });
 
+    // Idempotency header support: if provided, reject duplicate confirmations
+    const idempotencyKey = req.headers['idempotency-key'] || req.headers['Idempotency-Key'] || req.headers['Idempotency-key'];
+
+    if (idempotencyKey) {
+      // If this key was already used, treat as duplicate
+      const already = await vpIdempotencyStore.isProcessed(String(idempotencyKey));
+      if (already) return res.status(409).json({ error: 'duplicate_confirmation', message: 'Idempotency key already used' });
+    }
+
     // Lazy import to avoid circular deps in tests
-    const { markRewardClaimSettled } = await import('./reward-claims-db-service.js');
+    // Try both .js and .ts paths so tests that import sources directly work in different environments
+    const svcModule = await import('./reward-claims-db-service.js').catch(() => import('./reward-claims-db-service.ts'));
+    const { markRewardClaimSettled } = svcModule;
     await markRewardClaimSettled(claimId, txHash);
+
+    // Only mark idempotency key after we've successfully applied the settlement
+    if (idempotencyKey) {
+      await vpIdempotencyStore.tryMarkProcessed(String(idempotencyKey));
+    }
 
     return res.status(200).json({ ok: true, message: 'Claim marked as SETTLED' });
   } catch (e) {

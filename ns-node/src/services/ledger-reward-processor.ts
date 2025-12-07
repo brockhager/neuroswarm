@@ -2,6 +2,7 @@ import express from 'express';
 import crypto from 'crypto';
 import { sendSettlementConfirmationToVP } from './ledger-settlement-confirmation.ts';
 import { getCanonicalPayloadHash, verifySignature, hexToBuffer, bufferToHex, signPayload } from '../../shared/crypto-utils.ts';
+import IdempotencyStore from '../../../shared/idempotency-store.ts';
 import { PublicKeyRegistry } from '../../../shared/key-management.ts';
 import { getPublicKeyFromRegistry } from '../../../shared/key-management.ts';
 
@@ -81,6 +82,9 @@ export async function verifyRewardClaimSignature(claim: SignedRewardClaim): Prom
 
 export const router = express.Router();
 
+// Idempotency store for processed claimIds (replay protection)
+const idempotencyStore = new IdempotencyStore();
+
 /**
  * POST /api/v1/ledger/submit-reward-claim (CN-08-B/F)
  * Receives the signed reward claim from a VP-Node.
@@ -102,6 +106,10 @@ router.post('/api/v1/ledger/submit-reward-claim', express.json(), async (req, re
     const isValid = await verifyRewardClaimSignature(claim);
     if (!isValid) return res.status(403).json({ error: 'Signature verification failed or Validator not authorized.' });
 
+    // Replay protection (atomic check-and-mark)
+    const marked = await idempotencyStore.tryMarkProcessed(claim.claimId);
+    if (!marked) return res.status(409).json({ error: 'Claim ID already processed.' });
+
     // Check for replay attacks (MOCK: This would use a nonce or a DB lookup of claimId)
     // In production: if (isClaimReplayed(claim.claimId)) return res.status(409).json({ error: 'Claim ID already processed.' });
 
@@ -119,7 +127,7 @@ router.post('/api/v1/ledger/submit-reward-claim', express.json(), async (req, re
     try {
       const vpUrl = process.env.VP_CALLBACK_URL || null;
       if (vpUrl) {
-        // send async confirmation (do not block response)
+        // send async confirmation (do not block response) — include idempotency header
         setTimeout(() => {
           sendSettlementConfirmationToVP(vpUrl, claim.claimId, txHash).catch((e) => console.error('VP notify failed', e.message));
         }, 200);

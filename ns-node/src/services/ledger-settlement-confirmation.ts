@@ -10,7 +10,8 @@ export async function sendSettlementConfirmationToVP(vpCallbackUrl: string, clai
   if (!vpCallbackUrl) throw new Error('vpCallbackUrl required');
   const payload = { claimId, txHash };
   try {
-    const res = await fetch(vpCallbackUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const headers: Record<string, string> = { 'Content-Type': 'application/json', 'Idempotency-Key': claimId };
+    const res = await fetch(vpCallbackUrl, { method: 'POST', headers, body: JSON.stringify(payload) });
     if (!res.ok) {
       const text = await res.text();
       throw new Error(`vp responded ${res.status}: ${text}`);
