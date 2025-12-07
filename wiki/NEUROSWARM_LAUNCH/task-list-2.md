@@ -14,9 +14,9 @@ This document consolidates all outstanding work from the Master Design Document 
 | CN-14-A | VP Swarm / Gateway | WebSocket Status: Implement mechanism to notify client of completion via WebSocket (VP -> Gateway -> Client). | HIGH | Completed |
 | CN-02 | Router API (4001) | Implement security and anchoring: JWT/RBAC ✅, Postgres schema/migrations, deterministic audit hashing, IPFS pinning pipeline, and optional on-chain anchoring tests. | HIGH | Completed |
 | OPS-03C | CI/CD | Multi-service E2E harness validating full flows (Agent 9 ↔ NS-LLM ↔ Router ↔ VP ↔ ns-node). | HIGH | Not Started |
-| CN-06-D | VP-Node / NS-Node | Validator selection integration + unbond release processor. | HIGH | Not Started |
+| CN-06-D | VP-Node / NS-Node | Validator selection integration + unbond release processor. | HIGH | Completed |
 | OPS-01B | All Services | Extend /health and /metrics to remaining services (Gateway, VP, Router, NS-LLM, neuro-services). | HIGH | Not Started |
-| OPS-02 | All Services | Standardize structured logging (JSON), correlation IDs, trace context propagation, and logging levels. | HIGH | Not Started |
+| OPS-02 | All Services | Standardize structured logging (JSON), correlation IDs, trace context propagation, and logging levels. | HIGH | Completed |
 | OPS-04 | Secrets & Deployment | Formalize secrets management (Vault/Docker secrets) for local & containerized setups. | HIGH | Not Started |
 | AG4-03 | Agent 9 | Add offline/resiliency handling and monitoring (status channel notifications, automatic backoff and retries). | MEDIUM | In Progress |
 | AG4-04 | Agent 9 | Add fine-grained audit logging for all user-visible interactions for compliance & reconciliation. | MEDIUM | Not Started |
@@ -280,20 +280,6 @@ This document consolidates all outstanding work from the Master Design Document 
 - Block propagation service (`block-propagation.js`)
 - Database: `data/neuroswarm_chain.db`
 - Server verified running
-
----
-
-## 🎯 NEXT SPRINT PRIORITIES
-
-**Sprint B (Current)** — Router API & Multi-Service E2E:
-1. CN-02: Router API Production DB (Postgres migrations, connection pooling)
-2. OPS-03C: Multi-service E2E harness
-3. OPS-01B: Extend /health and /metrics to all services
-
-**Sprint C** — Application Services:
-1. APP-01 through APP-04: Business logic, background workers, admin UI, alert sink
-2. OPS-02, OPS-04: Operational cross-cutting work
-3. CN-05-F through CN-05-H: Sync protocol production deployment
 
 ---
 

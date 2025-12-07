@@ -1,3 +1,5 @@
+import { logger } from '../utils/logger';
+
 export interface Validator {
     id: string;
     endpoint: string;
@@ -11,78 +13,119 @@ export interface Validator {
 }
 
 export class ValidatorSelectionService {
-    // Weights for the scoring algorithm (Total: 1.0)
-    private static readonly WEIGHT_STAKE = 0.4;
-    private static readonly WEIGHT_REPUTATION = 0.3;
-    private static readonly WEIGHT_CAPACITY = 0.2;
-    private static readonly WEIGHT_SPEED = 0.1;
+    // Default weights (can be overridden by env vars)
+    private get weights() {
+        return {
+            stake: Number(process.env.VALIDATOR_WEIGHT_STAKE || 0.4),
+            reputation: Number(process.env.VALIDATOR_WEIGHT_REPUTATION || 0.3),
+            capacity: Number(process.env.VALIDATOR_WEIGHT_CAPACITY || 0.2),
+            speed: Number(process.env.VALIDATOR_WEIGHT_SPEED || 0.1)
+        };
+    }
 
-    // Normalization constants (to scale raw values to 0-1 range)
-    private static readonly MAX_STAKE_CAP = 100000; // Cap stake score at 100k NST
-    private static readonly MAX_LATENCY_MS = 2000;  // Latency above 2s gets 0 score
+    // Normalization constants
+    private static readonly MAX_STAKE_CAP = 100000;
+    private static readonly MAX_LATENCY_MS = 2000;
 
     /**
-     * Selects the best validator for a job based on the 4-factor priority score.
-     * @param validators List of active validators
-     * @returns The selected validator or null if none available
+     * Selects a validator using probabilistic weighted selection from the top N candidates.
+     * Use "soft" selection to encourage decentralization.
      */
-    public selectBestValidator(validators: Validator[]): Validator | null {
+    public selectBestValidator(validators: Validator[], topN: number = 3): Validator | null {
         if (!validators || validators.length === 0) {
+            logger.warn('[ValidatorSelection] No validators provided to selection service.');
             return null;
         }
 
-        // Filter out unhealthy or full validators first
+        // 1. Filter unhealthy/full
         const eligibleValidators = validators.filter(v =>
             v.capacity_used < v.max_capacity &&
-            (Date.now() - v.last_active.getTime()) < 60000 // Active in last 60s
+            (Date.now() - new Date(v.last_active).getTime()) < 120000 // Active in last 2 mins (allowing for slight clock skew)
         );
 
         if (eligibleValidators.length === 0) {
+            logger.warn('[ValidatorSelection] No eligible validators found (all likely full or offline).', {
+                totalValidators: validators.length
+            });
             return null;
         }
 
-        // Calculate scores for all eligible validators
-        const scoredValidators = eligibleValidators.map(validator => ({
-            validator,
-            score: this.calculateScore(validator)
+        // 2. Score All
+        const scoredValidators = eligibleValidators.map(v => ({
+            validator: v,
+            score: this.calculateScore(v)
         }));
 
-        // Sort by score descending
+        // 3. Sort Descending
         scoredValidators.sort((a, b) => b.score - a.score);
 
-        // Return the top scoring validator
-        // In a real production system, we might use weighted random selection among top N 
-        // to prevent "winner takes all", but for this sprint, we pick the absolute best.
+        // 4. Log Top Candidates
+        logger.debug('[ValidatorSelection] Top Candidates', {
+            candidates: scoredValidators.slice(0, 5).map(c => ({ id: c.validator.id, score: c.score.toFixed(3) }))
+        });
+
+        // 5. Probabilistic Selection (Weighted Random among Top N)
+        // If we have fewer than topN, use all of them.
+        const pool = scoredValidators.slice(0, topN);
+        const selected = this.weightedRandomSelect(pool);
+
+        if (selected) {
+            logger.info(`[ValidatorSelection] Selected validator ${selected.validator.id}`, {
+                id: selected.validator.id,
+                score: selected.score,
+                poolSize: pool.length
+            });
+            return selected.validator;
+        }
+
+        // Fallback (should normally not happen if pool > 0)
         return scoredValidators[0].validator;
     }
 
-    /**
-     * Calculates the Priority Score for a single validator.
-     * Formula: (Stake * 0.4) + (Reputation * 0.3) + (Capacity * 0.2) + (Speed * 0.1)
+    private weightedRandomSelect(pool: { validator: Validator, score: number }[]): { validator: Validator, score: number } {
+        // Simple weighted random:
+        // Sum of scores
+        const totalScore = pool.reduce((sum, item) => sum + item.score, 0);
+        if (totalScore <= 0) {
+            // If all scores are 0, pick random
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        let random = Math.random() * totalScore;
+        for (const item of pool) {
+            random -= item.score;
+            if (random <= 0) {
+                return item;
+            }
+        }
+        return pool[pool.length - 1]; // precision fallback
+    }
+
+    /*
+     * Calculates the Priority Score (0-1)
      */
-    private calculateScore(v: Validator): number {
-        // 1. Stake Score (0-1): Linear up to MAX_STAKE_CAP
+    public calculateScore(v: Validator): number {
+        const w = this.weights;
+
+        // 1. Stake Score (0-1)
         const stakeScore = Math.min(v.stake, ValidatorSelectionService.MAX_STAKE_CAP) / ValidatorSelectionService.MAX_STAKE_CAP;
 
-        // 2. Reputation Score (0-1): Direct percentage
+        // 2. Reputation Score (0-1)
         const reputationScore = Math.min(Math.max(v.reputation, 0), 100) / 100;
 
-        // 3. Capacity Score (0-1): Higher available capacity is better
-        // Formula: (Max - Used) / Max
+        // 3. Capacity Score (0-1)
         const availableCapacity = Math.max(0, v.max_capacity - v.capacity_used);
         const capacityScore = v.max_capacity > 0 ? availableCapacity / v.max_capacity : 0;
 
-        // 4. Speed Score (0-1): Lower latency is better
-        // Formula: 1 - (Latency / Max_Latency), clamped at 0
-        const latency = Math.max(1, v.latency_ms); // Avoid div by zero
+        // 4. Speed Score (0-1)
+        const latency = Math.max(1, v.latency_ms);
         const speedScore = Math.max(0, 1 - (latency / ValidatorSelectionService.MAX_LATENCY_MS));
 
-        // Weighted Sum
         const totalScore =
-            (stakeScore * ValidatorSelectionService.WEIGHT_STAKE) +
-            (reputationScore * ValidatorSelectionService.WEIGHT_REPUTATION) +
-            (capacityScore * ValidatorSelectionService.WEIGHT_CAPACITY) +
-            (speedScore * ValidatorSelectionService.WEIGHT_SPEED);
+            (stakeScore * w.stake) +
+            (reputationScore * w.reputation) +
+            (capacityScore * w.capacity) +
+            (speedScore * w.speed);
 
         return totalScore;
     }

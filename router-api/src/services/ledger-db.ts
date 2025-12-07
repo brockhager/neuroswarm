@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { logger } from '../utils/logger';
 
 export interface LedgerEntry {
     id?: string;
@@ -34,10 +35,10 @@ export class LedgerDB {
             if (fs.existsSync(this.dataFile)) {
                 const data = fs.readFileSync(this.dataFile, 'utf-8');
                 this.entries = JSON.parse(data);
-                console.log(`[LedgerDB] Loaded ${this.entries.length} entries.`);
+                logger.info(`[LedgerDB] Loaded ${this.entries.length} entries.`, { count: this.entries.length });
             }
         } catch (e) {
-            console.warn('[LedgerDB] Failed to load data, starting fresh.', e);
+            logger.warn('[LedgerDB] Failed to load data, starting fresh.', { error: e });
         }
     }
 
@@ -45,7 +46,7 @@ export class LedgerDB {
         try {
             fs.writeFileSync(this.dataFile, JSON.stringify(this.entries, null, 2), 'utf-8');
         } catch (e) {
-            console.error('[LedgerDB] Failed to save data.', e);
+            logger.error('[LedgerDB] Failed to save data.', e);
         }
     }
 

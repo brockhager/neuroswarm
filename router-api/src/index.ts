@@ -14,6 +14,8 @@ import AlertingService from './services/alerting';
 import crypto from 'crypto';
 import { LedgerDB } from './services/ledger-db';
 import { authenticate } from './middleware/auth';
+import { logger } from './utils/logger';
+import { v4 as uuidv4 } from 'uuid';
 
 dotenv.config();
 
@@ -23,6 +25,14 @@ const port = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+
+// Middleware for Correlation ID
+app.use((req, res, next) => {
+    const correlationId = (req.headers['x-correlation-id'] as string) || uuidv4();
+    (req as any).correlationId = correlationId;
+    res.setHeader('x-correlation-id', correlationId);
+    next();
+});
 
 // Initialize Services
 const jobQueue = new JobQueueService();
@@ -147,7 +157,7 @@ app.post('/api/v1/request/submit', async (req: Request, res: Response) => {
         }
 
     } catch (error) {
-        console.error('Error processing request:', error);
+        logger.error('Error processing request:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -191,12 +201,12 @@ app.post('/api/v1/request/complete', async (req: Request, res: Response) => {
         });
 
     } catch (error) {
-        console.error('Error completing request:', error);
+        logger.error('Error completing request:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-// Governance anchoring endpoint (test-only stub) — accepts an audit payload and returns computed SHA-256 anchor hash
+// Governance anchoring endpoint
 app.post('/api/v1/governance/anchor', async (req: Request, res: Response) => {
     try {
         const payload = req.body;
@@ -205,29 +215,31 @@ app.post('/api/v1/governance/anchor', async (req: Request, res: Response) => {
         const result = await anchorAudit(payload as any);
         return res.status(200).json({ status: 'anchored', audit_hash: result.audit_hash, ipfs_cid: result.ipfs_cid, transaction_signature: result.transaction_signature, governance_notified: result.governance_notified });
     } catch (err) {
-        console.error('Governance anchor failed:', err);
+        logger.error('Governance anchor failed:', err);
         return res.status(500).json({ error: 'Failed to anchor audit event' });
     }
 });
 
-// Start Server
 // Initialize Ledger
 const ledgerDB = new LedgerDB();
 
 // --- CN-02: Ledger Write Endpoint (Secured) ---
 app.post('/api/v1/ledger/write', authenticate('internal_service'), async (req: Request, res: Response) => {
+    const correlationId = (req as any).correlationId;
+    const reqLogger = logger.child({ correlationId, endpoint: '/api/v1/ledger/write' });
+
     try {
         const payload = req.body;
         // Basic validation
         if (!payload || !payload.event_type) {
+            reqLogger.warn('Invalid payload: event_type required');
             return res.status(400).json({ error: 'Invalid payload: event_type required' });
         }
 
-        // 1. Calculate Deterministic Hash (Simulated "AuditHasher")
-        // We do this to return it immediately, though anchorAudit also does it.
-        // For consistency, we use the same canonicalization or just trust anchorAudit later.
-        // Here we just use a simple hash for the response ID.
+        // 1. Calculate Deterministic Hash
         const contentHash = crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+
+        reqLogger.info(`Received audit event: ${payload.event_type}`, { contentHash });
 
         // 2. Persist to Ledger (Status: RECORDED)
         const entry = await ledgerDB.insert({
@@ -238,6 +250,8 @@ app.post('/api/v1/ledger/write', authenticate('internal_service'), async (req: R
             anchored: false
         });
 
+        reqLogger.info(`Audit record persisted`, { id: entry.id });
+
         // 3. Return Success Immediate (Async Anchoring follows)
         res.status(201).json({
             status: 'recorded',
@@ -247,26 +261,31 @@ app.post('/api/v1/ledger/write', authenticate('internal_service'), async (req: R
         });
 
         // 4. Async Anchoring (Fire and Forget)
-        // In production, this might be a queue consumer. Here we call async function.
         (async () => {
+            const traceId = uuidv4();
+            const asyncLogger = logger.child({ correlationId, traceId, context: 'AsyncAnchor', entryId: entry.id });
+
+            asyncLogger.info(`Triggering async anchor process`);
             try {
-                console.log(`[Router] Triggering async anchor for ${entry.id}...`);
+                // anchorAudit logs via console currently, we'll update it next
                 const result = await anchorAudit(payload);
                 await ledgerDB.updateAnchorStatus(entry.id!, result.ipfs_cid, result.transaction_signature);
-                console.log(`[Router] Anchor complete for ${entry.id}. CID: ${result.ipfs_cid}`);
+                asyncLogger.info(`Anchor complete`, { cid: result.ipfs_cid, tx: result.transaction_signature });
             } catch (err) {
-                console.error(`[Router] Async anchor failed for ${entry.id}:`, err);
+                asyncLogger.error(`Async anchor failed`, err);
             }
         })();
 
     } catch (err) {
-        console.error('Ledger write failed:', err);
+        reqLogger.error('Ledger write failed', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 app.listen(port, () => {
-    console.log(`NeuroSwarm Router API running on port ${port}`);
-    console.log(`   - LedgerDB initialized`);
-    console.log(`   - Secure Endpoint: POST /api/v1/ledger/write (Requires Auth)`);
+    logger.info(`NeuroSwarm Router API running on port ${port}`, {
+        port,
+        ledgerInitialized: true,
+        secureEndpoints: ['POST /api/v1/ledger/write']
+    });
 });
