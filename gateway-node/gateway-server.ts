@@ -368,12 +368,28 @@ app.use((req: Request, res: Response) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 NeuroSwarm API Gateway started on port ${PORT}`);
   console.log(`📊 Rate limiting: ${RATE_LIMIT_REQUESTS} requests per ${RATE_WINDOW_MS}ms`);
   console.log(`🔐 JWT authentication: ${JWT_SECRET === 'mock-jwt-secret-for-development' ? 'MOCK MODE' : 'PRODUCTION MODE'}`);
   console.log(`🏥 Health check: http://localhost:${PORT}/health`);
   console.log(`📈 Metrics: http://localhost:${PORT}/metrics`);
+});
+
+// Graceful shutdown handler
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('\nSIGINT signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
 });
 
 export default app;
