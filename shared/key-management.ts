@@ -60,8 +60,8 @@ export class PublicKeyRegistry {
   }
 
   public async getPublicKey(validatorId: string): Promise<Buffer | null> {
-    // For prototype, only producer IDs are valid
-    if (!validatorId.startsWith('V-PRODUCER')) return null;
+    // For prototype, accept validator IDs and node IDs (e.g., 'V-PRODUCER-*' or 'NS-*').
+    // If an environment override is provided, use that; otherwise derive deterministically from the id.
 
     const envKey = process.env[`REGISTRY_PUBKEY_${validatorId.replace(/[^A-Z0-9_-]/gi, '_').toUpperCase()}`];
     if (envKey && envKey.length > 10) return hexToBuffer(envKey);

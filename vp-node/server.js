@@ -46,6 +46,8 @@ let ipfsConnected = false;
 
 // Idempotency store for confirmations from NS (prevents replayed SETTLED callbacks)
 import IdempotencyStore from '../shared/idempotency-store.ts';
+import { PublicKeyRegistry } from '../shared/key-management.ts';
+import { getCanonicalPayloadHash, verifySignature, hexToBuffer } from '../shared/crypto-utils.ts';
 const vpIdempotencyStore = new IdempotencyStore();
 
 async function pingNsHealth() {
@@ -434,8 +436,24 @@ app.get('/health', (req, res) => {
 // Receive settlement confirmations from NS-Node and mark claim SETTLED
 app.post('/api/v1/ledger/confirm-reward-settlement', async (req, res) => {
   try {
-    const { claimId, txHash } = req.body || {};
+    const { claimId, txHash, signature, timestamp, sender } = req.body || {};
     if (!claimId || !txHash) return res.status(400).json({ error: 'claimId and txHash required' });
+
+    // Phase 5: Confirmation authentication — verify NS signature on confirmation payload
+    if (!signature) return res.status(400).json({ error: 'signature required' });
+
+    const nsIdentity = sender || process.env.NS_NODE_ID || 'NS-PRIMARY';
+    const registry = new PublicKeyRegistry();
+    const pubKeyBuf = await registry.getPublicKey(nsIdentity);
+    if (!pubKeyBuf) return res.status(403).json({ error: 'unknown_sender', message: `unknown sender ${nsIdentity}` });
+
+    // Verify signature over canonical payload matching NS sender format
+    const payloadToVerify = { claimId, txHash, timestamp, sender: nsIdentity };
+    const payloadHash = getCanonicalPayloadHash(payloadToVerify);
+    const sigBuf = hexToBuffer(signature);
+    if (!(await verifySignature(pubKeyBuf, payloadHash, sigBuf))) {
+      return res.status(401).json({ error: 'invalid_signature', message: 'signature verification failed' });
+    }
 
     // Idempotency header support: if provided, reject duplicate confirmations
     const idempotencyKey = req.headers['idempotency-key'] || req.headers['Idempotency-Key'] || req.headers['Idempotency-key'];
