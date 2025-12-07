@@ -8,7 +8,7 @@ This document consolidates all outstanding work from the Master Design Document 
 
 | ID | Component | Task Description | Priority | Status |
 |-----------|------------|------------------|----------|--------|
-| CN-02 | Router API (4001) | Implement security and anchoring: JWT/RBAC ✅, Postgres schema/migrations, deterministic audit hashing, IPFS pinning pipeline, and optional on-chain anchoring tests. | HIGH | In Progress (prototype hardened, needs production DB) |
+| CN-02 | Router API (4001) | Implement security and anchoring: JWT/RBAC ✅, Postgres schema/migrations, deterministic audit hashing, IPFS pinning pipeline, and optional on-chain anchoring tests. | HIGH | In Progress (Phase 4 complete, pending testing) |
 | OPS-03C | CI/CD | Multi-service E2E harness validating full flows (Agent 9 ↔ NS-LLM ↔ Router ↔ VP ↔ ns-node). | HIGH | Not Started |
 | CN-06-D | VP-Node / NS-Node | Validator selection integration + unbond release processor. | HIGH | Not Started |
 | OPS-01B | All Services | Extend /health and /metrics to remaining services (Gateway, VP, Router, NS-LLM, neuro-services). | HIGH | Not Started |
@@ -55,7 +55,7 @@ This document consolidates all outstanding work from the Master Design Document 
 | OPS-01A | ns-node (3009) | /health and /metrics endpoints with Prometheus format | HIGH | 2025-12-04 (sync metrics) |
 | OPS-03A | CI/CD | VP→NS cryptographic E2E test in CI | HIGH | 2025-12-03 (crypto_pipeline_test) |
 | OPS-03B | CI/CD | Sync protocol integration tests in CI (ancestry, paging, rate limits, metrics) | HIGH | 2025-12-04 (commit 0aed3e2) |
-| OPS-CI-NSLLM | CI/CD | NS-LLM integration tests + OpenAPI contract validation in CI | HIGH | 2025-12-04 (commit 0aed3e2) |
+| OPS-CI-NSLLM | CI/CD | NS-LLM integration tests + OpenAPI contract validation in CI | HIGH | 2025-12-06 (fixed endpoint mismatch) |
 | AI-01 | NS-LLM (3015) | SSE/token streaming on `/api/generate` with native fallback | HIGH | 2025-11-XX |
 | AI-02 | NS-LLM (3015) | `/api/embed` embedding endpoint with deterministic schema | MEDIUM | 2025-11-XX |
 | AG4-01 | Agent 9 | Integrate with NS-LLM streaming + generate/embed contract | HIGH | 2025-11-XX |
@@ -64,6 +64,11 @@ This document consolidates all outstanding work from the Master Design Document 
 ---
 
 ## 📋 RECENT UPDATES & STATUS NOTES
+
+### 2025-12-06: NS-LLM CI Fix Applied ✅
+- **OPS-CI-NSLLM**: Fixed endpoint mismatch (`/api/embed` vs `/embed`) across all branches.
+- **Propagated Fix**: Merged `main` into `feat/cn-08-artifact-review`, `feat/cn-08-security-hardening`, and `feat/ops-03c-e2e-harness`.
+- **Conflict Resolution**: Resolved merge conflicts in `vp-node/server.js` and `pnpm-lock.yaml`.
 
 ### 2025-12-04: CI/CD Hardening Complete ✅
 - **OPS-03B** (Sync Protocol CI Tests): All 5 sync protocol tests added to CI workflow
@@ -184,5 +189,5 @@ This document consolidates all outstanding work from the Master Design Document 
 
 ---
 
-*Last Updated: 2025-12-04 23:45 PST*
+*Last Updated: 2025-12-06 00:38 MST*
 *Kanban Managed by: Agent 4*
