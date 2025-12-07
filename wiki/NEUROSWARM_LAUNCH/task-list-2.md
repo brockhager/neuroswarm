@@ -52,6 +52,7 @@ This document consolidates all outstanding work from the Master Design Document 
 | CN-09-B | Router API + NS-Node | Critique History Endpoint: GET /artifact/critique/:artifact_id with JWT auth | HIGH | 2025-12-04 (merged) |
 | CN-10-A | Genesis | Genesis State parameters finalized (100M NST, Jan 2 2025, 5K min stake, 5s slots) | HIGH | 2025-12-04 |
 | CN-10-B | CLI | Neuroswarm CLI Emulator (browser-based, 5 commands) | CRITICAL | 2025-12-04 |
+| CN-10-C | Client SDK | CN-10 Client SDK: REST APIs, WebSocket monitoring, batch submissions, file uploads | HIGH | 2025-12-06 |
 | OPS-01A | ns-node (3009) | /health and /metrics endpoints with Prometheus format | HIGH | 2025-12-04 (sync metrics) |
 | OPS-03A | CI/CD | VP→NS cryptographic E2E test in CI | HIGH | 2025-12-03 (crypto_pipeline_test) |
 | OPS-03B | CI/CD | Sync protocol integration tests in CI (ancestry, paging, rate limits, metrics) | HIGH | 2025-12-04 (commit 0aed3e2) |
@@ -64,6 +65,19 @@ This document consolidates all outstanding work from the Master Design Document 
 ---
 
 ## 📋 RECENT UPDATES & STATUS NOTES
+
+### 2025-12-06: CN-10 Client SDK Complete ✅
+- **CN-10-C** (Client SDK): Full external client SDK implementation
+  - REST APIs: `submitArtifact()`, `submitBatch()`, `uploadArtifactFile()`
+  - WebSocket monitoring: Real-time status updates with `subscribeToStatus()`
+  - Batch submissions: Atomic multi-artifact processing
+  - File uploads: Binary asset support with multipart/form-data
+  - Gateway endpoint: `POST /v1/upload` with multer middleware
+  - Demo application: Interactive React demo showcasing all modes
+  - Type safety: Full TypeScript interfaces and error handling
+
+**Components Updated**: `neuro-shared/src/neuroswarm-client.ts`, `neuro-web/pages/sdk-demo.tsx`, `gateway-node/server.js`
+**Status**: Production-ready external API for client applications
 
 ### 2025-12-06: NS-LLM CI Fix Applied ✅
 - **OPS-CI-NSLLM**: Fixed endpoint mismatch (`/api/embed` vs `/embed`) across all branches.
@@ -178,13 +192,13 @@ This document consolidates all outstanding work from the Master Design Document 
 
 ## 📊 COMPLETION METRICS
 
-**Total Tasks**: 74
-**Completed**: 30 (40.5%)
+**Total Tasks**: 75
+**Completed**: 31 (41.3%)
 **In Progress**: 2 (2.7%)
-**Not Started**: 42 (56.8%)
+**Not Started**: 42 (56.0%)
 
 **By Priority**:
-- HIGH: 19/28 complete (67.9%)
+- HIGH: 20/29 complete (69.0%)
 - MEDIUM: 2/17 complete (11.8%)
 - LOW: 0/1 complete (0%)
 
@@ -194,5 +208,5 @@ This document consolidates all outstanding work from the Master Design Document 
 
 ---
 
-*Last Updated: 2025-12-06 00:38 MST*
+*Last Updated: 2025-12-06 01:45 MST*
 *Kanban Managed by: Agent 4*

@@ -15,6 +15,7 @@ import { verifyBlockSubmission } from '../block-verifier.mjs';
 import { logNs } from '../utils/logger.js';
 import { MessageType } from '../../../shared/peer-discovery/index.js';
 import { computeSourcesRoot } from '../../../sources/index.js';
+import { validateArtifactCritiqueTx } from '../transactions/validation.js';
 
 export default function createValidatorsRouter(p2pProtocol, peerManager) {
     const router = express.Router();
@@ -41,13 +42,12 @@ export default function createValidatorsRouter(p2pProtocol, peerManager) {
             accounts.set(validatorId, newAccount);
             persistAccount(validatorId, newAccount);
             logNs(`[Validator] Created account for new validator ${validatorId}`);
-        import { validateArtifactCritiqueTx } from '../transactions/validation.js';
         }
 
-                // For ARTIFACT_CRITIQUE transactions apply stricter validation (CN-08-C)
-                if (tx.type === 'ARTIFACT_CRITIQUE') {
-                    const vres = validateArtifactCritiqueTx(tx);
-                    if (!vres.ok) return res.status(400).json({ error: 'artifact_critique_failed_validation', reason: vres.reason, details: vres.details || null });
+        // For ARTIFACT_CRITIQUE transactions apply stricter validation (CN-08-C)
+        if (tx.type === 'ARTIFACT_CRITIQUE') {
+            const vres = validateArtifactCritiqueTx(tx);
+            if (!vres.ok) return res.status(400).json({ error: 'artifact_critique_failed_validation', reason: vres.reason, details: vres.details || null });
                 }
 
         res.json({ ok: true });

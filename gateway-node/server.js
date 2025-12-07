@@ -9,6 +9,7 @@ import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import { loadRegistry, queryAdapter, listStatuses, queryAdapterWithOpts } from '../sources/index.js';
 import { PeerManager, P2PProtocol, MessageType, startHTTPSServer } from '../shared/peer-discovery/index.js';
+import multer from 'multer';
 
 const PORT = process.env.PORT || 8080;
 
@@ -44,6 +45,12 @@ app.use((err, req, res, next) => {
     return res.status(400).json({ error: 'bad_json', message: err.message });
   }
   next(err);
+});
+
+// Configure multer for file uploads
+const upload = multer({ 
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
 });
 
 function loadHistory() {
@@ -167,6 +174,106 @@ app.post('/v1/tx', async (req, res) => {
   const origins = (tx.sources || []).map(s => s.origin || s.adapter || 'unknown').join(',') || 'none';
   logGw(`Accepted tx ${entry.txId} from ${remoteIP} (${src}) type=${entry.type} fee=${entry.fee} sources=${srcCount} sourcesVerified=${srcsOK} origins=${origins}`);
   res.json({ ok: true, txId: entry.txId });
+});
+
+app.post('/v1/upload', upload.single('file'), async (req, res) => {
+  try {
+    const remoteIP = req.header('x-forwarded-for') || req.socket.remoteAddress || 'unknown';
+    const src = req.header('x-source') || 'client';
+    
+    if (!req.file) {
+      gwSpamRejected += 1;
+      logGw(`Rejected upload from ${remoteIP} (${src}) - no file provided`);
+      return res.status(400).json({ error: 'no_file_provided' });
+    }
+
+    // rate limit
+    if (!checkRateLimit(remoteIP)) { 
+      gwSpamRejected += 1; 
+      logGw(`Rejected upload from ${remoteIP} (${src}) due to rate limit`); 
+      return res.status(429).json({ error: 'rate_limited' }); 
+    }
+
+    // Parse metadata if provided
+    let metadata = {};
+    if (req.body && req.body.metadata) {
+      try {
+        metadata = typeof req.body.metadata === 'string' ? JSON.parse(req.body.metadata) : req.body.metadata;
+      } catch (e) {
+        gwSpamRejected += 1;
+        logGw(`Rejected upload from ${remoteIP} (${src}) - invalid metadata JSON`);
+        return res.status(400).json({ error: 'invalid_metadata_json' });
+      }
+    }
+
+    // Create transaction for file upload
+    const tx = {
+      type: 'ARTIFACT_SUBMISSION',
+      fee: Number(process.env.MIN_FEE || 1),
+      timestamp: Date.now(),
+      payload: {
+        contentType: req.file.mimetype,
+        filename: req.file.originalname,
+        size: req.file.size,
+        data: req.file.buffer ? req.file.buffer.toString('base64') : '', // Convert buffer to base64
+        metadata: metadata
+      }
+    };
+
+    // Add correlation ID if provided
+    const correlationId = req.header('x-correlation-id');
+    if (correlationId) {
+      tx.correlationId = correlationId;
+    }
+
+    // Source validation if enabled
+    if (process.env.ENABLE_SOURCE_VALIDATION !== 'false') {
+      try {
+        const collected = [];
+        const adapters = await loadRegistry();
+        for (const adapter of adapters) {
+          try {
+            const result = await queryAdapter(adapter, tx.payload, { timeout: 5000 });
+            collected.push({ adapter: adapter.name, origin: adapter.origin, result });
+          } catch (e) {
+            collected.push({ adapter: adapter.name, origin: adapter.origin, error: e.message });
+          }
+        }
+        tx.sources = collected;
+        const sourcesVerified = collected.every(c => c && c.result && c.result.value !== null && typeof c.result.value !== 'undefined');
+        tx.sourcesVerified = sourcesVerified;
+        if (!sourcesVerified && process.env.ALLOW_UNVERIFIED_SOURCES !== '1') {
+          gwSpamRejected += 1; 
+          logGw(`Rejected upload ${req.file.originalname} from ${remoteIP} (${src}) due to sources verification failed`);
+          return res.status(400).json({ error: 'source_validation_failed', sources: collected });
+        }
+      } catch (e) {
+        gwSpamRejected += 1; 
+        logGw(`Rejected upload ${req.file.originalname} from ${remoteIP} (${src}) due to adapter error ${e.message}`); 
+        return res.status(400).json({ error: 'adapter_error', message: e.message });
+      }
+    }
+
+    // Create mempool entry and accept
+    const entry = createMempoolEntry(tx);
+    if (gwMempool.has(entry.txId)) { 
+      gwSpamRejected += 1; 
+      logGw(`Rejected duplicate upload tx ${entry.txId} from ${remoteIP} (${src})`); 
+      return res.status(409).json({ error: 'duplicate' }); 
+    }
+
+    gwMempool.set(entry.txId, entry);
+    const srcCount = (tx.sources && Array.isArray(tx.sources)) ? tx.sources.length : 0;
+    const srcsOK = tx.sourcesVerified ? 'yes' : 'no';
+    const origins = (tx.sources || []).map(s => s.origin || s.adapter || 'unknown').join(',') || 'none';
+    logGw(`Accepted upload tx ${entry.txId} from ${remoteIP} (${src}) file=${req.file.originalname} size=${req.file.size} sources=${srcCount} sourcesVerified=${srcsOK} origins=${origins}`);
+    
+    res.json({ ok: true, txId: entry.txId, filename: req.file.originalname, size: req.file.size });
+  } catch (error) {
+    gwSpamRejected += 1;
+    logGw(`Rejected upload from ${req.socket.remoteAddress} due to error: ${error.message}`);
+    res.status(500).json({ error: 'upload_failed', message: error.message });
+  }
 });
 
 app.get('/v1/mempool', (req, res) => {
