@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { dispatchAlert, OperatorAlert } from './alerting-service.js';
 import { getCanonicalPayloadHash, signPayload, bufferToHex } from '../shared/crypto-utils.ts';
-import { VaultClient, PublicKeyRegistry } from '../shared/key-management.ts';
+import { KmsVaultClient, PublicKeyRegistry } from '../shared/key-management.ts';
 
 // --- CRYPTO UTILITIES (CN-08-F) ---
 // NOTE: In a production environment, this would use a dedicated library like 'ed25519-hd-key' or '@noble/ed25519'
@@ -26,13 +26,10 @@ import { VaultClient, PublicKeyRegistry } from '../shared/key-management.ts';
  * Retrieves the validator's keypair from secure storage.
  * In production, this would use a hardware security module (HSM) or encrypted keystore.
  */
-async function getValidatorKeypair(validatorId: string): Promise<{ privateKey: Buffer; publicKey: Buffer }> {
-  const vault = new VaultClient();
+async function getValidatorPublicKey(validatorId: string): Promise<Buffer> {
   const registry = new PublicKeyRegistry();
-
-  const privateKey = await vault.getPrivateKey(validatorId);
-  const publicKey = (await registry.getPublicKey(validatorId)) ?? privateKey;
-  return { privateKey, publicKey };
+  const pub = await registry.getPublicKey(validatorId);
+  return pub;
 }
 
 // Hardened client config
@@ -70,9 +67,9 @@ export async function submitSignedEvidence(signedEvidence: SignedSlashingEvidenc
     // CN-07-H: sign the evidence (Phase 1 - mock ED25519 via shared utils)
     try {
       const validatorId = signedEvidence.evidence.validatorId;
-      const keypair = await getValidatorKeypair(validatorId);
+      const vault = new KmsVaultClient();
       const payloadHash = getCanonicalPayloadHash({ evidence: signedEvidence.evidence });
-      const signatureBuf = await signPayload(keypair.privateKey, payloadHash);
+      const signatureBuf = await vault.signPayloadInKms(validatorId, payloadHash);
       signedEvidence.validatorSignature = bufferToHex(signatureBuf);
     } catch (e) {
       console.warn('Failed to sign evidence (mock)', e instanceof Error ? e.message : String(e));
@@ -129,8 +126,6 @@ export async function submitRewardClaim(request: { type: string; payload: any })
     if (!validatorId) {
       throw new Error('Missing producerId in reward claim allocation');
     }
-
-    const keypair = await getValidatorKeypair(validatorId);
     const payloadToSign = {
       claimId: request.payload.claimId,
       timestamp: request.payload.timestamp,
@@ -139,7 +134,9 @@ export async function submitRewardClaim(request: { type: string; payload: any })
 
     // Use shared crypto utility to sign the canonical payload hash
     const payloadHash = getCanonicalPayloadHash(payloadToSign);
-    const signatureBuf = await signPayload(keypair.privateKey, payloadHash);
+    // Sign inside KMS (private key never returned)
+    const vault = new KmsVaultClient();
+    const signatureBuf = await vault.signPayloadInKms(validatorId, payloadHash);
     const signatureHex = bufferToHex(signatureBuf);
 
     const signedPayload = { ...request.payload, validatorSignature: signatureHex };

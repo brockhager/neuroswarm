@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 import IdempotencyStore from '../../../shared/idempotency-store.ts';
-import { VaultClient } from '../../../shared/key-management.ts';
-import { getCanonicalPayloadHash, signPayload, bufferToHex } from '../../../shared/crypto-utils.ts';
+import { KmsVaultClient } from '../../../shared/key-management.ts';
+import { getCanonicalPayloadHash, bufferToHex } from '../../../shared/crypto-utils.ts';
 
 // Use shared idempotency service to generate a unique key for confirmations
 const idempotency = new IdempotencyStore();
@@ -19,11 +19,10 @@ export async function sendSettlementConfirmationToVP(vpCallbackUrl: string, clai
   const payload = { claimId, txHash, timestamp: new Date().toISOString(), sender: nsIdentity };
   try {
     // Generate a unique idempotency key for this confirmation
-    // sign payload using NS private key
-    const vault = new VaultClient(process.env.VAULT_TOKEN || 'MOCK_VAULT_TOKEN');
-    const privBuf = await vault.getPrivateKey(nsIdentity);
+    // sign payload inside KMS (private key never leaves KMS)
+    const vault = new KmsVaultClient(process.env.VAULT_TOKEN || 'MOCK_VAULT_TOKEN');
     const payloadHash = getCanonicalPayloadHash(payload);
-    const sigBuf = await signPayload(privBuf.toString('hex'), payloadHash);
+    const sigBuf = await vault.signPayloadInKms(nsIdentity, payloadHash);
     const signature = bufferToHex(sigBuf);
 
     const idempotencyKey = IdempotencyStore.generateKey();

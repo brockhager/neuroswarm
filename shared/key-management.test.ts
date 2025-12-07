@@ -1,19 +1,20 @@
 // shared/key-management.test.ts
 // CN-07-H Phase 3: Unit tests for key management prototype
 
-import { VaultClient, PublicKeyRegistry } from './key-management';
-import { bufferToHex } from './crypto-utils';
+import { KmsVaultClient, PublicKeyRegistry } from './key-management.ts';
+import { bufferToHex } from './crypto-utils.ts';
 
 describe('CN-07-H: Key Management (Phase 3 prototype)', () => {
   const validatorId = 'V-PRODUCER-TEST-01';
 
-  it('should derive a deterministic private key for a validator (VaultClient)', async () => {
-    const vault = new VaultClient();
-    const p1 = await vault.getPrivateKey(validatorId);
-    const p2 = await vault.getPrivateKey(validatorId);
-    expect(p1.equals(p2)).toBe(true);
-    expect(p1 instanceof Buffer).toBe(true);
-    expect(p1.length).toBeGreaterThan(16);
+  it('should sign deterministically inside KMS for identical payloads (KmsVaultClient)', async () => {
+    const vault = new KmsVaultClient();
+    const payload = Buffer.from('deadbeef', 'hex');
+    const s1 = await vault.signPayloadInKms(validatorId, payload);
+    const s2 = await vault.signPayloadInKms(validatorId, payload);
+    expect(s1.equals(s2)).toBe(true);
+    expect(s1 instanceof Buffer).toBe(true);
+    expect(s1.length).toBeGreaterThan(8);
   });
 
   it('should return null for non-registered validators for public key (PublicKeyRegistry)', async () => {
@@ -30,12 +31,13 @@ describe('CN-07-H: Key Management (Phase 3 prototype)', () => {
     expect(pk1 instanceof Buffer).toBe(true);
   });
 
-  it('should honor environment override for vault private key', async () => {
-    const envKeyName = `VAULT_PRIVKEY_${validatorId.replace(/[^A-Z0-9_-]/gi, '_').toUpperCase()}`;
-    process.env[envKeyName] = 'deadbeef';
-    const vault = new VaultClient();
-    const pk = await vault.getPrivateKey(validatorId);
-    expect(bufferToHex(pk)).toBe('deadbeef');
+  it('should honor environment override for signed payload via VAULT_SIGN_<KEYID>', async () => {
+    const envKeyName = `VAULT_SIGN_${validatorId.replace(/[^A-Z0-9_-]/gi, '_').toUpperCase()}`;
+    process.env[envKeyName] = 'cafebabe';
+    const vault = new KmsVaultClient();
+    const payload = Buffer.from('abcd', 'hex');
+    const sig = await vault.signPayloadInKms(validatorId, payload);
+    expect(bufferToHex(sig)).toBe('cafebabe');
     delete process.env[envKeyName];
   });
 

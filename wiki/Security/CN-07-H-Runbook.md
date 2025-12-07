@@ -117,7 +117,7 @@ Audit records (append-only):
 
 9) Appendix — Environment variables used
 ----------------------------------------
-- `VAULT_TOKEN` — token used by `VaultClient` in prototype; in production this will be IAM / OIDC role-based credentials.
+- `VAULT_TOKEN` — token used by `KmsVaultClient` in prototype; in production this will be IAM / OIDC role-based credentials.
 - `NS_NODE_ID` — identity used by NS for signing (default `NS-PRIMARY` in prototypes).
 - `REGISTRY_PUBKEY_<ID>` — override storage for public key values in development only.
 

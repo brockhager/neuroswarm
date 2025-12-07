@@ -13,36 +13,55 @@ import crypto from 'crypto';
  * In production this would call HashiCorp Vault / AWS KMS / HSM and not expose raw private keys.
  * For prototyping we deterministically derive key material so E2E tests can run.
  */
-export class VaultClient {
+export class KmsVaultClient {
   private isAuthenticated: boolean = false;
   private vaultUrl: string = process.env.VAULT_URL || 'http://vault.internal:8200';
   private token: string;
 
   constructor(token: string = process.env.VAULT_TOKEN || 'MOCK_VP_SERVICE_TOKEN_123') {
     this.token = token;
-    if (!this.token) throw new Error('VaultClient: VAULT_TOKEN not provided');
+    if (!this.token) throw new Error('KmsVaultClient: VAULT_TOKEN not provided');
     // In a real implementation we would authenticate here and refresh tokens.
     this.isAuthenticated = true;
-    console.log('[VaultClient] Initialized (mock).');
+    console.log('[KmsVaultClient] Initialized (mock).');
   }
 
-  public async getPrivateKey(validatorId: string): Promise<Buffer> {
-    if (!this.isAuthenticated) throw new Error('VaultClient: not authenticated');
+  /**
+   * Sign a payload hash inside the KMS/HSM and return the signature buffer.
+   * The private key NEVER leaves the KMS in production.
+   * @param keyId logical key identifier (e.g., 'ns-primary' or 'V-PRODUCER-01')
+   * @param payloadHash canonical payload hash to sign
+   */
+  public async signPayloadInKms(keyId: string, payloadHash: Buffer): Promise<Buffer> {
+    if (!this.isAuthenticated) throw new Error('KmsVaultClient: not authenticated');
 
-    // TEST/PROTOTYPE: allow explicit override via env
-    const envKey = process.env[`VAULT_PRIVKEY_${validatorId.replace(/[^A-Z0-9_-]/gi, '_').toUpperCase()}`];
-    if (envKey && envKey.length > 10) return hexToBuffer(envKey);
+    // Environment override for deterministic CI testing: VAULT_SIGN_<KEYID>=hexsig
+    const envKeyName = `VAULT_SIGN_${keyId.replace(/[^A-Z0-9_-]/gi, '_').toUpperCase()}`;
+    const override = process.env[envKeyName];
+    if (override && override.length > 8) return hexToBuffer(override);
 
-    // Simulate latency
+    // simulate latency
     await new Promise((r) => setTimeout(r, 50));
 
-    // For prototype, derive deterministic keypair from seed
+    // For prototype: derive private key deterministically from keyId and sign locally.
     try {
-      const kp = await deriveKeypairFromSeed(validatorId);
-      return kp.privateKey;
+      const kp = await deriveKeypairFromSeed(keyId);
+      const { signPayload } = await import('./crypto-utils.ts');
+      const sig = await signPayload(kp.privateKey, payloadHash);
+      return sig;
     } catch (e) {
-      throw new Error(`VaultClient: unable to derive private key for ${validatorId}: ${e instanceof Error ? e.message : String(e)}`);
+      throw new Error(`KmsVaultClient: failed to sign with key ${keyId}: ${e instanceof Error ? e.message : String(e)}`);
     }
+  }
+
+  // DEPRECATED in production: test-friendly helper to derive the private key (not for production use)
+  public async getPrivateKeyForTestsOnly(keyId: string): Promise<Buffer> {
+    if (!this.isAuthenticated) throw new Error('KmsVaultClient: not authenticated');
+    const envKey = process.env[`VAULT_PRIVKEY_${keyId.replace(/[^A-Z0-9_-]/gi, '_').toUpperCase()}`];
+    if (envKey && envKey.length > 10) return hexToBuffer(envKey);
+    await new Promise((r) => setTimeout(r, 50));
+    const kp = await deriveKeypairFromSeed(keyId);
+    return kp.privateKey;
   }
 
   // future: key rotation, revoke, audit-log helper methods
@@ -80,4 +99,4 @@ export class PublicKeyRegistry {
   // future: key status, revocation checks
 }
 
-export default { VaultClient, PublicKeyRegistry };
+export default { KmsVaultClient, PublicKeyRegistry };
