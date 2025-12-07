@@ -4,19 +4,7 @@ This document consolidates all outstanding work from the Master Design Document 
 
 ---
 
-## 🔮 UPCOMING WORK — High priority items (new / planned)
 
-These items are the top priorities for the next development phase and are not completed yet; they are placed here for visibility so the whole team can follow progress.
-
-| ID | Component | Task Description | Priority | Status |
-|---|---|---|---:|---|
-| CN-08-D | vp-node (4000) | Background requeue worker for reward claims (periodic retry with backoff & metrics) | MEDIUM | Not Started |
-| CN-08-E | ns-node (3009) | Ledger settlement confirmation & VP notify path (mark claims SETTLED and notify VPs) | MEDIUM | Not Started |
-| CN-07-H | infra / security | Replace mock signatures with production ED25519 signing/verification for claims & evidence | HIGH | Not Started |
-| CN-07-I | network / security | Secure VP→NS APIs with mTLS / mutual auth and per-node tokens (audible & authenticated submission) | HIGH | Not Started |
-| OPS-05 | observability | Add metrics + Grafana panels for reward claim pipeline (pending/submitted/failed counts) | MEDIUM | Not Started |
-
----
 
 ## 🎯 ACTIVE TASKS (Prioritized - Work Top to Bottom)
 
@@ -28,6 +16,20 @@ These items are the top priorities for the next development phase and are not co
 | APP-02 | neuro-runner (3008) | Build the background worker framework: job queue (Redis/BullMQ or equivalent), idempotent processing, retry/durable metrics, monitoring. | MEDIUM | Not Started |
 | APP-03 | admin-node (3000) | Implement secure admin portal with RBAC, governance UI, audit trails, and tight access controls. | MEDIUM | Not Started |
 | APP-04 | alert-sink (3010) | Implement alerts ingestion API, durable JSONL audit storage & replay hooks, and test coverage for alert delivery and storage. | LOW | Not Started |
+
+---
+
+## 🔮 UPCOMING WORK — High priority items (new / planned)
+
+These items are the top priorities for the next development phase and are not completed yet; they are placed here for visibility so the whole team can follow progress.
+
+| ID | Component | Task Description | Priority | Status |
+|---|---|---|---:|---|
+| CN-08-D | vp-node (4000) | Background requeue worker for reward claims (periodic retry with backoff & metrics) | MEDIUM | Not Started |
+| CN-08-E | ns-node (3009) | Ledger settlement confirmation & VP notify path (mark claims SETTLED and notify VPs) | MEDIUM | Not Started |
+| CN-07-H | infra / security | Replace mock signatures with production ED25519 signing/verification for claims & evidence | HIGH | Not Started |
+| CN-07-I | network / security | Secure VP→NS APIs with mTLS / mutual auth and per-node tokens (audible & authenticated submission) | HIGH | Not Started |
+| OPS-05 | observability | Add metrics + Grafana panels for reward claim pipeline (pending/submitted/failed counts) | MEDIUM | Not Started |
 
 ---
 
@@ -95,6 +97,8 @@ These items are the top priorities for the next development phase and are not co
 | CN-05-F | Deployment | Configure Prometheus scrape endpoints in production deployment configs for ns-node sync metrics. | MEDIUM | 2025-12-06 |
 
 ---
+
+## 📋 RECENT UPDATES & STATUS NOTES
 
 ## 📋 RECENT UPDATES & STATUS NOTES
 
