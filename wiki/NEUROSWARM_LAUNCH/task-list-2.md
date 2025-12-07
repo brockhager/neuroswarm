@@ -14,9 +14,7 @@ This document consolidates all outstanding work from the Master Design Document 
 | CN-14-A | VP Swarm / Gateway | WebSocket Status: Implement mechanism to notify client of completion via WebSocket (VP -> Gateway -> Client). | HIGH | Completed |
 | CN-02 | Router API (4001) | Implement security and anchoring: JWT/RBAC ✅, Postgres schema/migrations, deterministic audit hashing, IPFS pinning pipeline, and optional on-chain anchoring tests. | HIGH | Completed |
 | OPS-03C | CI/CD | Multi-service E2E harness validating full flows (Agent 9 ↔ NS-LLM ↔ Router ↔ VP ↔ ns-node). | HIGH | Not Started |
-| CN-06-D | VP-Node / NS-Node | Validator selection integration + unbond release processor. | HIGH | Completed |
 | OPS-01B | All Services | Extend /health and /metrics to remaining services (Gateway, VP, Router, NS-LLM, neuro-services). | HIGH | Not Started |
-| OPS-02 | All Services | Standardize structured logging (JSON), correlation IDs, trace context propagation, and logging levels. | HIGH | Completed |
 | OPS-04 | Secrets & Deployment | Formalize secrets management (Vault/Docker secrets) for local & containerized setups. | HIGH | Not Started |
 | AG4-03 | Agent 9 | Add offline/resiliency handling and monitoring (status channel notifications, automatic backoff and retries). | MEDIUM | In Progress |
 | AG4-04 | Agent 9 | Add fine-grained audit logging for all user-visible interactions for compliance & reconciliation. | MEDIUM | Not Started |
@@ -66,6 +64,8 @@ This document consolidates all outstanding work from the Master Design Document 
 | AG4-01 | Agent 9 | Integrate with NS-LLM streaming + generate/embed contract | HIGH | 2025-11-XX |
 | CN-12-B | Gateway Node (8080) | VP Swarm Queueing: Distributed message queue integration for VP Swarm decoupling | HIGH | 2025-12-06 |
 | AG4-02 | Agent 9 | IPFS/provenance attachments and deterministic audit metadata | HIGH | 2025-11-XX |
+| CN-06-D | VP-Node / NS-Node | Validator selection integration + unbond release processor. | HIGH | 2025-12-06 |
+| OPS-02 | All Services | Standardize structured logging (JSON), correlation IDs, trace context propagation, and logging levels. | HIGH | 2025-12-06 |
 
 ---
 
