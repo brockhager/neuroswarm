@@ -2,6 +2,7 @@ import express from 'express';
 import crypto from 'crypto';
 import { sendSettlementConfirmationToVP } from './ledger-settlement-confirmation.ts';
 import { getCanonicalPayloadHash, verifySignature, hexToBuffer, bufferToHex, signPayload } from '../../shared/crypto-utils.ts';
+import { getPublicKeyFromRegistry } from '../../../shared/key-management.ts';
 
 // use shared crypto utilities (CN-07-H Phase 1) for canonical hashing and ED25519-style verification
 
@@ -12,11 +13,9 @@ import { getCanonicalPayloadHash, verifySignature, hexToBuffer, bufferToHex, sig
  * Returns ED25519 public key for registered validators.
  */
 export async function getValidatorPublicKey(validatorId: string): Promise<string | null> {
-  // For Phase 1 prototype we return deterministic hex key material derived from validatorId
-  if (validatorId.startsWith('V-PRODUCER')) {
-    return crypto.createHash('sha256').update(`KEY:${validatorId}`).digest('hex');
-  }
-  return null;
+  // Phase 3: query authoritative public key registry (mock)
+  const pk = await getPublicKeyFromRegistry(validatorId);
+  return pk;
 }
 
 /**

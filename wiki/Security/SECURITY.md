@@ -64,6 +64,7 @@ Action items for production rollout:
 1. Replace prototype cryptographic functions with true ED25519 operations.  
   - Status: **Phase 2 implemented** — `shared/crypto-utils.ts` will use `@noble/ed25519` when available; sign/verify are now async with a secure fallback for tests.
 2. Implement key management (Vault/HSM) + secure rotation and audit logging.
+  - Status: **Phase 3 started** — a prototype vault/registry interface has been added (`shared/key-management.ts`) and integrated. Phase 3 work continues to harden key storage and access policies.
 3. Add authoritative public key registry and CI-grade tests exercising key rotation and verification with real keys.
 
 ## Contact

@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { dispatchAlert, OperatorAlert } from './alerting-service.js';
 import { getCanonicalPayloadHash, signPayload, bufferToHex } from '../shared/crypto-utils.ts';
+import { getPrivateKeyFromVault, getPublicKeyFromRegistry } from '../shared/key-management.ts';
 
 // --- CRYPTO UTILITIES (CN-08-F) ---
 // NOTE: In a production environment, this would use a dedicated library like 'ed25519-hd-key' or '@noble/ed25519'
@@ -25,13 +26,12 @@ import { getCanonicalPayloadHash, signPayload, bufferToHex } from '../shared/cry
  * Retrieves the validator's keypair from secure storage.
  * In production, this would use a hardware security module (HSM) or encrypted keystore.
  */
-function getValidatorKeypair(validatorId: string): { privateKey: string; publicKey: string } {
-  // MOCK: In production, retrieve from secure vault. For Phase 1 we return deterministic hex keys.
-  // derive a deterministic key material for prototype tests — private/public are the same for Phase 1
-  const derivedHex = crypto.createHash('sha256').update(`KEY:${validatorId}`).digest('hex');
-  const privateHex = derivedHex;
-  const publicHex = derivedHex;
-  return { privateKey: privateHex, publicKey: publicHex };
+async function getValidatorKeypair(validatorId: string): Promise<{ privateKey: string; publicKey: string }> {
+  // Phase 3: retrieve private key from Vault mock and public key from registry mock
+  const privateKey = await getPrivateKeyFromVault(validatorId);
+  // prefer registry public key when available
+  const publicKey = (await getPublicKeyFromRegistry(validatorId)) ?? privateKey;
+  return { privateKey, publicKey };
 }
 
 // Hardened client config
@@ -69,7 +69,7 @@ export async function submitSignedEvidence(signedEvidence: SignedSlashingEvidenc
     // CN-07-H: sign the evidence (Phase 1 - mock ED25519 via shared utils)
     try {
       const validatorId = signedEvidence.evidence.validatorId;
-      const keypair = getValidatorKeypair(validatorId);
+      const keypair = await getValidatorKeypair(validatorId);
       const payloadHash = getCanonicalPayloadHash({ evidence: signedEvidence.evidence });
       const signatureBuf = await signPayload(keypair.privateKey, payloadHash);
       signedEvidence.validatorSignature = bufferToHex(signatureBuf);
@@ -129,7 +129,7 @@ export async function submitRewardClaim(request: { type: string; payload: any })
       throw new Error('Missing producerId in reward claim allocation');
     }
 
-    const keypair = getValidatorKeypair(validatorId);
+    const keypair = await getValidatorKeypair(validatorId);
     const payloadToSign = {
       claimId: request.payload.claimId,
       timestamp: request.payload.timestamp,

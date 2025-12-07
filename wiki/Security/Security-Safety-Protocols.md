@@ -42,6 +42,8 @@ Why this matters:
 Next steps (Phase 2+):
 1. Phase 2: Replace HMAC-based prototype with a real ED25519 library (recommend `@noble/ed25519`).
 	- Status: **Phase 2 implemented** (shared/crypto-utils now dynamically uses ED25519 when available; sign/verify APIs are async with safe fallback).
+2. Phase 3: Key Management Integration (Vault & Registry prototype).
+	- Status: **Phase 3 started** — prototype key-management service (mock vault & registry) added at `shared/key-management.ts` and wired into VP / NS nodes for prototyping.
 2. Add integrated key management (HashiCorp Vault / AWS KMS / HSM) with secrets rotation and access controls.
 3. Implement an authoritative public key registry for validators (on-chain or consensus-backed) and remove deterministic key derivation used in prototypes.
 4. Add replay protection / idempotency records for claims and confirmations.
