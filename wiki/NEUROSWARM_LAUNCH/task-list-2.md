@@ -37,17 +37,31 @@ These items are the top priorities for the next development phase and are not co
 
 | ID | Component | Task Description | Priority | Completion Date |
 |-----------|------------|------------------|----------|-----------------|
+| AG4-01 | Agent 9 | Integrate with NS-LLM streaming + generate/embed contract | HIGH | 2025-11-XX |
+| AG4-02 | Agent 9 | IPFS/provenance attachments: cryptographic hashing + CID generation for audit trail | HIGH | 2025-12-06 |
+| AG4-03 | Agent 9 | Add offline/resiliency handling and monitoring (status channel notifications, automatic backoff and retries). | MEDIUM | 2025-12-06 |
+| AG4-04 | Agent 9 | Fine-grained audit logging (JSONL append-only) for user-visible interactions | MEDIUM | 2025-12-06 |
+| AG4-05 | Agent 9 | Hardening & UX: implement streaming backpressure handling, partial-message edit throttling, token aggregation policies, resumable streams and better error messages. | MEDIUM | 2025-12-06 |
+| AI-01 | NS-LLM (3015) | SSE/token streaming on `/api/generate` with native fallback | HIGH | 2025-11-XX |
+| AI-02 | NS-LLM (3015) | `/api/embed` embedding endpoint with deterministic schema | MEDIUM | 2025-11-XX |
 | CN-01 | ns-node (3009) | Block validation, consensus enforcement, reorg handling, RBAC | HIGH | 2025-12-03 |
 | CN-01-E2E | ns-node + VP | VP→NS cryptographic E2E (ED25519 signature verification across network) | HIGH | 2025-12-04 |
+| CN-02 | Router API (4001) | Implement security and anchoring: JWT/RBAC ✅, Postgres schema/migrations, deterministic audit hashing, IPFS pinning pipeline, and optional on-chain anchoring tests. | HIGH | 2025-12-06 |
 | CN-03 | VP Node (4000) | Deterministic block producer: mempool poll → payloadCid/sourcesRoot → sign & submit | HIGH | 2025-12-03 |
 | CN-04 | Gateway Node (8080) | Admission control: mempool + per-IP/key rate limiting + requeue endpoints | HIGH | 2025-12-03 |
 | CN-05-A | ns-node (3009) | Sync Protocol: Ancestry Integrity (REQUEST/RESPONSE validation) | HIGH | 2025-12-04 |
 | CN-05-B | ns-node (3009) | Sync Protocol: Paging/Chunking (MAX_SYNC_BLOCKS, hasMore/nextFrom) | HIGH | 2025-12-04 |
 | CN-05-C | ns-node (3009) | Sync Protocol: Resource Rate Limiting (per-peer concurrency cap, 429 responses) | HIGH | 2025-12-04 |
 | CN-05-D | ns-node (3009) | Sync Protocol: Observability (Prometheus metrics for sync events) | HIGH | 2025-12-04 |
+| CN-05-F | Deployment | Configure Prometheus scrape endpoints in production deployment configs for ns-node sync metrics. | MEDIUM | 2025-12-06 |
 | CN-06-A | ns-node + vp-node | NST_STAKE: Account staking transaction; move NST → staked_nst and enforce 5,000 NST minimum | HIGH | 2025-12-04 |
+| CN-06-A | VP-Node (4000) | LLM Worker Code Sandbox: Isolated execution environment with timeout enforcement and resource limits | HIGH | 2025-12-06 |
 | CN-06-B | ns-node + vp-node | NST_UNSTAKE: Unstake + create pending_unstakes (7-day unbond record); staked_nst reduced immediately | HIGH | 2025-12-04 |
 | CN-06-C | ns-node + vp-node | REGISTER_VALIDATOR: Mark account candidacy if staked_nst >= 5,000 NST | HIGH | 2025-12-04 |
+| CN-06-C | VP-Node (4000) | LLM Security Layer: Input sanitization, control character escaping, system prompt boundary protection, payload truncation | HIGH | 2025-12-06 |
+| CN-06-C | VP-Node (4000) | LLM Security Layer: Input sanitization, control character escaping, prompt boundary protection | HIGH | 2025-12-06 |
+| CN-06-D | NS-Node | Validator selection (DPoS) + unbond release processor with 10-era cooldown | HIGH | 2025-12-06 |
+| CN-06-D | VP-Node / NS-Node | Validator selection integration + unbond release processor. | HIGH | Completed |
 | CN-07-A | ns-node (3009) | Implement getProducer(height): deterministic stake-weighted producer selection | HIGH | 2025-12-04 |
 | CN-07-B | vp-node (4000) | Production guard: VP consults NS `/chain/producer/:height` | HIGH | 2025-12-04 |
 | CN-07-C | ns-node + vp-node | Slashing Evidence + Missed Slot Tracking (PR #18) | HIGH | 2025-12-04 (merged) |
@@ -55,46 +69,31 @@ These items are the top priorities for the next development phase and are not co
 | CN-07-E | vp-node | Slashing evidence generation & submission (evidence proto, signing, submit path) | HIGH | 2025-12-06 |
 | CN-07-F | vp-node | Operator alerting integration (alert-sink + Discord-compatible payloads) | MEDIUM | 2025-12-06 |
 | CN-07-G | vp-node | Harden NS-Client (retries, timeouts, backoff, auth-friendly + mock mode) | MEDIUM | 2025-12-06 |
-| CN-08-A | vp-node (4000) | Validator Fee Collection & Distribution (fee split, reward claim submission to NS) | MEDIUM | 2025-12-06 |
-| CN-08-B | ns-node (3009) | NS Ledger Reward Processor: accept signed VP reward claims and queue settlement txs | MEDIUM | 2025-12-06 |
-| CN-08-C | vp-node (4000) | VP Reward Claim Persistence & Requeueing (durable claims DB & status transitions) | MEDIUM | 2025-12-06 |
 | CN-08-A | Router API (4001) | POST /artifact/review endpoint: JWT auth + RBAC + CID validation + request queuing | HIGH | 2025-12-04 (7/7 tests) |
+| CN-08-A | vp-node (4000) | Validator Fee Collection & Distribution (fee split, reward claim submission to NS) | MEDIUM | 2025-12-06 |
 | CN-08-B | VP-Node (4000) | REQUEST_REVIEW processor: Gemini LLM integration + ARTIFACT_CRITIQUE generation | HIGH | 2025-12-04 (11/11 tests) |
+| CN-08-B | ns-node (3009) | NS Ledger Reward Processor: accept signed VP reward claims and queue settlement txs | MEDIUM | 2025-12-06 |
 | CN-08-C | NS-Node (3009) | ARTIFACT_CRITIQUE consensus validation: producer-only + schema + anti-spam checks | HIGH | 2025-12-04 (10/10 tests) |
+| CN-08-C | vp-node (4000) | VP Reward Claim Persistence & Requeueing (durable claims DB & status transitions) | MEDIUM | 2025-12-06 |
 | CN-09-A | NS-Node (3009) | Request Fulfillment: completed_reviews state tracking + 4th security check | HIGH | 2025-12-04 (merged) |
 | CN-09-B | Router API + NS-Node | Critique History Endpoint: GET /artifact/critique/:artifact_id with JWT auth | HIGH | 2025-12-04 (merged) |
 | CN-10-A | Genesis | Genesis State parameters finalized (100M NST, Jan 2 2025, 5K min stake, 5s slots) | HIGH | 2025-12-04 |
 | CN-10-B | CLI | Neuroswarm CLI Emulator (browser-based, 5 commands) | CRITICAL | 2025-12-04 |
 | CN-11-B | Client SDK | SDK Testing: unit tests, integration tests, E2E validation for reliability assurance | HIGH | 2025-12-06 |
 | CN-12-A | Gateway Node (8080) | Core Routing & Validation: JWT middleware, rate limiting, Zod schema validation, health/metrics endpoints | HIGH | 2025-12-06 |
-| CN-06-C | VP-Node (4000) | LLM Security Layer: Input sanitization, control character escaping, system prompt boundary protection, payload truncation | HIGH | 2025-12-06 |
-| OPS-01A | ns-node (3009) | /health and /metrics endpoints with Prometheus format | HIGH | 2025-12-04 (sync metrics) |
-| OPS-03A | CI/CD | VP→NS cryptographic E2E test in CI | HIGH | 2025-12-03 (crypto_pipeline_test) |
-| OPS-03B | CI/CD | Sync protocol integration tests in CI (ancestry, paging, rate limits, metrics) | HIGH | 2025-12-04 (commit 0aed3e2) |
-| OPS-CI-NSLLM | CI/CD | NS-LLM integration tests + OpenAPI contract validation in CI | HIGH | 2025-12-06 (fixed endpoint mismatch) |
-| AI-01 | NS-LLM (3015) | SSE/token streaming on `/api/generate` with native fallback | HIGH | 2025-11-XX |
-| AI-02 | NS-LLM (3015) | `/api/embed` embedding endpoint with deterministic schema | MEDIUM | 2025-11-XX |
-| AG4-01 | Agent 9 | Integrate with NS-LLM streaming + generate/embed contract | HIGH | 2025-11-XX |
 | CN-12-A | Gateway Node (8080) | Core Routing & Validation: JWT middleware, rate limiting, Zod schema validation | HIGH | 2025-12-06 |
 | CN-12-B | VP Swarm Queue | Job Queue Service: Distributed queue with priority, retry, dead letter, fault tolerance | HIGH | 2025-12-06 |
-| CN-06-C | VP-Node (4000) | LLM Security Layer: Input sanitization, control character escaping, prompt boundary protection | HIGH | 2025-12-06 |
-| CN-06-A | VP-Node (4000) | LLM Worker Code Sandbox: Isolated execution environment with timeout enforcement and resource limits | HIGH | 2025-12-06 |
-| OPS-04 | Deployment | Production Docker Compose manifests with secrets management, networking, health checks, monitoring | HIGH | 2025-12-06 |
-| OPS-01B | All Services | Health and Metrics endpoints for Gateway, VP, Router, NS-LLM with Prometheus format | HIGH | 2025-12-06 |
-| CN-06-D | NS-Node | Validator selection (DPoS) + unbond release processor with 10-era cooldown | HIGH | 2025-12-06 |
-| AG4-02 | Agent 9 | IPFS/provenance attachments: cryptographic hashing + CID generation for audit trail | HIGH | 2025-12-06 |
-| AG4-04 | Agent 9 | Fine-grained audit logging (JSONL append-only) for user-visible interactions | MEDIUM | 2025-12-06 |
-| CN-06-D | VP-Node / NS-Node | Validator selection integration + unbond release processor. | HIGH | Completed |
-| OPS-02 | All Services | Standardize structured logging (JSON), correlation IDs, trace context propagation, and logging levels. | HIGH | 2025-12-06 |
-
 | CN-13-B | VP Swarm (Worker) | Artifact Persistence: Store consumed artifacts in persistent storage (e.g., SQLite/IPFS) and update status to RECEIVED. | HIGH | 2025-12-06 |
 | CN-13-C | VP Swarm (Worker) | Artifact Processing Mock: Simulate processing delay and generate mock critique, updating status to COMPLETED. | HIGH | 2025-12-06 |
 | CN-14-A | VP Swarm / Gateway | WebSocket Status: Implement mechanism to notify client of completion via WebSocket (VP -> Gateway -> Client). | HIGH | 2025-12-06 |
-| CN-02 | Router API (4001) | Implement security and anchoring: JWT/RBAC ✅, Postgres schema/migrations, deterministic audit hashing, IPFS pinning pipeline, and optional on-chain anchoring tests. | HIGH | 2025-12-06 |
+| OPS-01A | ns-node (3009) | /health and /metrics endpoints with Prometheus format | HIGH | 2025-12-04 (sync metrics) |
+| OPS-01B | All Services | Health and Metrics endpoints for Gateway, VP, Router, NS-LLM with Prometheus format | HIGH | 2025-12-06 |
+| OPS-02 | All Services | Standardize structured logging (JSON), correlation IDs, trace context propagation, and logging levels. | HIGH | 2025-12-06 |
+| OPS-03A | CI/CD | VP→NS cryptographic E2E test in CI | HIGH | 2025-12-03 (crypto_pipeline_test) |
+| OPS-03B | CI/CD | Sync protocol integration tests in CI (ancestry, paging, rate limits, metrics) | HIGH | 2025-12-04 (commit 0aed3e2) |
 | OPS-03C | CI/CD | Multi-service E2E harness validating full flows (Agent 9 ↔ NS-LLM ↔ Router ↔ VP ↔ ns-node). | HIGH | 2025-12-06 |
-| AG4-03 | Agent 9 | Add offline/resiliency handling and monitoring (status channel notifications, automatic backoff and retries). | MEDIUM | 2025-12-06 |
-| AG4-05 | Agent 9 | Hardening & UX: implement streaming backpressure handling, partial-message edit throttling, token aggregation policies, resumable streams and better error messages. | MEDIUM | 2025-12-06 |
-| CN-05-F | Deployment | Configure Prometheus scrape endpoints in production deployment configs for ns-node sync metrics. | MEDIUM | 2025-12-06 |
+| OPS-CI-NSLLM | CI/CD | NS-LLM integration tests + OpenAPI contract validation in CI | HIGH | 2025-12-06 (fixed endpoint mismatch) |
+| OPS-04 | Deployment | Production Docker Compose manifests with secrets management, networking, health checks, monitoring | HIGH | 2025-12-06 |
 
 ---
 
