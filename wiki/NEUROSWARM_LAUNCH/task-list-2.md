@@ -6,16 +6,14 @@ This document consolidates all outstanding work from the Master Design Document 
 
 
 
-## 🎯 ACTIVE TASKS (Prioritized - Work Top to Bottom)
+## 🎯 ACTIVE TASKS (In Progress — work currently being executed)
+
+These are tasks the engineering team is actively working on right now. Anything marked "In Progress" across the project is listed here for team visibility.
 
 | ID | Component | Task Description | Priority | Status |
-|-----------|------------|------------------|----------|--------|
-| CN-05-G | Monitoring | Create Grafana dashboards for sync monitoring (request rates, rejection patterns, inflight tracking, ancestry failures). | MEDIUM | Not Started |
-| CN-05-H | Monitoring | Implement alert rules for sync anomalies (ancestry mismatch spikes, persistent 429 patterns, sync failures). | MEDIUM | Not Started |
-| APP-01 | neuro-services (3007) | Implement the business logic service with secure DB access, billing/reconciliation routines, adapters plugin interface, and tests. | MEDIUM | Not Started |
-| APP-02 | neuro-runner (3008) | Build the background worker framework: job queue (Redis/BullMQ or equivalent), idempotent processing, retry/durable metrics, monitoring. | MEDIUM | Not Started |
-| APP-03 | admin-node (3000) | Implement secure admin portal with RBAC, governance UI, audit trails, and tight access controls. | MEDIUM | Not Started |
-| APP-04 | alert-sink (3010) | Implement alerts ingestion API, durable JSONL audit storage & replay hooks, and test coverage for alert delivery and storage. | LOW | Not Started |
+|---|---|---|---:|---|
+| CN-07-H | infra / security | Replace mock signatures with production ED25519 signing/verification for claims & evidence (prototype ED25519 signing/verification implemented — needs production key management / HSM & library) | HIGH | In Progress |
+| CN-08-G | ns-node + vp-node | Per-validator confirmation & idempotent settlement confirmations (per-validator callback registry; idempotency & robust retry/backoff) | HIGH | In Progress |
 
 ---
 
@@ -26,9 +24,13 @@ These items are the top priorities for the next development phase and are not co
 | ID | Component | Task Description | Priority | Status |
 |---|---|---|---:|---|
 | CN-08-D | vp-node (4000) | Background requeue worker for reward claims (periodic retry with backoff & metrics) | MEDIUM | Not Started |
-| CN-07-H | infra / security | Replace mock signatures with production ED25519 signing/verification for claims & evidence (prototype ED25519 signing/verification implemented — needs production key management / HSM & library) | HIGH | In Progress |
+| CN-05-G | Monitoring | Create Grafana dashboards for sync monitoring (request rates, rejection patterns, inflight tracking, ancestry failures). | MEDIUM | Not Started |
+| CN-05-H | Monitoring | Implement alert rules for sync anomalies (ancestry mismatch spikes, persistent 429 patterns, sync failures). | MEDIUM | Not Started |
 | CN-07-I | network / security | Secure VP→NS APIs with mTLS / mutual auth and per-node tokens (audible & authenticated submission) | HIGH | Not Started |
-| CN-08-G | ns-node + vp-node | Per-validator confirmation & idempotent settlement confirmations (per-validator callback registry; idempotency & robust retry/backoff) | HIGH | In Progress |
+| APP-01 | neuro-services (3007) | Implement the business logic service with secure DB access, billing/reconciliation routines, adapters plugin interface, and tests. | MEDIUM | Not Started |
+| APP-02 | neuro-runner (3008) | Build the background worker framework: job queue (Redis/BullMQ or equivalent), idempotent processing, retry/durable metrics, monitoring. | MEDIUM | Not Started |
+| APP-03 | admin-node (3000) | Implement secure admin portal with RBAC, governance UI, audit trails, and tight access controls. | MEDIUM | Not Started |
+| APP-04 | alert-sink (3010) | Implement alerts ingestion API, durable JSONL audit storage & replay hooks, and test coverage for alert delivery and storage. | LOW | Not Started |
 | OPS-05 | observability | Add metrics + Grafana panels for reward claim pipeline (pending/submitted/failed counts) | MEDIUM | Not Started |
 
 ---
