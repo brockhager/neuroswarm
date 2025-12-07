@@ -11,6 +11,9 @@ import TimeoutMonitor from './services/router-timeout-monitor';
 import RefundReconciliationService from './services/refund-reconciliation';
 import { anchorAudit } from './services/audit-anchoring';
 import AlertingService from './services/alerting';
+import crypto from 'crypto';
+import { LedgerDB } from './services/ledger-db';
+import { authenticate } from './middleware/auth';
 
 dotenv.config();
 
@@ -208,6 +211,62 @@ app.post('/api/v1/governance/anchor', async (req: Request, res: Response) => {
 });
 
 // Start Server
+// Initialize Ledger
+const ledgerDB = new LedgerDB();
+
+// --- CN-02: Ledger Write Endpoint (Secured) ---
+app.post('/api/v1/ledger/write', authenticate('internal_service'), async (req: Request, res: Response) => {
+    try {
+        const payload = req.body;
+        // Basic validation
+        if (!payload || !payload.event_type) {
+            return res.status(400).json({ error: 'Invalid payload: event_type required' });
+        }
+
+        // 1. Calculate Deterministic Hash (Simulated "AuditHasher")
+        // We do this to return it immediately, though anchorAudit also does it.
+        // For consistency, we use the same canonicalization or just trust anchorAudit later.
+        // Here we just use a simple hash for the response ID.
+        const contentHash = crypto.createHash('sha256').update(JSON.stringify(payload)).digest('hex');
+
+        // 2. Persist to Ledger (Status: RECORDED)
+        const entry = await ledgerDB.insert({
+            type: 'audit',
+            timestamp: new Date().toISOString(),
+            payload: payload,
+            hash: contentHash,
+            anchored: false
+        });
+
+        // 3. Return Success Immediate (Async Anchoring follows)
+        res.status(201).json({
+            status: 'recorded',
+            id: entry.id,
+            hash: contentHash,
+            message: 'Audit record persisted. Anchoring in progress.'
+        });
+
+        // 4. Async Anchoring (Fire and Forget)
+        // In production, this might be a queue consumer. Here we call async function.
+        (async () => {
+            try {
+                console.log(`[Router] Triggering async anchor for ${entry.id}...`);
+                const result = await anchorAudit(payload);
+                await ledgerDB.updateAnchorStatus(entry.id!, result.ipfs_cid, result.transaction_signature);
+                console.log(`[Router] Anchor complete for ${entry.id}. CID: ${result.ipfs_cid}`);
+            } catch (err) {
+                console.error(`[Router] Async anchor failed for ${entry.id}:`, err);
+            }
+        })();
+
+    } catch (err) {
+        console.error('Ledger write failed:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 app.listen(port, () => {
     console.log(`NeuroSwarm Router API running on port ${port}`);
+    console.log(`   - LedgerDB initialized`);
+    console.log(`   - Secure Endpoint: POST /api/v1/ledger/write (Requires Auth)`);
 });

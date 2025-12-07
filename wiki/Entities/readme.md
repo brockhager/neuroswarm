@@ -59,16 +59,18 @@ The goal of this document is to give new contributors, auditors and integrators 
   - Can call `router-api` or other services for metadata and governance operations.
 
 ### 4) Router API (neuroswarm/router-api)
-- What: Orchestration and audit layer that handles job routing (T23 flows), audit anchoring, and governance notifications.
+- What: Central orchestration, security, and anchoring hub. Maintains the canonical system ledger.
 - Language / location: TypeScript/Node (`neuroswarm/router-api`).
 - Responsibilities:
-  - Compute canonical audit hashes, pin payloads to IPFS, and drive on-chain anchoring.
-  - Provide diagnostics, retries and fallbacks for IPFS (Pinata / Kubo support).
-  - Emit governance timeline entries and notify admin/gov sinks.
-  - Serve as the test harness (T23 preflight) for end-to-end verification.
+  - **Ledger Persistence**: Maintained via `LedgerDB` (File-based JSONL) for deterministic audit logs.
+  - **Security Hub**: Uses RBAC middleware to authenticate internal services (Gateway, VP).
+  - **Anchoring**: Asynchronously pins ledger entries to IPFS and anchors hashes on-chain (Solana).
 - Integrations:
-  - Uses IPFS (Pinata or local Kubo) and Solana RPC for anchoring operations.
-  - Persists timeline entries via `admin-node` GovernanceLogger or `GOVERNANCE_LOGGER_URL`.
+  - Receives audit events from VP Swarm and Gateway via `/api/v1/ledger/write`.
+  - Uses IPFS (Pinata/Kubo) and Solana RPC.
+  - Notifies `admin-node` governance timeline.
+
+---
 
 ### 5) Neuro Services (neuro-services)
 - What: Central TypeScript services that provide business logic, job queue handling, orchestration for learning pipelines, and APIs used by frontends and CLI tools.
@@ -152,23 +154,29 @@ The goal of this document is to give new contributors, auditors and integrators 
 
 ---
 
+### 16) Core Data Structures
+
+#### Ledger Entry (Router API)
+Immutable record of a system event stored in the central ledger.
+```javascript
+{
+  id: "entry_<timestamp>_<random>",
+  timestamp: "ISO-8601 String",
+  type: "audit" | "transaction" | "job",
+  payload: { ... }, // The actual event data
+  hash: "sha256(payload)", // Deterministic content hash
+  anchored: boolean, // True if pinned & on-chain
+  ipfs_cid: "Qm...", // IPFS Content Identifier
+  tx_signature: "..." // Solana Transaction Signature
+}
+```
+
+---
+
 ## How entities fit together — simplified flows
 
 ### Transaction lifecycle (summary):
 1. Client submits payload → `gateway-node` (admission) → adapters enrich sources
-2. Gateway forwards to `ns-node` mempool and `neuro-services` job queue as needed
-3. `vp-node` collects mempool data, builds block payload, signs and posts to `ns-node` (produce)
-4. Payloads are optionally persisted to IPFS (CID) and anchor steps recorded by `router-api`
-5. `router-api` pins payloads, anchors audit_hash to Solana (`neuro-program`) or simulated anchor, and notifies `admin-node` governance timeline
-6. Dashboards (`neuro-web`) and monitoring surfaces the result; logs recorded in `wp_publish_log.jsonl` for provenance
-
-### Governance & audits
-- `router-api` creates the canonical audit_hash and attempts to pin to IPFS and anchor on Solana.
-- `admin-node` persists timeline entries and acts as the single source of truth for governance actions.
-- `neuro-program` contains on-chain logic to attest anchor events and validator signatures.
-
----
-
 ## Appendix — where to look for each entity
 - ns-node / neuro-infra: `neuro-infra/` and `neuroswarm/ns-node/`
 - gateway-node: `neuroswarm/gateway-node/`

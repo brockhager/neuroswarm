@@ -17,9 +17,6 @@ export class QueueConsumer {
     async start() {
         console.log(`[QueueConsumer] Starting... watching ${this.queueFile}`);
         // If file exists, start from the end to avoid re-processing old messages (unless configured otherwise)
-        // For this dev setup, we'll start from the beginning if the file is small, or just seek to end.
-        // Actually, persistence means we *should* process old messages if we crashed. 
-        // But for simplicity/spam prevention in this demo, let's start from current size.
         try {
             if (fs.existsSync(this.queueFile)) {
                 const stats = fs.statSync(this.queueFile);
@@ -108,17 +105,57 @@ export class QueueConsumer {
                 id,
                 type,
                 payload: artifact,
-                metadata: msg.metadata || {}, // preserve queue metadata
+                metadata: msg.metadata || {},
                 status: 'RECEIVED',
                 receivedAt: new Date().toISOString()
             });
 
             if (success) {
                 console.log(`💾 [QueueConsumer] Persisted artifact ${id} to disk`);
+
+                // CN-13-C: Mock Processing
+                this.simulateProcessing(id, artifact);
             } else {
                 console.error(`❌ [QueueConsumer] Failed to persist artifact ${id}`);
             }
         }
+    }
+
+    // CN-13-C: Simulate processing delay and result generation
+    async simulateProcessing(id, artifact) {
+        console.log(`⚙️  [Processing] Started for ${id}... (4s simulation)`);
+
+        // Simulate non-blocking work but block poller logic for simplicity (or use await)
+        await new Promise(resolve => setTimeout(resolve, 4000));
+
+        // Generate mock critique
+        const critique = `Mock critique for "${artifact.metadata?.title}": Structure is sound. Content logic is valid. Generated at ${new Date().toISOString()}`;
+
+        const updates = {
+            status: 'COMPLETED',
+            critique,
+            completedAt: new Date().toISOString(),
+            score: Math.floor(Math.random() * 10) + 1
+        };
+
+        const updated = await this.artifactStore.update(id, updates);
+
+        if (updated) {
+            console.log(`✅ [Processing] Completed for ${id}. result saved.`);
+            // CN-14-A: Notification
+            this.sendNotification(id, updates);
+        } else {
+            console.error(`❌ [Processing] Failed to update status for ${id}`);
+        }
+    }
+
+    // CN-14-A: Mock WebSocket Notification
+    sendNotification(id, result) {
+        console.log(`🔔 [NotificationService] Sending update to client for ${id}...`);
+        // In real implementation: ws.send(...)
+        console.log(`   Event: STATUS_UPDATE`);
+        console.log(`   Payload: ${JSON.stringify({ id, status: result.status })}`);
+        console.log(`📡 [NotificationService] Sent.`);
     }
 
     stop() {

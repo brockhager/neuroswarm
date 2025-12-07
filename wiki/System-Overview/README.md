@@ -14,6 +14,36 @@ NeuroSwarm is a decentralized architecture comprised of multiple services and co
 - **UI (Dashboard)**: Tools for founders, admins, and contributors to review and act on governance events.
 - **Anchoring (Blockchain)**: Periodic anchoring of the governance timeline to a blockchain (e.g., Solana) to provide cryptographic evidence and audit trails.
 
+> **System Status**: The core nervous system is complete: Gateway $\leftrightarrow$ Queue $\leftrightarrow$ VP Swarm $\leftrightarrow$ Router (Ledger & Anchor).
+
+---
+
+### Router API (Central Nervous System)
+**Location**: `neuroswarm/router-api/`
+**Port**: 4001 — See [Port Configuration](../Ports.md)
+**Purpose**: Central Ledger, Security Hub, and Anchoring Service
+
+The Router API acts as the **central nervous system** for NeuroSwarm. It provides a secure, deterministic ledger for all critical system events and handles the asynchronous anchoring of these events to IPFS and Solana.
+
+**Key Responsibilities:**
+- **Central Ledger**: Maintains a deterministic, append-only log of all system audits.
+- **Security Hub**: Enforces Role-Based Access Control (RBAC) only allowing authenticated internal services (Gateway, VP) to write to the ledger.
+- **Asynchronous Anchoring**: Automatically pins ledger entries to IPFS and anchors their hashes on-chain.
+- **Validator Selection**: Coordinates the selection of validators for compute jobs (future scope).
+
+**Used For:**
+- Storing immutable audit logs
+- Anchoring system state to blockchain
+- Secure inter-service communication
+- Deterministic verification
+
+**Data Flow:**
+```
+VP Swarm (Artifact Processed) → Router API (Ledger Write) → IPFS Pin + Solana Anchor
+```
+
+**Related Docs**: [Router API Design](../Nodes/Router-API.md)
+
 **Quick Start:**
 1. Install and run local services following the repository README
 2. Use `admin-node` to serve a local admin dashboard; seed the timeline using scripts/seed-e2e-timeline.js

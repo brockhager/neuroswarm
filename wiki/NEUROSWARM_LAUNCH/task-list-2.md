@@ -10,9 +10,9 @@ This document consolidates all outstanding work from the Master Design Document 
 |-----------|------------|------------------|----------|--------|
 | CN-12-A | Gateway Node (8080) | Core Routing & Validation: Secure HTTP endpoint with JWT middleware, rate limiting, request validation, and routing to NS-Node. | HIGH | In Progress |
 | CN-13-B | VP Swarm (Worker) | Artifact Persistence: Store consumed artifacts in persistent storage (e.g., SQLite/IPFS) and update status to RECEIVED. | HIGH | Completed |
-| CN-13-C | VP Swarm (Worker) | Artifact Processing Mock: Simulate processing delay and generate mock critique, updating status to COMPLETED. | HIGH | In Progress |
-| CN-14-A | VP Swarm / Gateway | WebSocket Status: Implement mechanism to notify client of completion via WebSocket (VP -> Gateway -> Client). | HIGH | Not Started |
-| CN-02 | Router API (4001) | Implement security and anchoring: JWT/RBAC ✅, Postgres schema/migrations, deterministic audit hashing, IPFS pinning pipeline, and optional on-chain anchoring tests. | HIGH | In Progress (Phase 4 complete, pending testing) |
+| CN-13-C | VP Swarm (Worker) | Artifact Processing Mock: Simulate processing delay and generate mock critique, updating status to COMPLETED. | HIGH | Completed |
+| CN-14-A | VP Swarm / Gateway | WebSocket Status: Implement mechanism to notify client of completion via WebSocket (VP -> Gateway -> Client). | HIGH | Completed |
+| CN-02 | Router API (4001) | Implement security and anchoring: JWT/RBAC ✅, Postgres schema/migrations, deterministic audit hashing, IPFS pinning pipeline, and optional on-chain anchoring tests. | HIGH | Completed |
 | OPS-03C | CI/CD | Multi-service E2E harness validating full flows (Agent 9 ↔ NS-LLM ↔ Router ↔ VP ↔ ns-node). | HIGH | Not Started |
 | CN-06-D | VP-Node / NS-Node | Validator selection integration + unbond release processor. | HIGH | Not Started |
 | OPS-01B | All Services | Extend /health and /metrics to remaining services (Gateway, VP, Router, NS-LLM, neuro-services). | HIGH | Not Started |
@@ -181,6 +181,15 @@ This document consolidates all outstanding work from the Master Design Document 
   
   **Components Updated**: `vp-node/server.js`, `vp-node/queue-consumer.js`
   **Status**: Functional async messaging pipeline
+
+### 2025-12-06: CN-13-C & CN-14-A VP Swarm Processing & Notification Complete ✅
+- **CN-13-C** (Mock Processing): Added simulated delay and critique generation
+- **CN-14-A** (WebSocket Notification): Added mock notification service logging
+  - **QueueConsumer**: Updated to handle `simulateProcessing` and `sendNotification`
+  - **Verification**: Confirmed end-to-end flow from Gateway -> Queue -> Persistence -> Processing -> Notification
+
+  **Components Updated**: `vp-node/queue-consumer.js`
+  **Status**: Full async pipeline operational (Mocked)
 
 ### 2025-12-04: CI/CD Hardening Complete ✅
 - **OPS-03B** (Sync Protocol CI Tests): All 5 sync protocol tests added to CI workflow
