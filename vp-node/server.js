@@ -8,6 +8,7 @@ import { computeSourcesRoot } from '../sources/index.js';
 import { deterministicSortEntries, computeMerkleRootFromTxs } from './src/producer-core.mjs';
 import { PeerManager, P2PProtocol, MessageType, startHTTPSServer } from '../shared/peer-discovery/index.js';
 import { CritiqueProcessor } from './src/critique-processor.mjs';
+import QueueConsumer from './queue-consumer.js';
 // ipfs-http-client is an optional runtime dependency. Dynamically import it
 // inside initIpfs so the server can start without IPFS being installed.
 
@@ -385,6 +386,15 @@ async function main() {
 
   setInterval(produceLoop, INTERVAL_MS);
   logVp('VP production loop initialized');
+
+  // CN-13-A: Start Queue Consumer
+  try {
+    const consumer = new QueueConsumer();
+    consumer.start();
+    logVp('[CN-13-A] QueueConsumer started');
+  } catch (err) {
+    logVp('ERROR: Failed to start QueueConsumer:', err.message);
+  }
 }
 
 // Health endpoint for VP (consistency with other nodes)

@@ -9,6 +9,9 @@ This document consolidates all outstanding work from the Master Design Document 
 | ID | Component | Task Description | Priority | Status |
 |-----------|------------|------------------|----------|--------|
 | CN-12-A | Gateway Node (8080) | Core Routing & Validation: Secure HTTP endpoint with JWT middleware, rate limiting, request validation, and routing to NS-Node. | HIGH | In Progress |
+| CN-13-B | VP Swarm (Worker) | Artifact Persistence: Store consumed artifacts in persistent storage (e.g., SQLite/IPFS) and update status to RECEIVED. | HIGH | Completed |
+| CN-13-C | VP Swarm (Worker) | Artifact Processing Mock: Simulate processing delay and generate mock critique, updating status to COMPLETED. | HIGH | In Progress |
+| CN-14-A | VP Swarm / Gateway | WebSocket Status: Implement mechanism to notify client of completion via WebSocket (VP -> Gateway -> Client). | HIGH | Not Started |
 | CN-02 | Router API (4001) | Implement security and anchoring: JWT/RBAC ✅, Postgres schema/migrations, deterministic audit hashing, IPFS pinning pipeline, and optional on-chain anchoring tests. | HIGH | In Progress (Phase 4 complete, pending testing) |
 | OPS-03C | CI/CD | Multi-service E2E harness validating full flows (Agent 9 ↔ NS-LLM ↔ Router ↔ VP ↔ ns-node). | HIGH | Not Started |
 | CN-06-D | VP-Node / NS-Node | Validator selection integration + unbond release processor. | HIGH | Not Started |
@@ -167,7 +170,17 @@ This document consolidates all outstanding work from the Master Design Document 
   - **Verification**: Validated via `test-queue.ts`
   
   **Components Updated**: `gateway-server.ts`, `queue-service.ts`
+  **Components Updated**: `gateway-server.ts`, `queue-service.ts`
   **Status**: Ready for real queue integration (Kafka/RabbitMQ)
+
+### 2025-12-06: CN-13-A VP Swarm Queue Consumer Complete ✅
+- **CN-13-A** (VP Swarm Queue Consumer): Implemented file-based IPC consumer
+  - **QueueConsumer**: Created `vp-node/queue-consumer.js` to poll `queue.jsonl`
+  - **Integration**: Added consumer startup to `vp-node/server.js`
+  - **Verification**: Verified producer-consumer flow via test scripts
+  
+  **Components Updated**: `vp-node/server.js`, `vp-node/queue-consumer.js`
+  **Status**: Functional async messaging pipeline
 
 ### 2025-12-04: CI/CD Hardening Complete ✅
 - **OPS-03B** (Sync Protocol CI Tests): All 5 sync protocol tests added to CI workflow

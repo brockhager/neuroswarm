@@ -50,10 +50,27 @@ export class QueueService {
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 50));
 
-        console.log(`\n📨 [Mock Queue] Published to '${topic}':`);
-        console.log(JSON.stringify(message, null, 2));
+        // File-based IPC: Write to ../data/queue.jsonl
+        try {
+            const fs = await import('fs');
+            const path = await import('path');
 
-        return true;
+            const dataDir = path.resolve(process.cwd(), '../data');
+            if (!fs.existsSync(dataDir)) {
+                fs.mkdirSync(dataDir, { recursive: true });
+            }
+
+            const queueFile = path.join(dataDir, 'queue.jsonl');
+            const line = JSON.stringify({ topic, ...message }) + '\n';
+
+            fs.appendFileSync(queueFile, line, 'utf8');
+
+            console.log(`\n📨 [Mock Queue] Persisted to '${queueFile}'`);
+            return true;
+        } catch (error: any) {
+            console.error('❌ File Queue Error:', error.message);
+            return false;
+        }
     }
 
     /**
