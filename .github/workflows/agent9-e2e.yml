@@ -45,7 +45,7 @@ jobs:
           ls -la ../router-api-prototype >> e2e-debug.txt || true
         working-directory: ./discord
 
-      - name: Run Agent 9 E2E Tests (Router Persistence: sqlite)
+      - name: Run Agent 9 E2E Tests
         run: |
           mkdir -p artifacts/e2e
           # capture test output to artifacts for post-mortem
