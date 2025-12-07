@@ -61,7 +61,8 @@ Important notes:
 - Phase 2 (next) must integrate a real ED25519 library (e.g., `@noble/ed25519`) and implement secure key management (Vault/HSM). See `wiki/NEUROSWARM_LAUNCH/task-list-2.md` and `wiki/ns-node/CN-08-E-Settlement-Confirmations.md` for related work.
 
 Action items for production rollout:
-1. Replace prototype cryptographic functions with true ED25519 operations.
+1. Replace prototype cryptographic functions with true ED25519 operations.  
+  - Status: **Phase 2 implemented** — `shared/crypto-utils.ts` will use `@noble/ed25519` when available; sign/verify are now async with a secure fallback for tests.
 2. Implement key management (Vault/HSM) + secure rotation and audit logging.
 3. Add authoritative public key registry and CI-grade tests exercising key rotation and verification with real keys.
 

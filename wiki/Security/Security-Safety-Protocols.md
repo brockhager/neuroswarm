@@ -40,7 +40,8 @@ Why this matters:
 - Phase 1 creates a single source of truth for signing/verification and moves the codebase toward a real ED25519 implementation.
 
 Next steps (Phase 2+):
-1. Replace HMAC-based prototype with a real ED25519 library (recommend `@noble/ed25519`).
+1. Phase 2: Replace HMAC-based prototype with a real ED25519 library (recommend `@noble/ed25519`).
+	- Status: **Phase 2 implemented** (shared/crypto-utils now dynamically uses ED25519 when available; sign/verify APIs are async with safe fallback).
 2. Add integrated key management (HashiCorp Vault / AWS KMS / HSM) with secrets rotation and access controls.
 3. Implement an authoritative public key registry for validators (on-chain or consensus-backed) and remove deterministic key derivation used in prototypes.
 4. Add replay protection / idempotency records for claims and confirmations.
