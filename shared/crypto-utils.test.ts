@@ -1,7 +1,7 @@
 // shared/crypto-utils.test.ts
 // CN-07-H Phase 1: Unit tests for shared crypto utilities
 
-import { getCanonicalPayloadHash, signPayload, verifySignature, bufferToHex, hexToBuffer } from './crypto-utils';
+import { getCanonicalPayloadHash, signPayload, verifySignature, bufferToHex, hexToBuffer, deriveKeypairFromSeed } from './crypto-utils';
 
 describe('CN-07-H: Crypto Utils (Phase 1)', () => {
   const testPrivateKey = 'a'.repeat(64); // 64-char hex (32 bytes)
@@ -136,6 +136,15 @@ describe('CN-07-H: Crypto Utils (Phase 1)', () => {
       const isValid = await verifySignature(testPublicKey, payloadHash, receivedSignatureBuf);
 
       expect(isValid).toBe(true);
+    });
+
+    it('deriveKeypairFromSeed should return matching private/public buffers', async () => {
+      const seed = 'V-PRODUCER-TEST-01';
+      const kp = await deriveKeypairFromSeed(seed);
+      expect(kp.privateKey).toBeInstanceOf(Buffer);
+      expect(kp.publicKey).toBeInstanceOf(Buffer);
+      expect(kp.privateKey.length).toBeGreaterThan(16);
+      expect(kp.publicKey.length).toBeGreaterThan(16);
     });
   });
 });
