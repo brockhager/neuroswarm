@@ -14,6 +14,9 @@ set OWNER=brockhager
 set REPO=neuroswarm
 set DRY_RUN=0
 set AUTO=0
+set TOTAL=0
+set CANCELLED=0
+set FAILED=0
 
 :parse_args
 if "%~1"=="" goto after_args
@@ -40,15 +43,28 @@ if not errorlevel 1 (
       exit /b 2
     )
     echo Dry-run complete.
+    echo.
+    echo Summary:
+    echo   Queued runs found: %TOTAL%
+    echo   Cancelled: %CANCELLED%  Failed: %FAILED%
+    echo.
+    pause
     exit /b 0
   )
 
   echo Listing queued runs (limit 500)...
   for /f "delims=" %%R in ('gh run list --repo %OWNER%/%REPO% --limit 500 --json databaseId,status,name,htmlUrl,createdAt -q ".[] | select(.status==\"queued\") | .databaseId"') do (
+    set /a TOTAL+=1
     echo Queued run ID: %%R
     if "%AUTO%"=="1" (
       echo Cancelling %%R...
-      gh run cancel %%R --repo %OWNER%/%REPO% || echo failed to cancel %%R
+      gh run cancel %%R --repo %OWNER%/%REPO% 
+      if errorlevel 1 (
+        echo FAILED cancelling %%R
+        set /a FAILED+=1
+      ) else (
+        set /a CANCELLED+=1
+      )
     )
   )
 
@@ -61,10 +77,23 @@ if not errorlevel 1 (
     )
     for /f "delims=" %%R in ('gh run list --repo %OWNER%/%REPO% --limit 500 --json databaseId,status,name,htmlUrl,createdAt -q ".[] | select(.status==\"queued\") | .databaseId"') do (
       echo Cancelling %%R...
-      gh run cancel %%R --repo %OWNER%/%REPO% || echo failed to cancel %%R
+      gh run cancel %%R --repo %OWNER%/%REPO% 
+      if errorlevel 1 (
+        echo FAILED cancelling %%R
+        set /a FAILED+=1
+      ) else (
+        set /a CANCELLED+=1
+      )
+      set /a TOTAL+=1
     )
   )
 
+  echo.
+  echo Summary:
+  echo   Queued runs found: %TOTAL%
+  echo   Cancelled: %CANCELLED%  Failed: %FAILED%
+  echo.
+  pause
   echo Done.
   exit /b 0
 )
@@ -113,6 +142,12 @@ for /l %%I in (1,1,%COUNT%) do (
 if "%DRY_RUN%"=="1" (
   echo Dry-run: not cancelling.
   del .\temp_action_runs.json >nul 2>&1
+  echo.
+  echo Summary:
+  echo   Queued runs found: %COUNT%
+  echo   Cancelled: %CANCELLED%  Failed: %FAILED%
+  echo.
+  pause
   endlocal
   exit /b 0
 )
@@ -131,10 +166,23 @@ rem cancel each run
 for /l %%I in (1,1,%COUNT%) do (
   call set id=%%RUN_%%I%%
   echo Cancelling run id !id! ...
-  curl -s -X POST -H "Authorization: Bearer %GITHUB_TOKEN%" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/%OWNER%/%REPO%/actions/runs/!id!/cancel" -o nul
-  if errorlevel 1 echo Failed to cancel !id!
+  rem POST and capture HTTP status code
+  for /f "usebackq tokens=* delims=" %%C in (`curl -s -o nul -w "%%{http_code}" -X POST -H "Authorization: Bearer %GITHUB_TOKEN%" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/%OWNER%/%REPO%/actions/runs/!id!/cancel"`) do set HTTP=%%C
+  if "!HTTP!"=="202" (
+    echo Cancel accepted (202)
+    set /a CANCELLED+=1
+  ) else (
+    echo Cancel failed - HTTP status !HTTP!
+    set /a FAILED+=1
+  )
 )
 
 del .\temp_action_runs.json >nul 2>&1
+echo.
+echo Summary:
+echo   Queued runs found: %COUNT%
+echo   Cancelled: %CANCELLED%  Failed: %FAILED%
+echo.
+pause
 endlocal
 echo Done.
