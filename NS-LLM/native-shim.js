@@ -7,7 +7,9 @@ class NativeShim {
   constructor(options = {}) {
     // Options allowing override for tests
     this.baseBinaryPath = options.binaryPath || NativeShim.detectDefaultBinary();
-    this.prototypeUrl = options.prototypeUrl || 'http://127.0.0.1:5555';
+    // Allow CI / tests to override prototype URL (example: NS_LLM_PROTOTYPE_URL).
+    // Default to 127.0.0.1:5555 for the local prototype server.
+    this.prototypeUrl = options.prototypeUrl || process.env.NS_LLM_PROTOTYPE_URL || 'http://127.0.0.1:5555';
     this.process = null;
     this.queue = [];
     this.ready = false;
@@ -137,7 +139,7 @@ class NativeShim {
   }
 
   async embed(text, opts = {}) {
-    if (this.fallback) return this.callHttp('/embed', { method: 'POST', body: { text, model: opts.model } });
+    if (this.fallback) return this.callHttp('/api/embed', { method: 'POST', body: { text, model: opts.model } });
     try {
       const res = await this.callNative({ cmd: 'embed', text, model: opts.model });
       if (res && res.error) throw new Error(res.error);
@@ -150,7 +152,7 @@ class NativeShim {
   }
 
   async generate(text, opts = {}) {
-    if (this.fallback) return this.callHttp('/generate', { method: 'POST', body: { text, max_tokens: opts.maxTokens } });
+    if (this.fallback) return this.callHttp('/api/generate', { method: 'POST', body: { text, max_tokens: opts.maxTokens } });
     try {
       return await this.callNative({ cmd: 'generate', text, max_tokens: opts.maxTokens });
     } catch (err) {

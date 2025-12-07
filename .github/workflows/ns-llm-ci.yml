@@ -53,21 +53,22 @@ jobs:
       if: matrix.os != 'windows-latest'
       working-directory: ./NS-LLM
       run: |
-        PORT=3015 node index.js &
-        SERVER_PID=$!
+        # Start a short-lived prototype instance on port 5555 for health checks
+        PORT=5555 node index.js &
+        PROTO_PID=$!
 
-        # Wait for /health ready
+        # Wait for /health ready on prototype
         for i in {1..30}; do
-          if curl -s --fail http://127.0.0.1:3015/health >/dev/null; then
-            echo "Server healthy"
+          if curl -s --fail http://127.0.0.1:5555/health >/dev/null; then
+            echo "Prototype healthy"
             break
           fi
-          echo "Waiting for health ($i/30)"
+          echo "Waiting for prototype health ($i/30)"
           sleep 1
         done
 
-        # Cleanup
-        kill $SERVER_PID || true
+        # Cleanup prototype
+        kill $PROTO_PID || true
 
     - name: 🧪 Test NS-LLM Health Endpoint (Windows)
       if: matrix.os == 'windows-latest'
@@ -102,9 +103,33 @@ jobs:
       run: node tests/test-generate-stream.js
 
     # Test 4: Embed Endpoint
-    - name: 🧪 Test Embed Endpoint
+    - name: 🧪 Test Embed Endpoint (Linux / macOS)
+      if: matrix.os != 'windows-latest'
       working-directory: ./NS-LLM
-      run: node tests/test-embed.js
+      run: |
+        # Start dedicated prototype instance for embed tests on port 5555 so shim fallback can reach it
+        PORT=5555 node index.js &
+        PROTO_PID=$!
+        export NS_LLM_PROTOTYPE_URL=http://127.0.0.1:5555
+
+        node tests/test-embed.js
+
+        kill $PROTO_PID || true
+
+    - name: 🧪 Test Embed Endpoint (Windows)
+      if: matrix.os == 'windows-latest'
+      shell: pwsh
+      working-directory: ./NS-LLM
+      run: |
+        # Start prototype for embed tests on port 5555 and set NS_LLM_PROTOTYPE_URL for NativeShim
+        $env:PORT = 5555
+        $proc = Start-Process -FilePath 'node' -ArgumentList 'index.js' -PassThru
+        $env:NS_LLM_PROTOTYPE_URL = 'http://127.0.0.1:5555'
+
+        # run embed test
+        node tests/test-embed.js
+
+        Stop-Process -Id $proc.Id -ErrorAction SilentlyContinue
 
     # Test 5: Integration Test (Full Workflow)
     - name: 🧪 Run Full Integration Test
