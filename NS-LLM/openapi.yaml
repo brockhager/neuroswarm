@@ -4,6 +4,11 @@ info:
   version: "0.2.1"
   description: |
     Lightweight contract for the NS-LLM service. Supports non-streaming generation (`POST /api/generate`), SSE streaming when `stream: true` on the same endpoint, and embedding (`POST /api/embed`).
+servers:
+  - url: http://localhost:3015
+    description: Local development server
+  - url: http://127.0.0.1:3015
+    description: Local loopback server
 paths:
   /api/generate:
     post:
