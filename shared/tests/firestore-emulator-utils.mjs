@@ -2,7 +2,8 @@
 // Hardened utility for connecting to and clearing the Firestore emulator using
 // the Firebase Admin SDK for guaranteed test isolation in CI environments.
 
-import admin from 'firebase-admin';
+// Load admin dynamically so tests without firebase-admin installed still work
+
 
 // --- CONFIGURATION ---
 // These environment variables must be set by the test orchestrator/CI script.
@@ -21,9 +22,18 @@ let adminApp = null;
  * Initializes the Firebase Admin SDK connection to the Firestore Emulator.
  * This is required to access the administrative methods needed for database clearing.
  */
-function initializeAdminApp() {
+async function initializeAdminApp() {
     if (adminApp) {
         return adminApp;
+    }
+
+    // If firebase-admin is not installed, fail gracefully and let tests fall back
+    let admin;
+    try {
+        admin = await import('firebase-admin');
+    } catch (e) {
+        console.warn('[Firestore Cleanup] firebase-admin not installed — skipping emulator cleanup');
+        return null;
     }
 
     // Set the required environment variable for the Admin SDK to target the emulator
@@ -53,7 +63,9 @@ export async function clearIdempotencyCollections() {
         return;
     }
 
-    const app = initializeAdminApp();
+    const app = await initializeAdminApp();
+    if (!app) return; // admin SDK not available — nothing to do
+    const admin = await import('firebase-admin');
     const db = admin.firestore(app);
     
     console.log(`[Firestore Cleanup] Starting cleanup of ${COLLECTIONS_TO_CLEAR.length} collections...`);
