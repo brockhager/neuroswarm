@@ -12,7 +12,7 @@ These are tasks the engineering team is actively working on right now. Anything 
 
 | ID | Component | Task Description | Priority | Status |
 |---|---|---|---:|---|
-| CN-08-G | ns-node + vp-node | Per-validator confirmation & idempotent settlement confirmations (per-validator callback registry; idempotency & robust retry/backoff). Prototype idempotency / audit store implemented (VP/NS integration) — hardening & distributed durability next. | HIGH | In Progress |
+| CN-08-G | ns-node + vp-node | Per-validator confirmation & idempotent settlement confirmations (per-validator callback registry; idempotency & robust retry/backoff). Production idempotency store migrated to Firestore for durability and atomic writes; per-validator registry + runbook completed. | HIGH | 2025-12-07 |
 | CN-08-G | ns-node + vp-node | Per-validator confirmation & idempotent settlement confirmations (per-validator callback registry; idempotency & robust retry/backoff). Prototype idempotency / audit store implemented (VP/NS integration) — hardening & distributed durability next. | HIGH | In Progress |
 
 ---
@@ -77,6 +77,7 @@ These items are the top priorities for the next development phase and are not co
 | CN-08-E | ns-node (3009) | Ledger settlement confirmation & VP notify path (NS→VP notification of settled claims; sendSettlementConfirmationToVP flow integrated) | MEDIUM | 2025-12-07 |
 | CN-08-F | vp-node + ns-node | Production Crypto & Auth Hardening (ED25519 signing & verification added to VP-Node and NS-Node; proto crypto utilities included) | HIGH | 2025-12-07 |
 | CN-07-H-P4 | infra / security | Idempotency & Audit store: production-grade idempotency store prototype with audit fields + VP / NS integrations and tests (replay protection, audit log) | HIGH | 2025-12-07 |
+| CN-08-G | ns-node + vp-node | Per-validator confirmation & idempotent settlement confirmations (idempotency + audit + Firestore-backed durable store) | HIGH | 2025-12-07 |
 | CN-08-B | VP-Node (4000) | REQUEST_REVIEW processor: Gemini LLM integration + ARTIFACT_CRITIQUE generation | HIGH | 2025-12-04 (11/11 tests) |
 | CN-08-B | ns-node (3009) | NS Ledger Reward Processor: accept signed VP reward claims and queue settlement txs | MEDIUM | 2025-12-06 |
 | CN-08-C | NS-Node (3009) | ARTIFACT_CRITIQUE consensus validation: producer-only + schema + anti-spam checks | HIGH | 2025-12-04 (10/10 tests) |
