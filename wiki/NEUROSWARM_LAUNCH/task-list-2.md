@@ -12,7 +12,7 @@ These are tasks the engineering team is actively working on right now. Anything 
 
 | ID | Component | Task Description | Priority | Status |
 |---|---|---|---:|---|
-| CN-07-H | infra / security | Replace mock signatures with production ED25519 signing/verification for claims & evidence — Phase 4 (Idempotency & Audit) completed (prototype). Next: Phase 5 — Confirmation authentication + KMS/HSM integration & rotation. | HIGH | Phase 4 Complete (Prototype) |
+| CN-08-G | ns-node + vp-node | Per-validator confirmation & idempotent settlement confirmations (per-validator callback registry; idempotency & robust retry/backoff). Prototype idempotency / audit store implemented (VP/NS integration) — hardening & distributed durability next. | HIGH | In Progress |
 | CN-08-G | ns-node + vp-node | Per-validator confirmation & idempotent settlement confirmations (per-validator callback registry; idempotency & robust retry/backoff). Prototype idempotency / audit store implemented (VP/NS integration) — hardening & distributed durability next. | HIGH | In Progress |
 
 ---
@@ -70,6 +70,7 @@ These items are the top priorities for the next development phase and are not co
 | CN-07-D | vp-node | Consensus compliance persistence (compliance DB, sqlite fallback) | HIGH | 2025-12-06 |
 | CN-07-E | vp-node | Slashing evidence generation & submission (evidence proto, signing, submit path) | HIGH | 2025-12-06 |
 | CN-07-F | vp-node | Operator alerting integration (alert-sink + Discord-compatible payloads) | MEDIUM | 2025-12-06 |
+| CN-07-H | infra / security | ED25519 signing & verification hardening and Phase 4: Idempotency & Audit Store prototype implemented; VP/NS integration, tests, and docs added. Next: Phase 5 — confirmation auth + KMS/HSM integration & durable idempotency store. | HIGH | 2025-12-07 |
 | CN-07-G | vp-node | Harden NS-Client (retries, timeouts, backoff, auth-friendly + mock mode) | MEDIUM | 2025-12-06 |
 | CN-08-A | Router API (4001) | POST /artifact/review endpoint: JWT auth + RBAC + CID validation + request queuing | HIGH | 2025-12-04 (7/7 tests) |
 | CN-08-A | vp-node (4000) | Validator Fee Collection & Distribution (fee split, reward claim submission to NS) | MEDIUM | 2025-12-06 |
