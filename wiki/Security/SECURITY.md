@@ -52,6 +52,19 @@ Security updates and patches will be:
 - Deployed with minimal downtime
 - Communicated to users through security advisories
 
+## Recent Crypto Hardening (CN-07-H)
+
+2025-12-07: Phase 1 prototype for production-grade cryptography has been merged. This creates a shared crypto utility (`shared/crypto-utils.ts`) offering canonical payload hashing, signing and verification primitives and tests (`shared/crypto-utils.test.ts`).
+
+Important notes:
+- Phase 1 uses a deterministic HMAC-based signing/verification stub as a test-friendly prototype and is NOT production-ready.
+- Phase 2 (next) must integrate a real ED25519 library (e.g., `@noble/ed25519`) and implement secure key management (Vault/HSM). See `wiki/NEUROSWARM_LAUNCH/task-list-2.md` and `wiki/ns-node/CN-08-E-Settlement-Confirmations.md` for related work.
+
+Action items for production rollout:
+1. Replace prototype cryptographic functions with true ED25519 operations.
+2. Implement key management (Vault/HSM) + secure rotation and audit logging.
+3. Add authoritative public key registry and CI-grade tests exercising key rotation and verification with real keys.
+
 ## Contact
 
 For security-related questions or concerns:

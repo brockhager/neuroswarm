@@ -26,3 +26,24 @@ References
 - `docs/security/api-rate-limiting.md`
 
 Last updated: 2025-11-15
+
+## CN-07-H — Production Crypto Implementation (Phase 1)
+
+Status: In Progress → Phase 1 complete (prototype deployed)
+
+Summary:
+- Phase 1 replaces ad-hoc mock signing/verification with a shared cryptographic utility providing canonical payload hashing and an ED25519-style signing/verification API (prototype implementation uses HMAC-SHA256 as a deterministic stand-in for ED25519).
+- Files added/updated: `shared/crypto-utils.ts`, `shared/crypto-utils.test.ts`, `vp-node/ns-node-client.ts`, `ns-node/src/services/ledger-reward-processor.ts`.
+
+Why this matters:
+- The economic security of reward claims and slashing evidence depends on robust cryptographic guarantees: authenticity, integrity and non-repudiation.
+- Phase 1 creates a single source of truth for signing/verification and moves the codebase toward a real ED25519 implementation.
+
+Next steps (Phase 2+):
+1. Replace HMAC-based prototype with a real ED25519 library (recommend `@noble/ed25519`).
+2. Add integrated key management (HashiCorp Vault / AWS KMS / HSM) with secrets rotation and access controls.
+3. Implement an authoritative public key registry for validators (on-chain or consensus-backed) and remove deterministic key derivation used in prototypes.
+4. Add replay protection / idempotency records for claims and confirmations.
+5. Add CI E2E tests and secrets fixtures for safe test coverage.
+
+Security note: Phase 1 provides deterministic behavior for tests and prototype integration — it is not production safe. Do not use prototype keys or HMAC-based signatures in production deployments.
