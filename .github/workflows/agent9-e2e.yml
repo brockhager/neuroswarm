@@ -1,4 +1,4 @@
-name: Agent 9 E2E (Discord -> Router)
+name: agent9-e2e
 
 on:
   push:
