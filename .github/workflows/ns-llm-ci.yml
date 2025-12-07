@@ -211,7 +211,7 @@ jobs:
             const res = await fetch('http://localhost:3015/api/generate', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ prompt: 'Hello world', max_tokens: 50 })
+              body: JSON.stringify({ text: 'Hello world', max_tokens: 50 })
             });
             const data = await res.json();
             
