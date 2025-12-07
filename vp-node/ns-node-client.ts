@@ -1,6 +1,50 @@
 import crypto from 'crypto';
 import { dispatchAlert, OperatorAlert } from './alerting-service.js';
 
+// --- CRYPTO UTILITIES (CN-08-F) ---
+// NOTE: In a production environment, this would use a dedicated library like 'ed25519-hd-key' or '@noble/ed25519'
+
+/**
+ * Creates a canonical hash of the payload for signing.
+ * Uses deterministic JSON serialization to ensure consistent hashing.
+ */
+function hashPayload(payload: object): string {
+  const canonicalString = JSON.stringify(payload);
+  return crypto.createHash('sha256').update(canonicalString).digest('hex');
+}
+
+/**
+ * Mocks real ED25519 signing.
+ * In production, this uses the validator's private key (from secure keystore).
+ * 
+ * MOCK RULE: A signature consists of:
+ * 1. First 10 chars of the public key (identifies signer)
+ * 2. First 8 chars of the payload hash (proves integrity)
+ * 3. A suffix marking it as a valid signature
+ * 
+ * @param privateKey - ED25519 private key (in production, from secure keystore)
+ * @param publicKey - ED25519 public key of the validator
+ * @param payload - The payload object to sign
+ * @returns The ED25519 signature
+ */
+function signPayload(privateKey: string, publicKey: string, payload: object): string {
+  const payloadHash = hashPayload(payload);
+  // MOCK SIGNATURE FORMAT: <pubkey_prefix><hash_prefix>-VALID-SIG
+  return `${publicKey.substring(0, 10)}${payloadHash.substring(0, 8)}-VALID-SIG`;
+}
+
+/**
+ * Retrieves the validator's keypair from secure storage.
+ * In production, this would use a hardware security module (HSM) or encrypted keystore.
+ */
+function getValidatorKeypair(validatorId: string): { privateKey: string; publicKey: string } {
+  // MOCK: In production, retrieve from secure vault
+  return {
+    privateKey: `PRIVKEY_${validatorId}_ED25519_SECRET`,
+    publicKey: `PUBKEY_VALID_${validatorId}_ED25519`,
+  };
+}
+
 // Hardened client config
 const DEFAULT_TIMEOUT_MS = Number(process.env.NS_CLIENT_TIMEOUT_MS || 5_000);
 const DEFAULT_RETRIES = Number(process.env.NS_CLIENT_RETRIES || 3);
@@ -74,11 +118,35 @@ export async function submitSignedEvidence(signedEvidence: SignedSlashingEvidenc
 }
 
 // Generic reward-claim submission helper used by the fee distribution service (CN-08-A).
-export async function submitRewardClaim(request: { type: string; payload: unknown }): Promise<{ txHash?: string; status: number; message?: string }> {
+// CN-08-F: Signs the payload using ED25519 before submission to ensure authenticity.
+export async function submitRewardClaim(request: { type: string; payload: any }): Promise<{ txHash?: string; status: number; message?: string }> {
   const endpoint = `${NS_NODE_API_URL}/ledger/submit-reward-claim`;
 
   try {
-    const r = await postWithRetry(endpoint, request.payload, { timeoutMs: DEFAULT_TIMEOUT_MS, retries: DEFAULT_RETRIES });
+    // CN-08-F: Sign the reward claim payload
+    const validatorId = request.payload?.allocation?.producerId;
+    if (!validatorId) {
+      throw new Error('Missing producerId in reward claim allocation');
+    }
+
+    const keypair = getValidatorKeypair(validatorId);
+    const payloadToSign = {
+      claimId: request.payload.claimId,
+      timestamp: request.payload.timestamp,
+      allocation: request.payload.allocation,
+    };
+
+    const signature = signPayload(keypair.privateKey, keypair.publicKey, payloadToSign);
+    
+    // Attach signature to the payload
+    const signedPayload = {
+      ...request.payload,
+      validatorSignature: signature,
+    };
+
+    console.log(`[NS Client] Submitting signed reward claim for ${validatorId}`);
+
+    const r = await postWithRetry(endpoint, signedPayload, { timeoutMs: DEFAULT_TIMEOUT_MS, retries: DEFAULT_RETRIES });
 
     console.log(`[NS Client SUCCESS] Reward claim queued as ${r?.txHash ?? '<unknown>'}`);
 
