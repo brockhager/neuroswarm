@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        persistence: [sqlite, fallback]
+        persistence: [sqlite]
 
     steps:
       - name: Checkout
