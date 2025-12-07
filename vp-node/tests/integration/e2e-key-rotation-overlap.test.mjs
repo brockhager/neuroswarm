@@ -11,8 +11,16 @@ describe('E2E: Key Rotation Overlap + Confirmation Authentication + Idempotency'
     const kp2 = await deriveKeypairFromSeed(nsKeyV2);
 
     // publish both public keys to the registry env so VP will accept either
-    // Note: key-management.ts normalizes ID to uppercase and replaces non-alphanumeric with underscore
+    // Note: key-management.ts normalizes ID to uppercase and keeps hyphens when building env name
     process.env[`REGISTRY_PUBKEY_NS-PRIMARY`] = `${bufferToHex(kp1.publicKey)},${bufferToHex(kp2.publicKey)}`;
+
+    // Clean the Firestore emulator if present to ensure idempotency collections are empty
+    try {
+      const { clearIdempotencyCollections } = await import('../../../shared/tests/firestore-emulator-utils.mjs');
+      await clearIdempotencyCollections();
+    } catch (e) {
+      // helper not available or emulator not running — continue (tests will use in-memory fallback)
+    }
 
     // Import server AFTER setting env variables so registry can see them
     const { app } = await import('../../server.js');

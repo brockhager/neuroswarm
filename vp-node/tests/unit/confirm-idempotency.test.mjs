@@ -3,7 +3,11 @@ import { describe, it } from 'node:test';
 import fs from 'fs';
 import path from 'path';
 
-// Ensure idempotency store is clean for this test run
+// Ensure idempotency store is clean for this test run — prefer emulator cleanup when available
+import { clearIdempotencyCollections } from '../../../shared/tests/firestore-emulator-utils.mjs';
+await clearIdempotencyCollections().catch(() => {});
+
+// fallback file-based cleanup for older runs
 const idFile = path.join(process.cwd(), 'neuroswarm', 'tmp', 'vp-idempotency.json');
 try { if (fs.existsSync(idFile)) fs.unlinkSync(idFile); } catch (e) { /* ignore */ }
 

@@ -6,6 +6,7 @@
   "scripts": {
     "test:unit": "node --test tests/unit/**/*.mjs",
     "test:integration": "node --test tests/integration/**/*.mjs",
+    "test:integration:emulator": "node ../scripts/test-with-firestore-emulator.mjs vp-node",
     "test": "npm run test:unit && npm run test:integration"
   },
   "engines": {
