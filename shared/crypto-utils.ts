@@ -5,6 +5,16 @@
 
 import crypto from 'crypto';
 
+// Try to load a real ED25519 implementation (optional). If it's not available we'll fall back
+// to the Phase-1 HMAC prototype to keep tests and demos working.
+let nobleEd: any = null;
+try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    nobleEd = require('@noble/ed25519');
+} catch (e) {
+    nobleEd = null;
+}
+
 // --- CONFIGURATION / CONSTANTS ---
 
 // Use a secure hashing algorithm for payload canonicalization
@@ -36,17 +46,17 @@ export function getCanonicalPayloadHash(payload: object): Buffer {
  * @param payloadHash The hash of the payload to sign.
  * @returns The ED25519 signature as a Buffer.
  */
-export function signPayload(privateKey: Buffer | string, payloadHash: Buffer): Buffer {
-    const keyBuffer = Buffer.from(typeof privateKey === 'string' ? privateKey : privateKey.toString('hex'), 'hex');
+export async function signPayload(privateKey: Buffer | string, payloadHash: Buffer): Promise<Buffer> {
+    const keyHex = typeof privateKey === 'string' ? privateKey : (privateKey as Buffer).toString('hex');
+    const keyBuffer = Buffer.from(keyHex, 'hex');
 
-    // CN-07-H: MOCK IMPLEMENTATION of real ED25519 signing.
-    // In production, this would be: return Ed25519.sign(payloadHash, keyBuffer);
-    
-    // MOCK: Generate a deterministic "signature" based on key and hash
-    const mockSignature = crypto.createHmac(HASH_ALGORITHM, keyBuffer)
-                                .update(payloadHash)
-                                .digest();
-    
+    if (nobleEd && typeof nobleEd.sign === 'function') {
+        const sig = await nobleEd.sign(new Uint8Array(payloadHash), new Uint8Array(keyBuffer));
+        return Buffer.from(sig);
+    }
+
+    // Fallback (Phase 1): deterministic HMAC-based "signature" for tests
+    const mockSignature = crypto.createHmac(HASH_ALGORITHM, keyBuffer).update(payloadHash).digest();
     console.log(`[Crypto] Generated ED25519 Signature (Mock): ${mockSignature.toString('hex').substring(0, 16)}...`);
     return mockSignature;
 }
@@ -60,17 +70,23 @@ export function signPayload(privateKey: Buffer | string, payloadHash: Buffer): B
  * @param signature The signature to verify.
  * @returns True if the signature is valid.
  */
-export function verifySignature(publicKey: Buffer | string, payloadHash: Buffer, signature: Buffer): boolean {
-    const keyBuffer = Buffer.from(typeof publicKey === 'string' ? publicKey : publicKey.toString('hex'), 'hex');
+export async function verifySignature(publicKey: Buffer | string, payloadHash: Buffer, signature: Buffer): Promise<boolean> {
+    const keyHex = typeof publicKey === 'string' ? publicKey : (publicKey as Buffer).toString('hex');
+    const keyBuffer = Buffer.from(keyHex, 'hex');
 
-    // CN-07-H: MOCK IMPLEMENTATION of real ED25519 verification.
-    // In production, this would be: return Ed25519.verify(signature, payloadHash, keyBuffer);
+    if (nobleEd && typeof nobleEd.verify === 'function') {
+        try {
+            const ok = await nobleEd.verify(new Uint8Array(signature), new Uint8Array(payloadHash), new Uint8Array(keyBuffer));
+            console.log(`[Crypto] Verification Check: ${ok ? 'PASSED' : 'FAILED'}`);
+            return ok;
+        } catch (e) {
+            console.warn('[Crypto] ED25519 verify threw', e instanceof Error ? e.message : String(e));
+            return false;
+        }
+    }
 
-    // MOCK: Re-generate the expected mock signature and compare buffers
-    const expectedSignature = crypto.createHmac(HASH_ALGORITHM, keyBuffer)
-                                    .update(payloadHash)
-                                    .digest();
-    
+    // Fallback (Phase 1) verification
+    const expectedSignature = crypto.createHmac(HASH_ALGORITHM, keyBuffer).update(payloadHash).digest();
     const isValid = expectedSignature.equals(signature);
     console.log(`[Crypto] Verification Check: ${isValid ? 'PASSED' : 'FAILED'}`);
     return isValid;

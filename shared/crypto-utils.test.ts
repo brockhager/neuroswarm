@@ -29,64 +29,64 @@ describe('CN-07-H: Crypto Utils (Phase 1)', () => {
   });
 
   describe('signPayload', () => {
-    it('should produce deterministic signature for same key and hash', () => {
+    it('should produce deterministic signature for same key and hash', async () => {
       const payloadHash = getCanonicalPayloadHash(testPayload);
-      const sig1 = signPayload(testPrivateKey, payloadHash);
-      const sig2 = signPayload(testPrivateKey, payloadHash);
+      const sig1 = await signPayload(testPrivateKey, payloadHash);
+      const sig2 = await signPayload(testPrivateKey, payloadHash);
       expect(sig1.equals(sig2)).toBe(true);
     });
 
-    it('should produce different signatures for different hashes', () => {
+    it('should produce different signatures for different hashes', async () => {
       const hash1 = getCanonicalPayloadHash(testPayload);
       const hash2 = getCanonicalPayloadHash({ ...testPayload, claimId: 'other' });
-      const sig1 = signPayload(testPrivateKey, hash1);
-      const sig2 = signPayload(testPrivateKey, hash2);
+      const sig1 = await signPayload(testPrivateKey, hash1);
+      const sig2 = await signPayload(testPrivateKey, hash2);
       expect(sig1.equals(sig2)).toBe(false);
     });
 
-    it('should accept private key as Buffer or string', () => {
+    it('should accept private key as Buffer or string', async () => {
       const payloadHash = getCanonicalPayloadHash(testPayload);
-      const sigFromString = signPayload(testPrivateKey, payloadHash);
-      const sigFromBuffer = signPayload(Buffer.from(testPrivateKey, 'hex'), payloadHash);
+      const sigFromString = await signPayload(testPrivateKey, payloadHash);
+      const sigFromBuffer = await signPayload(Buffer.from(testPrivateKey, 'hex'), payloadHash);
       expect(sigFromString.equals(sigFromBuffer)).toBe(true);
     });
   });
 
   describe('verifySignature', () => {
-    it('should verify a valid signature (Phase 1 mock)', () => {
+    it('should verify a valid signature (Phase 1 mock or real ED25519 when available)', async () => {
       const payloadHash = getCanonicalPayloadHash(testPayload);
-      const signature = signPayload(testPrivateKey, payloadHash);
-      const isValid = verifySignature(testPublicKey, payloadHash, signature);
+      const signature = await signPayload(testPrivateKey, payloadHash);
+      const isValid = await verifySignature(testPublicKey, payloadHash, signature);
       expect(isValid).toBe(true);
     });
 
     it('should reject an invalid signature', () => {
       const payloadHash = getCanonicalPayloadHash(testPayload);
-      const validSignature = signPayload(testPrivateKey, payloadHash);
+      const validSignature = await signPayload(testPrivateKey, payloadHash);
       
       // Tamper with the signature
       const tamperedSignature = Buffer.from(validSignature);
       tamperedSignature[0] ^= 0xFF; // Flip bits
 
-      const isValid = verifySignature(testPublicKey, payloadHash, tamperedSignature);
+      const isValid = await verifySignature(testPublicKey, payloadHash, tamperedSignature);
       expect(isValid).toBe(false);
     });
 
     it('should reject signature for wrong payload', () => {
       const hash1 = getCanonicalPayloadHash(testPayload);
       const hash2 = getCanonicalPayloadHash({ ...testPayload, claimId: 'tampered' });
-      const signature = signPayload(testPrivateKey, hash1);
+      const signature = await signPayload(testPrivateKey, hash1);
       
-      const isValid = verifySignature(testPublicKey, hash2, signature);
+      const isValid = await verifySignature(testPublicKey, hash2, signature);
       expect(isValid).toBe(false);
     });
 
     it('should reject signature with wrong public key', () => {
       const payloadHash = getCanonicalPayloadHash(testPayload);
-      const signature = signPayload(testPrivateKey, payloadHash);
+      const signature = await signPayload(testPrivateKey, payloadHash);
       
       const wrongPublicKey = 'b'.repeat(64); // Different key
-      const isValid = verifySignature(wrongPublicKey, payloadHash, signature);
+      const isValid = await verifySignature(wrongPublicKey, payloadHash, signature);
       expect(isValid).toBe(false);
     });
   });
@@ -128,12 +128,12 @@ describe('CN-07-H: Crypto Utils (Phase 1)', () => {
 
       // VP-side: sign
       const payloadHash = getCanonicalPayloadHash(claim);
-      const signature = signPayload(testPrivateKey, payloadHash);
+      const signature = await signPayload(testPrivateKey, payloadHash);
       const signatureHex = bufferToHex(signature);
 
       // NS-side: verify
       const receivedSignatureBuf = hexToBuffer(signatureHex);
-      const isValid = verifySignature(testPublicKey, payloadHash, receivedSignatureBuf);
+      const isValid = await verifySignature(testPublicKey, payloadHash, receivedSignatureBuf);
 
       expect(isValid).toBe(true);
     });

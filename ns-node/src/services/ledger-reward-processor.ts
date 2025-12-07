@@ -68,7 +68,7 @@ export async function verifyRewardClaimSignature(claim: SignedRewardClaim): Prom
   const payloadHash = getCanonicalPayloadHash(payloadToVerify);
   const signatureBuf = hexToBuffer(validatorSignature);
 
-  if (!verifySignature(publicKey, payloadHash, signatureBuf)) {
+  if (!(await verifySignature(publicKey, payloadHash, signatureBuf))) {
     console.warn(`[Verification FAIL] Cryptographic signature check failed for ${producerId}.`);
     return false;
   }
@@ -160,7 +160,7 @@ export async function runRewardProcessorSimulation() {
   const payloadHash = getCanonicalPayloadHash(payload);
   // For prototype, derive the private key deterministically (matches VP derivation)
   const privateKeyHex = crypto.createHash('sha256').update(`KEY:V-PRODUCER-A-01`).digest('hex');
-  const signatureBuf = signPayload(privateKeyHex, payloadHash);
+  const signatureBuf = await signPayload(privateKeyHex, payloadHash);
   mockValidClaim.validatorSignature = bufferToHex(signatureBuf);
 
   const mockInvalidClaim: SignedRewardClaim = {

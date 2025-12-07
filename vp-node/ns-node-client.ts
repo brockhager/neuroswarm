@@ -71,8 +71,8 @@ export async function submitSignedEvidence(signedEvidence: SignedSlashingEvidenc
       const validatorId = signedEvidence.evidence.validatorId;
       const keypair = getValidatorKeypair(validatorId);
       const payloadHash = getCanonicalPayloadHash({ evidence: signedEvidence.evidence });
-      const signature = signPayload(keypair.privateKey, payloadHash);
-      signedEvidence.validatorSignature = bufferToHex(signature);
+      const signatureBuf = await signPayload(keypair.privateKey, payloadHash);
+      signedEvidence.validatorSignature = bufferToHex(signatureBuf);
     } catch (e) {
       console.warn('Failed to sign evidence (mock)', e instanceof Error ? e.message : String(e));
     }
@@ -138,7 +138,7 @@ export async function submitRewardClaim(request: { type: string; payload: any })
 
     // Use shared crypto utility to sign the canonical payload hash
     const payloadHash = getCanonicalPayloadHash(payloadToSign);
-    const signatureBuf = signPayload(keypair.privateKey, payloadHash);
+    const signatureBuf = await signPayload(keypair.privateKey, payloadHash);
     const signatureHex = bufferToHex(signatureBuf);
 
     const signedPayload = { ...request.payload, validatorSignature: signatureHex };
