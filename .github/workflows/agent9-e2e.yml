@@ -27,7 +27,7 @@ jobs:
 
       - name: Ensure Router API prototype deps (build native modules)
         run: |
-          cd ../router-api-prototype
+          cd router-api-prototype
           sudo apt-get update
           # install build tooling so better-sqlite3 can be built when testing the sqlite matrix
           sudo apt-get install -y build-essential python3 pkg-config libsqlite3-dev
