@@ -126,18 +126,29 @@ class NativeShim {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), opts.timeoutMs || 5000);
     try {
-      const res = await fetch(url, { method: opts.method || 'GET', headers: opts.headers, body: opts.body ? JSON.stringify(opts.body) : undefined, signal: controller.signal });
+      // if body present and no headers given, ensure Content-Type/Accept JSON
+      const headers = opts.headers || (opts.body ? { 'Content-Type': 'application/json', Accept: 'application/json' } : undefined);
+      // debug: show the full URL, method, headers and body we are calling
+      try {
+        const bodyPreview = opts.body ? (typeof opts.body === 'string' ? opts.body : JSON.stringify(opts.body)) : undefined;
+        console.debug(`[NativeShim] callHttp -> ${url} method=${opts.method || 'GET'} headers=${JSON.stringify(headers)} body=${bodyPreview && bodyPreview.length > 4096 ? bodyPreview.slice(0,4096) + '...[truncated]' : bodyPreview}`);
+      } catch (e) { }
+      const res = await fetch(url, { method: opts.method || 'GET', headers, body: opts.body ? JSON.stringify(opts.body) : undefined, signal: controller.signal });
+      // debug log when non-ok for easier CI troubleshooting
+      if (!res.ok) console.warn(`[NativeShim] HTTP ${res.status} from ${url}`);
       clearTimeout(timeout);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return await res.json();
     } catch (err) {
       clearTimeout(timeout);
+      // provide a richer error to help CI diagnostics
+      console.warn(`[NativeShim] callHttp error -> ${err?.message || err}`);
       throw err;
     }
   }
 
   async embed(text, opts = {}) {
-    if (this.fallback) return this.callHttp('/embed', { method: 'POST', body: { text, model: opts.model } });
+    if (this.fallback) return this.callHttp('/api/embed', { method: 'POST', body: { text, model: opts.model } });
     try {
       const res = await this.callNative({ cmd: 'embed', text, model: opts.model });
       if (res && res.error) throw new Error(res.error);
@@ -145,17 +156,17 @@ class NativeShim {
     } catch (err) {
       // failover to HTTP prototype
       this.fallback = true;
-      return this.callHttp('/embed', { method: 'POST', body: { text, model: opts.model } });
+      return this.callHttp('/api/embed', { method: 'POST', body: { text, model: opts.model } });
     }
   }
 
   async generate(text, opts = {}) {
-    if (this.fallback) return this.callHttp('/generate', { method: 'POST', body: { text, max_tokens: opts.maxTokens } });
+    if (this.fallback) return this.callHttp('/api/generate', { method: 'POST', body: { text, max_tokens: opts.maxTokens } });
     try {
       return await this.callNative({ cmd: 'generate', text, max_tokens: opts.maxTokens });
     } catch (err) {
       this.fallback = true;
-      return this.callHttp('/generate', { method: 'POST', body: { text, max_tokens: opts.maxTokens } });
+      return this.callHttp('/api/generate', { method: 'POST', body: { text, max_tokens: opts.maxTokens } });
     }
   }
 

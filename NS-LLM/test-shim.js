@@ -6,8 +6,9 @@ const __dirname = path.dirname(__filename);
 
 (async function(){
   // Integration test: native-shim should fall back to HTTP prototype when binary is missing
-  // Ensure prototype server available
-  await import('./index.js');
+  // Ensure prototype server available (importing index starts the server)
+  const mod = await import('./index.js');
+  const { server } = mod;
 
   // Point to a deliberately-missing binary path to force fallback
   const notExists = path.join(__dirname, 'native', 'build', 'nonexistent-binary');
@@ -34,10 +35,20 @@ const __dirname = path.dirname(__filename);
     console.log('metrics', m);
     if (!m || typeof m.requests_total !== 'number') throw new Error('metrics missing requests_total');
 
+    // Try to close the in-process prototype server cleanly before exiting
+    try {
+      await new Promise((res, rej) => server.close((err) => err ? rej(err) : res()));
+      // small pause to allow sockets to finish closing on Windows
+      await new Promise(r => setTimeout(r, 150));
+    } catch (e) {
+      // best-effort: ignore close errors
+    }
     console.log('\nShim fallback tests passed');
     process.exit(0);
   } catch (err) {
     console.error('shim test failed', err);
+    try { await new Promise((res, rej) => server.close((err) => err ? rej(err) : res())); } catch (e) {}
+    await new Promise(r => setTimeout(r, 150));
     process.exit(2);
   }
 })();

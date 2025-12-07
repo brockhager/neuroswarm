@@ -6,28 +6,63 @@
   const { spawn } = await import('child_process');
   const { fileURLToPath } = await import('url');
   const serverPath = fileURLToPath(new URL('./index.js', import.meta.url));
-  // Use `node` from PATH which works in CI / dev boxes (process.execPath sometimes
-  // isn't directly spawnable in some Windows sandboxes).
-  const serverProc = spawn('node', [serverPath], {
-    cwd: new URL('.', import.meta.url).pathname,
-    env: process.env,
-    stdio: ['ignore', 'pipe', 'pipe']
-  });
+  // prefer process.execPath so tests work in Windows sandboxes and CI where
+  // 'node' may not be on PATH for spawned processes — fall back to 'node'
+  // if execPath is missing for any reason. Tests in CI use process.execPath
+  // reliably so this keeps behavior consistent.
+  const nodeRunner = process.execPath || 'node';
+  let serverProc = null;
+  let usedSpawn = false;
+  try {
+    serverProc = spawn(nodeRunner, [serverPath], {
+      cwd: new URL('.', import.meta.url).pathname,
+      env: process.env,
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+    usedSpawn = true;
+  } catch (e) {
+    // spawn can fail synchronously; we'll fall back to in-process server below
+    serverProc = null;
+    usedSpawn = false;
+  }
 
   // Wait for the child to announce it's listening
-  await new Promise((resolve, reject) => {
-    const onData = (d) => {
-      const s = String(d);
-      if (s.includes('ns-llm-prototype listening')) {
-        serverProc.stdout.off('data', onData);
-        resolve();
-      }
-    };
-    serverProc.stdout.on('data', onData);
-    serverProc.on('error', reject);
-    // safety timeout
-    setTimeout(() => reject(new Error('server start timeout')), 2000);
-  });
+  // Wait for the child to announce it's listening — fall back to an in-process server
+  try {
+    if (usedSpawn && serverProc) {
+      await new Promise((resolve, reject) => {
+        const onData = (d) => {
+          const s = String(d);
+          if (s.includes('ns-llm-prototype listening')) {
+            serverProc.stdout.off('data', onData);
+            resolve();
+          }
+        };
+        serverProc.stdout.on('data', onData);
+        serverProc.on('error', reject);
+        // safety timeout
+        setTimeout(() => reject(new Error('server start timeout')), 2000);
+      });
+    } else {
+      throw new Error('spawn-unavailable');
+    }
+  } catch (err) {
+    // spawn failed or the child didn't start — try starting the prototype server in-process
+    console.warn('spawn failed or child not started; falling back to in-process server:', err && err.message);
+    const mod = await import('./index.js');
+    const { server } = mod;
+
+    await new Promise((resolve, reject) => {
+      const addr = server.address && server.address();
+      if (addr) return resolve();
+      server.once('listening', () => resolve());
+      setTimeout(() => reject(new Error('in-process server start timeout')), 2000);
+    });
+
+    // Wrap in a portable object so shutdown logic below can use the same variable
+    serverProc = { __inProcessServer: server };
+    usedSpawn = false;
+  }
   const base = `http://127.0.0.1:${port}`;
 
   const wait = ms => new Promise(r => setTimeout(r, ms));
@@ -59,8 +94,13 @@
     console.log('\nIntegration checks passed (prototype OK)');
     // Tell the server child process to shut down (SIGINT), then wait for exit
     try {
-      serverProc.kill('SIGINT');
-      await new Promise((res) => serverProc.on('exit', () => res()));
+      if (usedSpawn && serverProc && serverProc.kill) {
+        serverProc.kill('SIGINT');
+        await new Promise((res) => serverProc.on('exit', () => res()));
+      } else if (serverProc && serverProc.__inProcessServer) {
+        await new Promise((res, rej) => serverProc.__inProcessServer.close((err) => err ? rej(err) : res()));
+        await wait(200);
+      }
     } catch (e) {
       // best-effort; ignore
     }
@@ -77,7 +117,15 @@
     process.exit(0);
   } catch (err) {
     console.error('integration test failed', err);
-    try { serverProc.kill('SIGINT'); await new Promise((res) => serverProc.on('exit', () => res())); } catch (e) { }
+    try {
+      if (usedSpawn && serverProc && serverProc.kill) {
+        serverProc.kill('SIGINT');
+        await new Promise((res) => serverProc.on('exit', () => res()));
+      } else if (serverProc && serverProc.__inProcessServer) {
+        await new Promise((res, rej) => serverProc.__inProcessServer.close((err) => err ? rej(err) : res()));
+        await wait(200);
+      }
+    } catch (e) { }
     try {
       const handles = process._getActiveHandles ? process._getActiveHandles() : [];
       console.log('diagnostic (on error): activeHandles=', handles.map(h => h && h.constructor && h.constructor.name));

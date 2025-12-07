@@ -70,6 +70,18 @@ function sendJSON(res, code, body) {
 }
 
 const server = http.createServer((req, res) => {
+  // Log every incoming request path/method/headers for debugging in CI
+  try {
+    const meta = {
+      method: req.method,
+      url: req.url,
+      headers: req.headers
+    };
+    // Keep logs compact but include key request info
+    console.log('PROTOTYPE INCOMING:', JSON.stringify(meta));
+  } catch (e) {
+    // Best-effort logging shouldn't crash the server
+  }
   try {
     if (req.method === 'POST' && req.url === '/api/embed') {
       metrics.requests_total++;
@@ -77,6 +89,11 @@ const server = http.createServer((req, res) => {
       const start = Date.now();
       req.on('data', c => body += c);
       req.on('end', () => {
+        // Log body for debugging (truncate to 4k to avoid huge logs)
+        try {
+          const rawLog = body.length > 4096 ? body.slice(0, 4096) + '...[truncated]' : body;
+          console.log('PROTOTYPE /api/embed body:', rawLog);
+        } catch (e) { }
         try {
           if (!body) { metrics.requests_failed++; return sendJSON(res, 400, { error: 'empty body' }); }
           let json;
@@ -142,6 +159,11 @@ const server = http.createServer((req, res) => {
       const start = Date.now();
       req.on('data', c => body += c);
       req.on('end', () => {
+        // Log body for debugging (truncate to 4k)
+        try {
+          const rawLog = body.length > 4096 ? body.slice(0, 4096) + '...[truncated]' : body;
+          console.log('PROTOTYPE /api/generate body:', rawLog);
+        } catch (e) { }
         try {
           if (!body) { metrics.requests_failed++; return sendJSON(res, 400, { error: 'empty body' }); }
           let json;

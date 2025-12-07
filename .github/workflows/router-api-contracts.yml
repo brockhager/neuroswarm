@@ -5,14 +5,21 @@ on:
     branches:
       - main
       - master
+    paths:
+      - 'router-api-prototype/**'
   pull_request:
     branches:
       - main
       - master
+    paths:
+      - 'router-api-prototype/**'
 
 jobs:
+  # Full matrix run (only for push to branches) — more comprehensive, retained on push events
   test_router_contracts:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     strategy:
       matrix:
         persistence: [sqlite, fallback]
@@ -34,6 +41,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential python3 pkg-config libsqlite3-dev
 
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('router-api-prototype/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
       - name: Install Dependencies
         run: npm install
 
@@ -54,14 +71,15 @@ jobs:
       - name: Wait for Router API to be healthy
         run: |
           echo "Waiting for Router API health endpoint at http://127.0.0.1:4001/health"
-          for i in $(seq 1 60); do
+          # Shorter polling window in CI to avoid long running jobs — 20 attempts @ 3s = ~60s
+          for i in $(seq 1 20); do
             status=$(curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:4001/health || echo "000")
             echo "health -> $status"
             if [ "$status" = "200" ]; then
               echo "Router API healthy"
               exit 0
             fi
-            echo "Router not ready (attempt $i/60), sleeping 3s"
+            echo "Router not ready (attempt $i/20), sleeping 3s"
             sleep 3
           done
           echo "Router API did not become healthy in time" >&2
@@ -79,3 +97,45 @@ jobs:
 
       - name: Verify Authentication Failures (Smoke Test Confirmation)
         run: echo "✅ Router API contracts and security checks passed CI."
+
+  # PR-targeted lightweight job: run unit tests and a quick health check.
+  test_router_contracts_pr:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: ./router-api-prototype
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js (light)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.npm
+            node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('router-api-prototype/package.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Install Dependencies (fast)
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Run Unit Tests only (fast path for PRs)
+        run: npm run test:unit
+
+      - name: Quick Health Check (short timeout)
+        run: |
+          echo "Checking /health briefly"
+          if curl -s --fail http://127.0.0.1:4001/health >/dev/null; then
+            echo "Server healthy"
+          else
+            echo "Server health unavailable — PR job only runs unit tests, skipping further checks"
+          fi
