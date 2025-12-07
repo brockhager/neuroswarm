@@ -1,0 +1,60 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "neuroswarm-sync",
+    "title": "NeuroSwarm - Sync & Queue Monitoring",
+    "timezone": "browser",
+    "schemaVersion": 30,
+    "version": 1,
+    "panels": [
+      {
+        "type": "stat",
+        "title": "Gateway Requests Total",
+        "id": 1,
+        "datasource": null,
+        "targets": [
+          { "expr": "neuroswarm_requests_total", "refId": "A" }
+        ],
+        "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 }
+      },
+      {
+        "type": "graph",
+        "title": "Gateway Request Rate (5m)",
+        "id": 2,
+        "targets": [
+          { "expr": "rate(neuroswarm_requests_total[5m])", "refId": "A" }
+        ],
+        "gridPos": { "x": 6, "y": 0, "w": 12, "h": 8 }
+      },
+      {
+        "type": "graph",
+        "title": "Job Processing Rate (5m)",
+        "id": 3,
+        "targets": [
+          { "expr": "rate(neuroswarm_jobs_processed_total[5m])", "refId": "A" },
+          { "expr": "rate(neuroswarm_jobs_failed_total[5m])", "refId": "B" }
+        ],
+        "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 }
+      },
+      {
+        "type": "graph",
+        "title": "Prompt Sanitization & Sandbox Timeouts",
+        "id": 4,
+        "targets": [
+          { "expr": "rate(neuroswarm_prompt_sanitization_count[5m])", "refId": "A" },
+          { "expr": "rate(neuroswarm_sandbox_timeout_count[5m])", "refId": "B" }
+        ],
+        "gridPos": { "x": 12, "y": 8, "w": 6, "h": 8 }
+      },
+      {
+        "type": "table",
+        "title": "Recent Audit Anchors",
+        "id": 5,
+        "targets": [
+          { "expr": "increase(neuroswarm_audit_records_anchored_total[1h])", "refId": "A" }
+        ],
+        "gridPos": { "x": 0, "y": 16, "w": 18, "h": 6 }
+      }
+    ]
+  }
+}

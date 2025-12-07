@@ -1,0 +1,4 @@
+{"timestamp":"2025-12-07T05:06:56.012Z","userId":"user-56","correlationId":"cid-56","action":"test.action","details":{"i":56},"severity":"info","source":"tests"}
+{"timestamp":"2025-12-07T05:06:56.014Z","userId":"user-57","correlationId":"cid-57","action":"test.action","details":{"i":57},"severity":"info","source":"tests"}
+{"timestamp":"2025-12-07T05:06:56.015Z","userId":"user-58","correlationId":"cid-58","action":"test.action","details":{"i":58},"severity":"info","source":"tests"}
+{"timestamp":"2025-12-07T05:06:56.015Z","userId":"user-59","correlationId":"cid-59","action":"test.action","details":{"i":59},"severity":"info","source":"tests"}
