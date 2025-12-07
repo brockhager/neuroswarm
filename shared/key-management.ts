@@ -96,6 +96,23 @@ export class PublicKeyRegistry {
     }
   }
 
+  /**
+   * Return all public keys associated with a registry identity.
+   * Allows rotation overlap testing: env override REGISTRY_PUBKEY_<ID> may contain comma-separated hex public keys.
+   */
+  public async getPublicKeys(validatorId: string): Promise<Buffer[]> {
+    const envKey = process.env[`REGISTRY_PUBKEY_${validatorId.replace(/[^A-Z0-9_-]/gi, '_').toUpperCase()}`];
+    if (envKey && envKey.length > 0) {
+      // split comma-separated keys
+      const parts = envKey.split(',').map(s => s.trim()).filter(Boolean);
+      return parts.map(p => hexToBuffer(p));
+    }
+
+    // default: single derived key
+    const kp = await deriveKeypairFromSeed(validatorId);
+    return [kp.publicKey];
+  }
+
   // future: key status, revocation checks
 }
 

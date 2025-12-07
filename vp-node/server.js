@@ -444,16 +444,26 @@ app.post('/api/v1/ledger/confirm-reward-settlement', async (req, res) => {
 
     const nsIdentity = sender || process.env.NS_NODE_ID || 'NS-PRIMARY';
     const registry = new PublicKeyRegistry();
-    const pubKeyBuf = await registry.getPublicKey(nsIdentity);
-    if (!pubKeyBuf) return res.status(403).json({ error: 'unknown_sender', message: `unknown sender ${nsIdentity}` });
 
-    // Verify signature over canonical payload matching NS sender format
+    // Support multiple active public keys during rotation (e.g., env override: REGISTRY_PUBKEY_NS_PRIMARY="<hex1>,<hex2>")
+    const publicKeys = await registry.getPublicKeys(nsIdentity);
+    if (!publicKeys || publicKeys.length === 0) return res.status(403).json({ error: 'unknown_sender', message: `unknown sender ${nsIdentity}` });
+
+    // Verify signature against any active public key
+    const sigBuf = hexToBuffer(signature);
     const payloadToVerify = { claimId, txHash, timestamp, sender: nsIdentity };
     const payloadHash = getCanonicalPayloadHash(payloadToVerify);
-    const sigBuf = hexToBuffer(signature);
-    if (!(await verifySignature(pubKeyBuf, payloadHash, sigBuf))) {
-      return res.status(401).json({ error: 'invalid_signature', message: 'signature verification failed' });
+    // (sigBuf already computed above)
+
+    let verified = false;
+    for (const pk of publicKeys) {
+      if (await verifySignature(pk, payloadHash, sigBuf)) {
+        verified = true;
+        break;
+      }
     }
+
+    if (!verified) return res.status(401).json({ error: 'invalid_signature', message: 'signature verification failed' });
 
     // Idempotency header support: if provided, reject duplicate confirmations
     const idempotencyKey = req.headers['idempotency-key'] || req.headers['Idempotency-Key'] || req.headers['Idempotency-key'];
