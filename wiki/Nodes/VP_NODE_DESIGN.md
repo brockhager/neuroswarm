@@ -1,18 +1,8 @@
-# VP Node (Validator Producer) — Design Document (CN-03)
+# VP Node (Validator Producer) — Design Document (moved)
 
-Last updated: 2025-12-03
+This design document has been consolidated into the central Producer documentation.
 
-## Purpose & Scope
-
-The VP node (Validator Producer, port 4000) is responsible for producing deterministic, signed blocks for the NeuroSwarm network. Its role is to collect validated mempool items, build canonical block payloads, compute source merkle roots, sign block headers deterministically, and publish blocks to the NS (brain) node for validation and canonicalization.
-
-This doc covers:
-- Deterministic ordering rules
-- Block header format and signing contract
-- Merkle tree / sourcesRoot construction
-- External interfaces (RPC / HTTP endpoints)
-- Persistence, safety, and replay & idempotency behavior
-- Security considerations and testing/CI plan
+See: `../Producer/DESIGN.md`
 
 ## High-level requirements
 

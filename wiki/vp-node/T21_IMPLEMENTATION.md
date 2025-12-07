@@ -1,7 +1,8 @@
-# VP Node - T21 Fault-Tolerant Implementation
+# VP Node - T21 Fault-Tolerant Implementation (moved)
 
-## Overview
-This is an enhanced VP (Validator/Processing) Node implementation with full T21 persistence and fault tolerance capabilities.
+This page has been moved into the consolidated Producer documentation.
+
+See: `../Producer/T21_IMPLEMENTATION.md`
 
 ## Key Features
 
@@ -144,6 +145,4 @@ This implementation satisfies all T21 requirements:
 
 ---
 
-**Status**: Production Ready  
-**Version**: 1.0.0  
-**Last Updated**: December 1, 2025
+**Status**: Moved to `wiki/Producer/T21_IMPLEMENTATION.md`

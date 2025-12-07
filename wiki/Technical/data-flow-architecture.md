@@ -52,7 +52,7 @@ Egress: SPV/Proofs, client queries, governance endpoints
   - Maintains `mempool`, `blockMap`, `txIndex`, and `validators`
   - Exposes debug endpoints: `/debug/peers`, `/debug/gateways`, `/debug/verifyHeader`
   - Exposes SPV: `/proof/:txId` and `/verify/proof`
-- Validator / Producer (vp-node): Picks slot & signs block proposals (uses `validators/register` and `vp-node` logic for deterministic selection). 
+- Validator / Producer (vp-node): Picks slot & signs block proposals — detailed producer design and selection notes moved to `../Producer/` (see `DESIGN.md` and `SELECTION.md`).
 - Mempool / Gossip: Gateways and nodes forward mempool entries and new blocks; gateways forward to ns-node.
 
 ---

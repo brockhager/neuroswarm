@@ -7,7 +7,7 @@ This page explains the responsibilities and interactions of the core nodes in Ne
 ## High-level responsibilities
 - `ns-node` (Brain): Maintains canonical chain state and validators, verifies headers & signatures, provides SPV endpoints, and coordinates consensus logic. NS remains lightweight — it does NOT perform source validation.
 - `gateway-node` (Gateway): The canonical mempool owner. Validates tx admission, performs source validation queries, and exposes mempool and stats. It strictly enforces admission policy and source attestation when configured.
-- `vp-node` (Producer / VP): Polls the gateway mempool, produces blocks, signs payloads, publishes block payloads to IPFS, and adds `payloadCid` and `sourcesRoot` to the block header.
+- `vp-node` (Producer / VP): Responsible for block production and payload publishing — see `../Producer/README.md` for full design and producer policies.
 - `sources/` adapters: Contains external data validation and normalization logic (e.g., Allie‑AI adapters) which the gateway calls during admission.
 
 ## Dataflow (ASCII diagram)

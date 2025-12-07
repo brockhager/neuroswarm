@@ -193,28 +193,7 @@ User → Gateway (validate, rate limit, spam filter) → Gateway Mempool → VP 
 **Port**: 3002 — See [Port Configuration](../Ports.md)  
 **Purpose**: Block production, consensus, and IPFS publishing
 
-The VP Node is the **core consensus engine** (the "brain"). It polls the Gateway mempool, produces blocks, validates them, and publishes to IPFS. This is where blocks are actually created and consensus happens.
-
-**Key Responsibilities:**
-- **Poll Gateway mempool** for validated transactions
-- **Produce blocks** with merkle roots
-- **Sign block headers** with validator key
-- **Publish block payloads to IPFS** (content-addressed storage)
-- **Submit blocks to NS Node** for canonical chain recording
-- Validator coordination and consensus
-- Earn validation rewards
-
-**Used For:**
-- Block production and consensus
-- Participating as a network validator
-- Earning staking rewards
-- IPFS content publishing
-- Network consensus coordination
-
-**Data Flow:**
-```
-Gateway Mempool → VP Node (produce block, sign, IPFS publish) → NS Node (record to canonical chain)
-```
+This section has moved — for detailed VP design, selection, and production policies see `../Producer/README.md` and `../Producer/DESIGN.md`.
 
 **Related Docs**: [Validator Guide](../Governance/Validator-Guide.md) | [Staking](../Governance/Staking.md)
 

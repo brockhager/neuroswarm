@@ -8,17 +8,6 @@ This document consolidates all outstanding work from the Master Design Document 
 
 | ID | Component | Task Description | Priority | Status |
 |-----------|------------|------------------|----------|--------|
-| CN-13-B | VP Swarm (Worker) | Artifact Persistence: Store consumed artifacts in persistent storage (e.g., SQLite/IPFS) and update status to RECEIVED. | HIGH | Completed |
-| CN-13-C | VP Swarm (Worker) | Artifact Processing Mock: Simulate processing delay and generate mock critique, updating status to COMPLETED. | HIGH | Completed |
-| CN-14-A | VP Swarm / Gateway | WebSocket Status: Implement mechanism to notify client of completion via WebSocket (VP -> Gateway -> Client). | HIGH | Completed |
-| CN-02 | Router API (4001) | Implement security and anchoring: JWT/RBAC ✅, Postgres schema/migrations, deterministic audit hashing, IPFS pinning pipeline, and optional on-chain anchoring tests. | HIGH | Completed |
-| OPS-03C | CI/CD | Multi-service E2E harness validating full flows (Agent 9 ↔ NS-LLM ↔ Router ↔ VP ↔ ns-node). | HIGH | 2025-12-06 |
-| OPS-01B | All Services | Extend /health and /metrics to remaining services (Gateway, VP, Router, NS-LLM, neuro-services). | HIGH | Completed |
-| OPS-04 | Secrets & Deployment | Formalize secrets management (Vault/Docker secrets) for local & containerized setups. | HIGH | Completed |
-| AG4-03 | Agent 9 | Add offline/resiliency handling and monitoring (status channel notifications, automatic backoff and retries). | MEDIUM | Completed |
-| AG4-04 | Agent 9 | Add fine-grained audit logging for all user-visible interactions for compliance & reconciliation. | MEDIUM | Completed |
-| AG4-05 | Agent 9 | Hardening & UX: implement streaming backpressure handling, partial-message edit throttling, token aggregation policies, resumable streams and better error messages. | MEDIUM | Completed |
-| CN-05-F | Deployment | Configure Prometheus scrape endpoints in production deployment configs for ns-node sync metrics. | MEDIUM | Completed |
 | CN-05-G | Monitoring | Create Grafana dashboards for sync monitoring (request rates, rejection patterns, inflight tracking, ancestry failures). | MEDIUM | Not Started |
 | CN-05-H | Monitoring | Implement alert rules for sync anomalies (ancestry mismatch spikes, persistent 429 patterns, sync failures). | MEDIUM | Not Started |
 | APP-01 | neuro-services (3007) | Implement the business logic service with secure DB access, billing/reconciliation routines, adapters plugin interface, and tests. | MEDIUM | Not Started |
@@ -74,6 +63,15 @@ This document consolidates all outstanding work from the Master Design Document 
 | AG4-04 | Agent 9 | Fine-grained audit logging (JSONL append-only) for user-visible interactions | MEDIUM | 2025-12-06 |
 | CN-06-D | VP-Node / NS-Node | Validator selection integration + unbond release processor. | HIGH | Completed |
 | OPS-02 | All Services | Standardize structured logging (JSON), correlation IDs, trace context propagation, and logging levels. | HIGH | 2025-12-06 |
+
+| CN-13-B | VP Swarm (Worker) | Artifact Persistence: Store consumed artifacts in persistent storage (e.g., SQLite/IPFS) and update status to RECEIVED. | HIGH | 2025-12-06 |
+| CN-13-C | VP Swarm (Worker) | Artifact Processing Mock: Simulate processing delay and generate mock critique, updating status to COMPLETED. | HIGH | 2025-12-06 |
+| CN-14-A | VP Swarm / Gateway | WebSocket Status: Implement mechanism to notify client of completion via WebSocket (VP -> Gateway -> Client). | HIGH | 2025-12-06 |
+| CN-02 | Router API (4001) | Implement security and anchoring: JWT/RBAC ✅, Postgres schema/migrations, deterministic audit hashing, IPFS pinning pipeline, and optional on-chain anchoring tests. | HIGH | 2025-12-06 |
+| OPS-03C | CI/CD | Multi-service E2E harness validating full flows (Agent 9 ↔ NS-LLM ↔ Router ↔ VP ↔ ns-node). | HIGH | 2025-12-06 |
+| AG4-03 | Agent 9 | Add offline/resiliency handling and monitoring (status channel notifications, automatic backoff and retries). | MEDIUM | 2025-12-06 |
+| AG4-05 | Agent 9 | Hardening & UX: implement streaming backpressure handling, partial-message edit throttling, token aggregation policies, resumable streams and better error messages. | MEDIUM | 2025-12-06 |
+| CN-05-F | Deployment | Configure Prometheus scrape endpoints in production deployment configs for ns-node sync metrics. | MEDIUM | 2025-12-06 |
 
 ---
 

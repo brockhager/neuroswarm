@@ -32,6 +32,8 @@ The reward is calculated dynamically based on the block height. See `ns-node/src
 
 ## 2. NSD Fee Allocation (Utility)
 
+> Producer-specific reward split and fee allocation notes consolidated in `../Producer/REWARDS.md`.
+
 NSD is used to pay for transaction fees and network services. Unlike NST, NSD fees are **not minted** but collected from transactions included in the block.
 
 ### Allocation Rules

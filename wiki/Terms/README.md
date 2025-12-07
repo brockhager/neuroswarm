@@ -6,13 +6,8 @@ This page lists the important terminology used across the NeuroSwarm system, wit
 
 ## Consensus & Production
 
-- **Producer / designated producer**
-  - Explanation: Deterministically chosen validator that produces a block at a specific height (stake-weighted selection). Only canonical producer is allowed to produce a block and — for CN-08 — sign certain LLM-generated TXs like `ARTIFACT_CRITIQUE`.
-  - Example: `getProducer(42)` returns `validator-abc` — that validator should sign the block header for height 42.
-
-- **Slot / height**
-  - Explanation: An increasing integer that identifies the next block index in the canonical chain; used for scheduling and producer selection.
-  - Example: Current height = 100, the next slot/height = 101 (producer selected deterministically).
+- **Producer / designated producer** — See `../Producer/README.md` for a consolidated reference (selection algorithm, VP responsibilities, and producer policies).
+- **VP Node (validator / producer)** — For full VP node design and operation information see `../Producer/DESIGN.md`.
 
 - **Merkle root / merkleRoot**
   - Explanation: Compact cryptographic commitment to the set of transaction ids included in the block header.
@@ -46,9 +41,7 @@ This page lists the important terminology used across the NeuroSwarm system, wit
   - Explanation: The public-facing mempool and admission validator. Accepts client `POST /v1/tx`, performs source validation and authorization, and acts as the canonical mempool owner.
   - Example: A dApp POSTs a `REQUEST_REVIEW` transaction to the Gateway; the Gateway enriches tx with `sources` metadata then exposes it to VP nodes via `/v1/mempool`.
 
-- **VP Node (validator / producer)**
-  - Explanation: Produces blocks, polls the Gateway mempool, builds signed headers, optionally publishes block payloads to IPFS, and posts `POST /blocks/produce` to NS.
-  - Example: A VP is selected as the producer for height 123; it signs the block header, uploads payload to IPFS, sets `header.payloadCid`, and posts to NS.
+- **VP Node (validator / producer)** — For full VP node design and operation information see `../Producer/DESIGN.md`.
 
 --
 
