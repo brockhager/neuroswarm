@@ -12,8 +12,8 @@ These are tasks the engineering team is actively working on right now. Anything 
 
 | ID | Component | Task Description | Priority | Status |
 |---|---|---|---:|---|
-| CN-07-H | infra / security | Replace mock signatures with production ED25519 signing/verification for claims & evidence (prototype ED25519 signing/verification implemented — needs production key management / HSM & library) | HIGH | In Progress |
-| CN-08-G | ns-node + vp-node | Per-validator confirmation & idempotent settlement confirmations (per-validator callback registry; idempotency & robust retry/backoff) | HIGH | In Progress |
+| CN-07-H | infra / security | Replace mock signatures with production ED25519 signing/verification for claims & evidence — Phase 4 (Idempotency & Audit) completed (prototype). Next: Phase 5 — Confirmation authentication + KMS/HSM integration & rotation. | HIGH | Phase 4 Complete (Prototype) |
+| CN-08-G | ns-node + vp-node | Per-validator confirmation & idempotent settlement confirmations (per-validator callback registry; idempotency & robust retry/backoff). Prototype idempotency / audit store implemented (VP/NS integration) — hardening & distributed durability next. | HIGH | In Progress |
 
 ---
 
@@ -75,6 +75,7 @@ These items are the top priorities for the next development phase and are not co
 | CN-08-A | vp-node (4000) | Validator Fee Collection & Distribution (fee split, reward claim submission to NS) | MEDIUM | 2025-12-06 |
 | CN-08-E | ns-node (3009) | Ledger settlement confirmation & VP notify path (NS→VP notification of settled claims; sendSettlementConfirmationToVP flow integrated) | MEDIUM | 2025-12-07 |
 | CN-08-F | vp-node + ns-node | Production Crypto & Auth Hardening (ED25519 signing & verification added to VP-Node and NS-Node; proto crypto utilities included) | HIGH | 2025-12-07 |
+| CN-07-H-P4 | infra / security | Idempotency & Audit store: production-grade idempotency store prototype with audit fields + VP / NS integrations and tests (replay protection, audit log) | HIGH | 2025-12-07 |
 | CN-08-B | VP-Node (4000) | REQUEST_REVIEW processor: Gemini LLM integration + ARTIFACT_CRITIQUE generation | HIGH | 2025-12-04 (11/11 tests) |
 | CN-08-B | ns-node (3009) | NS Ledger Reward Processor: accept signed VP reward claims and queue settlement txs | MEDIUM | 2025-12-06 |
 | CN-08-C | NS-Node (3009) | ARTIFACT_CRITIQUE consensus validation: producer-only + schema + anti-spam checks | HIGH | 2025-12-04 (10/10 tests) |
@@ -255,6 +256,13 @@ These items are the top priorities for the next development phase and are not co
 - **CN-08-F**: Production Crypto & Auth Hardening (NS-Node + VP-Node) — ED25519 signing + verification primitives integrated (prototype mock crypto utilities added). Key files: `ns-node/src/services/ledger-reward-processor.ts`, `ns-node/src/services/ledger-settlement-confirmation.ts`, `vp-node/ns-node-client.ts`.
 - **CN-08-E**: Ledger Settlement Confirmation (NS→VP) — `sendSettlementConfirmationToVP` capability present; notification flow integrated and used by ledger processor (NS → VP callback).
 **Status**: CN-08-F completed (prototype & hardening), CN-08-E integration completed; CN-08-G (per-validator confirmations & idempotency) is now In Progress and next high priority.
+
+### 2025-12-07: CN-07-H Phase 4 — Idempotency & Audit Store Prototype ✅
+- **What**: Implemented a production-grade idempotency layer (mock DB-backed) shared across VP and NS with an auditable record structure (idempotencyKey, claimId, txHash, recordedAt, processorNode).
+- **Files changed**: `shared/idempotency-store.ts`, `vp-node/server.js`, `vp-node/tests/unit/confirm-idempotency.test.mjs`, `ns-node/src/services/ledger-reward-processor.ts`, `ns-node/src/services/ledger-settlement-confirmation.ts` (see repo for full list).
+- **Behavior**: VP now rejects duplicate confirmations when it has already processed an idempotency key (409), and records audit metadata for processed confirmations. NS generates a unique `Idempotency-Key` for each confirmation and does not pre-mark it — VP owns the audit record.
+- **Tests**: E2E tests added to verify replay protection for claims and confirmation duplicate rejection; unit tests for idempotency behavior added. Local test suite confirms passing tests.
+- **Next**: Phase 5 — Confirmations must be authenticated & signed (NS→VP) and idempotency storage hardened (migrate to Redis/Postgres or distributed DB) and integrated with KMS/HSM for secure key management, rotation and audit logging.
 
 ---
 
