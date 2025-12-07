@@ -1,38 +1,9 @@
 import express from 'express';
 import crypto from 'crypto';
 import { sendSettlementConfirmationToVP } from './ledger-settlement-confirmation.ts';
+import { getCanonicalPayloadHash, verifySignature, hexToBuffer, bufferToHex, signPayload } from '../../shared/crypto-utils.ts';
 
-// --- CRYPTO UTILITIES (CN-08-F) ---
-// NOTE: In a production environment, this would use a dedicated library like 'ed25519-hd-key' or '@noble/ed25519'
-
-/**
- * Creates a canonical hash of the payload for signature verification.
- * Uses deterministic JSON serialization to ensure consistent hashing.
- */
-function hashPayload(payload: object): string {
-  const canonicalString = JSON.stringify(payload);
-  return crypto.createHash('sha256').update(canonicalString).digest('hex');
-}
-
-/**
- * Mocks real ED25519 signature verification.
- * In production, this uses the validator's public key (fetched from DPoS registry).
- * 
- * MOCK RULE: A signature is valid if:
- * 1. It starts with the first 10 chars of the public key
- * 2. It contains the first 8 chars of the payload hash
- * 
- * @param publicKey - ED25519 public key of the validator
- * @param payload - The payload object that was signed
- * @param signature - The signature to verify
- * @returns true if signature is valid, false otherwise
- */
-function verifySignature(publicKey: string, payload: object, signature: string): boolean {
-  const payloadHash = hashPayload(payload);
-  // MOCK RULE: A signature is valid if it starts with the public key's prefix and contains the hash.
-  const expectedPrefix = publicKey.substring(0, 10);
-  return signature.startsWith(expectedPrefix) && signature.includes(payloadHash.substring(0, 8));
-}
+// use shared crypto utilities (CN-07-H Phase 1) for canonical hashing and ED25519-style verification
 
 // --- MOCK INTEGRATION POINTS & CONFIGURATION ---
 
@@ -41,8 +12,9 @@ function verifySignature(publicKey: string, payload: object, signature: string):
  * Returns ED25519 public key for registered validators.
  */
 export async function getValidatorPublicKey(validatorId: string): Promise<string | null> {
+  // For Phase 1 prototype we return deterministic hex key material derived from validatorId
   if (validatorId.startsWith('V-PRODUCER')) {
-    return `PUBKEY_VALID_${validatorId}_ED25519`;
+    return crypto.createHash('sha256').update(`KEY:${validatorId}`).digest('hex');
   }
   return null;
 }
@@ -91,13 +63,12 @@ export async function verifyRewardClaimSignature(claim: SignedRewardClaim): Prom
   }
 
   // Create the payload to verify (excluding the signature itself)
-  const payloadToVerify = {
-    claimId: claim.claimId,
-    timestamp: claim.timestamp,
-    allocation: claim.allocation,
-  };
+  const payloadToVerify = { claimId: claim.claimId, timestamp: claim.timestamp, allocation: claim.allocation };
 
-  if (!verifySignature(publicKey, payloadToVerify, validatorSignature)) {
+  const payloadHash = getCanonicalPayloadHash(payloadToVerify);
+  const signatureBuf = hexToBuffer(validatorSignature);
+
+  if (!verifySignature(publicKey, payloadHash, signatureBuf)) {
     console.warn(`[Verification FAIL] Cryptographic signature check failed for ${producerId}.`);
     return false;
   }
@@ -186,8 +157,11 @@ export async function runRewardProcessorSimulation() {
   // Generate valid signature for the claim
   const pubKey = await getValidatorPublicKey('V-PRODUCER-A-01');
   const payload = { claimId: mockValidClaim.claimId, timestamp: mockValidClaim.timestamp, allocation: mockValidClaim.allocation };
-  const hash = hashPayload(payload);
-  mockValidClaim.validatorSignature = `${pubKey!.substring(0, 10)}${hash.substring(0, 8)}-VALID-SIG`;
+  const payloadHash = getCanonicalPayloadHash(payload);
+  // For prototype, derive the private key deterministically (matches VP derivation)
+  const privateKeyHex = crypto.createHash('sha256').update(`KEY:V-PRODUCER-A-01`).digest('hex');
+  const signatureBuf = signPayload(privateKeyHex, payloadHash);
+  mockValidClaim.validatorSignature = bufferToHex(signatureBuf);
 
   const mockInvalidClaim: SignedRewardClaim = {
     claimId: 'CLAIM-invalid-g4h5i6',

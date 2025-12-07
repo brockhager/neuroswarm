@@ -1,17 +1,9 @@
 import crypto from 'crypto';
 import { dispatchAlert, OperatorAlert } from './alerting-service.js';
+import { getCanonicalPayloadHash, signPayload, bufferToHex } from '../shared/crypto-utils.ts';
 
 // --- CRYPTO UTILITIES (CN-08-F) ---
 // NOTE: In a production environment, this would use a dedicated library like 'ed25519-hd-key' or '@noble/ed25519'
-
-/**
- * Creates a canonical hash of the payload for signing.
- * Uses deterministic JSON serialization to ensure consistent hashing.
- */
-function hashPayload(payload: object): string {
-  const canonicalString = JSON.stringify(payload);
-  return crypto.createHash('sha256').update(canonicalString).digest('hex');
-}
 
 /**
  * Mocks real ED25519 signing.
@@ -27,22 +19,19 @@ function hashPayload(payload: object): string {
  * @param payload - The payload object to sign
  * @returns The ED25519 signature
  */
-function signPayload(privateKey: string, publicKey: string, payload: object): string {
-  const payloadHash = hashPayload(payload);
-  // MOCK SIGNATURE FORMAT: <pubkey_prefix><hash_prefix>-VALID-SIG
-  return `${publicKey.substring(0, 10)}${payloadHash.substring(0, 8)}-VALID-SIG`;
-}
+// signing handled by shared/crypto-utils.ts (ED25519 mock for Phase 1)
 
 /**
  * Retrieves the validator's keypair from secure storage.
  * In production, this would use a hardware security module (HSM) or encrypted keystore.
  */
 function getValidatorKeypair(validatorId: string): { privateKey: string; publicKey: string } {
-  // MOCK: In production, retrieve from secure vault
-  return {
-    privateKey: `PRIVKEY_${validatorId}_ED25519_SECRET`,
-    publicKey: `PUBKEY_VALID_${validatorId}_ED25519`,
-  };
+  // MOCK: In production, retrieve from secure vault. For Phase 1 we return deterministic hex keys.
+  // derive a deterministic key material for prototype tests — private/public are the same for Phase 1
+  const derivedHex = crypto.createHash('sha256').update(`KEY:${validatorId}`).digest('hex');
+  const privateHex = derivedHex;
+  const publicHex = derivedHex;
+  return { privateKey: privateHex, publicKey: publicHex };
 }
 
 // Hardened client config
@@ -77,6 +66,17 @@ export async function submitSignedEvidence(signedEvidence: SignedSlashingEvidenc
   console.log(`[NS Client] Attempting final submission of evidence: ${evidenceId} -> ${NS_NODE_SLASHING_ENDPOINT}`);
 
   try {
+    // CN-07-H: sign the evidence (Phase 1 - mock ED25519 via shared utils)
+    try {
+      const validatorId = signedEvidence.evidence.validatorId;
+      const keypair = getValidatorKeypair(validatorId);
+      const payloadHash = getCanonicalPayloadHash({ evidence: signedEvidence.evidence });
+      const signature = signPayload(keypair.privateKey, payloadHash);
+      signedEvidence.validatorSignature = bufferToHex(signature);
+    } catch (e) {
+      console.warn('Failed to sign evidence (mock)', e instanceof Error ? e.message : String(e));
+    }
+
     // In production: POST to NS_NODE_SLASHING_ENDPOINT with proper authentication & TLS
     // Here we mock the network call and return a simulated txHash
     await new Promise((r) => setTimeout(r, 40));
@@ -136,13 +136,12 @@ export async function submitRewardClaim(request: { type: string; payload: any })
       allocation: request.payload.allocation,
     };
 
-    const signature = signPayload(keypair.privateKey, keypair.publicKey, payloadToSign);
-    
-    // Attach signature to the payload
-    const signedPayload = {
-      ...request.payload,
-      validatorSignature: signature,
-    };
+    // Use shared crypto utility to sign the canonical payload hash
+    const payloadHash = getCanonicalPayloadHash(payloadToSign);
+    const signatureBuf = signPayload(keypair.privateKey, payloadHash);
+    const signatureHex = bufferToHex(signatureBuf);
+
+    const signedPayload = { ...request.payload, validatorSignature: signatureHex };
 
     console.log(`[NS Client] Submitting signed reward claim for ${validatorId}`);
 
