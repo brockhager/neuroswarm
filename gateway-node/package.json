@@ -3,16 +3,28 @@
   "version": "0.2.0",
   "description": "Lightweight gateway node for NeuroSwarm - forwards /v1/chat and surfaces debug endpoints",
   "main": "server.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start:ts": "npx tsx gateway-server.ts",
+    "dev": "nodemon server.js",
+    "dev:ts": "npx tsx watch gateway-server.ts",
+    "build": "npx tsc gateway-server.ts --outDir dist --target es2020 --module commonjs --moduleResolution node"
   },
   "dependencies": {
-    "express": "^4.18.2",
     "cors": "^2.8.5",
+    "express": "^4.18.2",
     "helmet": "^7.0.0",
+    "multer": "^2.0.2",
+    "node-fetch": "^2.7.0",
     "uuid": "^9.0.0",
-    "multer": "^2.0.2"
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.10.0",
+    "tsx": "^4.6.2",
+    "typescript": "^5.3.3"
   }
 }

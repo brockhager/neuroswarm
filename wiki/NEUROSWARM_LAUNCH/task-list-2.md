@@ -8,8 +8,8 @@ This document consolidates all outstanding work from the Master Design Document 
 
 | ID | Component | Task Description | Priority | Status |
 |-----------|------------|------------------|----------|--------|
-| CN-12-A | Gateway Node (8080) | Core Routing & Validation: Secure HTTP endpoint with JWT middleware, rate limiting, request validation, and routing to NS-Node. | HIGH | Pending Decision |
-| CN-12-B | Gateway Node (8080) | VP Swarm Queueing: Distributed message queue integration for VP Swarm decoupling, async processing pipeline, and worker pools. | HIGH | Pending Decision |
+| CN-12-A | Gateway Node (8080) | Core Routing & Validation: Secure HTTP endpoint with JWT middleware, rate limiting, request validation, and routing to NS-Node. | HIGH | In Progress |
+
 | CN-02 | Router API (4001) | Implement security and anchoring: JWT/RBAC ✅, Postgres schema/migrations, deterministic audit hashing, IPFS pinning pipeline, and optional on-chain anchoring tests. | HIGH | In Progress (Phase 4 complete, pending testing) |
 | OPS-03C | CI/CD | Multi-service E2E harness validating full flows (Agent 9 ↔ NS-LLM ↔ Router ↔ VP ↔ ns-node). | HIGH | Not Started |
 | CN-06-D | VP-Node / NS-Node | Validator selection integration + unbond release processor. | HIGH | Not Started |
@@ -62,6 +62,7 @@ This document consolidates all outstanding work from the Master Design Document 
 | AI-01 | NS-LLM (3015) | SSE/token streaming on `/api/generate` with native fallback | HIGH | 2025-11-XX |
 | AI-02 | NS-LLM (3015) | `/api/embed` embedding endpoint with deterministic schema | MEDIUM | 2025-11-XX |
 | AG4-01 | Agent 9 | Integrate with NS-LLM streaming + generate/embed contract | HIGH | 2025-11-XX |
+| CN-12-B | Gateway Node (8080) | VP Swarm Queueing: Distributed message queue integration for VP Swarm decoupling | HIGH | 2025-12-06 |
 | AG4-02 | Agent 9 | IPFS/provenance attachments and deterministic audit metadata | HIGH | 2025-11-XX |
 
 ---
@@ -158,6 +159,16 @@ This document consolidates all outstanding work from the Master Design Document 
 - **OPS-CI-NSLLM**: Fixed endpoint mismatch (`/api/embed` vs `/embed`) across all branches.
 - **Propagated Fix**: Merged `main` into `feat/cn-08-artifact-review`, `feat/cn-08-security-hardening`, and `feat/ops-03c-e2e-harness`.
 - **Conflict Resolution**: Resolved merge conflicts in `vp-node/server.js` and `pnpm-lock.yaml`.
+
+### 2025-12-06: CN-12-B VP Swarm Queueing Integration Complete ✅
+- **CN-12-B** (Gateway Queueing): Integrated mock distributed queue for async artifact submission
+  - **QueueService**: Created `queue-service.ts` with swappable backend support (mock/kafka/rabbitmq)
+  - **Async Flow**: Updated `/api/submit` to return `202 Accepted` immediately
+  - **Payload**: Standardized `QueueMessage` format with metadata and timestamp
+  - **Verification**: Validated via `test-queue.ts`
+  
+  **Components Updated**: `gateway-server.ts`, `queue-service.ts`
+  **Status**: Ready for real queue integration (Kafka/RabbitMQ)
 
 ### 2025-12-04: CI/CD Hardening Complete ✅
 - **OPS-03B** (Sync Protocol CI Tests): All 5 sync protocol tests added to CI workflow
