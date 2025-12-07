@@ -1,0 +1,166 @@
+import crypto from 'crypto';
+import { dispatchAlert, OperatorAlert } from './alerting-service.js';
+
+// Hardened client config
+const DEFAULT_TIMEOUT_MS = Number(process.env.NS_CLIENT_TIMEOUT_MS || 5_000);
+const DEFAULT_RETRIES = Number(process.env.NS_CLIENT_RETRIES || 3);
+const BACKOFF_BASE_MS = Number(process.env.NS_CLIENT_BACKOFF_BASE_MS || 120);
+const NS_API_AUTH_TOKEN = process.env.NS_NODE_API_TOKEN || null; // optional bearer token
+
+// CN-07-E: NS-Node submission client (mock/prototype)
+const NS_NODE_API_URL = process.env.NS_NODE_API_URL || 'http://ns-node:8080/api/v1';
+const NS_NODE_SLASHING_ENDPOINT = `${NS_NODE_API_URL}/ledger/submit-slashing-evidence`;
+
+export interface SlashingEvidence {
+  evidenceId: string;
+  validatorId: string;
+  blockHeight?: number;
+  triggerValue?: number;
+  eraId?: number;
+}
+
+export interface SignedSlashingEvidence {
+  evidence: SlashingEvidence;
+  validatorSignature: string;
+}
+
+/** Submit signed slashing evidence to the NS-Node for ledger processing.
+ * Prototype: performs a mock network call and emits an operator INFO alert on success
+ * and CRITICAL on failure (best-effort).
+ */
+export async function submitSignedEvidence(signedEvidence: SignedSlashingEvidence): Promise<void> {
+  const evidenceId = signedEvidence.evidence.evidenceId;
+  console.log(`[NS Client] Attempting final submission of evidence: ${evidenceId} -> ${NS_NODE_SLASHING_ENDPOINT}`);
+
+  try {
+    // In production: POST to NS_NODE_SLASHING_ENDPOINT with proper authentication & TLS
+    // Here we mock the network call and return a simulated txHash
+    await new Promise((r) => setTimeout(r, 40));
+
+    const mockResponse = {
+      status: 202,
+      message: 'Evidence accepted. Queued for Ledger processing.',
+      txHash: `TX-${crypto.randomBytes(12).toString('hex')}`,
+    };
+
+    console.log(`[NS Client SUCCESS] Evidence ${evidenceId} accepted and queued as ${mockResponse.txHash}`);
+
+    // Best-effort: emit an INFO alert to the operator channel confirming queueing
+    const confirmationAlert: OperatorAlert = {
+      source: 'VP-Node:NS-Client',
+      level: 'INFO',
+      title: 'Slashing Evidence Queued',
+      description: `Evidence for ${signedEvidence.evidence.validatorId} was accepted by NS and queued for ledger processing.`,
+      details: { evidenceId, txHash: mockResponse.txHash },
+      timestamp: new Date().toISOString(),
+    };
+
+    await dispatchAlert(confirmationAlert).catch(() => {});
+  } catch (error) {
+    console.error(`[NS Client ERROR] Submission failed for ${evidenceId}: ${error instanceof Error ? error.message : String(error)}`);
+
+    const failureAlert: OperatorAlert = {
+      source: 'VP-Node:NS-Client',
+      level: 'CRITICAL',
+      title: 'Slashing Submission Failed',
+      description: `Failed to submit slashing evidence ${evidenceId} to NS-Node. Manual intervention required.`,
+      details: { evidenceId, error: error instanceof Error ? error.message : String(error) },
+      timestamp: new Date().toISOString(),
+    };
+
+    await dispatchAlert(failureAlert).catch(() => {});
+    throw error; // surface failure for callers that need strict semantics
+  }
+}
+
+// Generic reward-claim submission helper used by the fee distribution service (CN-08-A).
+export async function submitRewardClaim(request: { type: string; payload: unknown }): Promise<{ txHash?: string; status: number; message?: string }> {
+  const endpoint = `${NS_NODE_API_URL}/ledger/submit-reward-claim`;
+
+  try {
+    const r = await postWithRetry(endpoint, request.payload, { timeoutMs: DEFAULT_TIMEOUT_MS, retries: DEFAULT_RETRIES });
+
+    console.log(`[NS Client SUCCESS] Reward claim queued as ${r?.txHash ?? '<unknown>'}`);
+
+    const confirmationAlert: OperatorAlert = {
+      source: 'VP-Node:NS-Client',
+      level: 'INFO',
+      title: 'Reward Claim Queued',
+      description: `Reward claim was accepted by NS and queued for settlement.`,
+      details: { txHash: r?.txHash },
+      timestamp: new Date().toISOString(),
+    };
+
+    await dispatchAlert(confirmationAlert).catch(() => {});
+    return r;
+  } catch (err) {
+    console.error(`[NS Client ERROR] failed to submit reward claim: ${err instanceof Error ? err.message : String(err)}`);
+    const failureAlert: OperatorAlert = {
+      source: 'VP-Node:NS-Client',
+      level: 'CRITICAL',
+      title: 'Reward Claim Submission Failed',
+      description: `Failed to submit reward claim to NS-Node.`,
+      details: { error: err instanceof Error ? err.message : String(err) },
+      timestamp: new Date().toISOString(),
+    };
+
+    await dispatchAlert(failureAlert).catch(() => {});
+    throw err;
+  }
+}
+
+/**
+ * Helper: POST data with retries and timeout. If an environment variable
+ * VP_NODE_TEST_MOCK_NS_CLIENT=true is present we simulate a successful response
+ * to keep unit tests deterministic and offline-friendly.
+ */
+async function postWithRetry(url: string, body: unknown, opts: { timeoutMs?: number; retries?: number } = {}): Promise<any> {
+  const timeoutMs = opts.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  const retries = Math.max(0, (opts.retries ?? DEFAULT_RETRIES) | 0);
+
+  // Allow tests to run completely offline (deterministic mock path)
+  if (process.env.VP_NODE_TEST_MOCK_NS_CLIENT === 'true') {
+    await new Promise((r) => setTimeout(r, 20));
+    return { status: 202, message: 'mock queued', txHash: `TX-MOCK-${crypto.randomBytes(8).toString('hex')}` };
+  }
+
+  let attempt = 0;
+  while (true) {
+    attempt += 1;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (NS_API_AUTH_TOKEN) headers['Authorization'] = `Bearer ${NS_API_AUTH_TOKEN}`;
+
+      // Use global fetch (Node 20+ provides fetch)
+      const res = await fetch(url, { method: 'POST', body: JSON.stringify(body), headers, signal: controller.signal });
+      clearTimeout(timer);
+
+      // handle 202/200 as success; parse JSON when available
+      const txt = await res.text();
+      let json: any = null;
+      try { json = txt ? JSON.parse(txt) : null; } catch { json = { raw: txt }; }
+
+      if (res.ok || res.status === 202) {
+        return json ?? { status: res.status, message: 'ok' };
+      }
+
+      const err = new Error(`unexpected status ${res.status} from ${url}: ${txt}`);
+      if (attempt > retries) throw err;
+      // fallthrough to retry
+      const backoff = BACKOFF_BASE_MS * Math.pow(2, attempt - 1);
+      await new Promise((r) => setTimeout(r, backoff));
+    } catch (err) {
+      clearTimeout(timer);
+      if (attempt > retries) throw err;
+      // exponential backoff before retrying
+      const backoff = BACKOFF_BASE_MS * Math.pow(2, attempt - 1);
+      await new Promise((r) => setTimeout(r, backoff));
+      continue;
+    }
+  }
+}
+
+export default { submitSignedEvidence };

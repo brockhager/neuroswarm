@@ -18,6 +18,9 @@ Default allocation:
 - 90% — Awarded to the **Winning Validator / Producer** (VP node that produced the block).
 - 10% — Allocated to the **NS Shared Pool** (`ns-rewards-pool`) for network-level use cases.
 
+Prototype note (CN-08-A):
+> The VP prototype `vp-node/fee-distribution-service.ts` implements an alternate, experimental split used by the CN-08-A feature set for testing and local simulations. The prototype allocation defaults to `60%` (producer), `30%` (stake pool/delegators), `10%` (network fund). This is intentionally separate from the canonical NS applyBlock split and exists to support early validator economics testing. Production on-chain settlements should be driven by the canonical NS ledger rules.
+
 Implementation notes (reference):
 - In the NS applyBlock path, fees are summed and then split as:
 

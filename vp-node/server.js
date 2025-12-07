@@ -427,6 +427,23 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', version: VP_VERSION, uptime: process.uptime(), ipfsPeer: ipfsPeer || null });
 });
 
+// Receive settlement confirmations from NS-Node and mark claim SETTLED
+app.post('/api/v1/ledger/confirm-reward-settlement', async (req, res) => {
+  try {
+    const { claimId, txHash } = req.body || {};
+    if (!claimId || !txHash) return res.status(400).json({ error: 'claimId and txHash required' });
+
+    // Lazy import to avoid circular deps in tests
+    const { markRewardClaimSettled } = await import('./reward-claims-db-service.js');
+    await markRewardClaimSettled(claimId, txHash);
+
+    return res.status(200).json({ ok: true, message: 'Claim marked as SETTLED' });
+  } catch (e) {
+    logVp('ERROR confirming reward settlement', e.message);
+    return res.status(500).json({ error: 'internal_error', message: e.message });
+  }
+});
+
 // IPFS endpoints
 app.get('/ipfs/:cid', async (req, res) => {
   const cid = req.params.cid;

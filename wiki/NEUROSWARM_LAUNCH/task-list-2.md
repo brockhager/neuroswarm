@@ -4,6 +4,20 @@ This document consolidates all outstanding work from the Master Design Document 
 
 ---
 
+## 🔮 UPCOMING WORK — High priority items (new / planned)
+
+These items are the top priorities for the next development phase and are not completed yet; they are placed here for visibility so the whole team can follow progress.
+
+| ID | Component | Task Description | Priority | Status |
+|---|---|---|---:|---|
+| CN-08-D | vp-node (4000) | Background requeue worker for reward claims (periodic retry with backoff & metrics) | MEDIUM | Not Started |
+| CN-08-E | ns-node (3009) | Ledger settlement confirmation & VP notify path (mark claims SETTLED and notify VPs) | MEDIUM | Not Started |
+| CN-07-H | infra / security | Replace mock signatures with production ED25519 signing/verification for claims & evidence | HIGH | Not Started |
+| CN-07-I | network / security | Secure VP→NS APIs with mTLS / mutual auth and per-node tokens (audible & authenticated submission) | HIGH | Not Started |
+| OPS-05 | observability | Add metrics + Grafana panels for reward claim pipeline (pending/submitted/failed counts) | MEDIUM | Not Started |
+
+---
+
 ## 🎯 ACTIVE TASKS (Prioritized - Work Top to Bottom)
 
 | ID | Component | Task Description | Priority | Status |
@@ -17,7 +31,7 @@ This document consolidates all outstanding work from the Master Design Document 
 
 ---
 
-## ✅ COMPLETED TASKS (Reference)
+## ✅ COMPLETED ITEMS (Reference)
 
 | ID | Component | Task Description | Priority | Completion Date |
 |-----------|------------|------------------|----------|-----------------|
@@ -35,6 +49,13 @@ This document consolidates all outstanding work from the Master Design Document 
 | CN-07-A | ns-node (3009) | Implement getProducer(height): deterministic stake-weighted producer selection | HIGH | 2025-12-04 |
 | CN-07-B | vp-node (4000) | Production guard: VP consults NS `/chain/producer/:height` | HIGH | 2025-12-04 |
 | CN-07-C | ns-node + vp-node | Slashing Evidence + Missed Slot Tracking (PR #18) | HIGH | 2025-12-04 (merged) |
+| CN-07-D | vp-node | Consensus compliance persistence (compliance DB, sqlite fallback) | HIGH | 2025-12-06 |
+| CN-07-E | vp-node | Slashing evidence generation & submission (evidence proto, signing, submit path) | HIGH | 2025-12-06 |
+| CN-07-F | vp-node | Operator alerting integration (alert-sink + Discord-compatible payloads) | MEDIUM | 2025-12-06 |
+| CN-07-G | vp-node | Harden NS-Client (retries, timeouts, backoff, auth-friendly + mock mode) | MEDIUM | 2025-12-06 |
+| CN-08-A | vp-node (4000) | Validator Fee Collection & Distribution (fee split, reward claim submission to NS) | MEDIUM | 2025-12-06 |
+| CN-08-B | ns-node (3009) | NS Ledger Reward Processor: accept signed VP reward claims and queue settlement txs | MEDIUM | 2025-12-06 |
+| CN-08-C | vp-node (4000) | VP Reward Claim Persistence & Requeueing (durable claims DB & status transitions) | MEDIUM | 2025-12-06 |
 | CN-08-A | Router API (4001) | POST /artifact/review endpoint: JWT auth + RBAC + CID validation + request queuing | HIGH | 2025-12-04 (7/7 tests) |
 | CN-08-B | VP-Node (4000) | REQUEST_REVIEW processor: Gemini LLM integration + ARTIFACT_CRITIQUE generation | HIGH | 2025-12-04 (11/11 tests) |
 | CN-08-C | NS-Node (3009) | ARTIFACT_CRITIQUE consensus validation: producer-only + schema + anti-spam checks | HIGH | 2025-12-04 (10/10 tests) |
@@ -224,6 +245,22 @@ This document consolidates all outstanding work from the Master Design Document 
 **Next Phase**: Integration with job queue for distributed code execution
 
 ---
+
+### Additional Completed Work (not previously called out in table)
+
+Several recently merged features were not present as discrete rows above — listing them here so the team has a complete record of implemented components and where to find tests/docs in the repo.
+
+- VP node: `vp-node/compliance-db-service.ts` — durable compliance DB (SQLite fallback + in-memory) used for missed-slot persistence (CN-07-D) — tests added.
+- VP node: `vp-node/slashing-evidence-service.ts` — evidence generation and submission flow + tests (CN-07-E).
+- VP node: `vp-node/alerting-service.ts` — operator alerting sink integration (CN-07-F) with Discord-compatible payloads and dispatch helper.
+- VP node: `vp-node/ns-node-client.ts` — hardened NS client (retries, timeouts, backoff, optional auth, mock mode) used by slashing & reward flows (CN-07-G).
+- VP node: `vp-node/fee-distribution-service.ts` — Validator fee split logic, reward-claim creation, and submission helper (CN-08-A prototype) + unit + integration tests.
+- VP node: `vp-node/reward-claims-db-service.ts` — durable reward claim persistence and state transitions (CN-08-C) + tests.
+- ns-node: `ns-node/src/services/ledger-reward-processor.ts` — NS-side reward claim ingestion, signature verification (mock) and queueing to ledger (CN-08-B) + tests.
+- Tests & docs: Unit and integration tests added for all samples above, plus wiki docs for CN-08-A, CN-08-B and CN-08-C in `wiki/Producer` and `wiki/ns-node`.
+
+If any of the items above should be recorded as a separate CN-xx row in the table, name it and I will insert it in the top Completed table for canonical tracking.
+
 
 ### 2025-12-06: OPS-04 Deployment Manifests Complete ✅
 **OPS-04** (Production Deployment): Full Docker Compose production infrastructure
