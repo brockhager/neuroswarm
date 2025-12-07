@@ -136,7 +136,7 @@ try {
   } catch {
     # Provide a clearer guidance when the token is unauthorized
     if ($_.Exception.Response -ne $null -and $_.Exception.Response.StatusCode.Value__ -eq 401) {
-      Write-Error "REST API returned 401 Unauthorized. Your GITHUB_TOKEN is missing or invalid; try: `gh auth login` or set a valid GITHUB_TOKEN in this session.`"
+      Write-Error 'REST API returned 401 Unauthorized. Your GITHUB_TOKEN is missing or invalid; try: gh auth login or set a valid GITHUB_TOKEN in this session.'
       PauseExit 1
     }
     throw
