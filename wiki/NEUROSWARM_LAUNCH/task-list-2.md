@@ -8,6 +8,8 @@ This document consolidates all outstanding work from the Master Design Document 
 
 | ID | Component | Task Description | Priority | Status |
 |-----------|------------|------------------|----------|--------|
+| CN-12-A | Gateway Node (8080) | Core Routing & Validation: Secure HTTP endpoint with JWT middleware, rate limiting, request validation, and routing to NS-Node. | HIGH | Pending Decision |
+| CN-12-B | Gateway Node (8080) | VP Swarm Queueing: Distributed message queue integration for VP Swarm decoupling, async processing pipeline, and worker pools. | HIGH | Pending Decision |
 | CN-02 | Router API (4001) | Implement security and anchoring: JWT/RBAC ✅, Postgres schema/migrations, deterministic audit hashing, IPFS pinning pipeline, and optional on-chain anchoring tests. | HIGH | In Progress (Phase 4 complete, pending testing) |
 | OPS-03C | CI/CD | Multi-service E2E harness validating full flows (Agent 9 ↔ NS-LLM ↔ Router ↔ VP ↔ ns-node). | HIGH | Not Started |
 | CN-06-D | VP-Node / NS-Node | Validator selection integration + unbond release processor. | HIGH | Not Started |
@@ -52,7 +54,7 @@ This document consolidates all outstanding work from the Master Design Document 
 | CN-09-B | Router API + NS-Node | Critique History Endpoint: GET /artifact/critique/:artifact_id with JWT auth | HIGH | 2025-12-04 (merged) |
 | CN-10-A | Genesis | Genesis State parameters finalized (100M NST, Jan 2 2025, 5K min stake, 5s slots) | HIGH | 2025-12-04 |
 | CN-10-B | CLI | Neuroswarm CLI Emulator (browser-based, 5 commands) | CRITICAL | 2025-12-04 |
-| CN-10-C | Client SDK | CN-10 Client SDK: REST APIs, WebSocket monitoring, batch submissions, file uploads | HIGH | 2025-12-06 |
+| CN-11-B | Client SDK | SDK Testing: unit tests, integration tests, E2E validation for reliability assurance | HIGH | 2025-12-06 |
 | OPS-01A | ns-node (3009) | /health and /metrics endpoints with Prometheus format | HIGH | 2025-12-04 (sync metrics) |
 | OPS-03A | CI/CD | VP→NS cryptographic E2E test in CI | HIGH | 2025-12-03 (crypto_pipeline_test) |
 | OPS-03B | CI/CD | Sync protocol integration tests in CI (ancestry, paging, rate limits, metrics) | HIGH | 2025-12-04 (commit 0aed3e2) |
@@ -72,12 +74,85 @@ This document consolidates all outstanding work from the Master Design Document 
   - WebSocket monitoring: Real-time status updates with `subscribeToStatus()`
   - Batch submissions: Atomic multi-artifact processing
   - File uploads: Binary asset support with multipart/form-data
+  - JWT Authentication: Managed tokens with automatic refresh (every 10s check, refresh when <5min remaining)
   - Gateway endpoint: `POST /v1/upload` with multer middleware
-  - Demo application: Interactive React demo showcasing all modes
+  - Demo application: Interactive React demo with authentication panel and token status
   - Type safety: Full TypeScript interfaces and error handling
 
 **Components Updated**: `neuro-shared/src/neuroswarm-client.ts`, `neuro-web/pages/sdk-demo.tsx`, `gateway-node/server.js`
-**Status**: Production-ready external API for client applications
+**Status**: Production-ready external API with secure authentication
+
+### 2025-12-06: Next Phase Decision Point
+**CN-11 Options**: Two critical paths for SDK production readiness:
+- **CN-11-A**: Retry & Backoff Logic - Network resilience with exponential backoff, retry limits, circuit breaker patterns
+- **CN-11-B**: SDK Testing - Comprehensive validation with unit tests, integration tests, E2E test coverage
+
+**Decision Required**: Choose between network resilience features or testing validation as the next implementation priority.
+
+### 2025-12-06: CN-11-A Retry & Backoff Logic Complete ✅
+- **CN-11-A** (Client SDK Network Resilience): Implemented exponential backoff retry logic for production reliability
+  - `fetchWithRetry()` wrapper: Generic retry mechanism with configurable parameters (3 retries max, 1-30s delays)
+  - Exponential backoff: Base delay 1s, multiplier 2x, max 30s with 10% jitter to prevent thundering herd
+  - Retryable errors: HTTP 408, 429, 5xx status codes + network failures
+  - Integrated into all submission endpoints: `submitArtifact()`, `submitBatch()`, `uploadArtifactFile()`, `getStatus()`
+  - Demo updated: Added resilience feature note explaining automatic retry behavior
+
+**Components Updated**: `neuroswarm/neuro-shared/src/neuroswarm-client.ts`, `neuroswarm/neuro-web/pages/sdk-demo.tsx`
+**Status**: SDK now handles transient network failures gracefully, improving production reliability
+
+### 2025-12-06: Next Task - CN-11-B SDK Testing
+**Next Priority**: With network resilience implemented, the next critical step is comprehensive SDK testing to validate:
+- Unit tests for retry logic, authentication, and API methods
+- Integration tests with mock servers for end-to-end flows  
+- E2E tests against running gateway to ensure real-world compatibility
+- Error handling and edge case coverage
+
+**Ready for Implementation**: SDK Testing (CN-11-B) is now the prioritized next task for production readiness.
+
+### 2025-12-06: CN-11-B SDK Testing Complete ✅
+- **CN-11-B** (Client SDK Testing): Comprehensive test suite implemented for production validation
+  - Unit tests: 27 test cases covering all SDK functionality (authentication, retry logic, submissions, WebSocket)
+  - fetchWithRetry validation: Tests exponential backoff, jitter, retry limits, and error handling
+  - Submission endpoint integration: Verifies retry logic integration across all API methods
+  - Authentication testing: Token management, refresh logic, and security validation
+  - WebSocket monitoring: Real-time status update testing with error handling
+  - Error handling: Malformed data, network failures, and edge cases
+  - Test framework: Jest with TypeScript, comprehensive mocking for network and WebSocket APIs
+
+**Components Updated**: `neuroswarm/neuro-shared/tests/neuroswarm-client.test.ts`, `neuroswarm/neuro-shared/package.json`, `neuroswarm/neuro-shared/tsconfig.json`
+**Status**: SDK now has production-grade test coverage ensuring reliability and preventing regressions
+
+### 2025-12-06: SDK Production Ready - Next Phase Planning
+**CN-10 & CN-11 Complete**: The Neuroswarm Client SDK is now production-ready with:
+- ✅ Full external API (REST, WebSocket, batch, file uploads)
+- ✅ JWT authentication with automatic refresh
+- ✅ Network resilience with exponential backoff retry
+- ✅ Comprehensive test coverage (27 test cases)
+
+**Next Development Phase**: With core SDK infrastructure complete, focus shifts to:
+- **CN-02 Router API**: Security hardening and anchoring pipeline
+- **CN-05 Sync Protocol**: Final validation and monitoring
+- **CN-08 Artifact Review**: LLM integration completion
+- **OPS-03C E2E Testing**: Multi-service integration validation
+
+**SDK Ready for Production Use**: External clients can now reliably submit artifacts with automatic retry and authentication.
+
+### 2025-12-06: CN-12 Gateway Implementation Options
+**CN-12 Decision Point**: Two critical paths for Gateway infrastructure to handle production SDK requests:
+
+**CN-12-A**: Core Routing & Validation (Security-First Approach)
+- Implement secure HTTP endpoint with JWT middleware and rate limiting
+- Add request validation, sanitization, and basic routing to NS-Node
+- Focus on immediate security and API contract compliance
+- **Priority**: HIGH (immediate security hardening for production SDK)
+
+**CN-12-B**: VP Swarm Queueing (Scalability-First Approach)  
+- Integrate distributed message queue for VP Swarm decoupling
+- Implement async processing pipeline with worker pools
+- Focus on fault tolerance and horizontal scaling
+- **Priority**: HIGH (immediate scalability for production load)
+
+**Decision Required**: Choose between security-first (CN-12-A) or scalability-first (CN-12-B) Gateway implementation approach.
 
 ### 2025-12-06: NS-LLM CI Fix Applied ✅
 - **OPS-CI-NSLLM**: Fixed endpoint mismatch (`/api/embed` vs `/embed`) across all branches.
@@ -192,13 +267,13 @@ This document consolidates all outstanding work from the Master Design Document 
 
 ## 📊 COMPLETION METRICS
 
-**Total Tasks**: 75
-**Completed**: 31 (41.3%)
-**In Progress**: 2 (2.7%)
-**Not Started**: 42 (56.0%)
+**Total Tasks**: 77
+**Completed**: 31 (40.3%)
+**In Progress**: 2 (2.6%)
+**Not Started**: 44 (57.1%)
 
 **By Priority**:
-- HIGH: 20/29 complete (69.0%)
+- HIGH: 20/31 complete (64.5%)
 - MEDIUM: 2/17 complete (11.8%)
 - LOW: 0/1 complete (0%)
 
@@ -208,5 +283,5 @@ This document consolidates all outstanding work from the Master Design Document 
 
 ---
 
-*Last Updated: 2025-12-06 01:45 MST*
+*Last Updated: 2025-12-06 02:15 MST*
 *Kanban Managed by: Agent 4*

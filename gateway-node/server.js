@@ -456,6 +456,45 @@ try {
   // ignore
 }
 
+// Mock authentication endpoints for demo
+app.post('/auth/login', (req, res) => {
+  const { username, password } = req.body;
+  
+  // Simple mock authentication - in production, validate against real auth service
+  if (username && password) {
+    const accessToken = `mock-jwt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const refreshToken = `mock-refresh-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    res.json({
+      accessToken,
+      refreshToken,
+      expiresIn: 3600, // 1 hour
+      tokenType: 'Bearer'
+    });
+  } else {
+    res.status(401).json({ error: 'Invalid credentials' });
+  }
+});
+
+app.post('/auth/refresh', (req, res) => {
+  const { refreshToken } = req.body;
+  
+  // Simple mock refresh - in production, validate refresh token
+  if (refreshToken && refreshToken.startsWith('mock-refresh-')) {
+    const accessToken = `mock-jwt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const newRefreshToken = `mock-refresh-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    res.json({
+      accessToken,
+      refreshToken: newRefreshToken,
+      expiresIn: 3600, // 1 hour
+      tokenType: 'Bearer'
+    });
+  } else {
+    res.status(401).json({ error: 'Invalid refresh token' });
+  }
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', version: GW_VERSION, uptime: process.uptime() });
 });

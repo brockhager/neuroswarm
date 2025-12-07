@@ -20,10 +20,24 @@ export default function SDKDemo() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Authentication state
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [tokenStatus, setTokenStatus] = useState(client.getTokenStatus());
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+
+    // Check authentication
+    if (!client.isAuthenticated()) {
+      setError('Authentication required. Please login first.');
+      setLoading(false);
+      return;
+    }
 
     try {
       if (mode === 'single') {
@@ -87,6 +101,40 @@ export default function SDKDemo() {
     };
   }, [Object.keys(statuses).length]); // Re-run when statuses change
 
+  // Update token status every second
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTokenStatus(client.getTokenStatus());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthLoading(true);
+    setAuthError(null);
+
+    try {
+      await client.login({ username, password });
+      setTokenStatus(client.getTokenStatus());
+      setUsername('');
+      setPassword('');
+    } catch (error) {
+      setAuthError(error instanceof Error ? error.message : 'Login failed');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    client.logout();
+    setTokenStatus(client.getTokenStatus());
+    setStatuses({});
+    setSubmissionId(null);
+    setBatchResponse(null);
+  };
+
   const addArtifact = () => {
     setBatchArtifacts([...batchArtifacts, { content: '', metadata: {} }]);
   };
@@ -112,6 +160,94 @@ export default function SDKDemo() {
   return (
     <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
       <h1>Neuroswarm Client SDK Demo</h1>
+      <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px' }}>
+        <strong>🛡️ Network Resilience:</strong> This demo includes automatic retry logic with exponential backoff 
+        for handling transient network issues (server load, temporary outages). Failed requests are automatically 
+        retried up to 3 times with increasing delays.
+      </p>
+
+      {/* Authentication Panel */}
+      <div style={{ 
+        border: '2px solid #007bff', 
+        borderRadius: '8px', 
+        padding: '15px', 
+        marginBottom: '20px',
+        backgroundColor: tokenStatus.authenticated ? '#e8f5e8' : '#fff3cd'
+      }}>
+        <h2 style={{ marginTop: 0 }}>🔐 Authentication</h2>
+        
+        {tokenStatus.authenticated ? (
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+              <span style={{ color: 'green', fontWeight: 'bold' }}>✅ Authenticated</span>
+              <span style={{ fontSize: '14px', color: '#666' }}>
+                Expires in: {tokenStatus.timeUntilExpiry ? 
+                  `${Math.floor(tokenStatus.timeUntilExpiry / 1000 / 60)}m ${Math.floor((tokenStatus.timeUntilExpiry / 1000) % 60)}s` : 
+                  'Unknown'}
+              </span>
+            </div>
+            <button 
+              onClick={handleLogout}
+              style={{ 
+                padding: '8px 16px', 
+                backgroundColor: '#dc3545', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Logout
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleLogin} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px' }}>Username:</label>
+              <input
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="demo-user"
+                required
+                style={{ padding: '5px', width: '120px' }}
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', marginBottom: '5px' }}>Password:</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="demo-pass"
+                required
+                style={{ padding: '5px', width: '120px' }}
+              />
+            </div>
+            <button 
+              type="submit" 
+              disabled={authLoading}
+              style={{ 
+                padding: '8px 16px', 
+                backgroundColor: '#007bff', 
+                color: 'white', 
+                border: 'none', 
+                borderRadius: '4px',
+                cursor: authLoading ? 'not-allowed' : 'pointer',
+                alignSelf: 'flex-end'
+              }}
+            >
+              {authLoading ? 'Logging in...' : 'Login'}
+            </button>
+          </form>
+        )}
+        
+        {authError && (
+          <div style={{ color: 'red', marginTop: '10px', fontSize: '14px' }}>
+            Auth Error: {authError}
+          </div>
+        )}
+      </div>
 
       <div style={{ marginBottom: '20px' }}>
         <button
@@ -240,8 +376,8 @@ export default function SDKDemo() {
           </>
         )}
 
-        <button type="submit" disabled={loading} style={{ padding: '10px 20px' }}>
-          {loading ? 'Submitting...' : mode === 'single' ? 'Submit Artifact' : mode === 'batch' ? 'Submit Batch' : 'Upload File'}
+        <button type="submit" disabled={loading || !tokenStatus.authenticated} style={{ padding: '10px 20px' }}>
+          {loading ? 'Submitting...' : !tokenStatus.authenticated ? 'Login Required' : mode === 'single' ? 'Submit Artifact' : mode === 'batch' ? 'Submit Batch' : 'Upload File'}
         </button>
       </form>
 
