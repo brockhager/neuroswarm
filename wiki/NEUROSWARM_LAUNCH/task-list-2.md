@@ -26,9 +26,9 @@ These items are the top priorities for the next development phase and are not co
 | ID | Component | Task Description | Priority | Status |
 |---|---|---|---:|---|
 | CN-08-D | vp-node (4000) | Background requeue worker for reward claims (periodic retry with backoff & metrics) | MEDIUM | Not Started |
-| CN-08-E | ns-node (3009) | Ledger settlement confirmation & VP notify path (mark claims SETTLED and notify VPs) | MEDIUM | Not Started |
-| CN-07-H | infra / security | Replace mock signatures with production ED25519 signing/verification for claims & evidence | HIGH | Not Started |
+| CN-07-H | infra / security | Replace mock signatures with production ED25519 signing/verification for claims & evidence (prototype ED25519 signing/verification implemented — needs production key management / HSM & library) | HIGH | In Progress |
 | CN-07-I | network / security | Secure VP→NS APIs with mTLS / mutual auth and per-node tokens (audible & authenticated submission) | HIGH | Not Started |
+| CN-08-G | ns-node + vp-node | Per-validator confirmation & idempotent settlement confirmations (per-validator callback registry; idempotency & robust retry/backoff) | HIGH | In Progress |
 | OPS-05 | observability | Add metrics + Grafana panels for reward claim pipeline (pending/submitted/failed counts) | MEDIUM | Not Started |
 
 ---
@@ -71,6 +71,8 @@ These items are the top priorities for the next development phase and are not co
 | CN-07-G | vp-node | Harden NS-Client (retries, timeouts, backoff, auth-friendly + mock mode) | MEDIUM | 2025-12-06 |
 | CN-08-A | Router API (4001) | POST /artifact/review endpoint: JWT auth + RBAC + CID validation + request queuing | HIGH | 2025-12-04 (7/7 tests) |
 | CN-08-A | vp-node (4000) | Validator Fee Collection & Distribution (fee split, reward claim submission to NS) | MEDIUM | 2025-12-06 |
+| CN-08-E | ns-node (3009) | Ledger settlement confirmation & VP notify path (NS→VP notification of settled claims; sendSettlementConfirmationToVP flow integrated) | MEDIUM | 2025-12-07 |
+| CN-08-F | vp-node + ns-node | Production Crypto & Auth Hardening (ED25519 signing & verification added to VP-Node and NS-Node; proto crypto utilities included) | HIGH | 2025-12-07 |
 | CN-08-B | VP-Node (4000) | REQUEST_REVIEW processor: Gemini LLM integration + ARTIFACT_CRITIQUE generation | HIGH | 2025-12-04 (11/11 tests) |
 | CN-08-B | ns-node (3009) | NS Ledger Reward Processor: accept signed VP reward claims and queue settlement txs | MEDIUM | 2025-12-06 |
 | CN-08-C | NS-Node (3009) | ARTIFACT_CRITIQUE consensus validation: producer-only + schema + anti-spam checks | HIGH | 2025-12-04 (10/10 tests) |
@@ -94,6 +96,7 @@ These items are the top priorities for the next development phase and are not co
 | OPS-03C | CI/CD | Multi-service E2E harness validating full flows (Agent 9 ↔ NS-LLM ↔ Router ↔ VP ↔ ns-node). | HIGH | 2025-12-06 |
 | OPS-CI-NSLLM | CI/CD | NS-LLM integration tests + OpenAPI contract validation in CI | HIGH | 2025-12-06 (fixed endpoint mismatch) |
 | OPS-04 | Deployment | Production Docker Compose manifests with secrets management, networking, health checks, monitoring | HIGH | 2025-12-06 |
+
 
 ---
 
@@ -246,6 +249,10 @@ These items are the top priorities for the next development phase and are not co
 - **Status**: Operational, ready for LLM-generated code analysis tasks
 
 **Next Phase**: Integration with job queue for distributed code execution
+### 2025-12-07: CN-08-F / CN-08-E: Crypto hardening & settlement confirmations
+- **CN-08-F**: Production Crypto & Auth Hardening (NS-Node + VP-Node) — ED25519 signing + verification primitives integrated (prototype mock crypto utilities added). Key files: `ns-node/src/services/ledger-reward-processor.ts`, `ns-node/src/services/ledger-settlement-confirmation.ts`, `vp-node/ns-node-client.ts`.
+- **CN-08-E**: Ledger Settlement Confirmation (NS→VP) — `sendSettlementConfirmationToVP` capability present; notification flow integrated and used by ledger processor (NS → VP callback).
+**Status**: CN-08-F completed (prototype & hardening), CN-08-E integration completed; CN-08-G (per-validator confirmations & idempotency) is now In Progress and next high priority.
 
 ---
 
