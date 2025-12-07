@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import { dispatchAlert, OperatorAlert } from './alerting-service.js';
 import { getCanonicalPayloadHash, signPayload, bufferToHex } from '../shared/crypto-utils.ts';
-import { getPrivateKeyFromVault, getPublicKeyFromRegistry } from '../shared/key-management.ts';
+import { VaultClient, PublicKeyRegistry } from '../shared/key-management.ts';
 
 // --- CRYPTO UTILITIES (CN-08-F) ---
 // NOTE: In a production environment, this would use a dedicated library like 'ed25519-hd-key' or '@noble/ed25519'
@@ -26,11 +26,12 @@ import { getPrivateKeyFromVault, getPublicKeyFromRegistry } from '../shared/key-
  * Retrieves the validator's keypair from secure storage.
  * In production, this would use a hardware security module (HSM) or encrypted keystore.
  */
-async function getValidatorKeypair(validatorId: string): Promise<{ privateKey: string; publicKey: string }> {
-  // Phase 3: retrieve private key from Vault mock and public key from registry mock
-  const privateKey = await getPrivateKeyFromVault(validatorId);
-  // prefer registry public key when available
-  const publicKey = (await getPublicKeyFromRegistry(validatorId)) ?? privateKey;
+async function getValidatorKeypair(validatorId: string): Promise<{ privateKey: Buffer; publicKey: Buffer }> {
+  const vault = new VaultClient();
+  const registry = new PublicKeyRegistry();
+
+  const privateKey = await vault.getPrivateKey(validatorId);
+  const publicKey = (await registry.getPublicKey(validatorId)) ?? privateKey;
   return { privateKey, publicKey };
 }
 

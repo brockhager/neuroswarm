@@ -100,3 +100,22 @@ export function bufferToHex(buffer: Buffer): string {
 export function hexToBuffer(hex: string): Buffer {
     return Buffer.from(hex, 'hex');
 }
+
+/**
+ * Derive a deterministic keypair (private/public) from a seed string.
+ * In a real implementation this would use a secure seed derivation and proper key generation.
+ * If @noble/ed25519 is available we will compute the actual public key for the derived private key.
+ */
+export async function deriveKeypairFromSeed(seed: string): Promise<{ privateKey: Buffer; publicKey: Buffer }> {
+    const seedHash = crypto.createHash(HASH_ALGORITHM).update(`KEYSEED:${seed}`).digest();
+    const privateKey = Buffer.from(seedHash);
+
+    if (nobleEd && typeof nobleEd.getPublicKey === 'function') {
+        const pub = await nobleEd.getPublicKey(new Uint8Array(privateKey));
+        return { privateKey, publicKey: Buffer.from(pub) };
+    }
+
+    // Fallback: derive public key deterministically from seed (not cryptographically correct, only for tests)
+    const publicKey = crypto.createHash(HASH_ALGORITHM).update(`PUB:${seed}`).digest();
+    return { privateKey, publicKey };
+}
