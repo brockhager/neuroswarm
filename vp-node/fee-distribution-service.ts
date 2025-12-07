@@ -1,10 +1,10 @@
 import crypto from 'crypto';
-import { submitRewardClaim as submitToNsNode } from './ns-node-client.js';
+import { submitRewardClaim as submitToNsNode } from './ns-node-client.ts';
 import {
   persistRewardClaim,
   markRewardClaimSubmitted,
   markRewardClaimFailed,
-} from './reward-claims-db-service.js';
+} from './reward-claims-db-service.ts';
 
 // --- MOCK CONSTANTS & CONFIGURATION ---
 

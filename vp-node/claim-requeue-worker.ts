@@ -1,6 +1,6 @@
-import { listPendingRewardClaims, markRewardClaimSubmitted, markRewardClaimFailed } from './reward-claims-db-service.js';
-import { submitRewardClaim as submitToNs } from './ns-node-client.js';
-import { dispatchAlert } from './alerting-service.js';
+import { listPendingRewardClaims, markRewardClaimSubmitted, markRewardClaimFailed } from './reward-claims-db-service.ts';
+import { submitRewardClaim as submitToNs } from './ns-node-client.ts';
+import { dispatchAlert } from './alerting-service.ts';
 
 // --- CONFIGURATION ---
 const WORKER_INTERVAL_MS = Number(process.env.VP_CLAIM_REQUEUE_INTERVAL_MS || 60_000);

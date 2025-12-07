@@ -13,7 +13,7 @@ These are tasks the engineering team is actively working on right now. Anything 
 | ID | Component | Task Description | Priority | Status |
 |---|---|---|---:|---|
 | CN-08-G | ns-node + vp-node | Per-validator confirmation & idempotent settlement confirmations (per-validator callback registry; idempotency & robust retry/backoff). Production idempotency store migrated to Firestore for durability and atomic writes; per-validator registry + runbook completed. | HIGH | 2025-12-07 |
-| CN-08-G | ns-node + vp-node | Per-validator confirmation & idempotent settlement confirmations (per-validator callback registry; idempotency & robust retry/backoff). Prototype idempotency / audit store implemented (VP/NS integration) — hardening & distributed durability next. | HIGH | In Progress |
+| CN-07-H-E2E | infra / security | E2E key-rotation overlap test harness: publish overlapping public keys (V1 + V2), verify VP accepts confirmations signed by either key during overlap, ensure idempotency & audit writes; add Firestore emulator + KMS fixture for CI. | HIGH | In Progress |
 
 ---
 
@@ -271,6 +271,10 @@ These items are the top priorities for the next development phase and are not co
 - **Files changed**: `ns-node/src/services/ledger-settlement-confirmation.ts` (signing), `vp-node/server.js` (verification), `shared/key-management.ts` (registry support), unit & E2E tests, `wiki/Security/CN-07-H-Runbook.md`.
 - **Behavior**: NS signs confirmations with its Vault-derived private key; VP requires a valid signature and rejects unauthenticated confirmations (401). Idempotency duplicate checks remain enforced (409).
 - **Next**: Production KMS/HSM integration, automated CI fixtures for rotated keys, and final runbooks to include key compromise playbooks.
+
+### 2025-12-07: E2E key-rotation overlap test scaffolding added (VP side)
+- **What**: Added an integration test that simulates an overlap window during key rotation and verifies VP accepts confirmations signed by either the old (V1) or new (V2) public key while idempotency/audit checks remain enforced. Test file: `vp-node/tests/integration/e2e-key-rotation-overlap.test.mjs`.
+- **Status**: Scaffolding added (unit/integration test present). Next: run the test harness locally/CI and wire in Firestore emulator + KMS fixture for full E2E validation.
 
 ---
 

@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { dispatchAlert, OperatorAlert } from './alerting-service.js';
+import { dispatchAlert, type OperatorAlert } from './alerting-service.ts';
 import { getCanonicalPayloadHash, signPayload, bufferToHex } from '../shared/crypto-utils.ts';
 import { KmsVaultClient, PublicKeyRegistry } from '../shared/key-management.ts';
 

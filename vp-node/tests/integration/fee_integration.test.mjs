@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'assert';
 
-import { processJobFeeSettlement, submitRewardClaim } from '../../fee-distribution-service.js';
+import { processJobFeeSettlement, submitRewardClaim } from '../../fee-distribution-service.ts';
 
 test('end-to-end fee settlement and submission (mocked NS client)', async () => {
   // Ensure the ns-node-client uses the mock path in CI / offline tests
