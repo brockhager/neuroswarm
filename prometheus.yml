@@ -1,0 +1,97 @@
+# Prometheus Configuration for NeuroSwarm Platform
+# OPS-01B: Extended metrics scraping for all services
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'neuroswarm-production'
+    environment: 'production'
+
+# Alertmanager configuration (future)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+# Rule files (future alerting rules)
+# rule_files:
+#   - 'alerts.yml'
+
+# Scrape configurations
+scrape_configs:
+  # --- Core Consensus Layer ---
+  - job_name: 'neuroswarm-ns-node'
+    static_configs:
+      - targets: ['ns-node:3009']
+        labels:
+          service: 'ns-node'
+          layer: 'consensus'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # --- API Gateway ---
+  - job_name: 'neuroswarm-gateway'
+    static_configs:
+      - targets: ['gateway-node:8080']
+        labels:
+          service: 'gateway'
+          layer: 'ingress'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # --- VP Node (Validator/Producer) ---
+  - job_name: 'neuroswarm-vp-node'
+    static_configs:
+      - targets: ['vp-node:3002']
+        labels:
+          service: 'vp-node'
+          layer: 'validator'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # --- Admin Node (Governance) ---
+  - job_name: 'neuroswarm-admin'
+    static_configs:
+      - targets: ['admin-node:3000']
+        labels:
+          service: 'admin'
+          layer: 'governance'
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+
+  # --- Redis (Job Queue Backend) ---
+  - job_name: 'redis'
+    static_configs:
+      - targets: ['redis:6379']
+        labels:
+          service: 'redis'
+          layer: 'infrastructure'
+    # Note: Requires redis_exporter sidecar for metrics
+    # metrics_path: '/metrics'
+    # scrape_interval: 15s
+
+  # --- Prometheus Self-Monitoring ---
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+          layer: 'monitoring'
+
+# Storage configuration
+storage:
+  tsdb:
+    path: /prometheus
+    retention:
+      time: 30d
+      size: 10GB
+
+# Remote write (future - for long-term storage)
+# remote_write:
+#   - url: "http://thanos-receiver:19291/api/v1/receive"

@@ -1,0 +1,361 @@
+# docker-compose.production.yml
+# OPS-04: Production Deployment Manifests
+# Full NeuroSwarm platform deployment with all services, networking, and secrets management
+# Usage: docker-compose -f docker-compose.production.yml up -d
+
+version: '3.8'
+
+networks:
+  neuroswarm-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  ns-node-data:
+    driver: local
+  gateway-logs:
+    driver: local
+  vp-node-data:
+    driver: local
+  admin-node-data:
+    driver: local
+  redis-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+services:
+  # --- CORE CONSENSUS LAYER ---
+  
+  ns-node:
+    build:
+      context: ./ns-node
+      dockerfile: Dockerfile
+    container_name: neuroswarm-ns-node
+    restart: unless-stopped
+    ports:
+      - "3009:3009"
+    environment:
+      - NODE_ENV=production
+      - PORT=3009
+      - LOG_LEVEL=info
+      - DB_PATH=/data/neuroswarm_chain.db
+      - ENABLE_METRICS=true
+      - JWT_SECRET=${JWT_SECRET}
+    volumes:
+      - ns-node-data:/data
+      - ./ns-node/logs:/logs
+    networks:
+      neuroswarm-network:
+        ipv4_address: 172.20.0.10
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3009/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # --- REDIS (JOB QUEUE BACKEND) ---
+  
+  redis:
+    image: redis:7-alpine
+    container_name: neuroswarm-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    networks:
+      neuroswarm-network:
+        ipv4_address: 172.20.0.15
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # --- GATEWAY NODE (API INGRESS) ---
+  
+  gateway-node:
+    build:
+      context: ./gateway-node
+      dockerfile: Dockerfile
+    container_name: neuroswarm-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - NODE_ENV=production
+      - PORT=8080
+      - NS_NODE_URL=http://ns-node:3009
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - RATE_LIMIT_WINDOW_MS=60000
+      - RATE_LIMIT_MAX_REQUESTS=100
+      - LOG_LEVEL=info
+      - ENABLE_CORS=true
+      - CORS_ORIGIN=${CORS_ORIGIN:-*}
+      - NS_CHECK_RETRIES=5
+      - NS_CHECK_EXIT_ON_FAIL=false
+      - NS_CHECK_INITIAL_DELAY_MS=2000
+      - NS_CHECK_MAX_DELAY_MS=30000
+    volumes:
+      - gateway-logs:/logs
+    networks:
+      neuroswarm-network:
+        ipv4_address: 172.20.0.20
+    depends_on:
+      ns-node:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # --- VP NODE (VALIDATOR/PRODUCER) ---
+  
+  vp-node:
+    build:
+      context: ./vp-node
+      dockerfile: Dockerfile
+    container_name: neuroswarm-vp-node
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    environment:
+      - NODE_ENV=production
+      - PORT=3002
+      - NS_NODE_URL=http://ns-node:3009
+      - REDIS_URL=redis://redis:6379
+      - LOG_LEVEL=info
+      - ENABLE_METRICS=true
+      - JOB_QUEUE_WORKERS=10
+      - JOB_TIMEOUT_MS=60000
+      - JOB_MAX_RETRIES=3
+      - SANDBOX_TIMEOUT_MS=5000
+      - SANDBOX_MAX_MEMORY_MB=128
+    volumes:
+      - vp-node-data:/data
+      - ./vp-node/logs:/logs
+    networks:
+      neuroswarm-network:
+        ipv4_address: 172.20.0.30
+    depends_on:
+      ns-node:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # --- ADMIN NODE (GOVERNANCE) ---
+  
+  admin-node:
+    build:
+      context: ./admin-node
+      dockerfile: Dockerfile
+    container_name: neuroswarm-admin
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - NS_NODE_URL=http://ns-node:3009
+      - ADMIN_JWT_SECRET=${ADMIN_JWT_SECRET}
+      - SESSION_SECRET=${SESSION_SECRET}
+      - LOG_LEVEL=info
+      - ENABLE_RBAC=true
+      - GOVERNANCE_LOG_PATH=/data/governance/wp_publish_log.jsonl
+    volumes:
+      - admin-node-data:/data
+      - ./admin-node/logs:/logs
+    networks:
+      neuroswarm-network:
+        ipv4_address: 172.20.0.40
+    depends_on:
+      ns-node:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # --- MONITORING: PROMETHEUS ---
+  
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: neuroswarm-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      neuroswarm-network:
+        ipv4_address: 172.20.0.50
+    depends_on:
+      - ns-node
+      - gateway-node
+      - vp-node
+      - admin-node
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+  # --- MONITORING: GRAFANA ---
+  
+  grafana:
+    image: grafana/grafana:10.0.3
+    container_name: neuroswarm-grafana
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3001
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana-dashboard.json:/etc/grafana/provisioning/dashboards/neuroswarm.json:ro
+    networks:
+      neuroswarm-network:
+        ipv4_address: 172.20.0.51
+    depends_on:
+      - prometheus
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+# --- SECRETS MANAGEMENT ---
+# Required environment variables (set in .env file or CI/CD secrets):
+# - JWT_SECRET: Gateway JWT signing key (min 32 chars)
+# - ADMIN_JWT_SECRET: Admin node JWT signing key (min 32 chars)
+# - SESSION_SECRET: Admin node session secret (min 32 chars)
+# - GRAFANA_ADMIN_PASSWORD: Grafana admin password
+# - CORS_ORIGIN: Allowed CORS origins (comma-separated)
+
+# --- DEPLOYMENT COMMANDS ---
+
+# Start all services:
+#   docker-compose -f docker-compose.production.yml up -d
+
+# View logs:
+#   docker-compose -f docker-compose.production.yml logs -f [service-name]
+
+# Stop all services:
+#   docker-compose -f docker-compose.production.yml down
+
+# Restart service:
+#   docker-compose -f docker-compose.production.yml restart [service-name]
+
+# View service status:
+#   docker-compose -f docker-compose.production.yml ps
+
+# Remove volumes (CAUTION: destroys all data):
+#   docker-compose -f docker-compose.production.yml down -v
+
+# --- SERVICE ENDPOINTS ---
+# NS Node:      http://localhost:3009
+# Gateway:      http://localhost:8080
+# VP Node:      http://localhost:3002
+# Admin:        http://localhost:3000
+# Prometheus:   http://localhost:9090
+# Grafana:      http://localhost:3001
+# Redis:        redis://localhost:6379
+
+# --- NETWORKING ---
+# All services communicate via neuroswarm-network (172.20.0.0/16)
+# Static IPs assigned for deterministic service discovery
+# External access via published ports on localhost
+
+# --- HEALTH CHECKS ---
+# All services have health checks configured
+# Dependent services wait for dependencies to be healthy
+# Health endpoints: /health (all services)
+
+# --- LOGGING ---
+# JSON file logging with size/rotation limits
+# Logs accessible via docker logs or mounted volumes
+# Structured logging with correlation IDs for tracing
+
+# --- SCALABILITY ---
+# VP Node workers configurable via JOB_QUEUE_WORKERS
+# Redis maxmemory policy: allkeys-lru (512MB limit)
+# Prometheus retention: 30 days
+# Rate limiting: 100 req/min per client IP (Gateway)
+
+# --- SECURITY NOTES ---
+# 1. All secrets MUST be set via environment variables
+# 2. Do NOT commit .env file with production secrets
+# 3. JWT_SECRET must be strong (min 32 chars random)
+# 4. Change default Grafana admin password immediately
+# 5. Configure CORS_ORIGIN for production (not wildcard)
+# 6. Use Docker secrets or Vault for production secrets
+# 7. Enable HTTPS/TLS termination at reverse proxy layer
+# 8. Implement rate limiting at reverse proxy/CDN layer
+# 9. Enable firewall rules to restrict Redis/Prometheus access
+# 10. Regularly rotate JWT secrets and session secrets
