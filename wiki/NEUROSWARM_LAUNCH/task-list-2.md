@@ -70,7 +70,7 @@ These items are the top priorities for the next development phase and are not co
 | CN-07-D | vp-node | Consensus compliance persistence (compliance DB, sqlite fallback) | HIGH | 2025-12-06 |
 | CN-07-E | vp-node | Slashing evidence generation & submission (evidence proto, signing, submit path) | HIGH | 2025-12-06 |
 | CN-07-F | vp-node | Operator alerting integration (alert-sink + Discord-compatible payloads) | MEDIUM | 2025-12-06 |
-| CN-07-H | infra / security | ED25519 signing & verification hardening and Phase 4: Idempotency & Audit Store prototype implemented; VP/NS integration, tests, and docs added. Next: Phase 5 — confirmation auth + KMS/HSM integration & durable idempotency store. | HIGH | 2025-12-07 |
+| CN-07-H | infra / security | ED25519 signing & verification hardening complete (Phases 1–5). Phase 5 (Confirmation Authentication) implemented: NS signs confirmations; VP verifies using registry; idempotency/audit store integrated; unit & E2E tests added; runbook authored. Next: Production-grade KMS/HSM integration and durable idempotency datastore. | HIGH | 2025-12-07 |
 | CN-07-G | vp-node | Harden NS-Client (retries, timeouts, backoff, auth-friendly + mock mode) | MEDIUM | 2025-12-06 |
 | CN-08-A | Router API (4001) | POST /artifact/review endpoint: JWT auth + RBAC + CID validation + request queuing | HIGH | 2025-12-04 (7/7 tests) |
 | CN-08-A | vp-node (4000) | Validator Fee Collection & Distribution (fee split, reward claim submission to NS) | MEDIUM | 2025-12-06 |
@@ -264,6 +264,12 @@ These items are the top priorities for the next development phase and are not co
 - **Behavior**: VP now rejects duplicate confirmations when it has already processed an idempotency key (409), and records audit metadata for processed confirmations. NS generates a unique `Idempotency-Key` for each confirmation and does not pre-mark it — VP owns the audit record.
 - **Tests**: E2E tests added to verify replay protection for claims and confirmation duplicate rejection; unit tests for idempotency behavior added. Local test suite confirms passing tests.
 - **Next**: Phase 5 — Confirmations must be authenticated & signed (NS→VP) and idempotency storage hardened (migrate to Redis/Postgres or distributed DB) and integrated with KMS/HSM for secure key management, rotation and audit logging.
+
+### 2025-12-07: CN-07-H Phase 5 — Confirmation Authentication ✅
+- **What**: Implemented signing of NS confirmation payloads (NS → VP) and verification of confirmations at VP using the PublicKeyRegistry; integrated confirmation signing end-to-end with idempotency & audit store and added runbook.
+- **Files changed**: `ns-node/src/services/ledger-settlement-confirmation.ts` (signing), `vp-node/server.js` (verification), `shared/key-management.ts` (registry support), unit & E2E tests, `wiki/Security/CN-07-H-Runbook.md`.
+- **Behavior**: NS signs confirmations with its Vault-derived private key; VP requires a valid signature and rejects unauthenticated confirmations (401). Idempotency duplicate checks remain enforced (409).
+- **Next**: Production KMS/HSM integration, automated CI fixtures for rotated keys, and final runbooks to include key compromise playbooks.
 
 ---
 
