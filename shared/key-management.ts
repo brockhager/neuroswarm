@@ -57,6 +57,10 @@ export class KmsVaultClient {
   // DEPRECATED in production: test-friendly helper to derive the private key (not for production use)
   public async getPrivateKeyForTestsOnly(keyId: string): Promise<Buffer> {
     if (!this.isAuthenticated) throw new Error('KmsVaultClient: not authenticated');
+    // CI / hardened mode: enforce sign-only interface — disallow tests from reading private key
+    if (process.env.KMS_ENFORCE_SIGN_ONLY === 'true') {
+      throw new Error('KmsVaultClient: getPrivateKeyForTestsOnly disabled when KMS_ENFORCE_SIGN_ONLY=true');
+    }
     const envKey = process.env[`VAULT_PRIVKEY_${keyId.replace(/[^A-Z0-9_-]/gi, '_').toUpperCase()}`];
     if (envKey && envKey.length > 10) return hexToBuffer(envKey);
     await new Promise((r) => setTimeout(r, 50));
