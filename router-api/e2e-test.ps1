@@ -18,7 +18,7 @@ for ($i=0; $i -lt 60; $i++) {
         break
     } catch {
         Write-Host "[E2E-PS] waiting for postgres... ($i)"
-        Start-Sleep -Seconds 1
+        Start-Sleep -Seconds 3
     }
 }
 
@@ -49,7 +49,7 @@ for ($i=0; $i -lt 60; $i++) {
         if ($r.StatusCode -eq 200) { Write-Host "[E2E-PS] router-api is healthy"; break }
     } catch {
         Write-Host "[E2E-PS] waiting... ($i)"
-        Start-Sleep -Seconds 2
+        Start-Sleep -Seconds 3
     }
 }
 

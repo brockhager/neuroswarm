@@ -85,6 +85,11 @@ This document consolidates all outstanding work from the Master Design Document 
 
 - **Commit**: `0aed3e2` - Both CI workflows pushed to main
 
+### 2025-12-06: Router CI polling harmonization ✅
+- **OPS-03C** (Router CI timing): Harmonized critical readiness/polling intervals to 3s across router-related CI and test artifacts to reduce race flakiness while keeping retry windows unchanged.
+  - Files updated: `\router-api\e2e-test.sh`, `\router-api\e2e-test.ps1`, `\router-api\docker-compose.test.yml`, `.github/workflows/router-api-contracts.yml` (and mirrored copies in `rewrite-check/`).
+  - Status: Completed (changes committed to main branch). This reduces intermittent CI race conditions and speeds up health polling for faster CI feedback loops.
+
 ### 2025-12-04: E2E Validation Complete ✅
 - **CN-10** (Genesis & CLI): Full user workflow validated via CLI emulator
   1. ✅ Authentication (`ns auth login`)
