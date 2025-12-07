@@ -17,7 +17,7 @@ for i in {1..60}; do
     break
   fi
   echo "[E2E] waiting for Postgres... ($i)"
-  sleep 1
+  sleep 3
 done
 
 echo "[E2E] Applying DB migrations (if needed) using standardized migration runner"
@@ -49,7 +49,7 @@ for i in {1..60}; do
     break
   fi
   echo "[E2E] waiting... ($i)"
-  sleep 2
+  sleep 3
 done
 
 echo "[E2E] Running E2E tests (jest)

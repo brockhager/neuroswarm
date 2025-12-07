@@ -61,8 +61,8 @@ jobs:
               echo "Router API healthy"
               exit 0
             fi
-            echo "Router not ready (attempt $i/60), sleeping 2s"
-            sleep 2
+            echo "Router not ready (attempt $i/60), sleeping 3s"
+            sleep 3
           done
           echo "Router API did not become healthy in time" >&2
           docker ps || true

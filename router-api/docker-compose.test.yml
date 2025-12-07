@@ -17,7 +17,7 @@ services:
       - "5433:5432" # map to host 5433 to avoid colliding with local Postgres
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U neuroswarm_user -d neuroswarm_router_db_test"]
-      interval: 5s
+      interval: 3s
       timeout: 5s
       retries: 10
 
@@ -35,8 +35,8 @@ services:
     environment:
       PORT: 3000
       DATABASE_URL: "postgres://neuroswarm_user:neuroswarm_password@db:5432/neuroswarm_router_db_test"
-      ROUTER_MONITOR_INTERVAL: 5
-      REFUND_RECONCILE_INTERVAL: 5
+      ROUTER_MONITOR_INTERVAL: 3
+      REFUND_RECONCILE_INTERVAL: 3
       NODE_ENV: test
     ports:
       - "3000:3000"
