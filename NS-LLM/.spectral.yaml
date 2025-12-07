@@ -1,0 +1,19 @@
+# Spectral OpenAPI linting configuration for NS-LLM
+extends: ["spectral:oas", "spectral:asyncapi"]
+
+rules:
+  # Relax rules for prototype/CI validation
+  info-contact: off
+  info-description: warn
+  info-license: off
+  operation-description: warn
+  operation-operationId: warn
+  operation-tags: off
+  tag-description: off
+  
+  # Keep critical validation rules
+  oas3-api-servers: error
+  oas3-valid-media-example: error
+  oas3-schema: error
+  operation-success-response: error
+  path-params: error
