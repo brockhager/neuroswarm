@@ -1,3 +1,24 @@
+<!-- Root Decision Portal README — minimal, role-based navigation -->
+# NeuroSwarm — Documentation Decision Portal
+
+Welcome — this repository contains the NeuroSwarm coordination codebase, services, and operational tooling.
+
+This README is intentionally minimal: it's a decision portal that helps YOU get to the documentation most relevant to your role.
+
+Which role best describes why you are here?
+
+- Developer → Work on the code, run the services, add features
+  - See: `wiki/00-Developer-Guide.md`
+- Auditor / Security Lead → Review cryptographic hardening, idempotency and provenance
+  - See: `wiki/01-Security-Audit-Portal.md`
+- Operations / DevOps → Deploy, manage, and monitor NeuroSwarm in staging/production
+  - See: `wiki/02-Operations-Runbook.md`
+- UX / API Consumer → Build client-facing integrations and read the public API docs
+  - See: `wiki/03-Consumer-API-Guide.md`
+
+If you're not sure where to go, start with `wiki/HOME.md` which provides a short status overview and links into each role path.
+
+Thanks — the team has intentionally kept this portal concise to reduce confusion and help you reach what matters quickly.
 <p align="center">
   <img src="icon.png" alt="NeuroSwarm" width="500"/>
 </p>
