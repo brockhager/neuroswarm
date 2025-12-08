@@ -4,6 +4,7 @@
  */
 
 import crypto from 'crypto';
+import { spawnSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { getDataDir } from '../path-utils.js';
@@ -34,26 +35,61 @@ export class CryptoManager {
         console.log('[Crypto] Generating self-signed certificate...');
 
         try {
-            // Generate private key (2048-bit RSA)
-            const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', {
-                modulusLength: 2048,
-                publicKeyEncoding: {
-                    type: 'spki',
-                    format: 'pem'
-                },
-                privateKeyEncoding: {
-                    type: 'pkcs8',
-                    format: 'pem'
+            // Prefer using openssl (if available) to create a proper self-signed X.509 cert
+            // This yields a compatible PEM certificate that Node/OpenSSL will accept.
+            let privateKeyPem = null;
+            let certPem = null;
+
+            const opensslCheck = spawnSync('openssl', ['version'], { encoding: 'utf8' });
+            if (opensslCheck.status === 0) {
+                console.log('[Crypto] OpenSSL available — generating certificate via openssl');
+                // Use openssl to generate a new keypair and self-signed cert in the certDir
+                try {
+                    // Generate both key and cert in one command
+                    // -nodes -> no passphrase
+                    // -days -> 365 validity
+                    // -subj -> minimal subject with CN
+                    const subj = `/CN=${this.nodeType}-${this.nodeId}`;
+                    const cmd = ['req', '-x509', '-nodes', '-newkey', 'rsa:2048', '-days', '365', '-keyout', this.keyPath, '-out', this.certPath, '-subj', subj];
+                    const gen = spawnSync('openssl', cmd, { encoding: 'utf8' });
+                    if (gen.status !== 0) {
+                        console.error('[Crypto] openssl failed to generate cert:', gen.stderr || gen.stdout);
+                    } else {
+                        privateKeyPem = fs.readFileSync(this.keyPath, 'utf8');
+                        certPem = fs.readFileSync(this.certPath, 'utf8');
+                        console.log('[Crypto] Generated certificate using openssl');
+                    }
+                } catch (err) {
+                    console.error('[Crypto] OpenSSL generation attempt failed:', err?.message || err);
                 }
-            });
+            }
 
-            // Create a simple self-signed certificate
-            // Note: For production, use proper certificate generation with node-forge or openssl
-            const cert = this.createSelfSignedCert(privateKey, publicKey);
+            // If openssl was not available or generation failed, fallback to JS keypair and a minimal cert
+            if (!certPem || !privateKeyPem) {
+                // Generate private key (2048-bit RSA)
+                const { privateKey, publicKey } = crypto.generateKeyPairSync('rsa', {
+                    modulusLength: 2048,
+                    publicKeyEncoding: {
+                        type: 'spki',
+                        format: 'pem'
+                    },
+                    privateKeyEncoding: {
+                        type: 'pkcs8',
+                        format: 'pem'
+                    }
+                });
 
-            // Save to disk
-            fs.writeFileSync(this.keyPath, privateKey);
-            fs.writeFileSync(this.certPath, cert);
+                // Try a best-effort self-signed certificate using the public key as the cert body
+                // NOTE: This is a weaker fallback and may not be accepted by some OpenSSL builds.
+                // Prefer using OpenSSL on the host to generate proper certs.
+                privateKeyPem = privateKey;
+                certPem = this.createSelfSignedCert(privateKeyPem, publicKey);
+
+                // Save to disk
+                fs.writeFileSync(this.keyPath, privateKeyPem);
+                fs.writeFileSync(this.certPath, certPem);
+                console.log('[Crypto] Saved generated key and fallback certificate to disk (may not be a valid X.509 cert)');
+            }
 
             console.log(`[Crypto] Certificate generated and saved to ${this.certDir}`);
 
