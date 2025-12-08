@@ -1,0 +1,100 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "#000000",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "iteration": 1621332989020,
+  "links": [],
+  "panels": [
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "orange", "value": 1 } ] }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "tooltip": { "mode": "single" } },
+      "targets": [
+        {
+          "expr": "sum(rate(neuroswarm_sync_requests_total[1m])) by (instance)",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Sync Request Rate (per instance)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "id": 2,
+      "targets": [
+        { "expr": "sum(rate(neuroswarm_sync_rejections_total[5m])) by (reason)", "legendFormat": "{{reason}}", "refId": "A" }
+      ],
+      "title": "Rejections by Reason (5m rate)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "targets": [
+        { "expr": "sum(neuroswarm_sync_inflight_count) by (instance)", "legendFormat": "{{instance}}", "refId": "A" }
+      ],
+      "title": "Inflight Sync Tasks (current)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": { "unit": "none" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "targets": [
+        { "expr": "sum(rate(neuroswarm_sync_ancestry_mismatch_total[5m])) by (instance)", "legendFormat": "{{instance}}", "refId": "A" }
+      ],
+      "title": "Ancestry Mismatch Rate (5m)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 16 },
+      "id": 5,
+      "targets": [
+        { "expr": "sum(neuroswarm_sync_error_rate_total) by (status)", "legendFormat": "{{status}}", "refId": "A" }
+      ],
+      "title": "Sync Error Rates (status codes / totals)",
+      "type": "stat"
+    }
+  ],
+  "schemaVersion": 32,
+  "style": "dark",
+  "tags": ["sync", "vp-node", "ns-node", "monitoring"],
+  "templating": { "list": [] },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "NeuroSwarm — Sync Monitoring",
+  "uid": "neuroswarm-sync-monitoring",
+  "version": 1
+}

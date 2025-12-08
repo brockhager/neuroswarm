@@ -1,0 +1,52 @@
+groups:
+- name: neuroswarm-sync.rules
+  rules:
+  - alert: SyncAncestryMismatchSpike
+    expr: sum(rate(neuroswarm_sync_ancestry_mismatch_total[5m])) by (instance) > 0.5
+    for: 5m
+    labels:
+      severity: warning
+      team: ops
+    annotations:
+      summary: "High rate of ancestry mismatches detected on {{ $labels.instance }}"
+      description: "Ancestry mismatch rate is {{ $value }} (5m rate). This indicates possible reorgs or chain divergence. Investigate node health and recent forks."
+
+  - alert: SyncPersistent429
+    expr: sum(rate(neuroswarm_sync_http_429_total[10m])) by (instance) > 0.2
+    for: 10m
+    labels:
+      severity: critical
+      team: ops
+    annotations:
+      summary: "Persistent 429 (rate-limited) responses from sync peer {{ $labels.instance }}"
+      description: "High rate of 429 responses indicates backpressure or overload. Check upstream rate limiter configs and peer load."
+
+  - alert: SyncRequestErrorSpike
+    expr: sum(rate(neuroswarm_sync_request_errors_total[5m])) by (instance) > 1
+    for: 2m
+    labels:
+      severity: warning
+      team: ops
+    annotations:
+      summary: "Spike in sync request errors detected on {{ $labels.instance }}"
+      description: "Increased sync request errors (5m rate) — investigate logs for network/connectivity or schema errors."
+
+  - alert: SyncInflightHigh
+    expr: sum(neuroswarm_sync_inflight_count) by (instance) > 50
+    for: 10m
+    labels:
+      severity: warning
+      team: ops
+    annotations:
+      summary: "High number of inflight sync tasks on {{ $labels.instance }}"
+      description: "Inflight sync tasks remain high for >10 minutes. May indicate processing backlog or stuck state."
+
+  - alert: SyncDown
+    expr: up{job="vp-node"} == 0
+    for: 2m
+    labels:
+      severity: critical
+      team: ops
+    annotations:
+      summary: "vp-node is down: {{ $labels.instance }}"
+      description: "The vp-node job is reporting as down for >2 minutes; immediate investigation required."

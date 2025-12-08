@@ -23,10 +23,10 @@ These items are the top priorities for the next development phase and are not co
 | ID | Component | Task Description | Priority | Status |
 |---|---|---|---:|---|
 | CN-08-D | vp-node (4000) | Background requeue worker for reward claims (periodic retry with backoff & metrics) | MEDIUM | Not Started |
-| CN-05-G | Monitoring | Create Grafana dashboards for sync monitoring (request rates, rejection patterns, inflight tracking, ancestry failures). | MEDIUM | Not Started |
-| CN-05-H | Monitoring | Implement alert rules for sync anomalies (ancestry mismatch spikes, persistent 429 patterns, sync failures). | MEDIUM | Not Started |
+| CN-05-G | Monitoring | Create Grafana dashboards for sync monitoring (request rates, rejection patterns, inflight tracking, ancestry failures). | MEDIUM | 2025-12-07 ✅ Complete |
+| CN-05-H | Monitoring | Implement alert rules for sync anomalies (ancestry mismatch spikes, persistent 429 patterns, sync failures). | MEDIUM | 2025-12-07 ✅ Complete |
 | CN-07-I | network / security | Secure VP→NS APIs with mTLS / mutual auth and per-node tokens (audible & authenticated submission) | HIGH | Not Started |
-| APP-01 | neuro-services (3007) | Implement the business logic service with secure DB access, billing/reconciliation routines, adapters plugin interface, and tests. | MEDIUM | Not Started |
+| APP-01 | neuro-services (3007) | Implement the business logic service with secure DB access, billing/reconciliation routines, adapters plugin interface, and tests. | MEDIUM | 2025-12-07 ✅ Complete |
 | APP-02 | neuro-runner (3008) | Build the background worker framework: job queue (Redis/BullMQ or equivalent), idempotent processing, retry/durable metrics, monitoring. | MEDIUM | Not Started |
 | APP-03 | admin-node (3000) | Implement secure admin portal with RBAC, governance UI, audit trails, and tight access controls. | MEDIUM | Not Started |
 | APP-04 | alert-sink (3010) | Implement alerts ingestion API, durable JSONL audit storage & replay hooks, and test coverage for alert delivery and storage. | LOW | Not Started |
@@ -71,6 +71,7 @@ These items are the top priorities for the next development phase and are not co
 | CN-07-F | vp-node | Operator alerting integration (alert-sink + Discord-compatible payloads) | MEDIUM | 2025-12-06 |
 | CN-07-H | infra / security | ED25519 signing & verification hardening complete (Phases 1–5). Phase 5 (Confirmation Authentication) implemented: NS signs confirmations; VP verifies using registry; idempotency/audit store integrated; unit & E2E tests added; runbook authored. Concrete Vault Transit connector implemented and validated. | HIGH | 2025-12-07 ✅ COMPLETE |
 | CN-07-H-VENDOR | infra / security | Concrete HashiCorp Vault Transit Connector — production vendor SDK integration with node-vault dynamic import, key rotation support, comprehensive tests, deployment guide. | HIGH | 2025-12-07 ✅ COMPLETE |
+| APP-01 | neuro-services (3007) | Implement the business logic service with secure DB access, billing/reconciliation routines, adapters plugin interface, and tests. | MEDIUM | 2025-12-07 ✅ COMPLETE |
 | CN-09-A | NS-Node (3009) | Request Fulfillment: completed_reviews state tracking + 4th security check | HIGH | 2025-12-04 (merged) |
 | CN-09-B | Router API + NS-Node | Critique History Endpoint: GET /artifact/critique/:artifact_id with JWT auth | HIGH | 2025-12-04 (merged) |
 | CN-10-A | Genesis | Genesis State parameters finalized (100M NST, Jan 2 2025, 5K min stake, 5s slots) | HIGH | 2025-12-04 |
@@ -280,6 +281,17 @@ These items are the top priorities for the next development phase and are not co
   - Template file: `neuroswarm/shared/vault-transit-impl.example.ts`
   - Implementation guide: `neuroswarm/wiki/Technical/Vault-Transit-Connector.md`
 - **Status**: Scaffolding complete. Next: implement the vendor-specific connector (HashiCorp Vault Transit or AWS KMS), add CI harness (Vault dev server or AWS emulator), and finalize rotation & audit runbook.
+
+### 2025-12-07: APP-01 — Neuro-Service Core (NeuroServiceController) ✅
+- **What**: Implemented the NeuroServiceController and BillingReconciliationEngine as the core business logic and billing engine for the neuro-services platform.
+  - Core file: `neuro-services/src/NeuroServiceController.ts` (controller + billing engine)
+  - Unit tests: `neuro-services/src/NeuroServiceController.test.ts` (transactional tests with fake DB/tx harness)
+  - Docs: `neuro-services/README-APP-01.md`
+- **Features**:
+  - Dependency-injectable DB client / transaction interfaces (test-friendly)
+  - Atomic billing reconciliation using transactional semantics
+  - Plugin adapter model for service execution (LLM, image generation, etc.)
+- **Status**: APP-01 complete (2025-12-07). Next: APP-02 background worker (job queue, idempotent processing, monitoring).
 
 ### 2025-12-07: CN-07-H-VENDOR — Concrete Vault Transit Connector Complete ✅
 - **What**: Implemented production-ready VaultTransitConnector using node-vault dynamic import pattern, completing the final implementation requirement for CN-07-H cryptographic hardening.
