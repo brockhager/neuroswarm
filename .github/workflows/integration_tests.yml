@@ -48,8 +48,8 @@ jobs:
           # Enforce sign-only mode for KMS client for security audit compliance
           echo "KMS_ENFORCE_SIGN_ONLY=true" >> $GITHUB_ENV
 
-      - name: Run Orchestrated Integration Tests (Key Rotation & Idempotency)
-        run: npm --prefix neuroswarm run test:integration:emulator
+      - name: Run Orchestrated Integration Tests (Key Rotation & Idempotency + Mock KMS)
+        run: npm --prefix neuroswarm run test:integration:emulator:kms
 
       - name: Stop Emulator (If still running)
         run: pkill -f 'firebase emulators:start' || true

@@ -40,6 +40,27 @@ export class KmsVaultClient {
     const override = process.env[envKeyName];
     if (override && override.length > 8) return hexToBuffer(override);
 
+    // If a remote KMS endpoint is configured, call it (sign-only remote API)
+    const kmsUrl = process.env.KMS_SERVER_URL || process.env.KMS_MOCK_URL || null;
+    if (kmsUrl && kmsUrl.length > 0) {
+      try {
+        const endpoint = (kmsUrl.endsWith('/') ? kmsUrl.slice(0, -1) : kmsUrl) + '/api/v1/sign';
+        const hexHash = payloadHash.toString('hex');
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keyId, hash: hexHash }),
+        });
+        if (!res.ok) throw new Error(`KMS HTTP error ${res.status}`);
+        const j = await res.json();
+        if (!j || !j.signature) throw new Error('KMS response missing signature');
+        return hexToBuffer(j.signature);
+      } catch (e) {
+        // If remote KMS call fails, surface a descriptive error
+        throw new Error(`KmsVaultClient: remote KMS sign failed for ${keyId}: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+
     // simulate latency
     await new Promise((r) => setTimeout(r, 50));
 

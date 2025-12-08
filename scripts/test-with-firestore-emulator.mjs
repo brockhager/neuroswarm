@@ -45,6 +45,31 @@ async function main() {
   process.env.FIRESTORE_EMULATOR_HOST = `127.0.0.1:${port}`;
   process.env.FIREBASE_PROJECT_ID = 'neuroswarm-test';
 
+  // Optional: start mock KMS server if requested (args: node test-with-firestore-emulator.mjs <service> kms)
+  let kmsProc = null;
+  const startKms = process.argv.includes('kms') || process.env.START_MOCK_KMS === 'true';
+  if (startKms) {
+    console.log('[tester] starting Mock KMS server for sign-only tests');
+    // spawn the mock-kms-server from tests/fixtures
+    const kmsScript = path.join(__dirname, '..', 'tests', 'fixtures', 'mock-kms-server.mjs');
+    kmsProc = spawn('node', [kmsScript], { stdio: ['ignore', 'pipe', 'pipe'] });
+    kmsProc.stdout.on('data', d => process.stdout.write(`[mock-kms] ${d}`));
+    kmsProc.stderr.on('data', d => process.stderr.write(`[mock-kms] ${d}`));
+
+    try {
+      await waitForPort('127.0.0.1', Number(process.env.MOCK_KMS_PORT || 8123), 10000);
+      console.log('[tester] Mock KMS is listening');
+      // When running orchestrator, set env var so tests use remote KMS
+      process.env.KMS_SERVER_URL = `http://127.0.0.1:${process.env.MOCK_KMS_PORT || 8123}`;
+      process.env.KMS_ENFORCE_SIGN_ONLY = 'true';
+    } catch (e) {
+      console.error('[tester] Mock KMS failed to start in time', e.message);
+      if (kmsProc) kmsProc.kill('SIGTERM');
+      emu.kill('SIGTERM');
+      process.exit(1);
+    }
+  }
+
   // run the target test script
   const service = process.argv[2] || 'vp-node';
   const runner = spawn('npm', ['--prefix', service, 'run', 'test:integration'], { stdio: 'inherit', shell: true });
@@ -53,6 +78,7 @@ async function main() {
     console.log('[tester] tests finished with code', code);
     // shut down emulator
     emu.kill('SIGTERM');
+    if (kmsProc) kmsProc.kill('SIGTERM');
     process.exit(code || 0);
   });
 
