@@ -50,7 +50,7 @@ jobs:
 
       - name: Run Orchestrated Integration Tests (Key Rotation & Idempotency + Mock KMS)
         # Run the orchestrator directly to avoid npm --prefix path issues in CI
-        run: node neuroswarm/scripts/test-with-firestore-emulator.mjs vp-node kms
+        run: node scripts/test-with-firestore-emulator.mjs vp-node kms
 
       - name: Stop Emulator (If still running)
         run: pkill -f 'firebase emulators:start' || true
