@@ -28,15 +28,37 @@ async function main() {
   const host = process.env.FIRESTORE_EMULATOR_HOST ? process.env.FIRESTORE_EMULATOR_HOST.split(':')[0] : '127.0.0.1';
   console.log('[tester] Starting Firestore emulator via npx/firebase-tools (this requires firebase-tools available via npx)...');
 
-  const emu = spawn('npx', ['-y', 'firebase-tools', 'emulators:start', '--only', 'firestore', '--project', 'neuroswarm-test', '--host', '127.0.0.1', '--port', String(port)], { cwd: __dirname, stdio: ['ignore', 'pipe', 'pipe'] });
+  // Note: older firebase-tools versions may not accept --host / --port flags.
+  // Start the emulator without host/port flags and rely on the FIRESTORE_EMULATOR_HOST
+  // environment variable or the default port. This avoids the 'unknown option --host' errors
+  // observed on some CI images.
+  const emuArgs = ['-y', 'firebase-tools', 'emulators:start', '--only', 'firestore', '--project', 'neuroswarm-test'];
+  const emuEnv = { ...process.env };
+  // Ensure the emulator listens on the requested host/port by setting env var if present
+  emuEnv.FIRESTORE_EMULATOR_HOST = `${host}:${port}`;
+  const emu = spawn('npx', emuArgs, { cwd: __dirname, env: emuEnv, stdio: ['ignore', 'pipe', 'pipe'] });
 
   emu.stdout.on('data', d => process.stdout.write(`[emu] ${d}`));
   emu.stderr.on('data', d => process.stderr.write(`[emu] ${d}`));
 
+  // If the emulator process exits early, report and abort quickly
+  let emuExited = false;
+  emu.on('exit', (code, signal) => {
+    emuExited = true;
+    if (code && code !== 0) {
+      console.error(`[tester] Firestore emulator process exited early with code ${code} signal=${signal}`);
+    }
+  });
+
   try {
-    await waitForPort('127.0.0.1', port, 20000);
+    // If the emulator exited early, bail immediately
+    await Promise.race([
+      waitForPort('127.0.0.1', port, 20000),
+      new Promise((_, reject) => setTimeout(() => { if (emuExited) return reject(new Error('emulator-exited')); }, 0))
+    ]);
   } catch (e) {
-    console.error('[tester] Firestore emulator failed to start in time');
+    if (emuExited) console.error('[tester] Firestore emulator process exited unexpectedly (see emulator stderr above)');
+    else console.error('[tester] Firestore emulator failed to start in time');
     emu.kill('SIGTERM');
     process.exit(1);
   }
