@@ -7,19 +7,31 @@ This README is intentionally minimal: it's a decision portal that helps YOU get 
 
 
 <p align="center">
-  <img src="./ns-node-desktop/icon.png" alt="NeuroSwarm" width="160" onerror="this.style.display='none'" />
+	<img src="./ns-node-desktop/icon.png" alt="NeuroSwarm" width="160" onerror="this.style.display='none'" />
 </p>
 
 Which role best describes why you are here?
 
-  - [Developer Guide](./wiki/00-Developer-Guide.md)
-  - [Security / Audit Portal](./wiki/01-Security-Audit-Portal.md)
-  - [Operations Runbook](./wiki/02-Operations-Runbook.md)
-  - [General Users / Consumer Guide](./wiki/04-General-Users.md)
+- Developer — Work on the code, run the services, add features
+	- [Developer Guide](./wiki/00-Developer-Guide.md)
+- Auditor / Security Lead — Review cryptographic hardening, idempotency and provenance
+	- [Security / Audit Portal](./wiki/01-Security-Audit-Portal.md)
+- Operations / DevOps — Deploy, manage, and monitor NeuroSwarm in staging/production
+	- [Operations Runbook](./wiki/02-Operations-Runbook.md)
+-- Consumer / API — Technical API/SDK docs for integrators
+	- [Consumer / API Guide (integrators)](./wiki/03-Consumer-API-Guide.md)
+-- General User / Chatbot — End-user demos, quickstarts, and non-technical guides
+	- [General Users — Quickstarts & demos](./wiki/04-General-Users.md)
 
-If you're not sure where to go, start with `wiki/HOME.md` which provides a short status overview and links into each role path.
+If you're not sure where to go, start with `./wiki/HOME.md` which provides a short status overview and links into each role path.
 
-<!-- end of decision portal content -->
+---
+
+## Quick links
+
+- [Documentation Hub (short)](./wiki/HOME.md)
+- [Getting Started — full developer docs](./wiki/Getting-Started/Home.md)
+
 <!-- end of decision portal content -->
 
 

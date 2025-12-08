@@ -1,5 +1,7 @@
 # NeuroSwarm — Consumer / API Guide
 
+This page is a technical reference **for integrators and SDK authors** who need the canonical API surface, OpenAPI specs, and implementation details required to build reliable integrations. If you're a non-technical end-user looking for quickstarts or demos, use the General Users page (`wiki/04-General-Users.md`).
+
 This page is for engineers and writers who maintain *client-facing* documentation or build apps that consume the NeuroSwarm API (chatbot/API consumer). It points to the public API surface, rate-limits, and examples.
 
 ## Core API surface (neuro-services)

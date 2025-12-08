@@ -1,18 +1,18 @@
-# NeuroSwarm — General Users (Chatbot / API Consumer)
+# NeuroSwarm — General Users (Chatbot)
 
-This landing page is for end users and client developers who interact with the deployed NeuroSwarm services (chatbot, SDKs, and API consumers).
-
-This is intentionally high-level — if you are an engineer working on client SDKs or the API spec, please use the *Consumer / API Guide* (Developer-focused) linked from this page.
+This landing page is for end users and non-technical consumers who want to try the NeuroSwarm chatbot, demos, or client-facing experiences. It intentionally focuses on quickstarts and usage guidance — if you're building integrations, SDKs, or need the formal API specification, please see the *Consumer / API Guide* at `wiki/03-Consumer-API-Guide.md` (technical reference).
 
 ## Quick start — interact with the running chatbot
 
 - Web UI demo (example): `neuro-web/pages/sdk-demo.tsx` — this is the client demo that shows common flows.
 - Try the demo app or the hosted demo (if available) to see example chatbot interactions.
 
-## API & client usage
+## How to try NeuroSwarm (end-user)
 
-- Primary consumer-facing service: `neuro-services` (Port 3007) — this provides the public API endpoints used by clients.
-- For full API details, look for a canonical OpenAPI/Swagger spec in `neuro-services/openapi.yaml` (if present) or ask the team to publish one.
+- Web UI/demo — open the demo app (if hosted) or run `neuro-web` locally to try conversations and example flows.
+- Local quickstart — run the example demo under `neuro-web/pages/sdk-demo.tsx` to explore common interactions and UI patterns.
+
+If you need the formal API details (OpenAPI, SDKs, rate limits), see the technical Consumer/API Guide (`wiki/03-Consumer-API-Guide.md`).
 
 ## Common topics for users
 - Authentication: How to obtain API tokens and authenticate requests to the gateway
