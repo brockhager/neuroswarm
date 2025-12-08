@@ -35,36 +35,68 @@ if %errorlevel% equ 0 (
 echo [3/10] Starting NS-LLM Server (port 3006)...
 start "NS-LLM" cmd /k "cd /d c:\JS\ns\neuroswarm\NS-LLM && npm start"
 timeout /t 3 /nobreak >nul
-echo [3.25/10] Starting Postgres (router-api test DB) via docker-compose (host:5433)...
-where docker >nul 2>&1
-REM If docker is not found, branch to docker_missing. Using gotos avoids deep nested parentheses which can confuse cmd parsing.
-if errorlevel 1 goto docker_missing
 
-echo Starting Postgres container for router-api...
-REM Start Postgres in a separate helper script to avoid parsing issues inside this file
-start "Postgres Container" cmd /k "%~dp0..\scripts\start-postgres-window.bat"
-REM Wait for Postgres to start before checking health
-timeout /t 5 /nobreak >nul
-REM Wait for Postgres health (pg_isready inside container); use clearer control flow to avoid nested parentheses errors
-for /L %%i in (1,1,60) do (
-    docker compose -f "%~dp0..\router-api\docker-compose.test.yml" exec -T db pg_isready -U neuroswarm_user -d neuroswarm_router_db_test >nul 2>&1
-    if not errorlevel 1 (
-        echo Postgres is healthy
-        goto :postgres_up
+echo [3.25/10] Starting Postgres (router-api test DB) via docker-compose (host:5433)...
+set "SKIP_POSTGRES=0"
+set "DOCKER_STATUS=ok"
+where docker >nul 2>&1
+if errorlevel 1 (
+    set "DOCKER_STATUS=missing"
+) else (
+    REM Docker CLI present — check engine reachability
+    docker info >nul 2>&1
+    if errorlevel 1 (
+        set "DOCKER_STATUS=unreachable"
     )
-    timeout /t 1 >nul
 )
-echo WARNING: Postgres did not report healthy in time and may be unavailable.
+
+if "%DOCKER_STATUS%"=="ok" (
+    echo Docker CLI and engine reachable — starting Postgres container for router-api...
+    REM Start Postgres in a separate helper script to avoid parsing issues inside this file
+    start "Postgres Container" cmd /k "%~dp0..\scripts\start-postgres-window.bat"
+    REM Wait a short time before checking container health
+    timeout /t 5 /nobreak >nul
+    REM Wait for Postgres health (pg_isready inside container)
+    for /L %%i in (1,1,60) do (
+        docker compose -f "%~dp0..\router-api\docker-compose.test.yml" exec -T db pg_isready -U neuroswarm_user -d neuroswarm_router_db_test >nul 2>&1
+        if not errorlevel 1 (
+            echo Postgres is healthy
+            goto :postgres_up
+        )
+        timeout /t 1 >nul
+    )
+    echo WARNING: Postgres did not report healthy in time and may be unavailable.
+    set "SKIP_POSTGRES=1"
+    goto after_postgres
+) else if "%DOCKER_STATUS%"=="missing" (
+    echo WARNING: Docker CLI not found - skipping Postgres startup.
+    echo If you want to run the router-api test DB you can: install Docker Desktop and ensure 'docker' is in your PATH.
+    echo Alternatively, run a Postgres instance listening on port 5432 or 5433 before starting this script.
+    set "SKIP_POSTGRES=1"
+    goto after_postgres
+) else if "%DOCKER_STATUS%"=="unreachable" (
+    echo WARNING: Docker CLI found but Engine is not responding - skipping Postgres startup.
+    echo Common fixes:
+    echo  - Start Docker Desktop (on Windows) and make sure the engine is running
+    echo  - If using WSL2 backend make sure WSL integration is enabled for your distro
+    echo  - Switch Docker Desktop to Linux containers if on Windows
+    set "SKIP_POSTGRES=1"
+    goto after_postgres
+)
+
 :postgres_up
 goto after_postgres
 
-:docker_missing
-    echo WARNING: Docker not found - skipping Postgres startup. Ensure a Postgres instance is listening on port 5432 or 5433.
 
 :after_postgres
 
 echo [4/10] Starting Router API (port 4001)...
-start "Router API" cmd /k "cd /d c:\JS\ns\neuroswarm\router-api && set DATABASE_URL=postgres://neuroswarm_user:neuroswarm_password@localhost:5433/neuroswarm_router_db_test && npm start"
+if "%SKIP_POSTGRES%"=="1" (
+    echo Skipping Router API because Postgres was not started by this script. Ensure a working Postgres on port 5433 and start Router API manually:
+    echo   cd /d c:\JS\ns\neuroswarm\router-api && set DATABASE_URL=postgres://neuroswarm_user:neuroswarm_password@localhost:5433/neuroswarm_router_db_test && npm start
+) else (
+    start "Router API" cmd /k "cd /d c:\JS\ns\neuroswarm\router-api && set DATABASE_URL=postgres://neuroswarm_user:neuroswarm_password@localhost:5433/neuroswarm_router_db_test && npm start"
+)
 timeout /t 3 /nobreak >nul
 
 echo [5/10] Starting NS Node (port 3009)...
