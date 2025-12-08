@@ -12,7 +12,7 @@ These are tasks the engineering team is actively working on right now. Anything 
 
 | ID | Component | Task Description | Priority | Status |
 |---|---|---|---:|---|
-| CN-07-I | network / security | Secure VP→NS APIs with mTLS / mutual auth and per-node tokens (audible & authenticated submission) | HIGH | Not Started |
+ 
 
 ---
 
