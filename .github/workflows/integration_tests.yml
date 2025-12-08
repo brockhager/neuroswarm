@@ -49,7 +49,8 @@ jobs:
           echo "KMS_ENFORCE_SIGN_ONLY=true" >> $GITHUB_ENV
 
       - name: Run Orchestrated Integration Tests (Key Rotation & Idempotency + Mock KMS)
-        run: npm --prefix neuroswarm run test:integration:emulator:kms
+        # Run the orchestrator directly to avoid npm --prefix path issues in CI
+        run: node neuroswarm/scripts/test-with-firestore-emulator.mjs vp-node kms
 
       - name: Stop Emulator (If still running)
         run: pkill -f 'firebase emulators:start' || true
