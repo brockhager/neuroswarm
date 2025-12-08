@@ -12,7 +12,7 @@ These are tasks the engineering team is actively working on right now. Anything 
 
 | ID | Component | Task Description | Priority | Status |
 |---|---|---|---:|---|
-| CN-07-H-PROD-KMS | infra / security | Production-grade KMS/HSM integration (HashiCorp Vault / AWS KMS) — replace test fixture with real sign-only service, rotate keys, add auditing and HSM protections. | HIGH | Not Started |
+| CN-07-H-PROD-KMS | infra / security | Production-grade KMS/HSM integration (HashiCorp Vault / AWS KMS) — scaffolding completed (transit connector interface, mock connector, example template & docs). Next: implement vendor-specific connector & CI harness (Vault/AWS KMS). | HIGH | In Progress (scaffolding complete) |
 
 ---
 
@@ -84,6 +84,7 @@ These items are the top priorities for the next development phase and are not co
 | CN-08-B | ns-node (3009) | NS Ledger Reward Processor: accept signed VP reward claims and queue settlement txs | MEDIUM | 2025-12-06 |
 | CN-08-C | NS-Node (3009) | ARTIFACT_CRITIQUE consensus validation: producer-only + schema + anti-spam checks | HIGH | 2025-12-04 (10/10 tests) |
 | CN-08-C | vp-node (4000) | VP Reward Claim Persistence & Requeueing (durable claims DB & status transitions) | MEDIUM | 2025-12-06 |
+| CN-07-H-VENDOR | infra / security | Implement vendor-specific transit connector (HashiCorp Vault Transit or AWS KMS) — production vendor SDK integration, key rotation tooling, CI harness (dev server or emulator), and final runbook. | HIGH | Not Started |
 | CN-09-A | NS-Node (3009) | Request Fulfillment: completed_reviews state tracking + 4th security check | HIGH | 2025-12-04 (merged) |
 | CN-09-B | Router API + NS-Node | Critique History Endpoint: GET /artifact/critique/:artifact_id with JWT auth | HIGH | 2025-12-04 (merged) |
 | CN-10-A | Genesis | Genesis State parameters finalized (100M NST, Jan 2 2025, 5K min stake, 5s slots) | HIGH | 2025-12-04 |
@@ -287,6 +288,12 @@ These items are the top priorities for the next development phase and are not co
 - **What**: Hardened the KMS prototype so tests run in CI enforce sign-only behavior; added tests that verify private-key access is blocked in CI while signPayloadInKms still functions for signing checks.
 - **Files**: `shared/key-management.ts` (sign-only enforcement), `shared/tests/kms-enforce-sign-only.test.mjs`, `shared/tests/kms-sign-only-signing.test.mjs`
 - **Status**: Implemented (tests present) — next step is production KMS integration (Vault/AWS KMS) to complete CN-07-H.
+
+### 2025-12-07: Vault transit connector scaffolding added ✅
+- **What**: Implemented transit connector scaffolding (secure interface + mock connector) and added an example implementation template + technical runbook to make it straightforward to plug in a vendor SDK.
+  - Template file: `neuroswarm/shared/vault-transit-impl.example.ts`
+  - Implementation guide: `neuroswarm/wiki/Technical/Vault-Transit-Connector.md`
+- **Status**: Scaffolding complete. Next: implement the vendor-specific connector (HashiCorp Vault Transit or AWS KMS), add CI harness (Vault dev server or AWS emulator), and finalize rotation & audit runbook.
 
 ---
 

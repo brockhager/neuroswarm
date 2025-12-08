@@ -40,6 +40,32 @@ export class KmsVaultClient {
     const override = process.env[envKeyName];
     if (override && override.length > 8) return hexToBuffer(override);
 
+    // If a production 'transit connector' is configured, prefer it. This models
+    // a Vault Transit backend (sign-only, key never leaves the HSM/KMS).
+    const useTransit = process.env.USE_VAULT_TRANSIT === 'true' || !!process.env.VAULT_TRANSIT_IMPL_MODULE;
+    if (useTransit) {
+      try {
+        // If a specific implementation module is configured, load that. Otherwise use the built-in Mock connector.
+        const implModule = process.env.VAULT_TRANSIT_IMPL_MODULE;
+        let ConnectorImplModule: any;
+        if (implModule && implModule.length > 0) {
+          ConnectorImplModule = await import(implModule).catch(() => null);
+        }
+        if (!ConnectorImplModule) {
+          ConnectorImplModule = await import('./vault-transit-connector.ts');
+        }
+
+        const ConnectorClass = ConnectorImplModule && (ConnectorImplModule.default?.MockVaultTransitConnector || ConnectorImplModule.MockVaultTransitConnector || ConnectorImplModule.MockVaultTransitConnector);
+        if (!ConnectorClass) throw new Error('No transit connector implementation available');
+
+        const connector = new ConnectorClass();
+        await connector.authenticate();
+        return await connector.signHash(keyId, payloadHash);
+      } catch (e) {
+        throw new Error(`KmsVaultClient: transit connector sign failed for ${keyId}: ${e instanceof Error ? e.message : String(e)}`);
+      }
+    }
+
     // If a remote KMS endpoint is configured, call it (sign-only remote API)
     const kmsUrl = process.env.KMS_SERVER_URL || process.env.KMS_MOCK_URL || null;
     if (kmsUrl && kmsUrl.length > 0) {
