@@ -103,10 +103,10 @@ if %errorlevel% equ 0 (
     echo WARNING: node not found — skipping dashboard server (no python dependency either)
 )
 timeout /t 2 /nobreak >nul
-start "" "http://localhost:3009/"
+start "NS Chat (3009)" "http://localhost:3009/"
 timeout /t 1 /nobreak >nul
-start "" "http://localhost:3005/control-center"
-start "" "http://localhost:3010/"
+start "Control Center (3005)" "http://localhost:3005/control-center"
+start "Alert Sink (3010)" "http://localhost:3010/"
 
 echo.
 echo ========================================

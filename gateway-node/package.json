@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "description": "Lightweight gateway node for NeuroSwarm - forwards /v1/chat and surfaces debug endpoints",
   "main": "server.js",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
     "start": "node server.js",
     "start:ts": "npx tsx gateway-server.ts",
