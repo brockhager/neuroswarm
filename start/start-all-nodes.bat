@@ -71,20 +71,12 @@ if "%DOCKER_STATUS%"=="ok" (
     REM Start Postgres in a separate helper script to avoid parsing issues inside this file
     start "Postgres Container" cmd /k "%~dp0..\scripts\start-postgres-window.bat"
     echo [3.25.6] start command issued for Postgres Container (returned errorlevel=%errorlevel%) >> "%START_LOG%"
-    REM Wait a short time before checking container health
-    timeout /t 5 /nobreak >nul
-    REM Wait for Postgres health (pg_isready inside container)
-    for /L %%i in (1,1,60) do (
-        docker compose -f "%~dp0..\router-api\docker-compose.test.yml" exec -T db pg_isready -U neuroswarm_user -d neuroswarm_router_db_test >nul 2>&1
-        if not errorlevel 1 (
-            echo Postgres is healthy
-            goto :postgres_up
-        )
-        timeout /t 1 >nul
-    )
-    echo WARNING: Postgres did not report healthy in time and may be unavailable.
-    echo WARNING: Postgres did not report healthy in time and may be unavailable. >> "%START_LOG%"
-    set "SKIP_POSTGRES=1"
+    REM Start a separate health-check window so the main script can continue launching other services
+    echo [3.25.7] launching background Postgres health checker window... >> "%START_LOG%"
+    start "Postgres Health" cmd /k "%~dp0..\scripts\wait-for-postgres.bat"
+    REM Give the compose up a brief moment to begin pulling/creating the container before continuing
+    timeout /t 3 /nobreak >nul
+    REM We continue immediately — Router API, NS, Gateway, etc. will start even if Postgres isn't yet ready.
     goto after_postgres
 ) else if "%DOCKER_STATUS%"=="missing" (
     echo WARNING: Docker CLI not found - skipping Postgres startup.
