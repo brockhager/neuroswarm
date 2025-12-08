@@ -47,22 +47,30 @@ echo [3.25/10] Starting Postgres (router-api test DB) via docker-compose (host:5
 echo [3.25/10] Starting Postgres (router-api test DB) via docker-compose (host:5433)... >> "%START_LOG%"
 set "SKIP_POSTGRES=0"
 set "DOCKER_STATUS=ok"
+echo [3.25.1] Checking for Docker CLI... >> "%START_LOG%"
 where docker >nul 2>&1
+echo [3.25.2] where docker returned errorlevel=%errorlevel% >> "%START_LOG%"
 if errorlevel 1 (
     set "DOCKER_STATUS=missing"
 ) else (
     REM Docker CLI present — check engine reachability
+    echo [3.25.3] Running docker info... >> "%START_LOG%"
     docker info >nul 2>&1
+    echo [3.25.4] docker info returned errorlevel=%errorlevel% >> "%START_LOG%"
     if errorlevel 1 (
         set "DOCKER_STATUS=unreachable"
+    ) else (
+        set "DOCKER_STATUS=ok"
     )
 )
 
 if "%DOCKER_STATUS%"=="ok" (
     echo Docker CLI and engine reachable — starting Postgres container for router-api...
+    echo [3.25.5] launching start-postgres-window.bat in new window... >> "%START_LOG%"
     echo Docker CLI and engine reachable — starting Postgres container for router-api... >> "%START_LOG%"
     REM Start Postgres in a separate helper script to avoid parsing issues inside this file
     start "Postgres Container" cmd /k "%~dp0..\scripts\start-postgres-window.bat"
+    echo [3.25.6] start command issued for Postgres Container (returned errorlevel=%errorlevel%) >> "%START_LOG%"
     REM Wait a short time before checking container health
     timeout /t 5 /nobreak >nul
     REM Wait for Postgres health (pg_isready inside container)
