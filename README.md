@@ -1,4 +1,8 @@
 <!-- Root Decision Portal README — minimal, role-based navigation -->
+<p align="center">
+  <img src="icon.png" alt="NeuroSwarm" width="500"/>
+</p>
+
 # NeuroSwarm — Documentation Decision Portal
 
 Welcome — this repository contains the NeuroSwarm coordination codebase, services, and operational tooling.
@@ -19,9 +23,7 @@ Which role best describes why you are here?
 If you're not sure where to go, start with `wiki/HOME.md` which provides a short status overview and links into each role path.
 
 Thanks — the team has intentionally kept this portal concise to reduce confusion and help you reach what matters quickly.
-<p align="center">
-  <img src="icon.png" alt="NeuroSwarm" width="500"/>
-</p>
+
 
 # NeuroSwarm
 
