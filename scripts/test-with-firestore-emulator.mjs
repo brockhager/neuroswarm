@@ -23,9 +23,43 @@ function waitForPort(host, port, timeoutMs = 15_000) {
   });
 }
 
+async function findFreePort(startPort, host = '127.0.0.1', maxAttempts = 50) {
+  const tryBind = (port) => new Promise((resolve) => {
+    const s = net.createServer();
+    s.once('error', () => resolve(false));
+    s.once('listening', () => {
+      s.close(() => resolve(true));
+    });
+    s.listen(port, host);
+  });
+
+  for (let i = 0; i < maxAttempts; i++) {
+    const p = startPort + i;
+    // eslint-disable-next-line no-await-in-loop
+    const ok = await tryBind(p);
+    if (ok) return p;
+  }
+  return null;
+}
+
 async function main() {
-  const port = process.env.FIRESTORE_EMULATOR_PORT || 8080;
+  let port = Number(process.env.FIRESTORE_EMULATOR_PORT || 8080);
   const host = process.env.FIRESTORE_EMULATOR_HOST ? process.env.FIRESTORE_EMULATOR_HOST.split(':')[0] : '127.0.0.1';
+
+  // If requested port is already in use, find a free port nearby and use it so CI can run multiple workers.
+  try {
+    const free = await findFreePort(port, host, 50);
+    if (!free) {
+      console.warn(`[tester] Could not find free port near ${port} for Firestore emulator`);
+    } else if (free !== port) {
+      console.log(`[tester] Port ${port} appears in use — choosing free port ${free} for Firestore emulator`);
+      port = free;
+    } else {
+      console.log(`[tester] Port ${port} is available for Firestore emulator`);
+    }
+  } catch (e) {
+    console.warn('[tester] Error checking for free ports:', e?.message || e);
+  }
   console.log('[tester] Starting Firestore emulator via npx/firebase-tools (this requires firebase-tools available via npx)...');
 
   // Note: older firebase-tools versions may not accept --host / --port flags.
@@ -36,6 +70,8 @@ async function main() {
   const emuEnv = { ...process.env };
   // Ensure the emulator listens on the requested host/port by setting env var if present
   emuEnv.FIRESTORE_EMULATOR_HOST = `${host}:${port}`;
+  // Also set FIRESTORE_EMULATOR_PORT for some tools that prefer explicit port var
+  emuEnv.FIRESTORE_EMULATOR_PORT = String(port);
   const emu = spawn('npx', emuArgs, { cwd: __dirname, env: emuEnv, stdio: ['ignore', 'pipe', 'pipe'] });
 
   emu.stdout.on('data', d => process.stdout.write(`[emu] ${d}`));
