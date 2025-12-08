@@ -208,6 +208,26 @@ app.post('/webhook/alerts', async (req, res) => {
         });
 });
 
+// Basic root page for humans and quick local verification
+app.get('/', (req, res) => {
+    res.set('Content-Type', 'text/html');
+    res.status(200).send(`
+        <html>
+            <head><title>Alert Sink</title></head>
+            <body>
+                <h1>NeuroSwarm Alert Sink</h1>
+                <p>This service accepts incoming Alertmanager webhooks at <code>POST /webhook/alerts</code>.</p>
+                <p>Try <a href="/health">/health</a> to check service health.</p>
+            </body>
+        </html>
+    `);
+});
+
+// Lightweight health endpoint useful for orchestration checks
+app.get('/health', (req, res) => {
+    res.json({ ok: true, firestoreConfigured: !!firestoreClient, alertsInCooldown: alertCooldowns.size });
+});
+
 if (require.main === module) {
     app.listen(PORT, () => {
     if (!DISCORD_WEBHOOK_URL) {
@@ -226,4 +246,4 @@ if (require.main === module) {
 // Helper to set firestore client in tests (mocking)
 const setFirestoreClientForTest = (client) => { firestoreClient = client; };
 
-module.exports = { getAlertColor, formatAlertEmbed, sendAlertToDiscord, writeIncidentToFirestore, buildDedupKey, initFirestore, setFirestoreClientForTest };
+module.exports = { app, getAlertColor, formatAlertEmbed, sendAlertToDiscord, writeIncidentToFirestore, buildDedupKey, initFirestore, setFirestoreClientForTest };

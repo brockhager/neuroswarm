@@ -15,7 +15,7 @@ import QueueConsumer from './queue-consumer.js';
 const NS_URL = (process.env.NS_NODE_URL || 'http://localhost:3000').trim();
 const GATEWAY_URL = (process.env.GATEWAY_URL || 'http://localhost:8080').trim();
 const PORT = process.env.PORT || 4000;
-const VAL_ID = process.env.VALIDATOR_ID || 'val-' + uuidv4();
+let VAL_ID = process.env.VALIDATOR_ID || null;
 let PRIVATE_KEY_PEM = process.env.VALIDATOR_PRIVATE_KEY || null;
 let PUBLIC_KEY_PEM = process.env.VALIDATOR_PUBLIC_KEY || null;
 const INTERVAL_MS = Number(process.env.VP_INTERVAL_MS || 3000);
@@ -48,7 +48,32 @@ let ipfsConnected = false;
 // Idempotency store for confirmations from NS (prevents replayed SETTLED callbacks)
 import IdempotencyStore from '../shared/idempotency-store.ts';
 import { PublicKeyRegistry } from '../shared/key-management.ts';
-import { getCanonicalPayloadHash, verifySignature, hexToBuffer } from '../shared/crypto-utils.ts';
+import { getCanonicalPayloadHash, verifySignature, hexToBuffer, nodeIdFromPublicKey } from '../shared/crypto-utils.ts';
+
+// If a PUBLIC_KEY_PEM was provided via env and VAL_ID was not explicitly set,
+// derive the canonical Node ID immediately so logs / heartbeats show the deterministic ID.
+if (!VAL_ID && PUBLIC_KEY_PEM) {
+  try {
+    VAL_ID = nodeIdFromPublicKey(PUBLIC_KEY_PEM);
+    logVp(`Derived validator/node id from PUBLIC_KEY_PEM: ${VAL_ID}`);
+  } catch (e) {
+    logVp('WARN', 'Failed to derive Node ID from PUBLIC_KEY_PEM:', e instanceof Error ? e.message : String(e));
+  }
+}
+
+// Enforce deterministic Node ID requirement: if we were unable to obtain a
+// validator/node identifier from either VALIDATOR_ID or PUBLIC_KEY_PEM, refuse
+// to start. This prevents anonymous/fallback nodes from connecting and
+// producing blocks with an undefined, unaudited identity.
+if (!VAL_ID) {
+  console.error('[FATAL] No VALIDATOR_ID or PUBLIC_KEY_PEM provided.');
+  console.error('A node MUST present a public-key or explicit VALIDATOR_ID derived from its signing key to participate.');
+  console.error('Set either VALIDATOR_ID or PUBLIC_KEY_PEM in the environment before starting the VP node. For example:');
+  console.error('  set VALIDATOR_ID=your-deterministic-id');
+  console.error('  OR');
+  console.error('  set PUBLIC_KEY_PEM="-----BEGIN PUBLIC KEY-----..."');
+  process.exit(1);
+}
 const vpIdempotencyStore = new IdempotencyStore();
 
 async function pingNsHealth() {
@@ -84,6 +109,8 @@ async function initIpfs() {
   } catch (e) {
     ipfsConnected = false;
     logVp('IPFS not available at', ipfsApi, '-', e.message);
+    logVp('If you need IPFS for payload CID support, install the optional dependency:');
+    logVp('  cd vp-node && pnpm install ipfs-http-client');
   }
 }
 
@@ -158,8 +185,18 @@ async function register() {
   }
   try {
     const res = await fetch(NS_URL + '/validators/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ validatorId: VAL_ID, publicKey: PUBLIC_KEY_PEM, stake: Number(process.env.INIT_STAKE || 10) }) });
-    const j = await res.json();
-    logVp('register:', j);
+    // Defensive: some endpoints can return HTML error pages or redirects during dev — log status and a snippet
+    const ct = res.headers.get('content-type') || '';
+    if (!res.ok) {
+      const txt = await res.text().catch(() => '<failed to read body>');
+      logVp('register: non-OK response', { status: res.status, statusText: res.statusText, contentType: ct, bodySnippet: (txt || '').slice(0, 512) });
+    } else if (!ct.includes('application/json')) {
+      const txt = await res.text().catch(() => '<failed to read body>');
+      logVp('register: unexpected content-type (not JSON)', { status: res.status, contentType: ct, bodySnippet: (txt || '').slice(0, 512) });
+    } else {
+      const j = await res.json();
+      logVp('register:', j);
+    }
   } catch (e) {
     logVp('register error', e.message);
   }
@@ -184,8 +221,18 @@ function pickValidator(validators, slot, prevHash) {
 export async function getNSDesignatedProducer(slot) {
   try {
     const res = await fetch(NS_URL + `/chain/producer/${slot}`);
-    if (!res.ok) return null;
-    const j = await res.json();
+    const ct = res.headers.get('content-type') || '';
+    if (!res.ok) {
+      const text = await res.text().catch(() => '<no-body>');
+      logVp('WARN', `getNSDesignatedProducer: non-OK response (${res.status})`, text.slice(0, 512));
+      return null;
+    }
+    if (!ct.includes('application/json')) {
+      const text = await res.text().catch(() => '<no-body>');
+      logVp('WARN', `getNSDesignatedProducer: unexpected content-type=${ct} — body snippet:`, text.slice(0, 512));
+      return null;
+    }
+    const j = await res.json().catch(e => { logVp('WARN', 'getNSDesignatedProducer: failed to parse JSON', e.message); return null; });
     return j && j.producerId ? j.producerId : null;
   } catch (e) {
     logVp('WARN', 'Failed to fetch designated producer from NS:', e.message);
@@ -216,10 +263,34 @@ export async function produceLoop() {
     }
     const prev = head && head.header ? head.header : null;
     let heightResp = { height: 0 };
-    try { heightResp = await (await fetch(NS_URL + '/chain/height')).json(); } catch (e) { logVp('WARN', 'Failed to parse height JSON from NS:', e.message); }
+    try {
+      const hres = await fetch(NS_URL + '/chain/height');
+      const hct = hres.headers.get('content-type') || '';
+      if (!hres.ok) {
+        const body = await hres.text().catch(() => '<no-body>');
+        logVp('WARN', '/chain/height returned non-OK', hres.status, body.slice(0, 512));
+      } else if (!hct.includes('application/json')) {
+        const body = await hres.text().catch(() => '<no-body>');
+        logVp('WARN', '/chain/height returned unexpected content-type', hct, body.slice(0, 512));
+      } else {
+        heightResp = await hres.json().catch(e => { logVp('WARN','Failed parsing /chain/height JSON', e.message); return {height: 0}; });
+      }
+    } catch (e) { logVp('WARN', 'Failed to fetch /chain/height from NS:', e.message); }
     const slot = (heightResp.height || 0) + 1;
     let validatorsResp = { validators: [] };
-    try { validatorsResp = await (await fetch(NS_URL + '/validators')).json(); } catch (e) { logVp('WARN', 'Failed to parse validators JSON from NS:', e.message); }
+    try {
+      const vres = await fetch(NS_URL + '/validators');
+      const vct = vres.headers.get('content-type') || '';
+      if (!vres.ok) {
+        const body = await vres.text().catch(() => '<no-body>');
+        logVp('WARN', '/validators returned non-OK', vres.status, body.slice(0, 512));
+      } else if (!vct.includes('application/json')) {
+        const body = await vres.text().catch(() => '<no-body>');
+        logVp('WARN', '/validators returned unexpected non-JSON content-type', vct, body.slice(0, 512));
+      } else {
+        validatorsResp = await vres.json().catch(e => { logVp('WARN','Failed parsing /validators JSON', e.message); return {validators: []}; });
+      }
+    } catch (e) { logVp('WARN', 'Failed to fetch /validators from NS:', e.message); }
     const prevHash = prev ? sha256Hex(canonicalize(prev)) : '0'.repeat(64);
     // Check with NS for the canonical designated producer for this height
     const designated = await getNSDesignatedProducer(slot);

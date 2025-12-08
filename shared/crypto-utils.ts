@@ -120,3 +120,42 @@ export async function deriveKeypairFromSeed(seed: string): Promise<{ privateKey:
     const publicKey = Buffer.from(seedHash);
     return { privateKey, publicKey };
 }
+
+/**
+ * Compute a deterministic Node ID from an ED25519 public key.
+ * The Node ID is defined as the SHA-256 hash of the raw public key bytes
+ * represented as a lowercase hexadecimal string (64 chars, 32 bytes -> 64 hex chars).
+ * This supports input in a few common formats: raw Buffer, hex string, or PEM (SPKI) string.
+ */
+export function nodeIdFromPublicKey(publicKey: Buffer | string): string {
+    let buf: Buffer;
+    if (Buffer.isBuffer(publicKey)) {
+        buf = publicKey as Buffer;
+    } else if (typeof publicKey === 'string') {
+        const s = publicKey.trim();
+        // PEM detection: -----BEGIN .* KEY----- ... base64 ... -----END .* KEY-----
+        if (s.includes('-----BEGIN')) {
+            // Extract base64 body
+            const lines = s.split(/\r?\n/).filter(l => !l.includes('-----BEGIN') && !l.includes('-----END'));
+            const b64 = lines.join('');
+            buf = Buffer.from(b64, 'base64');
+        } else if (/^[0-9a-fA-F]+$/.test(s)) {
+            // hex string
+            buf = Buffer.from(s, 'hex');
+        } else {
+            // treat as base64 blob
+            try {
+                buf = Buffer.from(s, 'base64');
+            } catch (e) {
+                // fallback to utf8 bytes
+                buf = Buffer.from(s, 'utf8');
+            }
+        }
+    } else {
+        throw new Error('Unsupported publicKey input');
+    }
+
+    const digest = crypto.createHash(HASH_ALGORITHM).update(buf).digest('hex');
+    // SHA-256 hex digest is 64 chars; return full digest to be used as canonical Node ID
+    return digest.slice(0, 64).toLowerCase();
+}

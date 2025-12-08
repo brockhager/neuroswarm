@@ -1,7 +1,7 @@
 // shared/crypto-utils.test.ts
 // CN-07-H Phase 1: Unit tests for shared crypto utilities
 
-import { getCanonicalPayloadHash, signPayload, verifySignature, bufferToHex, hexToBuffer, deriveKeypairFromSeed } from './crypto-utils';
+import { getCanonicalPayloadHash, signPayload, verifySignature, bufferToHex, hexToBuffer, deriveKeypairFromSeed, nodeIdFromPublicKey } from './crypto-utils';
 
 describe('CN-07-H: Crypto Utils (Phase 1)', () => {
   const testPrivateKey = 'a'.repeat(64); // 64-char hex (32 bytes)
@@ -145,6 +145,20 @@ describe('CN-07-H: Crypto Utils (Phase 1)', () => {
       expect(kp.publicKey).toBeInstanceOf(Buffer);
       expect(kp.privateKey.length).toBeGreaterThan(16);
       expect(kp.publicKey.length).toBeGreaterThan(16);
+    });
+
+    it('nodeIdFromPublicKey should derive sha256 hex id consistently from public key buffer and PEM', async () => {
+      const seed = 'V-PRODUCER-NODE-123';
+      const kp = await deriveKeypairFromSeed(seed);
+      const idFromBuf = nodeIdFromPublicKey(kp.publicKey);
+
+      // Build a PEM-style public key (SPKI-like wrapper) for the same buffer
+      const b64 = kp.publicKey.toString('base64');
+      const pem = '-----BEGIN PUBLIC KEY-----\n' + b64.match(/.{1,64}/g).join('\n') + '\n-----END PUBLIC KEY-----\n';
+
+      const idFromPem = nodeIdFromPublicKey(pem);
+      expect(idFromBuf).toBe(idFromPem);
+      expect(idFromBuf).toMatch(/^[0-9a-f]{64}$/);
     });
   });
 });

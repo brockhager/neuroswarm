@@ -26,7 +26,7 @@ export interface Job {
 }
 
 export class JobQueueService {
-    private pool: Pool;
+    private pool!: Pool; // definite-assignment asserted; initialized in constructor
 
     constructor() {
         // Initialize PG Pool (connection details from env vars)

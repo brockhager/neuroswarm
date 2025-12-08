@@ -57,6 +57,9 @@ export async function startHTTPSServer(app, httpPort, nodeType, nodeId) {
         });
     } catch (err) {
         console.error(`[HTTPS] Failed to start HTTPS server: ${err.message}`);
+        console.log('[HTTPS] This commonly happens if the TLS certificate files are malformed or missing expected PEM blocks (BEGIN CERTIFICATE).');
+        console.log('[HTTPS] Remedy: remove the broken certs directory so a fresh certificate can be generated, e.g.:');
+        console.log(`         rm -rf ${path.join(__dirname, '../data/certs')}`);
         console.log(`[HTTPS] Continuing with HTTP-only mode`);
         return null;
     }
