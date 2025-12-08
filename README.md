@@ -1,4 +1,8 @@
 <!-- Root Decision Portal README — minimal, role-based navigation -->
+<p align="center">
+	<img src="./ns-logo-1.png" alt="NeuroSwarm" width="500" onerror="this.style.display='none'" />
+</p>
+
 # NeuroSwarm — Documentation Decision Portal
 
 Welcome — this repository contains the NeuroSwarm coordination codebase, services, and operational tooling.
@@ -18,9 +22,9 @@ Which role best describes why you are here?
 	- [Security / Audit Portal](./wiki/01-Security-Audit-Portal.md)
 - Operations / DevOps — Deploy, manage, and monitor NeuroSwarm in staging/production
 	- [Operations Runbook](./wiki/02-Operations-Runbook.md)
--- Consumer / API — Technical API/SDK docs for integrators
+- Consumer / API — Technical API/SDK docs for integrators
 	- [Consumer / API Guide (integrators)](./wiki/03-Consumer-API-Guide.md)
--- General User / Chatbot — End-user demos, quickstarts, and non-technical guides
+- General User / Chatbot — End-user demos, quickstarts, and non-technical guides
 	- [General Users — Quickstarts & demos](./wiki/04-General-Users.md)
 
 If you're not sure where to go, start with `./wiki/HOME.md` which provides a short status overview and links into each role path.
