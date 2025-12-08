@@ -41,4 +41,4 @@ export class MockVaultTransitConnector implements SecureTransitConnector {
     }
 }
 
-export default { SecureTransitConnector, MockVaultTransitConnector };
+export default { MockVaultTransitConnector };
