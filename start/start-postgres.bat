@@ -19,7 +19,7 @@ if not exist "docker-compose.test.yml" (
     exit /b 1
 )
 
-echo Starting Postgres container (port 5433)...
+echo Starting Postgres container ^(port 5433^)...
 docker compose -f docker-compose.test.yml up -d
 
 echo.

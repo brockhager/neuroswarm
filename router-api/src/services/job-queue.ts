@@ -30,8 +30,29 @@ export class JobQueueService {
 
     constructor() {
         // Initialize PG Pool (connection details from env vars)
+        // Defensive: trim any accidental whitespace in DATABASE_URL which has
+        // appeared in the wild (e.g., trailing space in DB name) and log a
+        // masked version for debugging.
+        const rawConn = process.env.DATABASE_URL || '';
+        const connectionString = rawConn.trim();
+
+        const maskConn = (s = '') => {
+            // hide password if present: postgres://user:pass@host:port/db
+            try {
+                return s.replace(/:(?:[^:@]+)@/, ':***@');
+            } catch (e) {
+                return s;
+            }
+        };
+
+        if (rawConn !== connectionString) {
+            console.warn('DATABASE_URL contained leading/trailing whitespace — trimmed for safety');
+        }
+
+        console.info('Using DATABASE_URL:', maskConn(connectionString));
+
         this.pool = new Pool({
-            connectionString: process.env.DATABASE_URL,
+            connectionString: connectionString || undefined,
             max: 20,
             idleTimeoutMillis: 30000,
             connectionTimeoutMillis: 2000,
@@ -42,6 +63,31 @@ export class JobQueueService {
             console.error('Unexpected error on idle client', err);
             process.exit(-1);
         });
+
+        // Try to perform a quick startup check so we produce clearer diagnostics
+        // when the DB doesn't exist (error code 3D000) vs network/auth errors.
+        (async () => {
+            try {
+                const client = await this.pool.connect();
+                try {
+                    await client.query('SELECT 1');
+                    console.info('Postgres connectivity OK (router-api)');
+                } finally {
+                    client.release();
+                }
+            } catch (err: any) {
+                // 3D000 = invalid_catalog_name (database does not exist)
+                if (err && err.code === '3D000') {
+                    console.error(`FATAL: Postgres database not found (${err?.message || 'unknown DB'})`);
+                    console.error(`Hint: verify the database defined in DATABASE_URL exists (no trailing spaces). Example: 'neuroswarm_router_db_test'`);
+                    console.error('If you rely on the local dev helpers, ensure Docker is running and that the postgres container has created the database.');
+                    // exit so the operator sees the condition clearly instead of a flood of retries
+                    process.exit(1);
+                }
+
+                console.error('Postgres connectivity check failed for router-api:', err);
+            }
+        })();
     }
 
     // Metrics

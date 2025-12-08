@@ -12,8 +12,8 @@ import QueueConsumer from './queue-consumer.js';
 // ipfs-http-client is an optional runtime dependency. Dynamically import it
 // inside initIpfs so the server can start without IPFS being installed.
 
-const NS_URL = process.env.NS_NODE_URL || 'http://localhost:3000';
-const GATEWAY_URL = process.env.GATEWAY_URL || 'http://localhost:8080';
+const NS_URL = (process.env.NS_NODE_URL || 'http://localhost:3000').trim();
+const GATEWAY_URL = (process.env.GATEWAY_URL || 'http://localhost:8080').trim();
 const PORT = process.env.PORT || 4000;
 const VAL_ID = process.env.VALIDATOR_ID || 'val-' + uuidv4();
 let PRIVATE_KEY_PEM = process.env.VALIDATOR_PRIVATE_KEY || null;
@@ -29,6 +29,7 @@ const STATUS_ENABLED = process.env.STATUS === '1' || process.argv.includes('--st
 function ts() { return new Date().toISOString(); }
 function logVp(...args) { const _ts = new Date().toISOString(); console.log(`[VP][${_ts}]`, ...args); }
 logVp(`vp-node starting on port ${PORT}`);
+logVp(`NS_URL=${NS_URL} | GATEWAY_URL=${GATEWAY_URL}`);
 if (STATUS_ENABLED) logVp(`vp-node heartbeat enabled (interval ${Number(process.env.STATUS_INTERVAL_MS || 60000)}ms)`);
 
 // Peer discovery objects will be initialized when the server is started directly

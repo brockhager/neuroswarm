@@ -1,5 +1,5 @@
 @echo off
-echo Starting Postgres container (router-api test DB) in this window...
+echo Starting Postgres container ^(router-api test DB^) in this window...
 
 REM Check that docker cli exists
 where docker >nul 2>&1
@@ -30,7 +30,7 @@ if %errorlevel% neq 0 (
   echo docker compose up failed with errorlevel %errorlevel%
   echo Possible causes: Docker Desktop not running, WSL integration disabled, or network / registry pull issues.
   echo Try running: docker compose -f "c:\JS\ns\neuroswarm\router-api\docker-compose.test.yml" up --no-start db
-  echo If the host cannot reach the Docker Engine (named pipe error), ensure Docker Desktop is running and try again.
+  echo If the host cannot reach the Docker Engine ^(named pipe error^), ensure Docker Desktop is running and try again.
   echo Press any key to close this window.
   pause
   exit /b 3
