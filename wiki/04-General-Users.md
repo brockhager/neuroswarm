@@ -26,3 +26,15 @@ If you're building an integration (SDKs, OpenAPI, or client code) see the techni
 - Try the `neuro-web` demo or open an issue describing what you're trying to do.
 
 _That's it — this page is intentionally short and friendly for everyday users._
+
+## Download the latest build
+
+- Want to run NeuroSwarm locally without building from source? Download a pre-built package from the project Releases page:
+
+	- Latest releases & installers: https://github.com/brockhager/neuroswarm/releases/latest
+
+	- Which file to pick: choose the installer or zip that matches your operating system (Windows, macOS, or Linux) and CPU architecture (x64/arm). Most users on modern desktops pick the `win-x64`, `macos-x64`, or `linux-x64` artifacts.
+
+	- Opening the link: clicking the link above should open the Releases page in your browser. If it doesn't, copy the URL into your browser's address bar and press Enter to view available downloads.
+
+	- Tip: if you want local dev instead of a pre-built package, see the Quick local demo earlier on this page.
