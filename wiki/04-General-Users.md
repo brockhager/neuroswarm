@@ -1,24 +1,28 @@
-# NeuroSwarm — General Users (Chatbot)
+# NeuroSwarm — For General Users
 
-This landing page is for end users and non-technical consumers who want to try the NeuroSwarm chatbot, demos, or client-facing experiences. It intentionally focuses on quickstarts and usage guidance — if you're building integrations, SDKs, or need the formal API specification, please see the *Consumer / API Guide* at `wiki/03-Consumer-API-Guide.md` (technical reference).
+Welcome — this short page helps everyday users try NeuroSwarm (chat demos and quickstarts). It's intentionally non-technical. If you need developer-level API or SDK details, go to the technical guide: [03 — Consumer / API Guide](03-Consumer-API-Guide.md).
 
-## Quick start — interact with the running chatbot
+## Try a demo (quick)
 
-- Web UI demo (example): `neuro-web/pages/sdk-demo.tsx` — this is the client demo that shows common flows.
-- Try the demo app or the hosted demo (if available) to see example chatbot interactions.
+- Hosted demo: If a public demo is available, open it from the project README (../README.md) or the project website.
+- Quick local demo (1–2 minutes):
+  1. From the repository root, run the demo app:
 
-## How to try NeuroSwarm (end-user)
+	  ```powershell
+	  # start the web demo (shows example chatbot flows)
+	  pnpm -C neuro-web dev
+	  # open http://localhost:3000 (or the port shown by the command)
+	  ```
 
-- Web UI/demo — open the demo app (if hosted) or run `neuro-web` locally to try conversations and example flows.
-- Local quickstart — run the example demo under `neuro-web/pages/sdk-demo.tsx` to explore common interactions and UI patterns.
+  2. If you'd like to view the demo source file on GitHub: `../../neuro-web/pages/sdk-demo.tsx` (clickable from the repo view).
 
-If you need the formal API details (OpenAPI, SDKs, rate limits), see the technical Consumer/API Guide (`wiki/03-Consumer-API-Guide.md`).
+## What if you want to integrate / build
 
-## Common topics for users
-- Authentication: How to obtain API tokens and authenticate requests to the gateway
-- Rate limits: Understand request quotas and retry/backoff behavior enforced by the gateway
-- Examples: Provide JavaScript/TypeScript snippets and quick curl examples
+If you're building an integration (SDKs, OpenAPI, or client code) see the technical reference under: [03 — Consumer / API Guide](03-Consumer-API-Guide.md).
 
-## Where to find more help
-- Developer-focused API spec & examples: `wiki/03-Consumer-API-Guide.md` (technical, for implementers)
-- User-facing guides and support: consider the `neuro-web` demo and the GitHub Discussions/Issues for help
+## Need help?
+
+- Visit the project Discussions/Issues page for usage questions.
+- Try the `neuro-web` demo or open an issue describing what you're trying to do.
+
+_That's it — this page is intentionally short and friendly for everyday users._

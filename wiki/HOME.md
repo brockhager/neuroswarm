@@ -13,10 +13,10 @@ Current active engineering focus: APP-02 (Background worker / Job queue) — che
 
 Jump to the role that matches you:
 
-- Developer: `wiki/00-Developer-Guide.md`
-- Auditor / Security Lead: `wiki/01-Security-Audit-Portal.md`
-- Operations / DevOps: `wiki/02-Operations-Runbook.md`
--- API developers: `wiki/03-Consumer-API-Guide.md`
--- General users / Chatbot consumers: `wiki/04-General-Users.md`
+- Developer: `00-Developer-Guide.md`
+- Auditor / Security Lead: `01-Security-Audit-Portal.md`
+- Operations / DevOps: `02-Operations-Runbook.md`
+- API developers: `03-Consumer-API-Guide.md`
+- General users / Chatbot consumers: `04-General-Users.md`
 
 For repository-level operations (CI, contributions), see the top-level `README.md` (Decision Portal).
