@@ -5,22 +5,26 @@ Welcome — this repository contains the NeuroSwarm coordination codebase, servi
 
 This README is intentionally minimal: it's a decision portal that helps YOU get to the documentation most relevant to your role.
 
+
+<p align="center">
+  <img src="./ns-node-desktop/icon.png" alt="NeuroSwarm" width="160" onerror="this.style.display='none'" />
+</p>
+
 Which role best describes why you are here?
 
-- Developer → Work on the code, run the services, add features
-  - See: `wiki/00-Developer-Guide.md`
-- Auditor / Security Lead → Review cryptographic hardening, idempotency and provenance
-  - See: `wiki/01-Security-Audit-Portal.md`
-- Operations / DevOps → Deploy, manage, and monitor NeuroSwarm in staging/production
-  - See: `wiki/02-Operations-Runbook.md`
-- UX / API Consumer → Build client-facing integrations and read the public API docs
-  - See: `wiki/03-Consumer-API-Guide.md`
+- Developer — Work on the code, run the services, add features
+  - [Developer Guide](./wiki/00-Developer-Guide.md)
+- Auditor / Security Lead — Review cryptographic hardening, idempotency and provenance
+  - [Security / Audit Portal](./wiki/01-Security-Audit-Portal.md)
+- Operations / DevOps — Deploy, manage, and monitor NeuroSwarm in staging/production
+  - [Operations Runbook](./wiki/02-Operations-Runbook.md)
+- General User / Chatbot & API Consumer — Access guides & quickstarts for the deployed services
+  - [General Users / Consumer Guide](./wiki/04-General-Users.md)
 
 If you're not sure where to go, start with `wiki/HOME.md` which provides a short status overview and links into each role path.
 
-Thanks — the team has intentionally kept this portal concise to reduce confusion and help you reach what matters quickly.
 <p align="center">
-  <img src="icon.png" alt="NeuroSwarm" width="500"/>
+  <img src="./ns-node-desktop/icon.png" alt="NeuroSwarm" width="500" onerror="this.style.display='none'" />
 </p>
 
 # NeuroSwarm
@@ -162,7 +166,9 @@ Key design and developer docs (canonical pages are on the `Wiki`):
 - [Getting Started](wiki/Getting-Started/Getting-Started.md)
 - [Data Flow Architecture](wiki/Technical/data-flow-architecture.md)
 
-Run the nodes
+If you're unsure where to start, use the central hub: [Documentation Home](./wiki/HOME.md)
+
+If you'd rather read the full Getting Started guide (main documentation), go here: [Getting Started — Main Docs](./wiki/Getting-Started/Home.md)
 ------------
 
 To run nodes individually or as a network, follow the step-by-step runbook on the wiki: `https://github.com/brockhager/neuro-infra/wiki/Running-Nodes` which contains details for environment variables, ports, and health checks.

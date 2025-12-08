@@ -16,6 +16,7 @@ Jump to the role that matches you:
 - Developer: `wiki/00-Developer-Guide.md`
 - Auditor / Security Lead: `wiki/01-Security-Audit-Portal.md`
 - Operations / DevOps: `wiki/02-Operations-Runbook.md`
-- UX / API Consumer: `wiki/03-Consumer-API-Guide.md`
+-- API developers: `wiki/03-Consumer-API-Guide.md`
+-- General users / Chatbot consumers: `wiki/04-General-Users.md`
 
 For repository-level operations (CI, contributions), see the top-level `README.md` (Decision Portal).
